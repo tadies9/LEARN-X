@@ -15,6 +15,7 @@ We use Husky to run checks before commits. The following checks are performed:
 3. **Tests**: Unit and integration tests
 
 To skip hooks temporarily (not recommended):
+
 ```bash
 git commit --no-verify -m "your message"
 ```
@@ -34,20 +35,24 @@ npm run test:ci
 ## GitHub Actions Workflow
 
 The CI/CD pipeline runs on:
+
 - Push to `main` or `develop` branches
 - Pull requests to `main` or `develop` branches
 
 ### Pipeline Steps
 
 1. **Code Quality Checks**
+
    - ESLint
    - TypeScript type checking
 
 2. **Backend Tests**
+
    - Unit tests
    - Build verification
 
 3. **Frontend Tests**
+
    - Unit tests
    - Build verification
 
@@ -57,32 +62,42 @@ The CI/CD pipeline runs on:
 ## Test Scripts
 
 ### API Integration Tests
+
 ```bash
 ./API_INTEGRATION_TESTS.sh
 ```
+
 Tests API endpoints for proper responses and error handling.
 
 ### Edge Case Tests
+
 ```bash
 ./EDGE_CASE_TESTS.sh
 ```
+
 Tests handling of edge cases like large files, special characters, etc.
 
 ### Security Tests
+
 ```bash
 ./SECURITY_TESTS.sh
 ```
+
 Tests for common security vulnerabilities:
+
 - SQL injection
 - XSS
 - CORS configuration
 - JWT validation
 
 ### Performance Tests
+
 ```bash
 ./PERFORMANCE_TEST.sh
 ```
+
 Tests API performance:
+
 - Response times
 - Concurrent request handling
 - Load testing
@@ -90,13 +105,17 @@ Tests API performance:
 ## Environment Setup
 
 ### Backend (.env)
+
 Copy `backend/.env.example` to `backend/.env` and fill in values:
+
 ```bash
 cp backend/.env.example backend/.env
 ```
 
 ### Frontend (.env.local)
+
 Copy `frontend/.env.example` to `frontend/.env.local`:
+
 ```bash
 cp frontend/.env.example frontend/.env.local
 ```
@@ -104,6 +123,7 @@ cp frontend/.env.example frontend/.env.local
 ## Docker Testing
 
 ### Run tests in Docker
+
 ```bash
 npm run docker:test
 ```
@@ -113,12 +133,14 @@ This uses `docker-compose.test.yml` to run tests in containers.
 ## Deployment
 
 ### Production Build
+
 ```bash
 npm run build
 npm run docker:prod:build
 ```
 
 ### Deploy Commands
+
 ```bash
 # Deploy to production
 npm run deploy:prod
@@ -130,14 +152,17 @@ npm run deploy:staging
 ## Troubleshooting
 
 ### TypeScript Errors in Tests
+
 - Backend tests use `tsconfig.build.json` which excludes test files
 - Frontend tests include `@testing-library/jest-dom` types
 
 ### Linting Issues
+
 - Run `npm run lint:fix` to auto-fix issues
 - Check `.eslintrc.json` for rule configuration
 
 ### Test Failures
+
 - Check test logs for specific errors
 - Ensure environment variables are set correctly
 - Verify database connections
@@ -154,4 +179,4 @@ npm run deploy:staging
 
 - GitHub Actions dashboard for CI/CD status
 - Docker logs for container health
-- Application logs in `backend/logs/`
+- Application logs in `backend/logs/`# Testing CI/CD pipeline
