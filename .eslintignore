@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# Production builds
+dist/
+build/
+.next/
+out/
+
+# Testing
+coverage/
+
+# Config files
+*.config.js
+*.config.ts
+
+# Generated files
+*.generated.ts
+*.generated.js

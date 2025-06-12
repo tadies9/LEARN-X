@@ -1,0 +1,44 @@
+# AI CODING ASSISTANT RULES FOR LEARN-X
+
+## 🚫 STRICT RULES - NO EXCEPTIONS WITHOUT PERMISSION
+
+1. **FILE SIZE**: NEVER create files > 500 lines. Aim for < 300 lines.
+2. **SINGLE RESPONSIBILITY**: One file = one purpose
+3. **NO DUPLICATION**: Extract repeated code immediately
+4. **TYPE SAFETY**: No `any` types. Always use explicit TypeScript types.
+5. **IMPORTS**: Follow the import order (React > Libraries > Internal > Relative > Types)
+
+## 📦 WHEN CREATING COMPONENTS
+
+```typescript
+// MAXIMUM component structure
+export function ComponentName({ prop1, prop2 }: ComponentNameProps) {
+  // 1. Hooks (max 5-6)
+  // 2. Effects (max 2-3)  
+  // 3. Handlers (max 5-6)
+  // 4. Render helpers (if needed)
+  // 5. Return JSX
+  
+  // TOTAL: < 200 lines
+}
+```
+
+## 🔄 BEFORE ADDING CODE
+
+1. CHECK: Will this make the file > 500 lines?
+2. CHECK: Is there similar code elsewhere?
+3. CHECK: Can this be split into smaller functions?
+4. CHECK: Are all types properly defined?
+
+## 💔 WHEN TO SPLIT FILES
+
+- Component > 200 lines → Split into smaller components
+- Utility file > 300 lines → Split by functionality
+- Route file > 100 lines → Extract logic to controllers
+- Service > 300 lines → Split into domain-specific services
+
+## 📝 QUICK REFERENCE
+
+See `/CODING_STANDARDS.md` for complete guidelines.
+
+REMEMBER: Clean, maintainable code > Quick, messy code
