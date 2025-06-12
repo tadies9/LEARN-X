@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>LEARN-X Demo Video Placeholder</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 40px;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+            background: #f8f9fa;
+            color: #1d1d1f;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 16px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        h1 {
+            font-size: 48px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .instructions {
+            background: #f3f4f6;
+            padding: 24px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        code {
+            background: #e5e7eb;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+        }
+        .demo-flow {
+            margin: 40px 0;
+            padding: 24px;
+            background: #007aff;
+            color: white;
+            border-radius: 12px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>LEARN-X Demo Video</h1>
+        
+        <div class="demo-flow">
+            <h2>Demo Flow (2 minutes max)</h2>
+            <p>1. Upload PDF → 2. Ask Questions → 3. Get Insights</p>
+        </div>
+        
+        <div class="instructions">
+            <h3>To create the actual demo video:</h3>
+            <ol>
+                <li>Record a 2-minute screen capture showing:
+                    <ul>
+                        <li>PDF upload process</li>
+                        <li>Chat interface in action</li>
+                        <li>Educator dashboard insights</li>
+                    </ul>
+                </li>
+                <li>Export as <code>learn-x-demo.mp4</code></li>
+                <li>Place in <code>/frontend/public/</code></li>
+                <li>Compress to ≤ 25 MB using:
+                    <br><code>ffmpeg -i input.mov -c:v libx264 -preset slow -crf 23 -s 1920x1080 -r 30 learn-x-demo.mp4</code>
+                </li>
+            </ol>
+        </div>
+        
+        <div class="instructions">
+            <h3>For now, the modal will show:</h3>
+            <p>A placeholder message when <code>learn-x-demo.mp4</code> is not found.</p>
+        </div>
+    </div>
+</body>
+</html> 

@@ -1,0 +1,108 @@
+<svg viewBox="0 0 1440 900" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="1440" height="900" fill="#ffffff"/>
+  
+  <!-- Browser Window -->
+  <rect x="80" y="60" width="1280" height="780" rx="12" fill="white" stroke="#e5e7eb" stroke-width="1"/>
+  
+  <!-- Browser Header -->
+  <rect x="80" y="60" width="1280" height="48" rx="12" fill="#f9fafb"/>
+  <rect x="80" y="108" width="1280" height="1" fill="#e5e7eb"/>
+  
+  <!-- Traffic lights -->
+  <circle cx="108" cy="84" r="6" fill="#ff5f57"/>
+  <circle cx="128" cy="84" r="6" fill="#ffbd2e"/>
+  <circle cx="148" cy="84" r="6" fill="#28ca42"/>
+  
+  <!-- URL bar -->
+  <rect x="200" y="72" width="400" height="24" rx="12" fill="white" stroke="#e5e7eb"/>
+  <text x="220" y="87" font-family="-apple-system, BlinkMacSystemFont" font-size="11" fill="#6b7280">learn-x.ai/chat</text>
+  
+  <!-- Sidebar -->
+  <rect x="80" y="108" width="280" height="732" fill="#f8f9fa"/>
+  <rect x="360" y="108" width="1" height="732" fill="#e5e7eb"/>
+  
+  <!-- Sidebar content -->
+  <text x="100" y="140" font-family="-apple-system, BlinkMacSystemFont" font-size="16" font-weight="600" fill="#1f2937">CS101 Study Chat</text>
+  <rect x="100" y="160" width="200" height="1" fill="#e5e7eb"/>
+  
+  <!-- Chat history items -->
+  <rect x="100" y="180" width="240" height="40" rx="8" fill="white"/>
+  <circle cx="115" cy="200" r="6" fill="#3b82f6"/>
+  <text x="130" y="195" font-family="-apple-system, BlinkMacSystemFont" font-size="12" font-weight="500" fill="#1f2937">Data Structures</text>
+  <text x="130" y="208" font-family="-apple-system, BlinkMacSystemFont" font-size="11" fill="#6b7280">3 questions</text>
+  
+  <rect x="100" y="230" width="240" height="40" rx="8" fill="#eff6ff"/>
+  <circle cx="115" cy="250" r="6" fill="#3b82f6"/>
+  <text x="130" y="245" font-family="-apple-system, BlinkMacSystemFont" font-size="12" font-weight="500" fill="#1f2937">Algorithms Basics</text>
+  <text x="130" y="258" font-family="-apple-system, BlinkMacSystemFont" font-size="11" fill="#6b7280">Active now</text>
+  
+  <!-- Main chat area -->
+  <rect x="360" y="108" width="1000" height="732" fill="white"/>
+  
+  <!-- Chat header -->
+  <rect x="380" y="128" width="960" height="60" fill="white"/>
+  <text x="400" y="150" font-family="-apple-system, BlinkMacSystemFont" font-size="18" font-weight="600" fill="#1f2937">Algorithm Analysis - Chapter 3</text>
+  <text x="400" y="170" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="#6b7280">Based on your uploaded PDF</text>
+  
+  <!-- Chat messages -->
+  <!-- User message 1 -->
+  <g transform="translate(700, 220)">
+    <rect width="320" height="60" rx="20" fill="#3b82f6"/>
+    <text x="20" y="25" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="white">Can you explain Big O notation</text>
+    <text x="20" y="45" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="white">in simple terms?</text>
+  </g>
+  
+  <!-- AI response 1 -->
+  <g transform="translate(380, 300)">
+    <rect width="500" height="120" rx="20" fill="#f3f4f6"/>
+    <text x="20" y="25" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="#1f2937">Big O notation describes how an algorithm's runtime</text>
+    <text x="20" y="45" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="#1f2937">grows as the input size increases. Think of it like</text>
+    <text x="20" y="65" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="#1f2937">measuring efficiency - O(1) is instant, O(n) grows</text>
+    <text x="20" y="85" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="#1f2937">linearly with input size.</text>
+    <text x="20" y="105" font-family="-apple-system, BlinkMacSystemFont" font-size="12" fill="#6b7280">📄 Source: Chapter 3, Page 42</text>
+  </g>
+  
+  <!-- User message 2 -->
+  <g transform="translate(650, 440)">
+    <rect width="370" height="80" rx="20" fill="#3b82f6"/>
+    <text x="20" y="25" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="white">What's the difference between O(log n)</text>
+    <text x="20" y="45" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="white">and O(n log n)? Can you give me</text>
+    <text x="20" y="65" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="white">examples?</text>
+  </g>
+  
+  <!-- AI response 2 (partial) -->
+  <g transform="translate(380, 540)">
+    <rect width="580" height="100" rx="20" fill="#f3f4f6"/>
+    <text x="20" y="25" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="#1f2937">Great question! O(log n) is logarithmic - like binary</text>
+    <text x="20" y="45" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="#1f2937">search where you eliminate half the options each</text>
+    <text x="20" y="65" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="#1f2937">step. O(n log n) is common in sorting algorithms...</text>
+    <text x="20" y="85" font-family="-apple-system, BlinkMacSystemFont" font-size="12" fill="#6b7280">📄 Source: Chapter 3, Pages 45-47</text>
+  </g>
+  
+  <!-- Input area -->
+  <rect x="380" y="750" width="940" height="60" rx="30" fill="#f9fafb" stroke="#e5e7eb"/>
+  <text x="420" y="775" font-family="-apple-system, BlinkMacSystemFont" font-size="14" fill="#9ca3af">Ask a question about the material...</text>
+  <circle cx="1280" cy="780" r="20" fill="#3b82f6"/>
+  <polygon points="1275,775 1285,780 1275,785" fill="white"/>
+  
+  <!-- Typing indicator -->
+  <g transform="translate(380, 680)">
+    <rect width="80" height="30" rx="15" fill="#f3f4f6"/>
+    <circle cx="395" cy="695" r="3" fill="#9ca3af">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="410" cy="695" r="3" fill="#9ca3af">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" begin="0.2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="425" cy="695" r="3" fill="#9ca3af">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="1.5s" begin="0.4s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- Play button overlay -->
+  <g transform="translate(720, 450)">
+    <circle r="40" fill="rgba(255,255,255,0.95)" stroke="rgba(0,0,0,0.1)" stroke-width="1"/>
+    <polygon points="-12,-8 -12,8 12,0" fill="#1f2937"/>
+  </g>
+</svg> 

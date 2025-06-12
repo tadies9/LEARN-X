@@ -1,0 +1,6 @@
+<svg width="760" height="480" viewBox="0 0 760 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="760" height="480" rx="16" fill="#F3F4F6"/>
+  <rect x="40" y="40" width="680" height="400" rx="8" fill="#FFFFFF"/>
+  <rect x="80" y="80" width="600" height="320" rx="4" fill="#F9FAFB"/>
+  <text x="380" y="240" text-anchor="middle" fill="#9CA3AF" font-family="system-ui" font-size="18">Product Screenshot</text>
+</svg>
