@@ -17,7 +17,9 @@ export function useProfile() {
 
   const loadUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         router.push('/login');
         return;
@@ -32,22 +34,20 @@ export function useProfile() {
     if (!user) return null;
 
     try {
-      const { data: profile } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single();
+      const { data: profile } = await supabase.from('users').select('*').eq('id', user.id).single();
 
-      return profile || {
-        full_name: '',
-        bio: '',
-        avatar_url: '',
-        phone: '',
-        location: '',
-        website: '',
-        linkedin_url: '',
-        github_url: '',
-      };
+      return (
+        profile || {
+          full_name: '',
+          bio: '',
+          avatar_url: '',
+          phone: '',
+          location: '',
+          website: '',
+          linkedin_url: '',
+          github_url: '',
+        }
+      );
     } catch (error) {
       console.error('Error loading profile:', error);
       return null;

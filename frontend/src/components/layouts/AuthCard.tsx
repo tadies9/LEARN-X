@@ -1,46 +1,49 @@
-import { ReactNode } from 'react'
-import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { ReactNode } from 'react';
+import Link from 'next/link';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 
 interface AuthCardProps {
   /** The main title of the auth card */
-  title: string
+  title: string;
   /** Optional description text below the title */
-  description?: string
+  description?: string;
   /** The main content of the card (usually a form) */
-  children: ReactNode
+  children: ReactNode;
   /** Optional footer content */
-  footerContent?: ReactNode
+  footerContent?: ReactNode;
   /** Optional footer link configuration */
   footerLink?: {
-    text: string
-    linkText: string
-    href: string
-  }
+    text: string;
+    linkText: string;
+    href: string;
+  };
 }
 
 /**
  * Reusable authentication card layout component
  * Provides consistent structure for auth pages like login, register, forgot password, etc.
  */
-export function AuthCard({ 
-  title, 
-  description, 
-  children, 
+export function AuthCard({
+  title,
+  description,
+  children,
   footerContent,
-  footerLink 
+  footerLink,
 }: AuthCardProps) {
   return (
     <Card>
       <CardHeader className="space-y-1">
         <CardTitle className="text-2xl font-bold">{title}</CardTitle>
-        {description && (
-          <CardDescription>{description}</CardDescription>
-        )}
+        {description && <CardDescription>{description}</CardDescription>}
       </CardHeader>
-      <CardContent>
-        {children}
-      </CardContent>
+      <CardContent>{children}</CardContent>
       {(footerContent || footerLink) && (
         <CardFooter className="flex flex-col space-y-2">
           {footerContent}
@@ -55,5 +58,5 @@ export function AuthCard({
         </CardFooter>
       )}
     </Card>
-  )
+  );
 }

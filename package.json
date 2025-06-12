@@ -17,16 +17,27 @@
     "test": "npm run test:frontend && npm run test:backend",
     "test:frontend": "cd frontend && npm test",
     "test:backend": "cd backend && npm test",
+    "test:all": "npm run test:frontend && npm run test:backend",
+    "test:ci": "npm run test:all -- --passWithNoTests",
     "lint": "npm run lint:frontend && npm run lint:backend",
     "lint:frontend": "cd frontend && npm run lint",
     "lint:backend": "cd backend && npm run lint",
+    "lint:all": "npm run lint",
+    "lint:fix": "npm run lint:frontend -- --fix && npm run lint:backend -- --fix",
+    "type-check": "npm run type-check:frontend && npm run type-check:backend",
+    "type-check:frontend": "cd frontend && npm run type-check",
+    "type-check:backend": "cd backend && npm run type-check",
+    "type-check:all": "npm run type-check",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
+    "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "prepare": "husky install",
+    "pre-commit": "npm run lint:all && npm run type-check:all && npm run test:ci",
     "docker:dev": "docker-compose -f docker-compose.dev.yml up",
     "docker:dev:build": "docker-compose -f docker-compose.dev.yml build",
     "docker:prod": "docker-compose up",
     "docker:prod:build": "docker-compose build",
-    "docker:down": "docker-compose down"
+    "docker:down": "docker-compose down",
+    "docker:test": "docker-compose -f docker-compose.test.yml up --abort-on-container-exit"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.19.0",
@@ -36,6 +47,7 @@
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-prettier": "^5.1.3",
     "husky": "^8.0.3",
+    "lint-staged": "^16.1.0",
     "prettier": "^3.1.1"
   },
   "engines": {

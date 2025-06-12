@@ -8,7 +8,7 @@ COPY package*.json ./
 COPY tsconfig.json ./
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
 # Copy source code
 COPY src ./src
@@ -27,7 +27,7 @@ RUN adduser -S backend -u 1001
 
 # Copy package files and install production dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --only=production
 
 # Copy built application
 COPY --from=builder --chown=backend:nodejs /app/dist ./dist

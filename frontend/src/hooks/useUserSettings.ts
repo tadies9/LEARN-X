@@ -18,7 +18,9 @@ export function useUserSettings() {
 
   const loadUser = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
       if (!user) {
         router.push('/login');
         return;
@@ -39,15 +41,17 @@ export function useUserSettings() {
         .eq('user_id', user.id)
         .single();
 
-      return settings || {
-        email_notifications: true,
-        marketing_emails: false,
-        study_reminders: true,
-        weekly_reports: true,
-        theme: 'system',
-        language: 'en',
-        timezone: 'America/New_York',
-      };
+      return (
+        settings || {
+          email_notifications: true,
+          marketing_emails: false,
+          study_reminders: true,
+          weekly_reports: true,
+          theme: 'system',
+          language: 'en',
+          timezone: 'America/New_York',
+        }
+      );
     } catch (error) {
       console.error('Error loading settings:', error);
       return null;
@@ -59,13 +63,11 @@ export function useUserSettings() {
 
     setLoading(true);
     try {
-      const { error } = await supabase
-        .from('user_settings')
-        .upsert({
-          user_id: user.id,
-          ...data,
-          updated_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.from('user_settings').upsert({
+        user_id: user.id,
+        ...data,
+        updated_at: new Date().toISOString(),
+      });
 
       if (error) throw error;
 
@@ -93,10 +95,7 @@ export function useUserSettings() {
 
     setDeletingAccount(true);
     try {
-      const { error: deleteError } = await supabase
-        .from('users')
-        .delete()
-        .eq('id', user.id);
+      const { error: deleteError } = await supabase.from('users').delete().eq('id', user.id);
 
       if (deleteError) throw deleteError;
 

@@ -27,17 +27,22 @@ export function AccountSettings({ user, onDeleteAccount, deletingAccount }: Acco
     <Card>
       <CardHeader>
         <CardTitle>Account</CardTitle>
-        <CardDescription>
-          Manage your account and data
-        </CardDescription>
+        <CardDescription>Manage your account and data</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">
           <h3 className="text-lg font-medium">Account Information</h3>
           <div className="text-sm space-y-1">
-            <p><span className="text-muted-foreground">Email:</span> {user.email}</p>
-            <p><span className="text-muted-foreground">User ID:</span> {user.id}</p>
-            <p><span className="text-muted-foreground">Created:</span> {new Date(user.created_at).toLocaleDateString()}</p>
+            <p>
+              <span className="text-muted-foreground">Email:</span> {user.email}
+            </p>
+            <p>
+              <span className="text-muted-foreground">User ID:</span> {user.id}
+            </p>
+            <p>
+              <span className="text-muted-foreground">Created:</span>{' '}
+              {new Date(user.created_at).toLocaleDateString()}
+            </p>
           </div>
         </div>
 
@@ -60,8 +65,8 @@ export function AccountSettings({ user, onDeleteAccount, deletingAccount }: Acco
                   Are you absolutely sure?
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your
-                  account and remove all of your data from our servers.
+                  This action cannot be undone. This will permanently delete your account and remove
+                  all of your data from our servers.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>

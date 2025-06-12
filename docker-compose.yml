@@ -8,13 +8,10 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NODE_ENV=development
+      - NODE_ENV=production
+      - NEXT_PUBLIC_API_URL=http://localhost:8080/api
     env_file:
       - ./frontend/.env.local
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
     depends_on:
       - backend
     networks:
@@ -28,6 +25,9 @@ services:
       - "8080:8080"
     environment:
       - NODE_ENV=development
+      - PORT=8080
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
     env_file:
       - ./backend/.env
     volumes:
@@ -38,6 +38,26 @@ services:
       - learn-x-network
     depends_on:
       - redis
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - /app/dist
+    networks:
+      - learn-x-network
+    depends_on:
+      - redis
+    command: npm run start:worker
 
   redis:
     image: redis:7-alpine

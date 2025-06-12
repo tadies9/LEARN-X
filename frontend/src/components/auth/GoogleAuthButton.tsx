@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getBaseUrl } from '@/lib/utils/url';
 
 interface GoogleAuthButtonProps {
   mode: 'login' | 'signup';
@@ -20,7 +21,7 @@ export function GoogleAuthButton({ mode, redirectTo }: GoogleAuthButtonProps) {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: redirectTo || `${window.location.origin}/auth/callback`,
+          redirectTo: redirectTo || `${getBaseUrl()}/auth/callback`,
         },
       });
 
@@ -36,18 +37,11 @@ export function GoogleAuthButton({ mode, redirectTo }: GoogleAuthButtonProps) {
 
   return (
     <>
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={handleGoogleAuth}
-        disabled={loading}
-      >
+      <Button variant="outline" className="w-full" onClick={handleGoogleAuth} disabled={loading}>
         <GoogleIcon className="mr-2 h-4 w-4" />
         Continue with Google
       </Button>
-      {error && (
-        <p className="text-sm text-destructive mt-2">{error}</p>
-      )}
+      {error && <p className="text-sm text-destructive mt-2">{error}</p>}
     </>
   );
 }

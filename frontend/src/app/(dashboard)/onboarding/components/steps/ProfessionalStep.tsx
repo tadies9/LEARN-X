@@ -1,21 +1,27 @@
-'use client'
+'use client';
 
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useOnboarding } from '@/contexts/onboarding-context'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { professionalContextSchema, type ProfessionalContextData } from '@/lib/validations/persona'
-import { INDUSTRIES } from '@/lib/types/persona'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useOnboarding } from '@/contexts/onboarding-context';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { professionalContextSchema, type ProfessionalContextData } from '@/lib/validations/persona';
+import { INDUSTRIES } from '@/lib/types/persona';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 export function ProfessionalStep() {
-  const { nextStep, previousStep, updateFormData, formData } = useOnboarding()
+  const { nextStep, previousStep, updateFormData, formData } = useOnboarding();
 
   const {
     register,
@@ -29,12 +35,12 @@ export function ProfessionalStep() {
       experienceYears: 0,
       technicalLevel: 'beginner',
     },
-  })
+  });
 
   const onSubmit = (data: ProfessionalContextData) => {
-    updateFormData({ professional: data })
-    nextStep()
-  }
+    updateFormData({ professional: data });
+    nextStep();
+  };
 
   return (
     <Card className="border-0 shadow-none">
@@ -54,9 +60,7 @@ export function ProfessionalStep() {
                 placeholder="e.g., Software Engineer, Financial Analyst, Student"
                 {...register('role')}
               />
-              {errors.role && (
-                <p className="text-sm text-destructive">{errors.role.message}</p>
-              )}
+              {errors.role && <p className="text-sm text-destructive">{errors.role.message}</p>}
             </div>
 
             <div className="grid gap-2">
@@ -145,5 +149,5 @@ export function ProfessionalStep() {
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

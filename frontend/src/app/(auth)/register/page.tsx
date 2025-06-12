@@ -1,27 +1,31 @@
-"use client"
+'use client';
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { AuthCard } from '@/components/layouts/AuthCard'
-import { Checkbox } from '@/components/ui/checkbox'
-import { registerSchema, type RegisterFormData } from '@/lib/validations/auth'
-import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton'
-import { SocialAuthDivider } from '@/components/auth/SocialAuthDivider'
-import { PasswordRequirements } from '@/components/auth/PasswordRequirements'
+import { useState } from 'react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { AuthCard } from '@/components/layouts/AuthCard';
+import { Checkbox } from '@/components/ui/checkbox';
+import { registerSchema, type RegisterFormData } from '@/lib/validations/auth';
+import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
+import { SocialAuthDivider } from '@/components/auth/SocialAuthDivider';
+import { PasswordRequirements } from '@/components/auth/PasswordRequirements';
+import { getBaseUrl } from '@/lib/utils/url';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 
 export default function RegisterPage() {
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [agreedToTerms, setAgreedToTerms] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
 
   const {
     register,
@@ -30,18 +34,18 @@ export default function RegisterPage() {
     watch,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
-  })
+  });
 
-  const password = watch('password', '')
+  const password = watch('password', '');
 
   const onSubmit = async (data: RegisterFormData) => {
     if (!agreedToTerms) {
-      setError('Please agree to the terms and conditions')
-      return
+      setError('Please agree to the terms and conditions');
+      return;
     }
 
-    setError(null)
-    setLoading(true)
+    setError(null);
+    setLoading(true);
 
     try {
       // Sign up the user
@@ -52,49 +56,45 @@ export default function RegisterPage() {
           data: {
             full_name: data.name,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${getBaseUrl()}/auth/callback`,
         },
-      })
+      });
 
       if (authError) {
-        setError(authError.message)
-        return
+        setError(authError.message);
+        return;
       }
 
       if (authData.user) {
         // Create user profile
-        const { error: profileError } = await supabase
-          .from('users')
-          .insert({
-            id: authData.user.id,
-            email: authData.user.email,
-            full_name: data.name,
-          })
+        const { error: profileError } = await supabase.from('users').insert({
+          id: authData.user.id,
+          email: authData.user.email,
+          full_name: data.name,
+        });
 
         if (profileError) {
-          console.error('Profile creation error:', profileError)
+          console.error('Profile creation error:', profileError);
         }
 
         // Redirect to onboarding
-        router.push('/verify-email?email=' + encodeURIComponent(data.email))
+        router.push('/verify-email?email=' + encodeURIComponent(data.email));
       }
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError('An unexpected error occurred');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
-
-
+  };
 
   return (
     <AuthCard
       title="Create your account"
       description="Start your personalized learning journey today"
       footerLink={{
-        text: "Already have an account?",
-        linkText: "Sign in",
-        href: "/login"
+        text: 'Already have an account?',
+        linkText: 'Sign in',
+        href: '/login',
       }}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -107,9 +107,7 @@ export default function RegisterPage() {
             {...register('name')}
             disabled={loading}
           />
-          {errors.name && (
-            <p className="text-sm text-destructive">{errors.name.message}</p>
-          )}
+          {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
@@ -120,21 +118,12 @@ export default function RegisterPage() {
             {...register('email')}
             disabled={loading}
           />
-          {errors.email && (
-            <p className="text-sm text-destructive">{errors.email.message}</p>
-          )}
+          {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
         </div>
         <div className="space-y-2">
           <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            {...register('password')}
-            disabled={loading}
-          />
-          {errors.password && (
-            <p className="text-sm text-destructive">{errors.password.message}</p>
-          )}
+          <Input id="password" type="password" {...register('password')} disabled={loading} />
+          {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           <PasswordRequirements password={password} />
         </div>
         <div className="space-y-2">
@@ -150,16 +139,13 @@ export default function RegisterPage() {
           )}
         </div>
         <div className="flex items-center space-x-2">
-          <Checkbox 
+          <Checkbox
             id="terms"
             checked={agreedToTerms}
             onCheckedChange={(checked) => setAgreedToTerms(!!checked)}
             disabled={loading}
           />
-          <Label 
-            htmlFor="terms" 
-            className="text-sm font-normal cursor-pointer"
-          >
+          <Label htmlFor="terms" className="text-sm font-normal cursor-pointer">
             I agree to the{' '}
             <Link href="/terms" className="text-primary hover:underline">
               Terms of Service
@@ -170,19 +156,16 @@ export default function RegisterPage() {
             </Link>
           </Label>
         </div>
-        {error && (
-          <div className="text-sm text-destructive">{error}</div>
-        )}
-        <Button 
-          type="submit" 
-          className="w-full" 
-          disabled={loading || !agreedToTerms}
-        >
+        {error && <div className="text-sm text-destructive">{error}</div>}
+        <Button type="submit" className="w-full" disabled={loading || !agreedToTerms}>
           {loading ? 'Creating account...' : 'Create account'}
         </Button>
       </form>
       <SocialAuthDivider />
-      <GoogleAuthButton mode="signup" redirectTo={`${window.location.origin}/auth/callback?next=/onboarding`} />
+      <GoogleAuthButton
+        mode="signup"
+        redirectTo={`${getBaseUrl()}/auth/callback?next=/onboarding`}
+      />
     </AuthCard>
-  )
+  );
 }

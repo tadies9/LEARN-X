@@ -37,23 +37,19 @@ export function NotificationSettings({ watch, setValue }: NotificationSettingsPr
     <Card>
       <CardHeader>
         <CardTitle>Email Notifications</CardTitle>
-        <CardDescription>
-          Choose what emails you want to receive from us
-        </CardDescription>
+        <CardDescription>Choose what emails you want to receive from us</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {notifications.map((notification) => (
           <div key={notification.id} className="flex items-center justify-between">
             <div className="space-y-0.5">
               <Label htmlFor={notification.id}>{notification.label}</Label>
-              <p className="text-sm text-muted-foreground">
-                {notification.description}
-              </p>
+              <p className="text-sm text-muted-foreground">{notification.description}</p>
             </div>
             <Switch
               id={notification.id}
               checked={watch(notification.id)}
-              onCheckedChange={(checked) => 
+              onCheckedChange={(checked) =>
                 setValue(notification.id, checked, { shouldDirty: true })
               }
             />

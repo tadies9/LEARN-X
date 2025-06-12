@@ -1,21 +1,22 @@
-"use client"
+'use client';
 
-import { useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Button } from '@/components/ui/button'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { accountSettingsSchema, type AccountSettingsFormData } from '@/lib/validations/profile'
-import { PageLoader } from '@/components/ui/page-loader'
-import { ButtonLoader } from '@/components/ui/button-loader'
-import { NotificationSettings } from './components/NotificationSettings'
-import { AppearanceSettings } from './components/AppearanceSettings'
-import { AccountSettings } from './components/AccountSettings'
-import { PersonaSettings } from './components/PersonaSettings'
-import { useUserSettings } from '@/hooks/useUserSettings'
+import { useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { accountSettingsSchema, type AccountSettingsFormData } from '@/lib/validations/profile';
+import { PageLoader } from '@/components/ui/page-loader';
+import { ButtonLoader } from '@/components/ui/button-loader';
+import { NotificationSettings } from './components/NotificationSettings';
+import { AppearanceSettings } from './components/AppearanceSettings';
+import { AccountSettings } from './components/AccountSettings';
+import { PersonaSettings } from './components/PersonaSettings';
+import { useUserSettings } from '@/hooks/useUserSettings';
 
 export default function SettingsPage() {
-  const { user, loading, deletingAccount, loadSettings, saveSettings, deleteAccount } = useUserSettings()
+  const { user, loading, deletingAccount, loadSettings, saveSettings, deleteAccount } =
+    useUserSettings();
 
   const {
     register,
@@ -35,7 +36,7 @@ export default function SettingsPage() {
       language: 'en',
       timezone: 'America/New_York',
     },
-  })
+  });
 
   useEffect(() => {
     async function load() {
@@ -55,14 +56,14 @@ export default function SettingsPage() {
     if (user) {
       load();
     }
-  }, [user, loadSettings, reset])
+  }, [user, loadSettings, reset]);
 
   const onSubmit = async (data: AccountSettingsFormData) => {
     const success = await saveSettings(data);
     if (success) {
       reset(data);
     }
-  }
+  };
 
   if (!user) {
     return <PageLoader message="Loading settings..." />;
@@ -97,8 +98,8 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value="account">
-            <AccountSettings 
-              user={user} 
+            <AccountSettings
+              user={user}
               onDeleteAccount={deleteAccount}
               deletingAccount={deletingAccount}
             />
@@ -129,5 +130,5 @@ export default function SettingsPage() {
         </form>
       </Tabs>
     </div>
-  )
+  );
 }

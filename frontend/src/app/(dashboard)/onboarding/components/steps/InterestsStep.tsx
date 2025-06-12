@@ -1,26 +1,26 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useOnboarding } from '@/contexts/onboarding-context'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { INTEREST_CATEGORIES, LEARNING_TOPICS } from '@/lib/types/persona'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useState } from 'react';
+import { useOnboarding } from '@/contexts/onboarding-context';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { INTEREST_CATEGORIES, LEARNING_TOPICS } from '@/lib/types/persona';
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function InterestsStep() {
-  const { nextStep, previousStep, updateFormData, formData } = useOnboarding()
+  const { nextStep, previousStep, updateFormData, formData } = useOnboarding();
   const [primaryInterests, setPrimaryInterests] = useState<string[]>(
     formData.interests?.primary || []
-  )
+  );
   const [secondaryInterests, setSecondaryInterests] = useState<string[]>(
     formData.interests?.secondary || []
-  )
+  );
   const [learningTopics, setLearningTopics] = useState<string[]>(
     formData.interests?.learningTopics || []
-  )
-  const [error, setError] = useState<string | null>(null)
+  );
+  const [error, setError] = useState<string | null>(null);
 
   const toggleInterest = (interest: string, isPrimary: boolean) => {
     if (isPrimary) {
@@ -28,42 +28,42 @@ export function InterestsStep() {
         prev.includes(interest)
           ? prev.filter((i) => i !== interest)
           : prev.length < 5
-          ? [...prev, interest]
-          : prev
-      )
+            ? [...prev, interest]
+            : prev
+      );
       // Remove from secondary if adding to primary
-      setSecondaryInterests((prev) => prev.filter((i) => i !== interest))
+      setSecondaryInterests((prev) => prev.filter((i) => i !== interest));
     } else {
       setSecondaryInterests((prev) =>
         prev.includes(interest)
           ? prev.filter((i) => i !== interest)
           : prev.length < 5
-          ? [...prev, interest]
-          : prev
-      )
+            ? [...prev, interest]
+            : prev
+      );
       // Remove from primary if adding to secondary
-      setPrimaryInterests((prev) => prev.filter((i) => i !== interest))
+      setPrimaryInterests((prev) => prev.filter((i) => i !== interest));
     }
-  }
+  };
 
   const toggleLearningTopic = (topic: string) => {
     setLearningTopics((prev) =>
       prev.includes(topic)
         ? prev.filter((t) => t !== topic)
         : prev.length < 10
-        ? [...prev, topic]
-        : prev
-    )
-  }
+          ? [...prev, topic]
+          : prev
+    );
+  };
 
   const handleNext = () => {
     if (primaryInterests.length === 0) {
-      setError('Please select at least one primary interest')
-      return
+      setError('Please select at least one primary interest');
+      return;
     }
     if (learningTopics.length === 0) {
-      setError('Please select at least one learning topic')
-      return
+      setError('Please select at least one learning topic');
+      return;
     }
 
     updateFormData({
@@ -72,9 +72,9 @@ export function InterestsStep() {
         secondary: secondaryInterests,
         learningTopics,
       },
-    })
-    nextStep()
-  }
+    });
+    nextStep();
+  };
 
   return (
     <Card className="border-0 shadow-none">
@@ -120,9 +120,7 @@ export function InterestsStep() {
         <div className="space-y-3">
           <div>
             <h3 className="font-medium mb-1">Secondary Interests (optional, up to 5)</h3>
-            <p className="text-sm text-muted-foreground">
-              Additional interests for variety
-            </p>
+            <p className="text-sm text-muted-foreground">Additional interests for variety</p>
           </div>
           <div className="flex flex-wrap gap-2 min-h-[32px] p-3 border rounded-md bg-muted/20">
             {secondaryInterests.length > 0 ? (
@@ -149,8 +147,8 @@ export function InterestsStep() {
               <h4 className="text-sm font-medium capitalize text-muted-foreground">{category}</h4>
               <div className="flex flex-wrap gap-2">
                 {interests.map((interest) => {
-                  const isPrimary = primaryInterests.includes(interest)
-                  const isSecondary = secondaryInterests.includes(interest)
+                  const isPrimary = primaryInterests.includes(interest);
+                  const isSecondary = secondaryInterests.includes(interest);
                   return (
                     <Button
                       key={interest}
@@ -160,13 +158,14 @@ export function InterestsStep() {
                       className={cn(
                         'transition-colors',
                         isPrimary && 'bg-primary text-primary-foreground hover:bg-primary/90',
-                        isSecondary && 'bg-secondary text-secondary-foreground hover:bg-secondary/90'
+                        isSecondary &&
+                          'bg-secondary text-secondary-foreground hover:bg-secondary/90'
                       )}
                       onClick={() => toggleInterest(interest, !isSecondary)}
                     >
                       {interest}
                     </Button>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -183,7 +182,7 @@ export function InterestsStep() {
           </div>
           <div className="flex flex-wrap gap-2">
             {LEARNING_TOPICS.map((topic) => {
-              const isSelected = learningTopics.includes(topic)
+              const isSelected = learningTopics.includes(topic);
               return (
                 <Button
                   key={topic}
@@ -198,7 +197,7 @@ export function InterestsStep() {
                 >
                   {topic}
                 </Button>
-              )
+              );
             })}
           </div>
         </div>
@@ -215,5 +214,5 @@ export function InterestsStep() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

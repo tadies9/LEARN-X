@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { OnboardingProvider } from '@/contexts/onboarding-context'
-import { OnboardingWizard } from './components/OnboardingWizard'
+import { OnboardingProvider } from '@/contexts/onboarding-context';
+import { OnboardingWizard } from './components/OnboardingWizard';
 
 export default function OnboardingPage() {
   return (
@@ -10,5 +10,5 @@ export default function OnboardingPage() {
         <OnboardingWizard />
       </div>
     </OnboardingProvider>
-  )
+  );
 }

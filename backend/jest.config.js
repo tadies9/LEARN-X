@@ -4,7 +4,17 @@ module.exports = {
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.ts', '**/?(*.)+(spec|test).ts'],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    '^.+\\.ts$': ['ts-jest', {
+      tsconfig: {
+        types: ['node', 'jest'],
+        isolatedModules: true
+      }
+    }],
+  },
+  globals: {
+    'ts-jest': {
+      isolatedModules: true
+    }
   },
   collectCoverageFrom: [
     'src/**/*.ts',
@@ -17,7 +27,6 @@ module.exports = {
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },
-  setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
   clearMocks: true,
   restoreMocks: true,
 };

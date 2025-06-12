@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { AnalyticsService } from '../services/analyticsService';
 import { AppError } from '../utils/errors';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 
 export class AnalyticsController {
   private analyticsService: AnalyticsService;
@@ -10,7 +10,7 @@ export class AnalyticsController {
     this.analyticsService = new AnalyticsService();
   }
 
-  trackOnboardingEvent = async (req: Request, res: Response) => {
+  trackOnboardingEvent = async (req: Request, res: Response): Promise<Response | void> => {
     try {
       const userId = req.user!.id;
       const { event, step, timeSpent, metadata } = req.body;
@@ -43,7 +43,7 @@ export class AnalyticsController {
     }
   };
 
-  getOnboardingStats = async (req: Request, res: Response) => {
+  getOnboardingStats = async (_req: Request, res: Response): Promise<Response | void> => {
     try {
       // TODO: Add admin check
       const stats = await this.analyticsService.getOnboardingStats();
@@ -58,7 +58,7 @@ export class AnalyticsController {
     }
   };
 
-  getPersonaInsights = async (req: Request, res: Response) => {
+  getPersonaInsights = async (_req: Request, res: Response): Promise<Response | void> => {
     try {
       // TODO: Add admin check
       const insights = await this.analyticsService.getPersonaInsights();

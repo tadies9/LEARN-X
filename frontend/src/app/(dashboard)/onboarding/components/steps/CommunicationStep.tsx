@@ -1,42 +1,45 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useOnboarding } from '@/contexts/onboarding-context'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
-import { Slider } from '@/components/ui/slider'
-import { Switch } from '@/components/ui/switch'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useState } from 'react';
+import { useOnboarding } from '@/contexts/onboarding-context';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Switch } from '@/components/ui/switch';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const COMMUNICATION_STYLES = [
   {
     value: 'formal',
     label: 'Formal',
     description: 'Professional and academic tone',
-    example: 'The algorithm exhibits O(n log n) time complexity, making it suitable for large-scale data processing applications.',
+    example:
+      'The algorithm exhibits O(n log n) time complexity, making it suitable for large-scale data processing applications.',
   },
   {
     value: 'professional_friendly',
     label: 'Professional Friendly',
     description: 'Clear and approachable',
-    example: 'This algorithm is efficient - it can handle large datasets without slowing down significantly.',
+    example:
+      'This algorithm is efficient - it can handle large datasets without slowing down significantly.',
   },
   {
     value: 'conversational',
     label: 'Conversational',
     description: 'Like a helpful colleague',
-    example: 'This algorithm is pretty efficient—it can handle big datasets without breaking a sweat!',
+    example:
+      'This algorithm is pretty efficient—it can handle big datasets without breaking a sweat!',
   },
   {
     value: 'casual',
     label: 'Casual',
     description: 'Relaxed and informal',
-    example: 'This algorithm rocks! It chews through huge datasets like it\'s nothing.',
+    example: "This algorithm rocks! It chews through huge datasets like it's nothing.",
   },
-]
+];
 
 const ENCOURAGEMENT_LEVELS = [
   {
@@ -54,22 +57,22 @@ const ENCOURAGEMENT_LEVELS = [
     label: 'High',
     description: 'Frequent positive reinforcement',
   },
-]
+];
 
 export function CommunicationStep() {
-  const { nextStep, previousStep, updateFormData, formData } = useOnboarding()
+  const { nextStep, previousStep, updateFormData, formData } = useOnboarding();
   const [style, setStyle] = useState<string>(
     formData.communication?.style || 'professional_friendly'
-  )
+  );
   const [technicalComfort, setTechnicalComfort] = useState<number>(
     (formData.communication?.technicalComfort || 0.5) * 100
-  )
+  );
   const [encouragementLevel, setEncouragementLevel] = useState<string>(
     formData.communication?.encouragementLevel || 'moderate'
-  )
+  );
   const [humorAppropriate, setHumorAppropriate] = useState<boolean>(
     formData.communication?.humorAppropriate || false
-  )
+  );
 
   const handleNext = () => {
     updateFormData({
@@ -79,17 +82,15 @@ export function CommunicationStep() {
         encouragementLevel: encouragementLevel as any,
         humorAppropriate,
       },
-    })
-    nextStep()
-  }
+    });
+    nextStep();
+  };
 
   return (
     <Card className="border-0 shadow-none">
       <CardHeader>
         <CardTitle>Communication Style</CardTitle>
-        <CardDescription>
-          How would you like LEARN-X to communicate with you?
-        </CardDescription>
+        <CardDescription>How would you like LEARN-X to communicate with you?</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Communication Style */}
@@ -113,15 +114,13 @@ export function CommunicationStep() {
                       className="mt-1"
                     />
                     <div className="flex-1 space-y-2">
-                      <Label 
-                        htmlFor={`style-${option.value}`} 
+                      <Label
+                        htmlFor={`style-${option.value}`}
                         className="font-medium cursor-pointer"
                       >
                         {option.label}
                       </Label>
-                      <p className="text-sm text-muted-foreground">
-                        {option.description}
-                      </p>
+                      <p className="text-sm text-muted-foreground">{option.description}</p>
                       <div className="bg-muted/50 p-2 rounded text-xs italic">
                         "{option.example}"
                       </div>
@@ -190,11 +189,7 @@ export function CommunicationStep() {
               Occasional light humor to make learning more enjoyable
             </p>
           </div>
-          <Switch
-            id="humor"
-            checked={humorAppropriate}
-            onCheckedChange={setHumorAppropriate}
-          />
+          <Switch id="humor" checked={humorAppropriate} onCheckedChange={setHumorAppropriate} />
         </div>
 
         <div className="flex justify-between pt-4">
@@ -209,5 +204,5 @@ export function CommunicationStep() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

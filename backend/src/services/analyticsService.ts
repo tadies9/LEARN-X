@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 
 interface OnboardingEvent {
   userId: string;
@@ -12,16 +12,14 @@ interface OnboardingEvent {
 export class AnalyticsService {
   async trackOnboardingEvent(event: OnboardingEvent) {
     try {
-      const { error } = await supabase
-        .from('onboarding_analytics')
-        .insert({
-          user_id: event.userId,
-          event_type: event.event,
-          step: event.step,
-          time_spent: event.timeSpent,
-          metadata: event.metadata,
-          created_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.from('onboarding_analytics').insert({
+        user_id: event.userId,
+        event_type: event.event,
+        step: event.step,
+        time_spent: event.timeSpent,
+        metadata: event.metadata,
+        created_at: new Date().toISOString(),
+      });
 
       if (error) throw error;
     } catch (error) {
@@ -32,9 +30,7 @@ export class AnalyticsService {
 
   async getOnboardingStats(userId?: string) {
     try {
-      let query = supabase
-        .from('onboarding_analytics')
-        .select('*');
+      let query = supabase.from('onboarding_analytics').select('*');
 
       if (userId) {
         query = query.eq('user_id', userId);
@@ -57,18 +53,18 @@ export class AnalyticsService {
 
       // Process the data
       const userJourneys = new Map<string, any[]>();
-      
-      data.forEach(event => {
+
+      data.forEach((event) => {
         if (!userJourneys.has(event.user_id)) {
           userJourneys.set(event.user_id, []);
         }
         userJourneys.get(event.user_id)!.push(event);
       });
 
-      userJourneys.forEach(journey => {
-        const started = journey.find(e => e.event_type === 'started');
-        const completed = journey.find(e => e.event_type === 'completed');
-        
+      userJourneys.forEach((journey) => {
+        const started = journey.find((e) => e.event_type === 'started');
+        const completed = journey.find((e) => e.event_type === 'completed');
+
         if (started) stats.totalStarted++;
         if (completed) {
           stats.totalCompleted++;
@@ -78,18 +74,16 @@ export class AnalyticsService {
         }
 
         // Track step completions
-        journey.forEach(event => {
+        journey.forEach((event) => {
           if (event.event_type === 'step_completed' && event.step) {
-            stats.stepCompletionRates[event.step] = 
+            stats.stepCompletionRates[event.step] =
               (stats.stepCompletionRates[event.step] || 0) + 1;
           }
           if (event.event_type === 'skipped' && event.step) {
-            stats.skipRates[event.step] = 
-              (stats.skipRates[event.step] || 0) + 1;
+            stats.skipRates[event.step] = (stats.skipRates[event.step] || 0) + 1;
           }
           if (event.event_type === 'abandoned' && event.step) {
-            stats.dropOffPoints[event.step] = 
-              (stats.dropOffPoints[event.step] || 0) + 1;
+            stats.dropOffPoints[event.step] = (stats.dropOffPoints[event.step] || 0) + 1;
           }
         });
       });
@@ -100,14 +94,12 @@ export class AnalyticsService {
       }
 
       // Convert counts to rates
-      Object.keys(stats.stepCompletionRates).forEach(step => {
-        stats.stepCompletionRates[step] = 
-          stats.stepCompletionRates[step] / stats.totalStarted;
+      Object.keys(stats.stepCompletionRates).forEach((step) => {
+        stats.stepCompletionRates[step] = stats.stepCompletionRates[step] / stats.totalStarted;
       });
 
-      Object.keys(stats.skipRates).forEach(step => {
-        stats.skipRates[step] = 
-          stats.skipRates[step] / stats.totalStarted;
+      Object.keys(stats.skipRates).forEach((step) => {
+        stats.skipRates[step] = stats.skipRates[step] / stats.totalStarted;
       });
 
       return stats;
@@ -121,7 +113,9 @@ export class AnalyticsService {
     try {
       const { data: personas, error } = await supabase
         .from('personas')
-        .select('professional_context, personal_interests, learning_style, content_preferences, communication_tone');
+        .select(
+          'professional_context, personal_interests, learning_style, content_preferences, communication_tone'
+        );
 
       if (error) throw error;
 
@@ -141,12 +135,12 @@ export class AnalyticsService {
         topLearningTopics: {} as Record<string, number>,
       };
 
-      personas.forEach(persona => {
+      personas.forEach((persona) => {
         // Professional context
         if (persona.professional_context) {
           const industry = persona.professional_context.industry;
           insights.industries[industry] = (insights.industries[industry] || 0) + 1;
-          
+
           const level = persona.professional_context.technicalLevel;
           insights.technicalLevels[level] = (insights.technicalLevels[level] || 0) + 1;
         }
@@ -174,7 +168,7 @@ export class AnalyticsService {
           persona.personal_interests.primary?.forEach((interest: string) => {
             insights.topInterests[interest] = (insights.topInterests[interest] || 0) + 1;
           });
-          
+
           persona.personal_interests.learningTopics?.forEach((topic: string) => {
             insights.topLearningTopics[topic] = (insights.topLearningTopics[topic] || 0) + 1;
           });
@@ -182,7 +176,7 @@ export class AnalyticsService {
       });
 
       // Sort and limit top items
-      const sortByCount = (obj: Record<string, number>) => 
+      const sortByCount = (obj: Record<string, number>) =>
         Object.entries(obj)
           .sort(([, a], [, b]) => b - a)
           .slice(0, 10)

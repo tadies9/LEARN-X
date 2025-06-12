@@ -1,23 +1,27 @@
-"use client"
+'use client';
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AuthCard } from '@/components/layouts/AuthCard'
-import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/lib/validations/auth'
-import { ArrowLeft, CheckCircle } from 'lucide-react'
+import { useState } from 'react';
+import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { AuthCard } from '@/components/layouts/AuthCard';
+import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/lib/validations/auth';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
+import { getBaseUrl } from '@/lib/utils/url';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 
 export default function ForgotPasswordPage() {
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [emailSent, setEmailSent] = useState(false)
-  const supabase = createClient()
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
+  const supabase = createClient();
 
   const {
     register,
@@ -26,29 +30,29 @@ export default function ForgotPasswordPage() {
     getValues,
   } = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
-  })
+  });
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
-    setError(null)
-    setLoading(true)
+    setError(null);
+    setLoading(true);
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      })
+        redirectTo: `${getBaseUrl()}/reset-password`,
+      });
 
       if (error) {
-        setError(error.message)
-        return
+        setError(error.message);
+        return;
       }
 
-      setEmailSent(true)
+      setEmailSent(true);
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError('An unexpected error occurred');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (emailSent) {
     return (
@@ -78,7 +82,7 @@ export default function ForgotPasswordPage() {
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -86,9 +90,9 @@ export default function ForgotPasswordPage() {
       title="Reset your password"
       description="Enter your email address and we'll send you a link to reset your password"
       footerLink={{
-        text: "Remember your password?",
-        linkText: "Sign in",
-        href: "/login"
+        text: 'Remember your password?',
+        linkText: 'Sign in',
+        href: '/login',
       }}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -101,17 +105,13 @@ export default function ForgotPasswordPage() {
             {...register('email')}
             disabled={loading}
           />
-          {errors.email && (
-            <p className="text-sm text-destructive">{errors.email.message}</p>
-          )}
+          {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
         </div>
-        {error && (
-          <div className="text-sm text-destructive">{error}</div>
-        )}
+        {error && <div className="text-sm text-destructive">{error}</div>}
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? 'Sending...' : 'Send reset instructions'}
         </Button>
       </form>
     </AuthCard>
-  )
+  );
 }

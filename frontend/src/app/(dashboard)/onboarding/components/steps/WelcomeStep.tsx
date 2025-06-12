@@ -1,12 +1,12 @@
-'use client'
+'use client';
 
-import { useOnboarding } from '@/contexts/onboarding-context'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Sparkles, Clock, Brain, Target } from 'lucide-react'
+import { useOnboarding } from '@/contexts/onboarding-context';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sparkles, Clock, Brain, Target } from 'lucide-react';
 
 export function WelcomeStep() {
-  const { nextStep } = useOnboarding()
+  const { nextStep } = useOnboarding();
 
   return (
     <Card className="border-0 shadow-none">
@@ -21,8 +21,8 @@ export function WelcomeStep() {
       </CardHeader>
       <CardContent className="space-y-6 pb-8">
         <p className="text-center text-muted-foreground">
-          LEARN-X adapts to your unique learning style, interests, and goals. 
-          This quick setup will help us create the perfect learning environment for you.
+          LEARN-X adapts to your unique learning style, interests, and goals. This quick setup will
+          help us create the perfect learning environment for you.
         </p>
 
         <div className="grid gap-4 sm:grid-cols-3">
@@ -51,8 +51,8 @@ export function WelcomeStep() {
 
         <div className="bg-muted/50 rounded-lg p-4">
           <p className="text-sm text-center">
-            You can always update your preferences later in settings. 
-            Your data is private and used only to enhance your learning experience.
+            You can always update your preferences later in settings. Your data is private and used
+            only to enhance your learning experience.
           </p>
         </div>
 
@@ -63,5 +63,5 @@ export function WelcomeStep() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -1,14 +1,14 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useOnboarding } from '@/contexts/onboarding-context'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
-import { Slider } from '@/components/ui/slider'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useState } from 'react';
+import { useOnboarding } from '@/contexts/onboarding-context';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const CONTENT_DENSITY_OPTIONS = [
   {
@@ -21,15 +21,17 @@ const CONTENT_DENSITY_OPTIONS = [
     value: 'balanced',
     label: 'Balanced',
     description: 'Mix of brevity and detail',
-    example: 'APIs (Application Programming Interfaces) enable different software applications to communicate. They establish protocols for requesting and exchanging data.',
+    example:
+      'APIs (Application Programming Interfaces) enable different software applications to communicate. They establish protocols for requesting and exchanging data.',
   },
   {
     value: 'comprehensive',
     label: 'Comprehensive',
     description: 'Detailed explanations',
-    example: 'APIs serve as standardized communication protocols between software applications. They specify request formats, authentication methods, and response structures, enabling seamless integration...',
+    example:
+      'APIs serve as standardized communication protocols between software applications. They specify request formats, authentication methods, and response structures, enabling seamless integration...',
   },
-]
+];
 
 const SUMMARY_STYLES = [
   {
@@ -47,25 +49,25 @@ const SUMMARY_STYLES = [
     label: 'Visual Diagrams',
     example: '[Flowchart] → [Mind Map] → [Infographic]',
   },
-]
+];
 
 export function ContentPreferencesStep() {
-  const { nextStep, previousStep, updateFormData, formData } = useOnboarding()
+  const { nextStep, previousStep, updateFormData, formData } = useOnboarding();
   const [density, setDensity] = useState<string>(
     formData.contentPreferences?.density || 'balanced'
-  )
+  );
   const [examplesPerConcept, setExamplesPerConcept] = useState<number>(
     formData.contentPreferences?.examplesPerConcept || 2
-  )
+  );
   const [summaryStyle, setSummaryStyle] = useState<string>(
     formData.contentPreferences?.summaryStyle || 'bullet_points'
-  )
+  );
   const [detailTolerance, setDetailTolerance] = useState<string>(
     formData.contentPreferences?.detailTolerance || 'medium'
-  )
+  );
   const [repetitionPreference, setRepetitionPreference] = useState<string>(
     formData.contentPreferences?.repetitionPreference || 'moderate'
-  )
+  );
 
   const handleNext = () => {
     updateFormData({
@@ -76,9 +78,9 @@ export function ContentPreferencesStep() {
         detailTolerance: detailTolerance as any,
         repetitionPreference: repetitionPreference as any,
       },
-    })
-    nextStep()
-  }
+    });
+    nextStep();
+  };
 
   return (
     <Card className="border-0 shadow-none">
@@ -110,18 +112,14 @@ export function ContentPreferencesStep() {
                       className="mt-1"
                     />
                     <div className="flex-1 space-y-2">
-                      <Label 
-                        htmlFor={`density-${option.value}`} 
+                      <Label
+                        htmlFor={`density-${option.value}`}
                         className="font-medium cursor-pointer"
                       >
                         {option.label}
                       </Label>
-                      <p className="text-sm text-muted-foreground">
-                        {option.description}
-                      </p>
-                      <div className="bg-muted/50 p-2 rounded text-xs">
-                        {option.example}
-                      </div>
+                      <p className="text-sm text-muted-foreground">{option.description}</p>
+                      <div className="bg-muted/50 p-2 rounded text-xs">{option.example}</div>
                     </div>
                   </div>
                 </div>
@@ -224,5 +222,5 @@ export function ContentPreferencesStep() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

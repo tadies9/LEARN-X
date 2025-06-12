@@ -1,4 +1,4 @@
-import { apiClient } from '@/lib/api/client'
+import { apiClient } from '@/lib/api/client';
 
 export const analyticsApi = {
   // Track onboarding event
@@ -14,22 +14,26 @@ export const analyticsApi = {
         step,
         timeSpent,
         metadata,
-      })
+      });
     } catch (error) {
       // Don't throw - analytics shouldn't break the flow
-      console.error('Failed to track event:', error)
+      console.error('Failed to track event:', error);
     }
   },
 
   // Get onboarding stats (admin only)
   getOnboardingStats: async () => {
-    const response = await apiClient.get<{ success: boolean; data: any }>('/analytics/onboarding/stats')
-    return response.data.data
+    const response = await apiClient.get<{ success: boolean; data: any }>(
+      '/analytics/onboarding/stats'
+    );
+    return response.data.data;
   },
 
   // Get persona insights (admin only)
   getPersonaInsights: async () => {
-    const response = await apiClient.get<{ success: boolean; data: any }>('/analytics/persona/insights')
-    return response.data.data
+    const response = await apiClient.get<{ success: boolean; data: any }>(
+      '/analytics/persona/insights'
+    );
+    return response.data.data;
   },
-}
+};

@@ -1,14 +1,14 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useOnboarding } from '@/contexts/onboarding-context'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { Label } from '@/components/ui/label'
-import { Slider } from '@/components/ui/slider'
-import { ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Hand } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { useState } from 'react';
+import { useOnboarding } from '@/contexts/onboarding-context';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Hand } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const LEARNING_STYLES = [
   {
@@ -39,19 +39,15 @@ const LEARNING_STYLES = [
     description: 'I learn best through hands-on experience and practice',
     examples: 'Experiments, simulations, role-play, practical exercises',
   },
-] as const
+] as const;
 
 export function LearningStyleStep() {
-  const { nextStep, previousStep, updateFormData, formData } = useOnboarding()
-  const [primary, setPrimary] = useState<string>(
-    formData.learningStyle?.primary || 'visual'
-  )
-  const [secondary, setSecondary] = useState<string | undefined>(
-    formData.learningStyle?.secondary
-  )
+  const { nextStep, previousStep, updateFormData, formData } = useOnboarding();
+  const [primary, setPrimary] = useState<string>(formData.learningStyle?.primary || 'visual');
+  const [secondary, setSecondary] = useState<string | undefined>(formData.learningStyle?.secondary);
   const [preferenceStrength, setPreferenceStrength] = useState<number>(
     (formData.learningStyle?.preferenceStrength || 0.8) * 100
-  )
+  );
 
   const handleNext = () => {
     updateFormData({
@@ -60,16 +56,17 @@ export function LearningStyleStep() {
         secondary: secondary as any,
         preferenceStrength: preferenceStrength / 100,
       },
-    })
-    nextStep()
-  }
+    });
+    nextStep();
+  };
 
   return (
     <Card className="border-0 shadow-none">
       <CardHeader>
         <CardTitle>Learning Style Assessment</CardTitle>
         <CardDescription>
-          Understanding how you learn best helps us present information in the most effective way for you
+          Understanding how you learn best helps us present information in the most effective way
+          for you
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -79,7 +76,7 @@ export function LearningStyleStep() {
           <RadioGroup value={primary} onValueChange={setPrimary}>
             <div className="grid gap-3">
               {LEARNING_STYLES.map((style) => {
-                const Icon = style.icon
+                const Icon = style.icon;
                 return (
                   <div
                     key={style.id}
@@ -90,11 +87,7 @@ export function LearningStyleStep() {
                     onClick={() => setPrimary(style.id)}
                   >
                     <div className="flex gap-3">
-                      <RadioGroupItem
-                        value={style.id}
-                        id={style.id}
-                        className="mt-1"
-                      />
+                      <RadioGroupItem value={style.id} id={style.id} className="mt-1" />
                       <div className="flex-1 space-y-2">
                         <div className="flex items-center gap-2">
                           <Icon className="h-5 w-5 text-muted-foreground" />
@@ -102,16 +95,12 @@ export function LearningStyleStep() {
                             {style.label}
                           </Label>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          {style.description}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Examples: {style.examples}
-                        </p>
+                        <p className="text-sm text-muted-foreground">{style.description}</p>
+                        <p className="text-xs text-muted-foreground">Examples: {style.examples}</p>
                       </div>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           </RadioGroup>
@@ -125,7 +114,7 @@ export function LearningStyleStep() {
           </p>
           <div className="grid gap-2">
             {LEARNING_STYLES.filter((style) => style.id !== primary).map((style) => {
-              const Icon = style.icon
+              const Icon = style.icon;
               return (
                 <Button
                   key={style.id}
@@ -137,7 +126,7 @@ export function LearningStyleStep() {
                   <Icon className="mr-2 h-4 w-4" />
                   {style.label}
                 </Button>
-              )
+              );
             })}
           </div>
         </div>
@@ -161,9 +150,7 @@ export function LearningStyleStep() {
               step={10}
               className="w-full"
             />
-            <div className="text-center text-sm font-medium">
-              {preferenceStrength}%
-            </div>
+            <div className="text-center text-sm font-medium">{preferenceStrength}%</div>
           </div>
         </div>
 
@@ -179,5 +166,5 @@ export function LearningStyleStep() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

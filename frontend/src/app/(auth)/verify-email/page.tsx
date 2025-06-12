@@ -1,39 +1,42 @@
-"use client"
+'use client';
 
-import { useSearchParams } from 'next/navigation'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Mail, CheckCircle } from 'lucide-react'
-import Link from 'next/link'
-import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { useSearchParams } from 'next/navigation';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Mail, CheckCircle } from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+
+// Force dynamic rendering
+export const dynamic = 'force-dynamic';
 
 export default function VerifyEmailPage() {
-  const searchParams = useSearchParams()
-  const email = searchParams.get('email') || ''
-  const [isResending, setIsResending] = useState(false)
-  const [resendSuccess, setResendSuccess] = useState(false)
-  const supabase = createClient()
+  const searchParams = useSearchParams();
+  const email = searchParams.get('email') || '';
+  const [isResending, setIsResending] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
+  const supabase = createClient();
 
   const handleResendEmail = async () => {
-    setIsResending(true)
-    setResendSuccess(false)
+    setIsResending(true);
+    setResendSuccess(false);
 
     try {
       const { error } = await supabase.auth.resend({
         type: 'signup',
         email,
-      })
+      });
 
       if (!error) {
-        setResendSuccess(true)
+        setResendSuccess(true);
       }
     } catch (err) {
-      console.error('Error resending email:', err)
+      console.error('Error resending email:', err);
     } finally {
-      setIsResending(false)
+      setIsResending(false);
     }
-  }
+  };
 
   return (
     <Card className="max-w-md mx-auto">
@@ -42,9 +45,7 @@ export default function VerifyEmailPage() {
           <Mail className="h-12 w-12" />
         </div>
         <CardTitle className="text-2xl font-bold">Check your email</CardTitle>
-        <CardDescription>
-          We've sent a verification link to {email || 'your email'}
-        </CardDescription>
+        <CardDescription>We've sent a verification link to {email || 'your email'}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="bg-muted p-4 rounded-lg">
@@ -55,7 +56,7 @@ export default function VerifyEmailPage() {
             <li>You'll be redirected to complete your profile</li>
           </ol>
         </div>
-        
+
         {resendSuccess ? (
           <div className="flex items-center justify-center gap-2 text-green-600">
             <CheckCircle className="h-4 w-4" />
@@ -63,9 +64,7 @@ export default function VerifyEmailPage() {
           </div>
         ) : (
           <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-2">
-              Didn't receive the email?
-            </p>
+            <p className="text-sm text-muted-foreground mb-2">Didn't receive the email?</p>
             <Button
               variant="outline"
               onClick={handleResendEmail}
@@ -76,11 +75,9 @@ export default function VerifyEmailPage() {
             </Button>
           </div>
         )}
-        
+
         <div className="text-center pt-4 border-t">
-          <p className="text-sm text-muted-foreground mb-2">
-            Wrong email address?
-          </p>
+          <p className="text-sm text-muted-foreground mb-2">Wrong email address?</p>
           <Link href="/register">
             <Button variant="ghost" className="w-full">
               Back to registration
@@ -89,5 +86,5 @@ export default function VerifyEmailPage() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

@@ -63,26 +63,26 @@
   .text-balance {
     text-wrap: balance;
   }
-  
+
   /* Accessibility focus styles */
   .focus-ring {
     @apply focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background;
   }
-  
+
   /* Custom scrollbar */
   .custom-scrollbar::-webkit-scrollbar {
     width: 8px;
     height: 8px;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-track {
     @apply bg-muted;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-thumb {
     @apply bg-muted-foreground/30 rounded;
   }
-  
+
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     @apply bg-muted-foreground/50;
   }
@@ -93,11 +93,11 @@
   .animate-in {
     animation: animate-in 0.5s ease-out;
   }
-  
+
   .animate-out {
     animation: animate-out 0.5s ease-out;
   }
-  
+
   @keyframes animate-in {
     from {
       opacity: 0;
@@ -108,7 +108,7 @@
       transform: translateY(0);
     }
   }
-  
+
   @keyframes animate-out {
     from {
       opacity: 1;

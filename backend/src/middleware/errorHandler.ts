@@ -54,9 +54,7 @@ export const errorHandler = (
 
   // Unhandled errors
   const statusCode = 500;
-  const message = process.env.NODE_ENV === 'production' 
-    ? 'Internal server error' 
-    : err.message;
+  const message = process.env.NODE_ENV === 'production' ? 'Internal server error' : err.message;
 
   return res.status(statusCode).json({
     error: {

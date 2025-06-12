@@ -1,6 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import type { AccountSettingsFormData } from '@/lib/validations/profile';
 import type { UseFormSetValue, UseFormWatch } from 'react-hook-form';
 
@@ -36,9 +42,7 @@ export function AppearanceSettings({ watch, setValue }: AppearanceSettingsProps)
     <Card>
       <CardHeader>
         <CardTitle>Appearance</CardTitle>
-        <CardDescription>
-          Customize how LEARN-X looks for you
-        </CardDescription>
+        <CardDescription>Customize how LEARN-X looks for you</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="space-y-2">

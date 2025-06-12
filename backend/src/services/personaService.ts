@@ -1,5 +1,5 @@
 import { supabase } from '../config/supabase';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger';
 
 export class PersonaService {
   async getPersona(userId: string) {
@@ -10,7 +10,8 @@ export class PersonaService {
         .eq('user_id', userId)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+      if (error && error.code !== 'PGRST116') {
+        // PGRST116 = no rows returned
         throw error;
       }
 
@@ -25,7 +26,7 @@ export class PersonaService {
     try {
       // Check if persona exists
       const existing = await this.getPersona(userId);
-      
+
       const dataToSave = {
         user_id: userId,
         professional_context: personaData.professional,
@@ -62,7 +63,7 @@ export class PersonaService {
   async updateSection(userId: string, section: string, sectionData: any) {
     try {
       const existing = await this.getPersona(userId);
-      
+
       if (!existing) {
         throw new Error('Persona not found');
       }
@@ -105,16 +106,10 @@ export class PersonaService {
   async deletePersona(userId: string) {
     try {
       // First delete all history
-      await supabase
-        .from('persona_history')
-        .delete()
-        .eq('user_id', userId);
+      await supabase.from('persona_history').delete().eq('user_id', userId);
 
       // Then delete the persona
-      const { error } = await supabase
-        .from('personas')
-        .delete()
-        .eq('user_id', userId);
+      const { error } = await supabase.from('personas').delete().eq('user_id', userId);
 
       if (error) throw error;
     } catch (error) {
@@ -154,9 +149,7 @@ export class PersonaService {
         created_at: new Date().toISOString(),
       };
 
-      const { error } = await supabase
-        .from('persona_history')
-        .insert(historyEntry);
+      const { error } = await supabase.from('persona_history').insert(historyEntry);
 
       if (error) throw error;
     } catch (error) {

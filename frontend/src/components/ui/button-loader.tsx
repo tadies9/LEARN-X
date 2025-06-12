@@ -15,6 +15,6 @@ export function ButtonLoader({ loading, children, loadingText }: ButtonLoaderPro
       </>
     );
   }
-  
+
   return <>{children}</>;
 }

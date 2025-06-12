@@ -83,9 +83,7 @@ export function ProfileFields({ register, errors, loading }: ProfileFieldsProps)
             />
           )}
           {errors[field.id] && (
-            <p className="text-sm text-destructive">
-              {errors[field.id]?.message}
-            </p>
+            <p className="text-sm text-destructive">{errors[field.id]?.message}</p>
           )}
         </div>
       ))}

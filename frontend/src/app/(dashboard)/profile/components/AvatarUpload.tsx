@@ -26,17 +26,15 @@ export function AvatarUpload({ userId, avatarUrl, fullName, onAvatarChange }: Av
 
     setUploadingAvatar(true);
     try {
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(fileName, file, {
-          upsert: true
-        });
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(fileName, file, {
+        upsert: true,
+      });
 
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from('avatars').getPublicUrl(fileName);
 
       onAvatarChange(publicUrl);
 
@@ -59,7 +57,7 @@ export function AvatarUpload({ userId, avatarUrl, fullName, onAvatarChange }: Av
   const getInitials = (name: string) => {
     return name
       .split(' ')
-      .map(word => word[0])
+      .map((word) => word[0])
       .join('')
       .toUpperCase()
       .slice(0, 2);
@@ -78,11 +76,7 @@ export function AvatarUpload({ userId, avatarUrl, fullName, onAvatarChange }: Av
           htmlFor="avatar-upload"
           className="absolute bottom-0 right-0 p-1 bg-primary text-primary-foreground rounded-full cursor-pointer hover:bg-primary/90"
         >
-          {uploadingAvatar ? (
-            <LoadingSpinner size="sm" />
-          ) : (
-            <Camera className="h-4 w-4" />
-          )}
+          {uploadingAvatar ? <LoadingSpinner size="sm" /> : <Camera className="h-4 w-4" />}
           <input
             id="avatar-upload"
             type="file"
@@ -95,9 +89,7 @@ export function AvatarUpload({ userId, avatarUrl, fullName, onAvatarChange }: Av
       </div>
       <div>
         <h3 className="font-semibold">Profile Picture</h3>
-        <p className="text-sm text-muted-foreground">
-          Click the camera icon to upload a new photo
-        </p>
+        <p className="text-sm text-muted-foreground">Click the camera icon to upload a new photo</p>
       </div>
     </div>
   );
