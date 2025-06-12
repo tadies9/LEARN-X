@@ -8,8 +8,8 @@ services:
     environment:
       - NODE_ENV=production
       - NEXT_PUBLIC_API_URL=http://localhost:8080/api
-    env_file:
-      - ./frontend/.env.local
+      - NEXT_PUBLIC_SUPABASE_URL=https://example.supabase.co
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=example-key
     depends_on:
       - backend
     networks:
@@ -26,8 +26,11 @@ services:
       - PORT=8080
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-    env_file:
-      - ./backend/.env
+      - SUPABASE_URL=https://example.supabase.co
+      - SUPABASE_SERVICE_KEY=example-service-key
+      - JWT_SECRET=example-jwt-secret
+      - OPENAI_API_KEY=example-openai-key
+      - ANTHROPIC_API_KEY=example-anthropic-key
     volumes:
       - ./backend:/app
       - /app/node_modules
@@ -45,8 +48,11 @@ services:
       - NODE_ENV=development
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-    env_file:
-      - ./backend/.env
+      - SUPABASE_URL=https://example.supabase.co
+      - SUPABASE_SERVICE_KEY=example-service-key
+      - JWT_SECRET=example-jwt-secret
+      - OPENAI_API_KEY=example-openai-key
+      - ANTHROPIC_API_KEY=example-anthropic-key
     volumes:
       - ./backend:/app
       - /app/node_modules
