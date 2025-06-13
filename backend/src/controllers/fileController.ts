@@ -39,6 +39,15 @@ export class FileController {
 
   uploadFile = async (req: Request, res: Response) => {
     try {
+      console.log('=== FileController.uploadFile ===');
+      console.log('Headers:', req.headers);
+      console.log('Upload request received:', {
+        hasFile: !!req.file,
+        body: req.body,
+        bodyKeys: Object.keys(req.body),
+        userId: req.user?.id,
+      });
+      
       if (!req.file) {
         throw new AppError('No file provided', 400);
       }
@@ -46,13 +55,23 @@ export class FileController {
       const userId = req.user!.id;
       const { moduleId, description, processingOptions } = req.body;
 
+      console.log('Processing file upload:', {
+        filename: req.file.originalname,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        moduleId,
+        moduleIdType: typeof moduleId,
+        description,
+        processingOptions,
+      });
+
       if (!moduleId) {
         throw new AppError('Module ID is required', 400);
       }
 
       const fileData = {
         moduleId,
-        name: req.file.originalname,
+        name: req.body.name || req.file.originalname,
         description,
         processingOptions: processingOptions ? JSON.parse(processingOptions) : undefined,
       };
@@ -61,10 +80,12 @@ export class FileController {
 
       res.status(201).json(file);
     } catch (error) {
+      console.error('Upload error in controller:', error);
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
-        res.status(500).json({ error: 'Failed to upload file' });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        res.status(500).json({ error: 'Failed to upload file: ' + errorMessage });
       }
     }
   };
@@ -124,17 +145,28 @@ export class FileController {
 
   getSignedUrl = async (req: Request, res: Response) => {
     try {
+      console.log('=== getSignedUrl called ===');
+      console.log('File ID:', req.params.id);
+      console.log('User:', req.user ? { id: req.user.id, email: req.user.email } : 'NO USER');
+      console.log('Query params:', req.query);
+      
       const { id } = req.params;
       const { expiresIn = 3600 } = req.query;
       const userId = req.user!.id;
 
+      console.log('Calling fileService.getSignedUrl...');
       const url = await this.fileService.getSignedUrl(id, userId, Number(expiresIn));
+      console.log('Signed URL generated successfully');
 
       res.json({ url });
     } catch (error) {
+      console.error('=== getSignedUrl error ===');
+      console.error('Error details:', error);
       if (error instanceof AppError) {
+        console.error('AppError:', error.message, 'Status:', error.statusCode);
         res.status(error.statusCode).json({ error: error.message });
       } else {
+        console.error('Unknown error:', error);
         res.status(500).json({ error: 'Failed to generate signed URL' });
       }
     }

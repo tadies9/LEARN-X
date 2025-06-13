@@ -7,7 +7,15 @@ import { FILE_PROCESSING_QUEUE } from '../config/queue';
 export class FileService {
   private bucketName = 'course-files';
 
+  constructor() {
+    console.log('FileService initialized with bucket:', this.bucketName);
+  }
+
   async getModuleFiles(moduleId: string, userId: string): Promise<CourseFile[]> {
+    console.log('=== getModuleFiles called ===');
+    console.log('Module ID:', moduleId);
+    console.log('User ID:', userId);
+    
     // First verify the user has access to this module
     const { data: module, error: moduleError } = await supabase
       .from('modules')
@@ -16,6 +24,7 @@ export class FileService {
       .single();
 
     if (moduleError || !module) {
+      console.error('Module not found:', moduleError);
       throw new AppError('Module not found', 404);
     }
 
@@ -28,19 +37,25 @@ export class FileService {
       .single();
 
     if (courseError || !course) {
+      console.error('Access denied:', courseError);
       throw new AppError('Access denied', 403);
     }
 
     // Get files
+    console.log('Fetching files for module:', moduleId);
     const { data: files, error } = await supabase
       .from('course_files')
       .select('*')
       .eq('module_id', moduleId)
-      .order('position', { ascending: true });
+      .order('created_at', { ascending: true });
 
     if (error) {
+      console.error('Failed to fetch files:', error);
       throw new AppError('Failed to fetch files', 500);
     }
+
+    console.log(`Found ${files?.length || 0} files for module ${moduleId}`);
+    console.log('Files:', files);
 
     return files || [];
   }
@@ -55,8 +70,7 @@ export class FileService {
           id,
           courses!inner(
             id,
-            user_id,
-            is_public
+            user_id
           )
         )
       `
@@ -70,7 +84,7 @@ export class FileService {
 
     // Check access
     const course = (file as any).modules.courses;
-    if (course.user_id !== userId && !course.is_public) {
+    if (course.user_id !== userId) {
       throw new AppError('Access denied', 403);
     }
 
@@ -82,6 +96,11 @@ export class FileService {
     data: CreateFileData,
     userId: string
   ): Promise<CourseFile> {
+    console.log('=== FileService.uploadFile called ===');
+    console.log('File:', file ? { name: file.originalname, size: file.size, mimetype: file.mimetype } : 'NO FILE');
+    console.log('Data:', data);
+    console.log('UserId:', userId);
+    
     // Verify user owns the module's course
     const { data: module, error: moduleError } = await supabase
       .from('modules')
@@ -106,6 +125,13 @@ export class FileService {
     const fileName = `${(module as any).courses.id}/${data.moduleId}/${uuidv4()}.${fileExtension}`;
 
     // Upload to Supabase Storage
+    console.log('Uploading file to storage:', {
+      bucket: this.bucketName,
+      fileName,
+      size: file.size,
+      mimetype: file.mimetype
+    });
+    
     const { error: uploadError } = await supabase.storage
       .from(this.bucketName)
       .upload(fileName, file.buffer, {
@@ -113,41 +139,44 @@ export class FileService {
       });
 
     if (uploadError) {
-      throw new AppError('Failed to upload file', 500);
+      console.error('Storage upload error:', uploadError);
+      throw new AppError('Failed to upload file: ' + uploadError.message, 500);
     }
 
-    // Get the next position
-    const { data: lastFile } = await supabase
-      .from('course_files')
-      .select('position')
-      .eq('module_id', data.moduleId)
-      .order('position', { ascending: false })
-      .limit(1)
-      .single();
-
-    const position = lastFile ? lastFile.position + 1 : 1;
-
+    // Get course_id from module
+    const courseId = (module as any).courses.id;
+    
     // Create file record
     const { data: newFile, error: createError } = await supabase
       .from('course_files')
       .insert({
+        course_id: courseId,
         module_id: data.moduleId,
         name: data.name || file.originalname,
-        description: data.description,
-        file_path: fileName,
+        original_name: file.originalname,
         mime_type: file.mimetype,
-        size: file.size,
-        position,
-        status: 'uploaded',
-        processing_options: data.processingOptions,
+        size_bytes: file.size,
+        storage_path: fileName,
+        status: 'pending',
       })
       .select()
       .single();
 
     if (createError) {
+      console.error('Database error creating file record:', createError);
+      console.error('Attempted to insert:', {
+        course_id: courseId,
+        module_id: data.moduleId,
+        name: data.name || file.originalname,
+        original_name: file.originalname,
+        mime_type: file.mimetype,
+        size_bytes: file.size,
+        storage_path: fileName,
+        status: 'pending',
+      });
       // Clean up uploaded file
       await supabase.storage.from(this.bucketName).remove([fileName]);
-      throw new AppError('Failed to create file record', 500);
+      throw new AppError('Failed to create file record: ' + createError.message, 500);
     }
 
     // Queue file for processing
@@ -173,7 +202,7 @@ export class FileService {
         )
       `
       )
-      .eq('id', file.moduleId)
+      .eq('id', (file as any).module_id)
       .single();
 
     if (!module || (module as any).courses.user_id !== userId) {
@@ -184,7 +213,6 @@ export class FileService {
       .from('course_files')
       .update({
         name: data.name,
-        description: data.description,
         updated_at: new Date().toISOString(),
       })
       .eq('id', fileId)
@@ -211,7 +239,7 @@ export class FileService {
         )
       `
       )
-      .eq('id', file.moduleId)
+      .eq('id', (file as any).module_id)
       .single();
 
     if (!module || (module as any).courses.user_id !== userId) {
@@ -221,7 +249,7 @@ export class FileService {
     // Delete from storage
     const { error: storageError } = await supabase.storage
       .from(this.bucketName)
-      .remove([file.filePath]);
+      .remove([(file as any).storage_path]);
 
     if (storageError) {
       console.error('Failed to delete file from storage:', storageError);
@@ -234,18 +262,12 @@ export class FileService {
       throw new AppError('Failed to delete file', 500);
     }
 
-    // Update positions
-    await supabase.rpc('update_file_positions', {
-      p_module_id: file.moduleId,
-      p_deleted_position: file.position,
-    });
-
     // Queue cleanup job
     await FILE_PROCESSING_QUEUE.add('cleanup-file', { fileId });
   }
 
   async reorderFiles(moduleId: string, fileIds: string[], userId: string): Promise<CourseFile[]> {
-    // Verify ownership
+    // Verify user owns the module's course
     const { data: module } = await supabase
       .from('modules')
       .select(
@@ -263,38 +285,41 @@ export class FileService {
       throw new AppError('Access denied', 403);
     }
 
-    // Update positions
-    const updates = fileIds.map((fileId, index) => ({
-      id: fileId,
-      position: index + 1,
-      updated_at: new Date().toISOString(),
-    }));
-
-    for (const update of updates) {
-      await supabase
-        .from('course_files')
-        .update({
-          position: update.position,
-          updated_at: update.updated_at,
-        })
-        .eq('id', update.id)
-        .eq('module_id', moduleId);
+    // Update file positions based on the provided order
+    if (fileIds && fileIds.length > 0) {
+      for (let i = 0; i < fileIds.length; i++) {
+        await supabase
+          .from('course_files')
+          .update({ position: i + 1 })
+          .eq('id', fileIds[i])
+          .eq('module_id', moduleId);
+      }
     }
-
+    
     return this.getModuleFiles(moduleId, userId);
   }
 
   async getSignedUrl(fileId: string, userId: string, expiresIn: number): Promise<string> {
+    console.log('=== FileService.getSignedUrl ===');
+    console.log('File ID:', fileId);
+    console.log('User ID:', userId);
+    console.log('Expires in:', expiresIn);
+    
+    console.log('Getting file details...');
     const file = await this.getFile(fileId, userId);
+    console.log('File found:', { id: file.id, name: file.name, storage_path: (file as any).storage_path });
 
+    console.log('Creating signed URL with Supabase...');
     const { data, error } = await supabase.storage
       .from(this.bucketName)
-      .createSignedUrl(file.filePath, expiresIn);
+      .createSignedUrl((file as any).storage_path, expiresIn);
 
     if (error || !data) {
-      throw new AppError('Failed to generate signed URL', 500);
+      console.error('Supabase signed URL error:', error);
+      throw new AppError('Failed to generate signed URL: ' + (error?.message || 'Unknown error'), 500);
     }
 
+    console.log('Signed URL created successfully');
     return data.signedUrl;
   }
 }
