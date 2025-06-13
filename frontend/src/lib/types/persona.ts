@@ -1,4 +1,4 @@
-// Persona type definitions based on CLAUDE.md specifications
+// Persona type definitions based on docs/core/CLAUDE.md specifications
 
 export interface ProfessionalContext {
   role: string;
@@ -63,7 +63,7 @@ export interface OnboardingStepConfig {
   id: OnboardingStep;
   title: string;
   description: string;
-  component: React.ComponentType<any>;
+  component: React.ComponentType<unknown>;
 }
 
 // Common interests categories

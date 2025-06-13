@@ -9,7 +9,7 @@ export interface Course {
   isPublic: boolean;
   isArchived: boolean;
   settings?: CourseSettings;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: string;
   updatedAt: string;
   // Relations
@@ -77,7 +77,7 @@ export interface FileChunk {
   chunkIndex: number;
   content: string;
   embedding?: number[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   createdAt: string;
 }
 

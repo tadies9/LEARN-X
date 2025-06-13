@@ -1,8 +1,9 @@
 import { forwardRef } from 'react';
+import type { FieldError } from 'react-hook-form';
+
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import type { FieldError } from 'react-hook-form';
 
 interface FormFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;

@@ -102,13 +102,14 @@ npm test
 
 ## 📖 Documentation
 
-- [Product Requirements](./PRD.md)
-- [Technical Architecture](./TECHNICAL_ARCHITECTURE.md)
-- [API Documentation](./API_DESIGN.md)
-- [UI/UX Mockups](./UI_UX_MOCKUPS.md)
-- [AI Personalization Guide](./CLAUDE.md)
-- [Coding Standards](./CODING_STANDARDS.md) - **MUST READ for all developers**
-- [Project Plan](./PROJECT_PLAN.md)
+- [Documentation Index](./docs/README.md) - Complete documentation overview
+- [Product Requirements](./docs/core/PRD.md)
+- [Technical Architecture](./docs/architecture/TECHNICAL_ARCHITECTURE.md)
+- [API Documentation](./docs/architecture/API_DESIGN.md)
+- [UI/UX Mockups](./docs/architecture/UI_UX_MOCKUPS.md)
+- [AI Personalization Guide](./docs/core/CLAUDE.md)
+- [Coding Standards](./docs/core/CODING_STANDARDS.md) - **MUST READ for all developers**
+- [Project Plan](./docs/planning/active/PROJECT_PLAN.md)
 
 ## 🤝 Contributing
 

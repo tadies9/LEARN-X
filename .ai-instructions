@@ -39,6 +39,6 @@ export function ComponentName({ prop1, prop2 }: ComponentNameProps) {
 
 ## 📝 QUICK REFERENCE
 
-See `/CODING_STANDARDS.md` for complete guidelines.
+See `/docs/core/CODING_STANDARDS.md` for complete guidelines.
 
 REMEMBER: Clean, maintainable code > Quick, messy code

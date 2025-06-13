@@ -1,4 +1,4 @@
-import { apiClient } from './client';
+import { API_CLIENT } from './client';
 
 export interface Notification {
   id: string;
@@ -7,7 +7,7 @@ export interface Notification {
   type: 'info' | 'success' | 'warning' | 'error';
   read: boolean;
   createdAt: string;
-  data?: Record<string, any>;
+  data?: Record<string, unknown>;
 }
 
 export interface NotificationResponse {
@@ -31,28 +31,28 @@ export const notificationApi = {
     limit?: number;
     unreadOnly?: boolean;
   }): Promise<NotificationResponse> => {
-    const response = await apiClient.get('/notifications', { params });
-    return response.data;
+    const response = await API_CLIENT.get<{ success: boolean; data: NotificationResponse }>('/notifications', { params });
+    return response.data.data;
   },
 
   // Get unread notification count
   getUnreadCount: async (): Promise<UnreadCountResponse> => {
-    const response = await apiClient.get('/notifications/unread-count');
-    return response.data;
+    const response = await API_CLIENT.get<{ success: boolean; data: UnreadCountResponse }>('/notifications/unread-count');
+    return response.data.data;
   },
 
   // Mark notification as read
   markAsRead: async (id: string): Promise<void> => {
-    await apiClient.put(`/notifications/${id}/read`);
+    await API_CLIENT.put(`/notifications/${id}/read`);
   },
 
   // Mark all notifications as read
   markAllAsRead: async (): Promise<void> => {
-    await apiClient.put('/notifications/mark-all-read');
+    await API_CLIENT.put('/notifications/mark-all-read');
   },
 
   // Delete notification
   deleteNotification: async (id: string): Promise<void> => {
-    await apiClient.delete(`/notifications/${id}`);
+    await API_CLIENT.delete(`/notifications/${id}`);
   },
 };
