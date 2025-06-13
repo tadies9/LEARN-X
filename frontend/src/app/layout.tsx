@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
-import { ThemeProvider } from '@/components/providers/theme-provider';
+import { EnhancedThemeProvider } from '@/components/providers/enhanced-theme-provider';
+import { ThemeScript } from '@/components/theme-script';
 import { AppLayout } from '@/components/layouts/app-layout';
 import { Toaster } from 'sonner';
-// Using system fonts for true Apple aesthetic
 import { cn } from '@/lib/utils';
 import './globals.css';
 
@@ -28,17 +28,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className="light" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning>
       <head>
+        <ThemeScript />
+        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
         <link rel="preload" as="image" href="/demo-thumbnail.svg" />
       </head>
       <body className={cn('min-h-screen bg-background font-sans antialiased')}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          forcedTheme="light"
-          enableSystem={false}
-          disableTransitionOnChange
+        <EnhancedThemeProvider
+          defaultTheme="system"
+          storageKey="learn-x-theme"
+          enableTransitions={true}
         >
           <AppLayout>{children}</AppLayout>
           <Toaster
@@ -48,7 +49,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               display: process.env.NODE_ENV === 'production' ? 'block' : 'none',
             }}
           />
-        </ThemeProvider>
+        </EnhancedThemeProvider>
       </body>
     </html>
   );

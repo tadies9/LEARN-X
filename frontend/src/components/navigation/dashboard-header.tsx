@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ThemeToggle } from '@/components/navigation/theme-toggle';
+import { EnhancedThemeToggle } from '@/components/ui/enhanced-theme-toggle';
 import { Search, Bell, User, Settings, LogOut, HelpCircle, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
@@ -151,7 +151,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <ThemeToggle />
+        <EnhancedThemeToggle />
 
         {/* User Menu */}
         <DropdownMenu>
