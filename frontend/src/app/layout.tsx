@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
-import { EnhancedThemeProvider } from '@/components/providers/enhanced-theme-provider';
-import { ThemeScript } from '@/components/theme-script';
-import { AppLayout } from '@/components/layouts/app-layout';
+import { EnhancedThemeProvider } from '@/components/providers/EnhancedThemeProvider';
+import { ThemeScript } from '@/components/ThemeScript';
+import { AppLayout } from '@/components/layouts/AppLayout';
 import { Toaster } from 'sonner';
 import { cn } from '@/lib/utils';
 import './globals.css';

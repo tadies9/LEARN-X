@@ -24,7 +24,7 @@ export class ModuleService {
         .select(
           `
           *,
-          course_files (count)
+          files (count)
         `
         )
         .eq('course_id', courseId)
@@ -35,8 +35,8 @@ export class ModuleService {
       // Transform to include file count
       const transformedModules = modules?.map((module) => ({
         ...module,
-        fileCount: module.course_files?.[0]?.count || 0,
-        course_files: undefined,
+        fileCount: module.files?.[0]?.count || 0,
+        files: undefined,
       }));
 
       return transformedModules || [];
@@ -57,7 +57,7 @@ export class ModuleService {
             user_id,
             is_public
           ),
-          course_files (count)
+          files (count)
         `
         )
         .eq('id', moduleId)
@@ -71,9 +71,9 @@ export class ModuleService {
       if (module && (module.courses.user_id === userId || module.courses.is_public)) {
         return {
           ...module,
-          fileCount: module.course_files?.[0]?.count || 0,
+          fileCount: module.files?.[0]?.count || 0,
           courses: undefined,
-          course_files: undefined,
+          files: undefined,
         };
       }
 
@@ -233,7 +233,7 @@ export class ModuleService {
   async getModuleFiles(moduleId: string) {
     try {
       const { data: files, error } = await supabase
-        .from('course_files')
+        .from('files')
         .select('*')
         .eq('module_id', moduleId)
         .order('created_at', { ascending: false });

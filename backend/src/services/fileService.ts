@@ -3,6 +3,7 @@ import { AppError } from '../utils/errors';
 import type { CourseFile, CreateFileData, UpdateFileData } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { FILE_PROCESSING_QUEUE } from '../config/queue';
+import { transformCourseFile, transformCourseFiles } from '../utils/transformers';
 
 export class FileService {
   private bucketName = 'course-files';
@@ -57,7 +58,11 @@ export class FileService {
     console.log(`Found ${files?.length || 0} files for module ${moduleId}`);
     console.log('Files:', files);
 
-    return files || [];
+    // Transform snake_case to camelCase for frontend
+    const transformedFiles = transformCourseFiles(files || []);
+    console.log('Transformed files:', transformedFiles);
+    
+    return transformedFiles;
   }
 
   async getFile(fileId: string, userId: string): Promise<CourseFile> {
@@ -88,7 +93,7 @@ export class FileService {
       throw new AppError('Access denied', 403);
     }
 
-    return file;
+    return transformCourseFile(file);
   }
 
   async uploadFile(
@@ -186,7 +191,7 @@ export class FileService {
       processingOptions: data.processingOptions,
     });
 
-    return newFile;
+    return transformCourseFile(newFile);
   }
 
   async updateFile(fileId: string, data: UpdateFileData, userId: string): Promise<CourseFile> {
@@ -223,7 +228,7 @@ export class FileService {
       throw new AppError('Failed to update file', 500);
     }
 
-    return updatedFile;
+    return transformCourseFile(updatedFile);
   }
 
   async deleteFile(fileId: string, userId: string): Promise<void> {

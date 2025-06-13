@@ -20,12 +20,8 @@ class FileApiService extends BaseApiService {
   }
 
   // Upload file
-  async uploadFile(moduleId: string, file: File, data: Partial<CreateFileData>) {
-    const additionalData = {
-      moduleId,
-      ...data,
-    };
-    return this.uploadFile<CourseFile>(file, additionalData);
+  async uploadFile(file: File, data: { moduleId: string } & Partial<CreateFileData>) {
+    return super.uploadFile<CourseFile>(file, data);
   }
 
   // Update file
@@ -49,9 +45,10 @@ class FileApiService extends BaseApiService {
 
   // Get signed URL for file access
   async getSignedUrl(fileId: string, expiresIn = 3600) {
-    const response = await this.customRequest<{ url: string; expiresAt: string }>(
+    // Temporary: Use public endpoint for testing
+    const response = await this.customRequest<{ url: string; expiresAt?: string }>(
       'get',
-      `${this.baseEndpoint}/${fileId}/signed-url`,
+      `/files/${fileId}/signed-url-public`,
       undefined,
       { params: { expiresIn } }
     );

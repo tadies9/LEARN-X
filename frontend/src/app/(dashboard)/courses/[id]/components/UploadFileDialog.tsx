@@ -40,15 +40,22 @@ export function UploadFileDialog({ moduleId, open, onOpenChange, onSuccess }: Up
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles.map(file => {
-      // Initialize default names
-      setFileNames(prev => ({ ...prev, [file.name]: file.name }));
-      setFileDescriptions(prev => ({ ...prev, [file.name]: '' }));
-      
       return Object.assign(file, {
         preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
       });
     });
     
+    // Initialize default names for all new files at once
+    const newFileNames: Record<string, string> = {};
+    const newFileDescriptions: Record<string, string> = {};
+    
+    acceptedFiles.forEach(file => {
+      newFileNames[file.name] = file.name;
+      newFileDescriptions[file.name] = '';
+    });
+    
+    setFileNames(prev => ({ ...prev, ...newFileNames }));
+    setFileDescriptions(prev => ({ ...prev, ...newFileDescriptions }));
     setFiles(prev => [...prev, ...newFiles]);
   }, []);
 

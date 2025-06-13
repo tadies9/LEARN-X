@@ -1,11 +1,11 @@
-import { MainHeader } from '@/components/navigation/main-header';
-import { MainFooter } from '@/components/navigation/main-footer';
-import { HeroMain } from '@/components/sections/hero-main';
-import { TrustedBy } from '@/components/sections/trusted-by';
-import { FeaturesGrid } from '@/components/sections/features-grid';
-import { HowItWorks } from '@/components/sections/how-it-works';
-import { ForEducators } from '@/components/sections/for-educators';
-import { CTAFinal } from '@/components/sections/cta-final';
+import { MainHeader } from '@/components/navigation/MainHeader';
+import { MainFooter } from '@/components/navigation/MainFooter';
+import { HeroMain } from '@/components/sections/HeroMain';
+import { TrustedBy } from '@/components/sections/TrustedBy';
+import { FeaturesGrid } from '@/components/sections/FeaturesGrid';
+import { HowItWorks } from '@/components/sections/HowItWorks';
+import { ForEducators } from '@/components/sections/ForEducators';
+import { CTAFinal } from '@/components/sections/CTAFinal';
 
 export default function HomePage() {
   return (

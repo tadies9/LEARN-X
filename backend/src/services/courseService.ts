@@ -91,7 +91,7 @@ export class CourseService {
           *,
           modules (
             *,
-            course_files (count)
+            files (count)
           )
         `
         )
@@ -110,8 +110,8 @@ export class CourseService {
           totalDuration += module.estimated_duration || 0;
           return {
             ...module,
-            fileCount: module.course_files?.[0]?.count || 0,
-            course_files: undefined,
+            fileCount: module.files?.[0]?.count || 0,
+            files: undefined,
           };
         });
 
@@ -273,7 +273,7 @@ export class CourseService {
           *,
           modules (
             *,
-            course_files (*)
+            files (*)
           )
         `
         )
@@ -300,9 +300,9 @@ export class CourseService {
       course.modules?.forEach((module: any) => {
         stats.estimatedDuration += module.estimated_duration || 0;
 
-        module.course_files?.forEach((file: any) => {
+        module.files?.forEach((file: any) => {
           stats.totalFiles++;
-          stats.totalFileSize += file.file_size || 0;
+          stats.totalFileSize += file.file_size_bytes || 0;
 
           // Count file types
           if (file.file_type) {
@@ -310,8 +310,8 @@ export class CourseService {
           }
 
           // Count processing status
-          if (file.processing_status) {
-            stats.processingStatus[file.processing_status as keyof typeof stats.processingStatus]++;
+          if (file.status) {
+            stats.processingStatus[file.status as keyof typeof stats.processingStatus]++;
           }
         });
       });

@@ -24,7 +24,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=8080
-      - REDIS_HOST=redis
+      - REDIS_HOST=host.docker.internal
       - REDIS_PORT=6379
     env_file:
       - ./backend/.env
@@ -34,8 +34,6 @@ services:
       - /app/dist
     networks:
       - learn-x-network
-    depends_on:
-      - redis
 
   worker:
     build:
