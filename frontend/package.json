@@ -64,9 +64,11 @@
     "zustand": "^4.4.7"
   },
   "devDependencies": {
+    "@babel/plugin-transform-modules-commonjs": "^7.27.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^14.1.2",
     "@testing-library/user-event": "^14.5.2",
+    "@types/d3-interpolate": "^3.0.4",
     "@types/jest": "^29.5.14",
     "@types/node": "^20.10.6",
     "@types/react": "^18.2.46",
@@ -74,6 +76,7 @@
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
     "autoprefixer": "^10.4.16",
+    "babel-loader": "^10.0.0",
     "eslint": "^8.56.0",
     "eslint-config-next": "14.0.4",
     "jest": "^29.7.0",
