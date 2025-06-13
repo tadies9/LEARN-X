@@ -7,7 +7,8 @@ import moduleRoutes from './module.routes';
 import { fileRoutes } from './fileRoutes';
 import notificationRoutes from './notification.routes';
 // import userRoutes from './user.routes';
-// import aiRoutes from './ai.routes';
+import aiRoutes from './ai.routes';
+import sessionRoutes from './session.routes';
 
 const router = Router();
 
@@ -20,7 +21,8 @@ router.use('/modules', moduleRoutes);
 router.use('/', fileRoutes); // File routes are mixed between /files and /modules
 router.use('/notifications', notificationRoutes);
 // router.use('/users', userRoutes);
-// router.use('/ai', aiRoutes);
+router.use('/ai', aiRoutes);
+router.use('/sessions', sessionRoutes);
 
 // API info
 router.get('/', (_, res) => {

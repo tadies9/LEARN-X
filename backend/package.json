@@ -17,6 +17,8 @@
     "type-check:all": "tsc --noEmit"
   },
   "dependencies": {
+    "@bull-board/api": "^6.10.1",
+    "@bull-board/express": "^6.10.1",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.39.3",
     "@types/multer": "^1.4.13",
@@ -35,7 +37,9 @@
     "morgan": "^1.10.0",
     "multer": "^2.0.1",
     "openai": "^4.24.1",
+    "p-limit": "^6.2.0",
     "pdf-parse": "^1.1.1",
+    "tiktoken": "^1.0.21",
     "uuid": "^9.0.1",
     "winston": "^3.11.0",
     "zod": "^3.22.4"

@@ -28,5 +28,27 @@ export const authRateLimiter = rateLimit({
 
 export const aiRateLimiter = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hour
-  max: 50, // 50 AI requests per hour for free tier
+  max: parseInt(process.env.AI_RATE_LIMIT_PER_HOUR || '100'),
+  keyGenerator: (req: Request) => {
+    // Use user ID for rate limiting if available, otherwise use IP
+    return (req as any).user?.id || req.ip;
+  },
+  skip: async (req: Request) => {
+    // Skip rate limiting for premium users (implement based on your subscription logic)
+    const user = (req as any).user;
+    if (user?.subscription_tier === 'premium' || user?.subscription_tier === 'team') {
+      return true;
+    }
+    return false;
+  },
+  handler: (req: Request, res: Response) => {
+    res.status(429).json({
+      error: {
+        code: 'AI_RATE_LIMIT_ERROR',
+        message: 'AI request limit reached. Please try again later or upgrade your plan.',
+        retryAfter: (req as any).rateLimit?.resetTime,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  },
 });

@@ -2,15 +2,19 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies
+# Install all dependencies (production + development)
 COPY package*.json ./
 RUN npm install
 
-# Copy source code
-COPY . .
+# Copy configuration files
+COPY tsconfig*.json ./
+COPY nodemon.json ./
+
+# Copy source code (this will be overridden by volume mount in dev)
+COPY src ./src
 
 # Expose port
 EXPOSE 8080
 
-# Start development server with hot reload
+# Start development server with nodemon
 CMD ["npm", "run", "dev"]
