@@ -28,7 +28,7 @@ export class ModuleService {
         `
         )
         .eq('course_id', courseId)
-        .order('position', { ascending: true });
+        .order('order_index', { ascending: true });
 
       if (error) throw error;
 
@@ -86,16 +86,16 @@ export class ModuleService {
 
   async createModule(moduleData: CreateModuleData) {
     try {
-      // Get the current max position
+      // Get the current max order_index
       const { data: maxPositionData } = await supabase
         .from('modules')
-        .select('position')
+        .select('order_index')
         .eq('course_id', moduleData.courseId)
-        .order('position', { ascending: false })
+        .order('order_index', { ascending: false })
         .limit(1)
         .single();
 
-      const position = (maxPositionData?.position || 0) + 1;
+      const orderIndex = (maxPositionData?.order_index || 0) + 1;
 
       const { data: module, error } = await supabase
         .from('modules')
@@ -104,7 +104,7 @@ export class ModuleService {
           title: moduleData.title,
           description: moduleData.description,
           estimated_duration: moduleData.estimatedDuration,
-          position,
+          order_index: orderIndex,
         })
         .select()
         .single();
@@ -130,7 +130,7 @@ export class ModuleService {
       if (updateData.estimatedDuration !== undefined)
         updates.estimated_duration = updateData.estimatedDuration;
       if (updateData.isPublished !== undefined) updates.is_published = updateData.isPublished;
-      if (updateData.position !== undefined) updates.position = updateData.position;
+      if (updateData.position !== undefined) updates.order_index = updateData.position;
 
       const { data: module, error } = await supabase
         .from('modules')
@@ -153,7 +153,7 @@ export class ModuleService {
       // First, get the module to know its position and course
       const { data: module, error: fetchError } = await supabase
         .from('modules')
-        .select('course_id, position')
+        .select('course_id, order_index')
         .eq('id', moduleId)
         .single();
 
@@ -164,21 +164,21 @@ export class ModuleService {
 
       if (deleteError) throw deleteError;
 
-      // Update positions of remaining modules
+      // Update order_index of remaining modules
       // We need to fetch and update each module individually
       const { data: modulesToUpdate, error: fetchModulesError } = await supabase
         .from('modules')
-        .select('id, position')
+        .select('id, order_index')
         .eq('course_id', module.course_id)
-        .gt('position', module.position);
+        .gt('order_index', module.order_index);
 
       if (fetchModulesError) throw fetchModulesError;
 
-      // Update each module's position
+      // Update each module's order_index
       for (const mod of modulesToUpdate || []) {
         const { error: updateError } = await supabase
           .from('modules')
-          .update({ position: mod.position - 1 })
+          .update({ order_index: mod.order_index - 1 })
           .eq('id', mod.id);
 
         if (updateError) throw updateError;

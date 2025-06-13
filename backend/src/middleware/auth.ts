@@ -27,12 +27,48 @@ export const authenticateUser = async (
       throw new AppError('Invalid authentication token', 401);
     }
 
-    // Attach user to request
-    req.user = {
-      id: user.id,
-      email: user.email!,
-      role: user.role || 'user',
-    };
+    // Ensure user exists in our database
+    const { data: existingUser, error: userError } = await supabase
+      .from('users')
+      .select('id, email')
+      .eq('id', user.id)
+      .single();
+
+    if (userError && userError.code !== 'PGRST116') {
+      logger.error('Error checking user existence:', userError);
+      throw new AppError('Database error', 500);
+    }
+
+    // Create user if doesn't exist
+    if (!existingUser) {
+      const { data: newUser, error: createError } = await supabase
+        .from('users')
+        .insert({
+          id: user.id,
+          email: user.email!,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
+
+      if (createError) {
+        logger.error('Error creating user:', createError);
+        throw new AppError('Failed to create user profile', 500);
+      }
+
+      req.user = {
+        id: newUser.id,
+        email: newUser.email,
+        role: 'user',
+      };
+    } else {
+      req.user = {
+        id: existingUser.id,
+        email: existingUser.email,
+        role: 'user',
+      };
+    }
 
     next();
   } catch (error) {

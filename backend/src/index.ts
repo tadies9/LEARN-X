@@ -11,13 +11,18 @@ import { logger } from './utils/logger';
 import routes from './routes';
 
 const app = express();
-const PORT = process.env.PORT || 3001;
+const PORT = process.env.PORT || 8080;
 
 // Middleware
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001', 
+      'http://localhost:3002',
+      ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : [])
+    ],
     credentials: true,
   })
 );

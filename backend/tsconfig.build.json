@@ -1,4 +1,15 @@
 {
   "extends": "./tsconfig.json",
-  "exclude": ["node_modules", "dist", "coverage", "**/*.test.ts", "**/*.spec.ts", "src/__tests__/**/*", "src/tests/**/*"]
+  "exclude": [
+    "node_modules", 
+    "dist", 
+    "coverage", 
+    "**/*.test.ts", 
+    "**/*.spec.ts", 
+    "src/__tests__/**/*", 
+    "src/tests/**/*",
+    "src/controllers/RefactoredCourseController.ts",
+    "src/middleware/permissionMiddleware.ts", 
+    "src/utils/controllerHelpers.ts"
+  ]
 }

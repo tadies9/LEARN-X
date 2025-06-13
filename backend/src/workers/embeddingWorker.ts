@@ -1,5 +1,5 @@
 import { Job } from 'bull';
-import { embeddingQueue } from '../config/queue';
+import { EMBEDDING_QUEUE } from '../config/queue';
 import { logger } from '../utils/logger';
 
 interface EmbeddingJobData {
@@ -10,7 +10,7 @@ interface EmbeddingJobData {
 }
 
 // Process embeddings (placeholder for Phase 5)
-embeddingQueue.process('generate-embeddings', async (job: Job<EmbeddingJobData>) => {
+EMBEDDING_QUEUE.process('generate-embeddings', async (job: Job<EmbeddingJobData>) => {
   const { fileId, chunkId } = job.data;
 
   try {

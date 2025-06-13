@@ -2,7 +2,7 @@ import { supabase } from '../config/supabase';
 import { AppError } from '../utils/errors';
 import type { CourseFile, CreateFileData, UpdateFileData } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import { fileProcessingQueue } from '../config/queue';
+import { FILE_PROCESSING_QUEUE } from '../config/queue';
 
 export class FileService {
   private bucketName = 'course-files';
@@ -151,7 +151,7 @@ export class FileService {
     }
 
     // Queue file for processing
-    await fileProcessingQueue.add('process-file', {
+    await FILE_PROCESSING_QUEUE.add('process-file', {
       fileId: newFile.id,
       userId,
       processingOptions: data.processingOptions,
@@ -241,7 +241,7 @@ export class FileService {
     });
 
     // Queue cleanup job
-    await fileProcessingQueue.add('cleanup-file', { fileId });
+    await FILE_PROCESSING_QUEUE.add('cleanup-file', { fileId });
   }
 
   async reorderFiles(moduleId: string, fileIds: string[], userId: string): Promise<CourseFile[]> {

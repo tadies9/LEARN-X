@@ -1,5 +1,5 @@
 import { Job } from 'bull';
-import { fileProcessingQueue, embeddingQueue, notificationQueue } from '../config/queue';
+import { FILE_PROCESSING_QUEUE, EMBEDDING_QUEUE, NOTIFICATION_QUEUE } from '../config/queue';
 import { FileProcessingService } from '../services/fileProcessingService';
 import { supabase } from '../config/supabase';
 import { logger } from '../utils/logger';
@@ -18,7 +18,7 @@ interface FileProcessingJobData {
 }
 
 // Process files
-fileProcessingQueue.process('process-file', async (job: Job<FileProcessingJobData>) => {
+FILE_PROCESSING_QUEUE.process('process-file', async (job: Job<FileProcessingJobData>) => {
   const { fileId, userId, processingOptions } = job.data;
 
   try {
@@ -83,7 +83,7 @@ fileProcessingQueue.process('process-file', async (job: Job<FileProcessingJobDat
 
     // Queue embedding generation for each chunk
     for (const [index, chunk] of chunks.entries()) {
-      await embeddingQueue.add('generate-embeddings', {
+      await EMBEDDING_QUEUE.add('generate-embeddings', {
         fileId,
         chunkId: chunk.id,
         content: chunk.content,
@@ -108,7 +108,7 @@ fileProcessingQueue.process('process-file', async (job: Job<FileProcessingJobDat
     await job.progress(100);
 
     // Send notification
-    await notificationQueue.add('send-notification', {
+    await NOTIFICATION_QUEUE.add('send-notification', {
       userId,
       type: 'file-processed',
       data: {
@@ -145,7 +145,7 @@ fileProcessingQueue.process('process-file', async (job: Job<FileProcessingJobDat
 });
 
 // Handle file deletion cleanup
-fileProcessingQueue.process('cleanup-file', async (job: Job<{ fileId: string }>) => {
+FILE_PROCESSING_QUEUE.process('cleanup-file', async (job: Job<{ fileId: string }>) => {
   const { fileId } = job.data;
 
   try {

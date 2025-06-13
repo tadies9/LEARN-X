@@ -1,5 +1,5 @@
 import { Job } from 'bull';
-import { notificationQueue } from '../config/queue';
+import { NOTIFICATION_QUEUE } from '../config/queue';
 import { NotificationService } from '../services/notificationService';
 import { logger } from '../utils/logger';
 
@@ -12,7 +12,7 @@ interface NotificationJobData {
 }
 
 // Process notifications
-notificationQueue.process('send-notification', async (job: Job<NotificationJobData>) => {
+NOTIFICATION_QUEUE.process('send-notification', async (job: Job<NotificationJobData>) => {
   const { userId, type, data } = job.data;
 
   try {
@@ -43,7 +43,7 @@ notificationQueue.process('send-notification', async (job: Job<NotificationJobDa
 });
 
 // Process batch notifications
-notificationQueue.process(
+NOTIFICATION_QUEUE.process(
   'send-batch-notifications',
   async (job: Job<{ notifications: NotificationJobData[] }>) => {
     const { notifications } = job.data;
