@@ -1,26 +1,27 @@
-import { NavTeslaStyle } from '@/components/navigation/nav-tesla-style';
-import { FooterTeslaStyle } from '@/components/navigation/footer-tesla-style';
-import { HeroTeslaStyle } from '@/components/sections/hero-tesla-style';
-import { BenefitsDualFacing } from '@/components/sections/benefits-dual-facing';
-import { CTAMinimal } from '@/components/sections/cta-minimal';
+import { MainHeader } from '@/components/navigation/main-header';
+import { MainFooter } from '@/components/navigation/main-footer';
+import { HeroMain } from '@/components/sections/hero-main';
+import { TrustedBy } from '@/components/sections/trusted-by';
+import { FeaturesGrid } from '@/components/sections/features-grid';
+import { HowItWorks } from '@/components/sections/how-it-works';
+import { ForEducators } from '@/components/sections/for-educators';
+import { CTAFinal } from '@/components/sections/cta-final';
 
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-white">
-      <NavTeslaStyle />
+      <MainHeader />
 
       <main>
-        {/* 1. Hero with Modal Video */}
-        <HeroTeslaStyle />
-
-        {/* 2. Dual-Audience Benefits */}
-        <BenefitsDualFacing />
-
-        {/* 3. Simple CTA */}
-        <CTAMinimal />
+        <HeroMain />
+        <TrustedBy />
+        <FeaturesGrid />
+        <HowItWorks />
+        <ForEducators />
+        <CTAFinal />
       </main>
 
-      <FooterTeslaStyle />
+      <MainFooter />
     </div>
   );
 }

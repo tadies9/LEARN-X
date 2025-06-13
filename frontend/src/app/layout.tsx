@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { ThemeProvider } from '@/components/providers/theme-provider';
+import { AppLayout } from '@/components/layouts/app-layout';
 import { Toaster } from 'sonner';
 // Using system fonts for true Apple aesthetic
 import { cn } from '@/lib/utils';
@@ -39,7 +40,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           enableSystem={false}
           disableTransitionOnChange
         >
-          {children}
+          <AppLayout>{children}</AppLayout>
           <Toaster
             position="bottom-right"
             visibleToasts={process.env.NODE_ENV === 'production' ? 3 : 1}

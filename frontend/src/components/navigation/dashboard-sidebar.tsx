@@ -9,30 +9,30 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   LayoutDashboard,
   BookOpen,
-  GraduationCap,
   BarChart3,
   Settings,
-  Users,
-  FileText,
   Brain,
-  Calendar,
   HelpCircle,
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Target,
+  Library,
+  Upload,
+  GraduationCap,
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-  { name: 'My Courses', href: '/courses', icon: BookOpen },
-  { name: 'Learning Path', href: '/learning-path', icon: GraduationCap },
+  { name: 'My Courses', href: '/courses', icon: GraduationCap },
+  { name: 'Upload Content', href: '/upload', icon: Upload },
+  { name: 'Study Sessions', href: '/study', icon: BookOpen },
+  { name: 'My Library', href: '/library', icon: Library },
+  { name: 'AI Tutor', href: '/ai-tutor', icon: Brain },
+  { name: 'Progress', href: '/progress', icon: Target },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
-  { name: 'AI Assistant', href: '/ai-assistant', icon: Brain },
-  { name: 'Calendar', href: '/calendar', icon: Calendar },
-  { name: 'Resources', href: '/resources', icon: FileText },
-  { name: 'Community', href: '/community', icon: Users },
 ];
 
 const bottomNav = [
@@ -56,7 +56,7 @@ export function DashboardSidebar() {
     >
       {/* Logo Section */}
       <div className="flex h-16 items-center justify-between border-b px-4">
-        <Logo showText={!isCollapsed} />
+        <Logo showText={false} width={48} height={48} />
         <Button
           variant="ghost"
           size="icon"
@@ -87,7 +87,7 @@ export function DashboardSidebar() {
                           animate={{ opacity: 1, width: 'auto' }}
                           exit={{ opacity: 0, width: 0 }}
                           transition={{ duration: 0.2 }}
-                          className="overflow-hidden"
+                          className="overflow-hidden whitespace-nowrap"
                         >
                           {item.name}
                         </motion.span>
@@ -112,7 +112,7 @@ export function DashboardSidebar() {
                 className={cn('w-full justify-start', isCollapsed && 'justify-center px-2')}
               >
                 <item.icon className={cn('h-5 w-5', !isCollapsed && 'mr-3')} />
-                {!isCollapsed && <span>{item.name}</span>}
+                {!isCollapsed && <span className="whitespace-nowrap">{item.name}</span>}
               </Button>
             </Link>
           );
@@ -127,7 +127,7 @@ export function DashboardSidebar() {
           )}
         >
           <LogOut className={cn('h-5 w-5', !isCollapsed && 'mr-3')} />
-          {!isCollapsed && <span>Logout</span>}
+          {!isCollapsed && <span className="whitespace-nowrap">Logout</span>}
         </Button>
       </div>
     </motion.aside>

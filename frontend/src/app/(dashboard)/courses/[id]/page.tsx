@@ -21,6 +21,7 @@ export default function CoursePage() {
 
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
+  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
@@ -31,13 +32,15 @@ export default function CoursePage() {
   const loadCourseData = async () => {
     setLoading(true);
     try {
-      const [courseData, modulesData] = await Promise.all([
+      const [courseData, modulesData, statsData] = await Promise.all([
         courseApi.getCourse(courseId),
         moduleApi.getModules(courseId),
+        courseApi.getCourseStats(courseId).catch(() => null), // Don't fail if stats aren't available
       ]);
 
       setCourse(courseData);
       setModules(modulesData);
+      setStats(statsData);
     } catch (error) {
       console.error('Error loading course:', error);
       router.push('/courses');
@@ -76,6 +79,24 @@ export default function CoursePage() {
       </Button>
 
       <CourseHeader course={course} onUpdate={loadCourseData} />
+
+      {/* Course Statistics */}
+      {stats && (
+        <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-card p-6 rounded-lg border">
+            <h3 className="text-lg font-medium mb-2">Total Enrollments</h3>
+            <p className="text-3xl font-bold text-primary">{stats.totalEnrollments || 0}</p>
+          </div>
+          <div className="bg-card p-6 rounded-lg border">
+            <h3 className="text-lg font-medium mb-2">Completion Rate</h3>
+            <p className="text-3xl font-bold text-green-600">{stats.completionRate || 0}%</p>
+          </div>
+          <div className="bg-card p-6 rounded-lg border">
+            <h3 className="text-lg font-medium mb-2">Average Rating</h3>
+            <p className="text-3xl font-bold text-yellow-600">{stats.averageRating || 0}/5</p>
+          </div>
+        </div>
+      )}
 
       <div className="mt-8">
         <div className="flex justify-between items-center mb-6">

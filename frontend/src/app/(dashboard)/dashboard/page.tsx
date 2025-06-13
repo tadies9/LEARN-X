@@ -3,7 +3,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { DashboardLayout } from '@/components/layouts/dashboard-layout';
 import { StatsCard } from '@/components/dashboard/stats-card';
 import { MiniChart } from '@/components/dashboard/mini-chart';
 import { ActivityTimeline } from '@/components/dashboard/activity-timeline';
@@ -157,9 +156,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <DashboardLayout
-      user={{ name: user?.email?.split('@')[0] || 'User', email: user?.email || '' }}
-    >
+    <div className="container mx-auto p-6">
       {/* Welcome Section */}
       <FadeIn>
         <div className="mb-8">
@@ -230,6 +227,6 @@ export default function DashboardPage() {
           </FadeIn>
         </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 }
