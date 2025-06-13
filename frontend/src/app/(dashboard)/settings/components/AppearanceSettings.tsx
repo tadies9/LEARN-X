@@ -49,7 +49,7 @@ export function AppearanceSettings({ watch, setValue }: AppearanceSettingsProps)
           <Label htmlFor="theme">Theme</Label>
           <Select
             value={watch('theme')}
-            onValueChange={(value) => setValue('theme', value as any, { shouldDirty: true })}
+            onValueChange={(value) => setValue('theme', value as 'light' | 'dark' | 'system', { shouldDirty: true })}
           >
             <SelectTrigger id="theme">
               <SelectValue />

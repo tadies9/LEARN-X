@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/ui/DropdownMenu';
 import { useToast } from '@/components/ui/use-toast';
 import { moduleApi } from '@/lib/api/module';
 import type { Module } from '@/lib/types/course';
@@ -28,12 +28,12 @@ import { EditModuleDialog } from './EditModuleDialog';
 import Link from 'next/link';
 
 interface ModuleListProps {
-  modules: Module[];
+  modules?: Module[];
   onUpdate: () => void;
   onReorder: (moduleId: string, newPosition: number) => void;
 }
 
-export function ModuleList({ modules, onUpdate, onReorder }: ModuleListProps) {
+export function ModuleList({ modules = [], onUpdate, onReorder }: ModuleListProps) {
   const { toast } = useToast();
   const [editingModule, setEditingModule] = useState<Module | null>(null);
   const [draggedModule, setDraggedModule] = useState<Module | null>(null);
@@ -120,9 +120,20 @@ export function ModuleList({ modules, onUpdate, onReorder }: ModuleListProps) {
     setDraggedModule(null);
   };
 
+  if (!modules || modules.length === 0) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <p>No modules yet. Create your first module to get started.</p>
+      </div>
+    );
+  }
+
+  // Ensure modules is an array before mapping
+  const safeModules = Array.isArray(modules) ? modules : [];
+  
   return (
     <div className="space-y-3">
-      {modules.map((module, index) => (
+      {safeModules.map((module, index) => (
         <Card
           key={module.id}
           className={`transition-all ${dragOverIndex === index ? 'border-primary shadow-lg' : ''}`}

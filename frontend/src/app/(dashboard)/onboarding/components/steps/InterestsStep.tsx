@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
+
+import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { INTEREST_CATEGORIES, LEARNING_TOPICS } from '@/lib/types/persona';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export function InterestsStep() {

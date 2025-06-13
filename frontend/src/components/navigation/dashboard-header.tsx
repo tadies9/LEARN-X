@@ -12,12 +12,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { EnhancedThemeToggle } from '@/components/ui/enhanced-theme-toggle';
+import { ThemeToggle } from '@/components/navigation/theme-toggle';
 import { Search, Bell, User, Settings, LogOut, HelpCircle, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { motion } from 'framer-motion';
-import { notificationApi } from '@/lib/api/notification';
-import { useEffect } from 'react';
 
 interface DashboardHeaderProps {
   user?: {
@@ -29,51 +27,7 @@ interface DashboardHeaderProps {
 
 export function DashboardHeader({ user }: DashboardHeaderProps) {
   const [showSearch, setShowSearch] = useState(false);
-  const [notifications, setNotifications] = useState(0);
-  const [notificationList, setNotificationList] = useState<any[]>([]);
-
-  useEffect(() => {
-    loadNotifications();
-    loadUnreadCount();
-  }, []);
-
-  const loadNotifications = async () => {
-    try {
-      const response = await notificationApi.getNotifications({ limit: 5 });
-      setNotificationList(response.data);
-    } catch (error) {
-      console.error('Failed to load notifications:', error);
-    }
-  };
-
-  const loadUnreadCount = async () => {
-    try {
-      const response = await notificationApi.getUnreadCount();
-      setNotifications(response.count);
-    } catch (error) {
-      console.error('Failed to load unread count:', error);
-    }
-  };
-
-  const handleMarkAsRead = async (id: string) => {
-    try {
-      await notificationApi.markAsRead(id);
-      loadUnreadCount();
-      loadNotifications();
-    } catch (error) {
-      console.error('Failed to mark notification as read:', error);
-    }
-  };
-
-  const handleMarkAllAsRead = async () => {
-    try {
-      await notificationApi.markAllAsRead();
-      setNotifications(0);
-      loadNotifications();
-    } catch (error) {
-      console.error('Failed to mark all notifications as read:', error);
-    }
-  };
+  const [notifications] = useState(3); // Mock notification count
 
   return (
     <header className="sticky top-0 z-40 flex h-16 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
@@ -121,37 +75,32 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
           <DropdownMenuContent align="end" className="w-80">
             <DropdownMenuLabel>Notifications</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <div className="space-y-2 p-2 max-h-96 overflow-y-auto">
-              {notificationList.length > 0 ? (
-                notificationList.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className={`rounded-lg p-3 cursor-pointer hover:bg-muted/50 ${
-                      !notification.read ? 'bg-muted' : 'bg-muted/30'
-                    }`}
-                    onClick={() => handleMarkAsRead(notification.id)}
-                  >
-                    <p className="text-sm font-medium">{notification.title}</p>
-                    <p className="text-xs text-muted-foreground">{notification.message}</p>
-                    {!notification.read && (
-                      <div className="w-2 h-2 bg-primary rounded-full mt-1"></div>
-                    )}
-                  </div>
-                ))
-              ) : (
-                <div className="p-3 text-center text-sm text-muted-foreground">
-                  No notifications
-                </div>
-              )}
+            <div className="space-y-2 p-2">
+              <div className="rounded-lg bg-muted p-3">
+                <p className="text-sm font-medium">New course available</p>
+                <p className="text-xs text-muted-foreground">
+                  "Advanced React Patterns" is now available
+                </p>
+              </div>
+              <div className="rounded-lg bg-muted p-3">
+                <p className="text-sm font-medium">Assignment due soon</p>
+                <p className="text-xs text-muted-foreground">
+                  "JavaScript Basics" assignment due in 2 hours
+                </p>
+              </div>
+              <div className="rounded-lg bg-muted p-3">
+                <p className="text-sm font-medium">Study streak!</p>
+                <p className="text-xs text-muted-foreground">
+                  You've maintained a 7-day learning streak 🔥
+                </p>
+              </div>
             </div>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="w-full" onClick={handleMarkAllAsRead}>
-              Mark all as read
-            </DropdownMenuItem>
+            <DropdownMenuItem className="w-full">View all notifications</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 
-        <EnhancedThemeToggle />
+        <ThemeToggle />
 
         {/* User Menu */}
         <DropdownMenu>

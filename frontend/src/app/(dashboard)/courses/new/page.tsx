@@ -3,18 +3,20 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowLeft, BookOpen } from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ButtonLoader } from '@/components/ui/button-loader';
+import { ButtonLoader } from '@/components/ui/ButtonLoader';
 import { useToast } from '@/components/ui/use-toast';
 import { createCourseSchema, type CreateCourseData } from '@/lib/validations/course';
 import { courseApi } from '@/lib/api/course';
-import { ArrowLeft, BookOpen } from 'lucide-react';
 
 export default function NewCoursePage() {
   const router = useRouter();

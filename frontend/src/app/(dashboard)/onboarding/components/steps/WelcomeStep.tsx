@@ -1,9 +1,10 @@
 'use client';
 
+import { Sparkles, Clock, Brain, Target } from 'lucide-react';
+
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sparkles, Clock, Brain, Target } from 'lucide-react';
 
 export function WelcomeStep() {
   const { nextStep } = useOnboarding();

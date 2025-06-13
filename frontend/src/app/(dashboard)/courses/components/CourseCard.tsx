@@ -18,7 +18,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/ui/DropdownMenu';
 import { useToast } from '@/components/ui/use-toast';
 import { courseApi } from '@/lib/api/course';
 import type { Course } from '@/lib/types/course';
@@ -177,7 +177,7 @@ export function CourseCard({ course, onUpdate }: CourseCardProps) {
       <CardFooter>
         <div className="flex items-center justify-between w-full">
           <p className="text-sm text-muted-foreground">
-            Updated {formatDistanceToNow(new Date(course.updatedAt), { addSuffix: true })}
+            Updated {course.updatedAt ? formatDistanceToNow(new Date(course.updatedAt), { addSuffix: true }) : 'recently'}
           </p>
           {course.isArchived && <Badge variant="secondary">Archived</Badge>}
         </div>

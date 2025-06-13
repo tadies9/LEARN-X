@@ -2,6 +2,7 @@
 
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Progress } from '@/components/ui/progress';
+
 import { WelcomeStep } from './steps/WelcomeStep';
 import { ProfessionalStep } from './steps/ProfessionalStep';
 import { InterestsStep } from './steps/InterestsStep';
@@ -9,6 +10,7 @@ import { LearningStyleStep } from './steps/LearningStyleStep';
 import { ContentPreferencesStep } from './steps/ContentPreferencesStep';
 import { CommunicationStep } from './steps/CommunicationStep';
 import { ReviewStep } from './steps/ReviewStep';
+
 import type { OnboardingStep } from '@/lib/types/persona';
 
 const STEP_COMPONENTS: Record<OnboardingStep, React.ComponentType> = {

@@ -10,7 +10,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/ui/DropdownMenu';
 import { useToast } from '@/components/ui/use-toast';
 import { fileApi } from '@/lib/api/file';
 import type { CourseFile } from '@/lib/types/course';
@@ -134,7 +134,7 @@ export function FileList({ files, onUpdate, onReorder }: FileListProps) {
               <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                 <span>{formatFileSize(file.size)}</span>
                 <span>
-                  Uploaded {formatDistanceToNow(new Date(file.createdAt), { addSuffix: true })}
+                  Uploaded {file.createdAt ? formatDistanceToNow(new Date(file.createdAt), { addSuffix: true }) : 'recently'}
                 </span>
               </div>
             </div>

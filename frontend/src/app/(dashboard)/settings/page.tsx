@@ -2,17 +2,20 @@
 
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { accountSettingsSchema, type AccountSettingsFormData } from '@/lib/validations/profile';
-import { PageLoader } from '@/components/ui/page-loader';
-import { ButtonLoader } from '@/components/ui/button-loader';
+import { PageLoader } from '@/components/ui/PageLoader';
+import { ButtonLoader } from '@/components/ui/ButtonLoader';
+import { useUserSettings } from '@/hooks/useUserSettings';
+
 import { NotificationSettings } from './components/NotificationSettings';
 import { AppearanceSettings } from './components/AppearanceSettings';
 import { AccountSettings } from './components/AccountSettings';
 import { PersonaSettings } from './components/PersonaSettings';
-import { useUserSettings } from '@/hooks/useUserSettings';
 
 export default function SettingsPage() {
   const { user, loading, deletingAccount, loadSettings, saveSettings, deleteAccount } =

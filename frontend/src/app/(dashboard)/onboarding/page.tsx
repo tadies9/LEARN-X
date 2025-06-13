@@ -1,6 +1,7 @@
 'use client';
 
 import { OnboardingProvider } from '@/contexts/onboarding-context';
+
 import { OnboardingWizard } from './components/OnboardingWizard';
 
 export default function OnboardingPage() {

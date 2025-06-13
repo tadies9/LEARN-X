@@ -11,11 +11,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
-import { ButtonLoader } from '@/components/ui/button-loader';
+} from '@/components/ui/AlertDialog';
+import { ButtonLoader } from '@/components/ui/ButtonLoader';
+import type { User } from '@supabase/supabase-js';
 
 interface AccountSettingsProps {
-  user: any;
+  user: User | null;
   onDeleteAccount: () => Promise<void>;
   deletingAccount: boolean;
 }

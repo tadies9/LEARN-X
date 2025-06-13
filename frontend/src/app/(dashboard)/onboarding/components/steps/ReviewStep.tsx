@@ -1,15 +1,19 @@
 'use client';
 
 import { useState } from 'react';
+
+import { ChevronLeft, Edit2, CheckCircle } from 'lucide-react';
+
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ButtonLoader } from '@/components/ui/button-loader';
+import { ButtonLoader } from '@/components/ui/ButtonLoader';
 import { Confetti } from '@/components/ui/confetti';
 import { useToast } from '@/components/ui/use-toast';
-import { ChevronLeft, Edit2, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+import type { OnboardingStep } from '@/lib/types/persona';
 
 const STEP_LABELS = {
   professional: 'Professional Context',
@@ -213,7 +217,7 @@ export function ReviewStep() {
                 <Button
                   size="sm"
                   variant="ghost"
-                  onClick={() => goToStep(key as any)}
+                  onClick={() => goToStep(key as OnboardingStep)}
                   disabled={isLoading}
                 >
                   <Edit2 className="h-4 w-4" />

@@ -1,16 +1,19 @@
 'use client';
 
 import Link from 'next/link';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
+import { Archive, BookOpen, Clock, Edit, Globe, Lock, Settings, Trash } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { courseApi } from '@/lib/api/course';
+
 import type { Course } from '@/lib/types/course';
-import { Archive, BookOpen, Clock, Edit, Globe, Lock, Settings, Trash } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 
 interface CourseHeaderProps {
   course: Course;
@@ -100,7 +103,7 @@ export function CourseHeader({ course, onUpdate }: CourseHeaderProps) {
                 </div>
               )}
               <div>
-                Updated {formatDistanceToNow(new Date(course.updatedAt), { addSuffix: true })}
+                Updated {course.updatedAt ? formatDistanceToNow(new Date(course.updatedAt), { addSuffix: true }) : 'recently'}
               </div>
             </div>
 

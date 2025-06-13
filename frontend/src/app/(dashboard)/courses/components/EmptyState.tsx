@@ -1,9 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import type { CourseFilters } from '@/lib/types/course';
+
 import { BookOpen, Plus, Search } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+
+import type { CourseFilters } from '@/lib/types/course';
 
 interface EmptyStateProps {
   searchTerm?: string;

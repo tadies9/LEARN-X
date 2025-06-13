@@ -1,7 +1,9 @@
+import type { UseFormRegister, FieldErrors } from 'react-hook-form';
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import type { UseFormRegister, FieldErrors } from 'react-hook-form';
+
 import type { ProfileFormData } from '@/lib/validations/profile';
 
 interface ProfileFieldsProps {

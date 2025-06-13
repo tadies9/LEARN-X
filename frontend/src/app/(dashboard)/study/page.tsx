@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useStudyMaterials } from '@/hooks/useStudyMaterials';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,62 +24,8 @@ import {
 export default function StudyPage() {
   const [activeSession, setActiveSession] = useState<string | null>(null);
   const [sessionTime, setSessionTime] = useState(0);
+  const { materials, loading, error, refetch } = useStudyMaterials();
 
-  // Mock data for study materials
-  const studyMaterials = [
-    {
-      id: 1,
-      title: 'Machine Learning Fundamentals',
-      originalSource: 'research-paper-ml.pdf',
-      type: 'AI Summary',
-      personalizedFor: 'Basketball fan, Visual learner',
-      estimatedTime: '25 min',
-      difficulty: 'Beginner',
-      progress: 0,
-      lastStudied: null,
-      aiFeatures: ['Basketball analogies', 'Visual diagrams', 'Step-by-step breakdown'],
-      status: 'ready'
-    },
-    {
-      id: 2,
-      title: 'React Hooks Deep Dive',
-      originalSource: 'react-documentation.pdf',
-      type: 'Interactive Guide',
-      personalizedFor: 'Professional developer, Cooking enthusiast',
-      estimatedTime: '35 min',
-      difficulty: 'Intermediate',
-      progress: 60,
-      lastStudied: '2024-12-12',
-      aiFeatures: ['Cooking metaphors', 'Code examples', 'Progressive complexity'],
-      status: 'in-progress'
-    },
-    {
-      id: 3,
-      title: 'Database Design Principles',
-      originalSource: 'database-textbook-ch3.pdf',
-      type: 'Study Guide',
-      personalizedFor: 'Finance background, Detail-oriented',
-      estimatedTime: '40 min',
-      difficulty: 'Advanced',
-      progress: 100,
-      lastStudied: '2024-12-10',
-      aiFeatures: ['Financial examples', 'Comprehensive details', 'Real-world cases'],
-      status: 'completed'
-    },
-    {
-      id: 4,
-      title: 'CSS Grid Layout System',
-      originalSource: 'web-design-article.pdf',
-      type: 'Visual Tutorial',
-      personalizedFor: 'Visual learner, Design interest',
-      estimatedTime: '20 min',
-      difficulty: 'Beginner',
-      progress: 25,
-      lastStudied: '2024-12-11',
-      aiFeatures: ['Visual examples', 'Design patterns', 'Interactive demos'],
-      status: 'in-progress'
-    }
-  ];
 
   const currentStudyStreak = 7;
   const todayStudyTime = 45; // minutes
@@ -178,8 +125,23 @@ export default function StudyPage() {
         </TabsList>
 
         <TabsContent value="all" className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            {studyMaterials.map((material) => (
+          {loading ? (
+            <div className="text-center py-8">Loading study materials...</div>
+          ) : error ? (
+            <div className="text-center py-8">
+              <p className="text-red-500 mb-4">Error: {error}</p>
+              <Button onClick={refetch} variant="outline">Retry</Button>
+            </div>
+          ) : materials.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground mb-4">No study materials found.</p>
+              <Button onClick={() => window.location.href = '/courses'} variant="outline">
+                Upload Course Materials
+              </Button>
+            </div>
+          ) : (
+            <div className="grid gap-6 lg:grid-cols-2">
+              {materials.map((material) => (
               <Card key={material.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -265,12 +227,13 @@ export default function StudyPage() {
                 </CardContent>
               </Card>
             ))}
-          </div>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="ready">
           <div className="grid gap-6 lg:grid-cols-2">
-            {studyMaterials
+            {materials
               .filter(m => m.status === 'ready')
               .map((material) => (
                 <Card key={material.id}>
@@ -291,7 +254,7 @@ export default function StudyPage() {
 
         <TabsContent value="in-progress">
           <div className="grid gap-6 lg:grid-cols-2">
-            {studyMaterials
+            {materials
               .filter(m => m.status === 'in-progress')
               .map((material) => (
                 <Card key={material.id}>
@@ -313,7 +276,7 @@ export default function StudyPage() {
 
         <TabsContent value="completed">
           <div className="grid gap-6 lg:grid-cols-2">
-            {studyMaterials
+            {materials
               .filter(m => m.status === 'completed')
               .map((material) => (
                 <Card key={material.id}>

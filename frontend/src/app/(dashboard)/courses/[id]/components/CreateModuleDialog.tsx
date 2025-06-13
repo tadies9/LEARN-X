@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { ButtonLoader } from '@/components/ui/button-loader';
+import { ButtonLoader } from '@/components/ui/ButtonLoader';
 import { useToast } from '@/components/ui/use-toast';
 import { createModuleSchema, type CreateModuleData } from '@/lib/validations/course';
 import { moduleApi } from '@/lib/api/module';

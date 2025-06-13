@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+
 import { createClient } from '@/lib/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+
 import type { AccountSettingsFormData } from '@/lib/validations/profile';
+import type { User } from '@supabase/supabase-js';
 
 export function useUserSettings() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(false);
   const [deletingAccount, setDeletingAccount] = useState(false);
   const router = useRouter();

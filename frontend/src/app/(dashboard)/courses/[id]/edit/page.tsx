@@ -3,19 +3,22 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import Link from 'next/link';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowLeft, Save } from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { ButtonLoader } from '@/components/ui/button-loader';
+import { ButtonLoader } from '@/components/ui/ButtonLoader';
 import { useToast } from '@/components/ui/use-toast';
-import { ArrowLeft, Save } from 'lucide-react';
-import Link from 'next/link';
 import { courseApi } from '@/lib/api/course';
 import { updateCourseSchema, type UpdateCourseData } from '@/lib/validations/course';
+
 import type { Course } from '@/lib/types/course';
 
 export default function EditCoursePage({ params }: { params: { id: string } }) {

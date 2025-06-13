@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+
 import { createClient } from '@/lib/supabase/client';
 import { personaApi } from '@/lib/api/persona';
 
@@ -33,9 +34,9 @@ export function useOnboardingCheck() {
         try {
           const persona = await personaApi.getPersona();
           setNeedsOnboarding(!persona);
-        } catch (error: any) {
+        } catch (error: unknown) {
           // If 404, user needs onboarding
-          if (error.response?.status === 404) {
+          if ((error as any)?.response?.status === 404) {
             setNeedsOnboarding(true);
           }
         }

@@ -1,4 +1,4 @@
-import { LearningLayout } from '@/components/layouts/learning-layout';
+import { LearningLayout } from '@/components/layouts/LearningLayout';
 
 // Mock data - in real app, fetch from database
 const mockModules = [

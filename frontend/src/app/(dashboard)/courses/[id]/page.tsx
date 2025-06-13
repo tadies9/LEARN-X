@@ -3,16 +3,26 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+
+import { ArrowLeft, Plus } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
-import { PageLoader } from '@/components/ui/page-loader';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { courseApi } from '@/lib/api/course';
 import { moduleApi } from '@/lib/api/module';
-import type { Course, Module } from '@/lib/types/course';
-import { ModuleList } from './components/ModuleList';
+
+import { CollapsibleModuleList } from './components/CollapsibleModuleList';
 import { CourseHeader } from './components/CourseHeader';
 import { CreateModuleDialog } from './components/CreateModuleDialog';
 import { EmptyModules } from './components/EmptyModules';
-import { ArrowLeft, Plus } from 'lucide-react';
+
+import type { Course, Module } from '@/lib/types/course';
+
+interface CourseStats {
+  totalEnrollments?: number;
+  completionRate?: number;
+  averageRating?: number;
+}
 
 export default function CoursePage() {
   const params = useParams();
@@ -21,7 +31,7 @@ export default function CoursePage() {
 
   const [course, setCourse] = useState<Course | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
-  const [stats, setStats] = useState<any>(null);
+  const [stats, setStats] = useState<CourseStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
@@ -39,7 +49,16 @@ export default function CoursePage() {
       ]);
 
       setCourse(courseData);
-      setModules(modulesData);
+      // Ensure modulesData is always an array, handling various API response formats
+      let processedModules = [];
+      if (Array.isArray(modulesData)) {
+        processedModules = modulesData;
+      } else if (modulesData && Array.isArray(modulesData.data)) {
+        processedModules = modulesData.data;
+      } else if (modulesData && Array.isArray(modulesData.modules)) {
+        processedModules = modulesData.modules;
+      }
+      setModules(processedModules);
       setStats(statsData);
     } catch (error) {
       console.error('Error loading course:', error);
@@ -113,7 +132,7 @@ export default function CoursePage() {
         {modules.length === 0 ? (
           <EmptyModules onCreateModule={() => setCreateDialogOpen(true)} />
         ) : (
-          <ModuleList
+          <CollapsibleModuleList
             modules={modules}
             onUpdate={handleModuleUpdate}
             onReorder={handleModuleReorder}

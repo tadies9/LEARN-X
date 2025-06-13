@@ -1,14 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+
+import { ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Hand } from 'lucide-react';
+
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Hand } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+import type { LearningStyle } from '@/lib/types/persona';
 
 const LEARNING_STYLES = [
   {
@@ -52,8 +56,8 @@ export function LearningStyleStep() {
   const handleNext = () => {
     updateFormData({
       learningStyle: {
-        primary: primary as any,
-        secondary: secondary as any,
+        primary: primary as LearningStyle['primary'],
+        secondary: secondary as LearningStyle['secondary'],
         preferenceStrength: preferenceStrength / 100,
       },
     });

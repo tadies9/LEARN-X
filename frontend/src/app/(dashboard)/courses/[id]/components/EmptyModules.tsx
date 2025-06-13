@@ -1,8 +1,9 @@
 'use client';
 
+import { FolderPlus } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { FolderPlus } from 'lucide-react';
 
 interface EmptyModulesProps {
   onCreateModule: () => void;

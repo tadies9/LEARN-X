@@ -9,8 +9,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { ButtonLoader } from '@/components/ui/button-loader';
-import { FileUpload } from '@/components/ui/file-upload';
+import { ButtonLoader } from '@/components/ui/ButtonLoader';
+import { FileUpload } from '@/components/ui/FileUpload';
 import { useToast } from '@/components/ui/use-toast';
 import { fileApi } from '@/lib/api/file';
 import { Upload } from 'lucide-react';

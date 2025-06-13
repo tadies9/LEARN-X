@@ -1,11 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+
+import { ClipboardList, Clock, CheckCircle, AlertCircle, Calendar, FileText, Upload } from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ClipboardList, Clock, CheckCircle, AlertCircle, Calendar, FileText, Upload } from 'lucide-react';
 
 export default function AssignmentsPage() {
   const [selectedTab, setSelectedTab] = useState('pending');

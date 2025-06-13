@@ -2,15 +2,18 @@
 
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { profileSchema, type ProfileFormData } from '@/lib/validations/profile';
-import { PageLoader } from '@/components/ui/page-loader';
-import { ButtonLoader } from '@/components/ui/button-loader';
+import { PageLoader } from '@/components/ui/PageLoader';
+import { ButtonLoader } from '@/components/ui/ButtonLoader';
+import { useProfile } from '@/hooks/useProfile';
+
 import { AvatarUpload } from './components/AvatarUpload';
 import { ProfileFields } from './components/ProfileFields';
-import { useProfile } from '@/hooks/useProfile';
 
 export default function ProfilePage() {
   const { user, loading, loadProfile, updateProfile } = useProfile();

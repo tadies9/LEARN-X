@@ -1,11 +1,22 @@
 'use client';
 
+// Disable static generation for this page
+export const dynamic = 'force-dynamic';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { HelpCircle, Search, MessageSquare, Book, Video, Mail, Phone } from 'lucide-react';
+import { 
+  HelpCircle, 
+  Search, 
+  MessageSquare, 
+  Book, 
+  Video, 
+  Mail, 
+  Phone 
+} from 'lucide-react';
 
 export default function HelpPage() {
   const faqs = [

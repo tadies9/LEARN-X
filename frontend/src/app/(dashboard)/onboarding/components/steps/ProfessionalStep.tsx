@@ -103,7 +103,7 @@ export function ProfessionalStep() {
               <div className="grid gap-2">
                 <Label htmlFor="technicalLevel">Technical Level *</Label>
                 <Select
-                  onValueChange={(value) => setValue('technicalLevel', value as any)}
+                  onValueChange={(value) => setValue('technicalLevel', value as 'beginner' | 'intermediate' | 'advanced' | 'expert')}
                   defaultValue={formData.professional?.technicalLevel || 'beginner'}
                 >
                   <SelectTrigger id="technicalLevel">

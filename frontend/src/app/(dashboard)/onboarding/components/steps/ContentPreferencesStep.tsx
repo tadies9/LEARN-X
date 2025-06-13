@@ -1,14 +1,18 @@
 'use client';
 
 import { useState } from 'react';
+
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+import type { ContentPreferences } from '@/lib/types/persona';
 
 const CONTENT_DENSITY_OPTIONS = [
   {
@@ -72,11 +76,11 @@ export function ContentPreferencesStep() {
   const handleNext = () => {
     updateFormData({
       contentPreferences: {
-        density: density as any,
+        density: density as ContentPreferences['density'],
         examplesPerConcept,
-        summaryStyle: summaryStyle as any,
-        detailTolerance: detailTolerance as any,
-        repetitionPreference: repetitionPreference as any,
+        summaryStyle: summaryStyle as ContentPreferences['summaryStyle'],
+        detailTolerance: detailTolerance as ContentPreferences['detailTolerance'],
+        repetitionPreference: repetitionPreference as ContentPreferences['repetitionPreference'],
       },
     });
     nextStep();

@@ -3,16 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
+import { Plus, Search } from 'lucide-react';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PageLoader } from '@/components/ui/page-loader';
+import { PageLoader } from '@/components/ui/PageLoader';
+import { courseApi } from '@/lib/api/course';
+import { useDebounce } from '@/hooks/useDebounce';
+
 import { CourseCard } from './components/CourseCard';
 import { EmptyState } from './components/EmptyState';
 import { CourseFilters } from './components/CourseFilters';
-import { courseApi } from '@/lib/api/course';
+
 import type { Course, CourseFilters as CourseFilterType } from '@/lib/types/course';
-import { Plus, Search } from 'lucide-react';
-import { useDebounce } from '@/hooks/useDebounce';
 
 export default function CoursesPage() {
   const router = useRouter();

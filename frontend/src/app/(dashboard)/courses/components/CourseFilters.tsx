@@ -16,7 +16,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/ui/DropdownMenu';
 import type { CourseFilters as CourseFilterType } from '@/lib/types/course';
 import { Filter } from 'lucide-react';
 
@@ -26,7 +26,7 @@ interface CourseFiltersProps {
 }
 
 export function CourseFilters({ filters, onFilterChange }: CourseFiltersProps) {
-  const handleChange = (key: keyof CourseFilterType, value: any) => {
+  const handleChange = (key: keyof CourseFilterType, value: CourseFilterType[keyof CourseFilterType]) => {
     onFilterChange({
       ...filters,
       [key]: value,

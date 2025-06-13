@@ -1,15 +1,19 @@
 'use client';
 
 import { useState } from 'react';
+
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+import type { CommunicationTone } from '@/lib/types/persona';
 
 const COMMUNICATION_STYLES = [
   {
@@ -77,9 +81,9 @@ export function CommunicationStep() {
   const handleNext = () => {
     updateFormData({
       communication: {
-        style: style as any,
+        style: style as CommunicationTone['style'],
         technicalComfort: technicalComfort / 100,
-        encouragementLevel: encouragementLevel as any,
+        encouragementLevel: encouragementLevel as CommunicationTone['encouragementLevel'],
         humorAppropriate,
       },
     });
