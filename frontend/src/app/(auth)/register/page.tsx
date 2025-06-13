@@ -4,18 +4,20 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthCard } from '@/components/layouts/AuthCard';
 import { Checkbox } from '@/components/ui/checkbox';
-import { registerSchema, type RegisterFormData } from '@/lib/validations/auth';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { SocialAuthDivider } from '@/components/auth/SocialAuthDivider';
 import { PasswordRequirements } from '@/components/auth/PasswordRequirements';
 import { getBaseUrl } from '@/lib/utils/url';
+import { registerSchema, type RegisterFormData } from '@/lib/validations/auth';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';

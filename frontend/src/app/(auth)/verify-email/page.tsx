@@ -1,11 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Link from 'next/link';
+
+import { Mail, CheckCircle } from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Mail, CheckCircle } from 'lucide-react';
-import Link from 'next/link';
-import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 // Force dynamic rendering

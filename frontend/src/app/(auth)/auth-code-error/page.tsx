@@ -1,7 +1,9 @@
 import Link from 'next/link';
+
+import { AlertCircle } from 'lucide-react';
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertCircle } from 'lucide-react';
 
 export default function AuthCodeErrorPage() {
   return (

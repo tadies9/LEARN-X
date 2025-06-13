@@ -4,18 +4,20 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+import { CheckCircle2 } from 'lucide-react';
+
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { AuthCard } from '@/components/layouts/AuthCard';
 import { Checkbox } from '@/components/ui/checkbox';
-import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle2 } from 'lucide-react';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { SocialAuthDivider } from '@/components/auth/SocialAuthDivider';
+import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';

@@ -3,16 +3,18 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
+
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
+
 import { createClient } from '@/lib/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { AuthCard } from '@/components/layouts/AuthCard';
-import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/lib/validations/auth';
-import { ArrowLeft, CheckCircle } from 'lucide-react';
 import { getBaseUrl } from '@/lib/utils/url';
+import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/lib/validations/auth';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
