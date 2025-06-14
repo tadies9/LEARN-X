@@ -1,0 +1,382 @@
+import { Router, Request, Response } from 'express';
+import { authenticateUser } from '../middleware/auth';
+import { authenticateSSE } from '../middleware/sseAuth';
+import { supabase } from '../config/supabase';
+import { OpenAI } from 'openai';
+
+const router = Router();
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+// SSE helper to send events
+const sendSSE = (res: Response, event: string, data: any) => {
+  res.write(`event: ${event}\n`);
+  res.write(`data: ${JSON.stringify(data)}\n\n`);
+};
+
+// Test endpoint
+router.get('/learn/test', (_req: Request, res: Response) => {
+  res.json({ success: true, message: 'AI Learn routes are working!' });
+});
+
+// Test SSE endpoint (no auth)
+router.get('/learn/test-sse', (_req: Request, res: Response) => {
+  // Set up SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+
+  // Send test events
+  sendSSE(res, 'message', { type: 'test', data: 'SSE is working!' });
+  setTimeout(() => {
+    sendSSE(res, 'message', { type: 'complete' });
+    res.end();
+  }, 1000);
+});
+
+// Generate outline for a file
+router.get('/learn/generate-outline', authenticateSSE, async (req: Request, res: Response): Promise<void> => {
+  const { fileId } = req.query;
+  const userId = (req as any).user.id;
+
+  console.log('[AI Learn] Generate outline request:', { fileId, userId });
+
+  if (!fileId) {
+    res.status(400).json({ error: 'File ID is required' });
+    return;
+  }
+
+  try {
+    // Set up SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3002');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    // Send initial event
+    sendSSE(res, 'message', { type: 'outline-start' });
+
+    // Get file and its chunks
+    const { data: file, error: fileError } = await supabase
+      .from('course_files')
+      .select('*, chunks:file_chunks(*)')
+      .eq('id', fileId)
+      .order('chunk_index', { foreignTable: 'file_chunks', ascending: true })
+      .single();
+
+    if (fileError || !file) {
+      console.error('[AI Learn] File not found:', fileError);
+      sendSSE(res, 'message', { type: 'error', data: { message: 'File not found' } });
+      res.end();
+      return;
+    }
+
+    console.log('[AI Learn] File found:', { 
+      id: file.id, 
+      filename: file.filename,
+      chunksCount: file.chunks?.length || 0 
+    });
+
+    // Extract topics from chunks using GPT-4o
+    if (!file.chunks || file.chunks.length === 0) {
+      console.error('[AI Learn] No chunks found for file:', fileId);
+      sendSSE(res, 'message', { type: 'error', data: { message: 'File has not been processed yet. Please wait for file processing to complete.' } });
+      res.end();
+      return;
+    }
+    
+    const chunks = file.chunks.map((c: any) => c.content).join('\n\n');
+
+    const topicPrompt = `Analyze this document and create a learning outline with 4-6 main topics.
+
+Document content:
+${chunks.substring(0, 8000)} // Limit for context window
+
+For each topic, provide:
+1. A clear, descriptive title
+2. 5 subtopics: intro, concepts, examples, practice, summary
+
+Return a JSON object with a "topics" array containing objects with this structure:
+{
+  "topics": [{
+    "id": "topic-1",
+    "title": "Topic Title Here",
+    "subtopics": [
+      {"id": "intro-1", "title": "Introduction", "type": "intro", "completed": false},
+      {"id": "concepts-1", "title": "Core Concepts", "type": "concepts", "completed": false},
+      {"id": "examples-1", "title": "Examples", "type": "examples", "completed": false},
+      {"id": "practice-1", "title": "Practice", "type": "practice", "completed": false},
+      {"id": "summary-1", "title": "Summary", "type": "summary", "completed": false}
+    ],
+    "progress": 0
+  }]
+}`;
+
+    console.log('[AI Learn] Generating outline with GPT-4o...');
+    
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [{ role: 'user', content: topicPrompt }],
+      response_format: { type: 'json_object' },
+      temperature: 0.7,
+    });
+
+    const responseContent = completion.choices[0].message.content || '{}';
+    console.log('[AI Learn] GPT response received, length:', responseContent.length);
+    
+    const outlineData = JSON.parse(responseContent);
+    const topics = Array.isArray(outlineData) ? outlineData : (outlineData.topics || []);
+
+    if (!topics.length) {
+      console.error('[AI Learn] No topics generated');
+      sendSSE(res, 'message', { type: 'error', data: { message: 'Failed to generate topics' } });
+      res.end();
+      return;
+    }
+
+    console.log('[AI Learn] Generated topics:', topics.length);
+
+    // Stream topics one by one
+    for (let i = 0; i < topics.length; i++) {
+      const topic = topics[i];
+      // Ensure proper ID format
+      topic.id = topic.id || `topic-${i + 1}`;
+      
+      // Ensure subtopics have proper IDs
+      if (topic.subtopics) {
+        topic.subtopics = topic.subtopics.map((st: any) => ({
+          ...st,
+          id: st.id || `${st.type}-${i + 1}`,
+        }));
+      }
+      
+      sendSSE(res, 'message', { type: 'topic', data: topic });
+      // Small delay to simulate progressive loading
+      await new Promise(resolve => setTimeout(resolve, 300));
+    }
+
+    // Send completion event
+    sendSSE(res, 'message', { type: 'complete' });
+    res.end();
+
+  } catch (error) {
+    console.error('[AI Learn] Error generating outline:', error);
+    sendSSE(res, 'message', { type: 'error', data: { message: 'Failed to generate outline' } });
+    res.end();
+  }
+});
+
+// Stream personalized content for a topic/subtopic
+router.get('/learn/explain/stream', authenticateSSE, async (req: Request, res: Response): Promise<void> => {
+  const { fileId, topicId, subtopic, mode } = req.query;
+  const userId = (req as any).user.id;
+
+  console.log('[AI Learn] Explain stream request:', { fileId, topicId, subtopic, mode, userId });
+
+  if (!fileId || !topicId || !subtopic) {
+    res.status(400).json({ error: 'Missing required parameters' });
+    return;
+  }
+
+  try {
+    // Set up SSE
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3002');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+
+    // Get file chunks
+    const { data: file, error: fileError } = await supabase
+      .from('course_files')
+      .select('*, chunks:file_chunks(*)')
+      .eq('id', fileId)
+      .order('chunk_index', { foreignTable: 'file_chunks', ascending: true })
+      .single();
+
+    if (fileError || !file) {
+      sendSSE(res, 'message', { type: 'error', data: { message: 'File not found' } });
+      res.end();
+      return;
+    }
+
+    // Get user persona
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    const persona = profile?.persona as any;
+
+    // Build personalized prompt based on mode
+    let systemPrompt = `You are an expert tutor creating personalized learning content. 
+You must return content formatted in HTML for display in a web interface.
+Use proper HTML tags like <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <div>, etc.`;
+    
+    if (persona) {
+      systemPrompt += `\n\nStudent Profile:
+- Interests: ${persona.interests?.join(', ') || 'general'}
+- Learning Style: ${persona.learningStyle || 'visual'}
+- Professional Background: ${persona.professionalBackground || 'student'}
+- Field: ${persona.field || 'general'}
+- Communication Preference: ${persona.communicationStyle || 'friendly'}
+
+IMPORTANT: Create analogies using their interests (especially ${persona.interests?.[0] || 'everyday examples'}).
+Match their ${persona.communicationStyle || 'friendly'} communication style.
+Adapt explanations to their ${persona.professionalBackground || 'student'} level.`;
+    }
+
+    const relevantChunks = file.chunks?.slice(0, 5).map((c: any) => c.content).join('\n\n') || '';
+    
+    let userPrompt = '';
+    
+    switch (mode) {
+      case 'explain':
+        userPrompt = `Explain the "${subtopic}" section of the topic "${topicId}" in a personalized way.
+
+Use this document content as reference:
+${relevantChunks.substring(0, 3000)}
+
+Requirements:
+1. Use HTML formatting with proper tags
+2. Include a personalized analogy box using the student's interests
+3. Break down complex concepts into simple terms
+4. Use the student's preferred communication style
+5. Include emoji sparingly for engagement
+
+Structure:
+- Start with an engaging introduction
+- Include a highlighted analogy box (use a div with inline styles)
+- Explain key concepts clearly
+- Provide relevant examples
+- End with a brief summary`;
+        break;
+
+      case 'summary':
+        userPrompt = `Create a concise summary of "${topicId}".
+
+Use this document content as reference:
+${relevantChunks.substring(0, 2000)}
+
+Format as HTML with:
+- A clear heading
+- 5-7 key bullet points
+- Important terms in bold
+- A takeaway message at the end`;
+        break;
+
+      case 'flashcards':
+        userPrompt = `Generate 5-7 flashcards for "${topicId}".
+
+Use this document content as reference:
+${relevantChunks.substring(0, 2000)}
+
+Format each flashcard as HTML with:
+- A div container with border styling
+- Clear question in an h4 tag
+- Answer in a details/summary element for click-to-reveal
+- Focus on key concepts and definitions`;
+        break;
+
+      case 'quiz':
+        userPrompt = `Create 3 quiz questions about "${topicId}".
+
+Use this document content as reference:
+${relevantChunks.substring(0, 2000)}
+
+Format as HTML with:
+- Multiple choice questions (4 options each)
+- Use ordered lists with type="A"
+- Include the correct answer in a hidden element
+- Questions should test understanding, not just memorization`;
+        break;
+
+      case 'chat':
+        userPrompt = `You are ready to answer questions about "${topicId}".
+Briefly introduce the topic and invite questions.
+Keep it conversational and encouraging.`;
+        break;
+
+      default:
+        userPrompt = `Explain "${topicId}" - ${subtopic} based on the document content.`;
+    }
+
+    console.log(`[AI Learn] Streaming ${mode} content with GPT-4o...`);
+
+    // Stream response from GPT-4o
+    const stream = await openai.chat.completions.create({
+      model: 'gpt-4o',
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ],
+      stream: true,
+      temperature: 0.8,
+      max_tokens: 2000,
+    });
+
+    // Stream chunks to client
+    for await (const chunk of stream) {
+      const content = chunk.choices[0]?.delta?.content || '';
+      if (content) {
+        sendSSE(res, 'message', { type: 'content-chunk', data: content });
+      }
+    }
+
+    // Send completion
+    sendSSE(res, 'message', { type: 'complete' });
+    res.end();
+
+  } catch (error) {
+    console.error('[AI Learn] Error streaming content:', error);
+    sendSSE(res, 'message', { type: 'error', data: { message: 'Failed to stream content' } });
+    res.end();
+  }
+});
+
+// Save user feedback
+router.post('/learn/feedback', authenticateUser, async (req: Request, res: Response) => {
+  const { contentId, reaction, note } = req.body;
+  const userId = (req as any).user.id;
+
+  try {
+    // Store feedback in a simple table (you can create a proper table later)
+    const { error } = await supabase
+      .from('learning_feedback')
+      .insert({
+        user_id: userId,
+        content_id: contentId,
+        reaction,
+        note,
+        created_at: new Date().toISOString(),
+      });
+
+    if (error) {
+      // If table doesn't exist, just log it
+      console.log('[AI Learn] Learning Feedback:', {
+        userId,
+        contentId,
+        reaction,
+        note,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('[AI Learn] Error saving feedback:', error);
+    res.status(500).json({ error: 'Failed to save feedback' });
+  }
+});
+
+// Regenerate content with feedback
+router.post('/learn/regenerate', authenticateUser, async (_req: Request, res: Response) => {
+  // This would trigger a new content generation with the feedback incorporated
+  res.json({ success: true, message: 'Content regeneration initiated' });
+});
+
+export default router;

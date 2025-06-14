@@ -6,32 +6,19 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import 'express-async-errors';
-import { createBullBoard } from '@bull-board/api';
-import { BullAdapter } from '@bull-board/api/bullAdapter';
-import { ExpressAdapter } from '@bull-board/express';
 import { supabase } from './config/supabase';
 
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
 import { logger } from './utils/logger';
 import routes from './routes';
-import { FILE_PROCESSING_QUEUE, EMBEDDING_QUEUE, NOTIFICATION_QUEUE } from './config/queue';
+import { startPGMQWorkers } from './workers/pgmq';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Bull Board setup
-const serverAdapter = new ExpressAdapter();
-serverAdapter.setBasePath('/admin/queues');
-
-createBullBoard({
-  queues: [
-    new BullAdapter(FILE_PROCESSING_QUEUE),
-    new BullAdapter(EMBEDDING_QUEUE),
-    new BullAdapter(NOTIFICATION_QUEUE),
-  ],
-  serverAdapter: serverAdapter,
-});
+// Start PGMQ Workers
+startPGMQWorkers();
 
 // Middleware
 app.use(helmet());
@@ -145,6 +132,100 @@ if (process.env.NODE_ENV === 'development') {
     }
   });
 
+  // Debug search endpoint (bypasses all middleware)
+  app.post('/debug/search', async (req, res) => {
+    try {
+      const { HybridSearchService } = await import('./services/search/HybridSearchService');
+      const searchService = new HybridSearchService();
+      const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a'; // Hardcoded test user
+      
+      const { 
+        query, 
+        filters = {},
+        options = {},
+      } = req.body;
+
+      if (!query || typeof query !== 'string' || query.trim().length === 0) {
+        return res.status(400).json({
+          success: false,
+          error: 'Query parameter is required',
+        });
+      }
+
+      console.log(`Debug search for: "${query}"`);
+
+      const results = await searchService.search(query, userId, {
+        filters,
+        ...options,
+      });
+
+      return res.json({
+        success: true,
+        data: results,
+      });
+    } catch (error) {
+      console.error('Debug search error:', error);
+      return res.status(500).json({
+        success: false,
+        error: error instanceof Error ? error.message : 'Search failed',
+      });
+    }
+  });
+
+  app.get('/debug/search-filters', async (_req, res) => {
+    try {
+      const { supabase } = await import('./config/supabase');
+      const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a'; // Hardcoded test user
+
+      const [courses, fileTypes, contentTypes] = await Promise.all([
+        // Get user's courses
+        supabase
+          .from('courses')
+          .select('id, title')
+          .eq('user_id', userId)
+          .order('title'),
+        
+        // Get distinct file types
+        supabase
+          .from('course_files')
+          .select('mime_type')
+          .eq('courses.user_id', userId),
+        
+        // Get available content types
+        Promise.resolve({
+          data: [
+            { value: 'definition', label: 'Definitions' },
+            { value: 'example', label: 'Examples' },
+            { value: 'explanation', label: 'Explanations' },
+            { value: 'theory', label: 'Theory' },
+            { value: 'practice', label: 'Practice' },
+            { value: 'summary', label: 'Summaries' },
+          ],
+        }),
+      ]);
+
+      return res.json({
+        success: true,
+        data: {
+          courses: courses.data || [],
+          fileTypes: fileTypes.data?.map((ft: any) => ft.mime_type) || [],
+          contentTypes: contentTypes.data || [],
+          importance: [
+            { value: 'high', label: 'High Importance' },
+            { value: 'medium', label: 'Medium Importance' },
+            { value: 'low', label: 'Low Importance' },
+          ],
+        },
+      });
+    } catch (error) {
+      console.error('Debug filters error:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Failed to get filters',
+      });
+    }
+  });
+
   console.log('Debug endpoints registered');
 } else {
   console.log('Not in development mode, skipping debug endpoints');
@@ -153,25 +234,7 @@ if (process.env.NODE_ENV === 'development') {
 // API routes
 app.use('/api/v1', routes);
 
-// Bull Board dashboard (protected in production)
-if (process.env.NODE_ENV === 'development') {
-  app.use('/admin/queues', serverAdapter.getRouter());
-} else {
-  // In production, protect with authentication
-  app.use(
-    '/admin/queues',
-    (req, res, next) => {
-      // Add your admin authentication logic here
-      const adminToken = req.headers['x-admin-token'];
-      if (adminToken === process.env.ADMIN_TOKEN) {
-        next();
-      } else {
-        res.status(401).json({ error: 'Unauthorized' });
-      }
-    },
-    serverAdapter.getRouter()
-  );
-}
+// PGMQ Admin routes could be added here in the future if needed
 
 // Error handling
 app.use(errorHandler);

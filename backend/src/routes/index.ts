@@ -9,6 +9,8 @@ import notificationRoutes from './notification.routes';
 // import userRoutes from './user.routes';
 import aiRoutes from './ai.routes';
 import sessionRoutes from './session.routes';
+import aiLearnRoutes from './aiLearnRoutes';
+import searchRoutes from './searchRoutes';
 
 const router = Router();
 
@@ -50,7 +52,9 @@ router.use('/', fileRoutes); // File routes are mixed between /files and /module
 router.use('/notifications', notificationRoutes);
 // router.use('/users', userRoutes);
 router.use('/ai', aiRoutes);
+router.use('/ai', aiLearnRoutes); // AI learning routes
 router.use('/sessions', sessionRoutes);
+router.use('/search', searchRoutes); // Vector search routes
 
 // API info
 router.get('/', (_, res) => {

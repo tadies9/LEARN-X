@@ -14,7 +14,17 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "type-check": "tsc --noEmit -p tsconfig.build.json",
-    "type-check:all": "tsc --noEmit"
+    "type-check:all": "tsc --noEmit",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:logs": "docker-compose logs -f",
+    "docker:restart": "docker-compose restart backend",
+    "init:pgmq": "node scripts/init-pgmq.js",
+    "embeddings:status": "node scripts/check-embeddings.js",
+    "system:health": "node scripts/check-embeddings.js health",
+    "production:init": "npm run init:pgmq",
+    "test:system": "node test-extensions.js"
   },
   "dependencies": {
     "@bull-board/api": "^6.10.1",

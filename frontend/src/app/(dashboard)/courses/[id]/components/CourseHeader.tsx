@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Archive, BookOpen, Clock, Edit, Globe, Lock, Settings, Trash } from 'lucide-react';
+import { Archive, BookOpen, Clock, Edit, Globe, Lock, Search, Settings, Trash } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { courseApi } from '@/lib/api/course';
+import { SearchModal } from '@/components/search/SearchModal';
 
 import type { Course } from '@/lib/types/course';
 
@@ -24,6 +25,7 @@ export function CourseHeader({ course, onUpdate }: CourseHeaderProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const handleArchive = async () => {
     try {
@@ -75,8 +77,9 @@ export function CourseHeader({ course, onUpdate }: CourseHeaderProps) {
   };
 
   return (
-    <Card>
-      <CardContent className="p-6">
+    <>
+      <Card>
+        <CardContent className="p-6">
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div className="space-y-4 flex-1">
             <div>
@@ -115,6 +118,10 @@ export function CourseHeader({ course, onUpdate }: CourseHeaderProps) {
           </div>
 
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => setIsSearchOpen(true)}>
+              <Search className="mr-2 h-4 w-4" />
+              Search
+            </Button>
             <Button variant="outline" asChild>
               <Link href={`/courses/${course.id}/edit`}>
                 <Edit className="mr-2 h-4 w-4" />
@@ -142,7 +149,18 @@ export function CourseHeader({ course, onUpdate }: CourseHeaderProps) {
             </Button>
           </div>
         </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+
+      <SearchModal
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        courseId={course.id}
+        onResultSelect={(result) => {
+          // Navigate to the file with the search result
+          router.push(`/courses/${course.id}/learn?fileId=${result.fileId}`);
+        }}
+      />
+    </>
   );
 }

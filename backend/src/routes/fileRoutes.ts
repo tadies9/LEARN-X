@@ -353,13 +353,13 @@ router.post('/files/test-upload', (req, res) => {
   return res.json({ message: 'Test endpoint working' });
 });
 
-// File routes
-router.get('/modules/:moduleId/files', fileController.getModuleFiles);
-router.get('/files/:id', fileController.getFile);
-router.post('/files/upload', upload.single('file'), fileController.uploadFile);
-router.put('/files/:id', validateRequest(updateFileSchema), fileController.updateFile);
-router.delete('/files/:id', fileController.deleteFile);
-router.put('/modules/:moduleId/files/reorder', fileController.reorderFiles);
-router.get('/files/:id/signed-url', fileController.getSignedUrl);
+// File routes (all require authentication)
+router.get('/modules/:moduleId/files', authenticateUser, fileController.getModuleFiles);
+router.get('/files/:id', authenticateUser, fileController.getFile);
+router.post('/files/upload', authenticateUser, upload.single('file'), fileController.uploadFile);
+router.put('/files/:id', authenticateUser, validateRequest(updateFileSchema), fileController.updateFile);
+router.delete('/files/:id', authenticateUser, fileController.deleteFile);
+router.put('/modules/:moduleId/files/reorder', authenticateUser, fileController.reorderFiles);
+router.get('/files/:id/signed-url', authenticateUser, fileController.getSignedUrl);
 
 export { router as fileRoutes };

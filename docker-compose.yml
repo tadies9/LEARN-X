@@ -10,23 +10,7 @@ services:
       - PORT=8080
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-    env_file:
-      - ./backend/.env
-    volumes:
-      - ./backend:/app
-      - /app/node_modules
-      - /app/dist
-    networks:
-      - learn-x-network
-
-  worker:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
-    environment:
-      - NODE_ENV=development
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
+      - REDIS_URL= # Let it use REDIS_HOST/PORT instead
     env_file:
       - ./backend/.env
     volumes:
@@ -36,7 +20,37 @@ services:
     networks:
       - learn-x-network
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_URL= # Let it use REDIS_HOST/PORT instead
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - /app/dist
+    networks:
+      - learn-x-network
+    depends_on:
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
     command: npm run start:worker
 
   redis:
@@ -47,6 +61,12 @@ services:
       - redis-data:/data
     networks:
       - learn-x-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: redis-server --appendonly yes
 
 networks:
   learn-x-network:

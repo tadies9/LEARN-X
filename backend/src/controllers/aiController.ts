@@ -1,6 +1,5 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
-import Redis from 'ioredis';
 import { ContentGenerationService } from '../services/content/ContentGenerationService';
 import { HybridSearchService } from '../services/search/HybridSearchService';
 import { PersonalizationEngine } from '../services/personalization/PersonalizationEngine';
@@ -9,17 +8,18 @@ import { aiErrorHandler } from '../services/ai/ErrorHandler';
 import { logger } from '../utils/logger';
 import { AppError } from '../utils/errors';
 import { QuizType } from '../services/ai/PromptTemplates';
+import { redisClient } from '../config/redis';
+import { supabase } from '../config/supabase';
 
-// Initialize services
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379');
-const contentService = new ContentGenerationService(redis);
+// Initialize services using centralized Redis client
+const contentService = new ContentGenerationService(redisClient);
 const searchService = new HybridSearchService();
 const personalizationEngine = new PersonalizationEngine();
 const costTracker = new CostTracker();
 
 // Validation schemas
 const explainSchema = z.object({
-  fileId: z.string().uuid(),
+  fileId: z.string().uuid().optional(),
   topicId: z.string(),
   subtopic: z.string().optional(),
 });
@@ -56,7 +56,7 @@ const feedbackSchema = z.object({
 export class AIController {
   async streamExplanation(req: Request, res: Response): Promise<void> {
     try {
-      const { topicId } = explainSchema.parse(req.body);
+      const { topicId, fileId, subtopic } = explainSchema.parse(req.body);
       const userId = (req as any).user.id;
 
       // Check user budget
@@ -71,8 +71,23 @@ export class AIController {
         throw new AppError('User persona not found. Please complete onboarding.', 400);
       }
 
-      // TODO: Get chunks for the topic
-      const chunks: Array<{ id: string; content: string }> = []; // This should be fetched based on topicId
+      // Search for relevant chunks using semantic search
+      const searchQuery = subtopic ? `${topicId} ${subtopic}` : topicId;
+      const searchResponse = await searchService.search(searchQuery, userId, {
+        filters: fileId ? { fileId } : {},
+        limit: 10,
+        searchType: 'hybrid',
+        includeContent: true,
+        weightVector: 0.8, // Prioritize semantic understanding for explanations
+        weightKeyword: 0.2
+      });
+
+      const chunks = searchResponse.results.map(result => ({
+        id: result.id,
+        content: result.content,
+        metadata: result.metadata,
+        score: result.score
+      }));
 
       if (chunks.length === 0) {
         throw new AppError('No content found for this topic', 404);
@@ -114,7 +129,7 @@ export class AIController {
 
   async generateSummary(req: Request, res: Response): Promise<void> {
     try {
-      const { format } = summarizeSchema.parse(req.body);
+      const { fileId, format } = summarizeSchema.parse(req.body);
       const userId = (req as any).user.id;
 
       // Check user budget
@@ -129,8 +144,25 @@ export class AIController {
         throw new AppError('User persona not found', 400);
       }
 
-      // TODO: Get file content
-      const content = ''; // This should be fetched from file chunks
+      // Get all file chunks with semantic understanding
+      const searchResponse = await searchService.search('', userId, {
+        filters: { fileId },
+        limit: 100, // Get all chunks for comprehensive summary
+        searchType: 'keyword', // Get all chunks, not just semantically similar
+        includeContent: true
+      });
+
+      if (searchResponse.results.length === 0) {
+        throw new AppError('No content found for this file', 404);
+      }
+
+      // Sort chunks by index to maintain document order
+      const sortedChunks = searchResponse.results.sort((a, b) => 
+        a.metadata.chunkIndex - b.metadata.chunkIndex
+      );
+
+      // Combine content intelligently based on chunk types
+      const content = this.combineChunksIntelligently(sortedChunks);
 
       const summary = await contentService.generateSummary({
         content,
@@ -154,7 +186,7 @@ export class AIController {
 
   async generateFlashcards(req: Request, res: Response): Promise<void> {
     try {
-      flashcardSchema.parse(req.body);
+      const { fileId, chunkIds } = flashcardSchema.parse(req.body);
       const userId = (req as any).user.id;
 
       // Check user budget
@@ -163,8 +195,34 @@ export class AIController {
         throw new AppError('Daily AI usage limit exceeded', 429);
       }
 
-      // TODO: Get content from chunks
-      const content = ''; // This should be fetched based on chunkIds or fileId
+      let content: string;
+
+      if (chunkIds && chunkIds.length > 0) {
+        // Get specific chunks for targeted flashcards
+        const chunks = await this.getChunksByIds(chunkIds);
+        content = chunks.map(c => c.content).join('\n\n');
+      } else {
+        // Get important chunks for flashcard generation
+        const searchResponse = await searchService.search('key concepts definitions important', userId, {
+          filters: { 
+            fileId,
+            contentTypes: ['definition', 'summary'] as any,
+            importance: ['high', 'medium']
+          },
+          limit: 20,
+          searchType: 'hybrid',
+          weightVector: 0.6,
+          weightKeyword: 0.4
+        });
+
+        if (searchResponse.results.length === 0) {
+          throw new AppError('No suitable content found for flashcard generation', 404);
+        }
+
+        content = searchResponse.results
+          .map(r => `${r.metadata.sectionTitle ? `[${r.metadata.sectionTitle}]\n` : ''}${r.content}`)
+          .join('\n\n');
+      }
 
       const flashcards = await contentService.generateFlashcards({
         content,
@@ -186,7 +244,7 @@ export class AIController {
 
   async generateQuiz(req: Request, res: Response): Promise<void> {
     try {
-      const { type } = quizSchema.parse(req.body);
+      const { fileId, type, chunkIds } = quizSchema.parse(req.body);
       const userId = (req as any).user.id;
 
       // Check user budget
@@ -195,8 +253,35 @@ export class AIController {
         throw new AppError('Daily AI usage limit exceeded', 429);
       }
 
-      // TODO: Get content from chunks
-      const content = ''; // This should be fetched based on chunkIds or fileId
+      let content: string;
+
+      if (chunkIds && chunkIds.length > 0) {
+        // Get specific chunks for targeted quiz
+        const chunks = await this.getChunksByIds(chunkIds);
+        content = chunks.map(c => c.content).join('\n\n');
+      } else {
+        // Get diverse content for comprehensive quiz
+        const searchResponse = await searchService.search('', userId, {
+          filters: { 
+            fileId,
+            contentTypes: ['definition', 'explanation', 'example', 'theory'],
+            importance: ['high', 'medium']
+          },
+          limit: 30,
+          searchType: 'keyword', // Get a good spread of content
+          includeContent: true
+        });
+
+        if (searchResponse.results.length === 0) {
+          throw new AppError('No suitable content found for quiz generation', 404);
+        }
+
+        // Select diverse chunks for balanced quiz
+        const diverseChunks = this.selectDiverseChunks(searchResponse.results, 15);
+        content = diverseChunks
+          .map(r => `${r.metadata.sectionTitle ? `[${r.metadata.sectionTitle}]\n` : ''}${r.content}`)
+          .join('\n\n');
+      }
 
       const quizType = type as QuizType;
       const questions = await contentService.generateQuiz({
@@ -224,17 +309,21 @@ export class AIController {
       const { query, fileId, limit } = searchSchema.parse(req.query);
       const userId = (req as any).user.id;
 
-      const results = await searchService.search(query, fileId, userId, limit);
+      const searchResponse = await searchService.search(query, userId, {
+        filters: fileId ? { fileId } : {},
+        limit
+      });
+      const results = searchResponse.results;
 
-      // Log search
-      await searchService.logSearch(query, results.length, userId);
+      // Log search activity
+      logger.info(`Search query: ${query}, results: ${results.length}, userId: ${userId}`);
 
       res.json({
         success: true,
         data: {
           results,
           query,
-          count: results.length,
+          count: searchResponse.totalCount,
         },
       });
     } catch (error) {
@@ -323,7 +412,12 @@ export class AIController {
       // const userId = (req as any).user.id;
 
       // Fetch file chunks with embeddings
-      const chunks = await searchService.getFileChunks(fileId);
+      const searchResponse = await searchService.search('', (req as any).user.id, {
+        filters: { fileId },
+        limit: 1000,
+        includeContent: true
+      });
+      const chunks = searchResponse.results;
 
       if (!chunks || chunks.length === 0) {
         res.status(404).json({
@@ -333,12 +427,12 @@ export class AIController {
         return;
       }
 
-      // Group chunks into semantic sections using embeddings
-      const sections = await searchService.clusterChunks(chunks);
+      // Group chunks into semantic sections using metadata
+      const sections = this.clusterChunksByMetadata(chunks);
 
       // Generate section titles and summaries
       const outline = await Promise.all(
-        sections.map(async (section) => ({
+        sections.map(async (section: any) => ({
           id: section.id,
           title: section.suggestedTitle,
           summary: section.summary,
@@ -398,7 +492,11 @@ export class AIController {
       });
 
       // Get relevant context
-      const context = await searchService.search(params.message, params.fileId, userId, 10);
+      const contextResponse = await searchService.search(params.message, userId, {
+        filters: params.fileId ? { fileId: params.fileId } : {},
+        limit: 10
+      });
+      const context = contextResponse.results;
 
       // Get user persona
       const persona = params.personaId
@@ -408,7 +506,7 @@ export class AIController {
       // Stream chat response
       const chatParams = {
         message: params.message,
-        context: context.map((r) => r.content),
+        context: context.map((r: any) => r.content),
         currentPage: params.currentPage,
         selectedText: params.selectedText,
         persona,
@@ -420,7 +518,7 @@ export class AIController {
       }
 
       // Send citations
-      const citations = context.slice(0, 3).map((r) => ({
+      const citations = context.slice(0, 3).map((r: any) => ({
         chunkId: r.chunkId,
         page: r.metadata?.page || 0,
         text: r.content.substring(0, 100),
@@ -436,6 +534,127 @@ export class AIController {
       res.write(`data: ${JSON.stringify({ error: handledError.error })}\n\n`);
       res.end();
     }
+  }
+
+  private clusterChunksByMetadata(chunks: any[]): any[] {
+    // Group chunks by section title and hierarchy level
+    const sections = new Map<string, any>();
+    
+    chunks.forEach((chunk) => {
+      const sectionTitle = chunk.metadata?.sectionTitle || 'Untitled Section';
+      const hierarchyLevel = chunk.metadata?.hierarchyLevel || 1;
+      
+      if (!sections.has(sectionTitle)) {
+        sections.set(sectionTitle, {
+          id: `section-${sections.size}`,
+          suggestedTitle: sectionTitle,
+          summary: '',
+          chunkIds: [],
+          chunkCount: 0,
+          startPage: chunk.metadata?.page || 0,
+          endPage: chunk.metadata?.page || 0,
+          topics: chunk.metadata?.concepts || [],
+          hierarchyLevel
+        });
+      }
+      
+      const section = sections.get(sectionTitle)!;
+      section.chunkIds.push(chunk.id);
+      section.chunkCount++;
+      section.endPage = Math.max(section.endPage, chunk.metadata?.page || 0);
+      
+      // Merge topics
+      if (chunk.metadata?.concepts) {
+        section.topics = [...new Set([...section.topics, ...chunk.metadata.concepts])];
+      }
+    });
+    
+    return Array.from(sections.values());
+  }
+
+  private combineChunksIntelligently(chunks: any[]): string {
+    // Group by content type and section
+    const sections = new Map<string, any[]>();
+    
+    chunks.forEach(chunk => {
+      const section = chunk.metadata?.sectionTitle || 'Main Content';
+      if (!sections.has(section)) {
+        sections.set(section, []);
+      }
+      sections.get(section)!.push(chunk);
+    });
+
+    // Build content with proper structure
+    let combinedContent = '';
+    sections.forEach((sectionChunks, sectionTitle) => {
+      if (sectionTitle !== 'Main Content') {
+        combinedContent += `\n## ${sectionTitle}\n\n`;
+      }
+
+      // Sort by importance and content type
+      const sortedChunks = sectionChunks.sort((a, b) => {
+        const importanceOrder = { 'high': 0, 'medium': 1, 'low': 2 };
+        const aImportance = importanceOrder[a.metadata?.importance as keyof typeof importanceOrder || 'medium'];
+        const bImportance = importanceOrder[b.metadata?.importance as keyof typeof importanceOrder || 'medium'];
+        
+        if (aImportance !== bImportance) return aImportance - bImportance;
+        return a.metadata.chunkIndex - b.metadata.chunkIndex;
+      });
+
+      sortedChunks.forEach(chunk => {
+        if (chunk.metadata?.contentType === 'definition') {
+          combinedContent += `**Definition:** ${chunk.content}\n\n`;
+        } else if (chunk.metadata?.contentType === 'summary') {
+          combinedContent += `**Summary:** ${chunk.content}\n\n`;
+        } else {
+          combinedContent += `${chunk.content}\n\n`;
+        }
+      });
+    });
+
+    return combinedContent.trim();
+  }
+
+  private async getChunksByIds(chunkIds: string[]): Promise<any[]> {
+    const { data, error } = await supabase
+      .from('file_chunks')
+      .select('*')
+      .in('id', chunkIds);
+
+    if (error) {
+      logger.error('Failed to get chunks by IDs:', error);
+      throw new AppError('Failed to retrieve content chunks', 500);
+    }
+
+    return data || [];
+  }
+
+  private selectDiverseChunks(chunks: any[], targetCount: number): any[] {
+    // Group by content type
+    const typeGroups = new Map<string, any[]>();
+    chunks.forEach(chunk => {
+      const type = chunk.metadata?.contentType || 'general';
+      if (!typeGroups.has(type)) {
+        typeGroups.set(type, []);
+      }
+      typeGroups.get(type)!.push(chunk);
+    });
+
+    // Select proportionally from each type
+    const selected: any[] = [];
+    const typesCount = typeGroups.size;
+    const perType = Math.floor(targetCount / typesCount);
+    const extra = targetCount % typesCount;
+
+    let typeIndex = 0;
+    typeGroups.forEach((typeChunks, _type) => {
+      const count = typeIndex < extra ? perType + 1 : perType;
+      const shuffled = typeChunks.sort(() => Math.random() - 0.5);
+      selected.push(...shuffled.slice(0, count));
+      typeIndex++;
+    });
+
+    return selected.slice(0, targetCount);
   }
 }
 

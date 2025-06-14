@@ -20,6 +20,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  Search,
 } from 'lucide-react';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,6 +28,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'My Courses', href: '/courses', icon: BookOpen },
+  { name: 'Search', href: '/search', icon: Search },
   { name: 'Learning Path', href: '/learning-path', icon: GraduationCap },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
   { name: 'AI Assistant', href: '/ai-assistant', icon: Brain },

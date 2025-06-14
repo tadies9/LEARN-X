@@ -126,12 +126,20 @@ export class FileController {
 
   deleteFile = async (req: Request, res: Response) => {
     try {
+      console.log('=== FileController.deleteFile ===');
+      console.log('Request params:', req.params);
+      console.log('Request user:', req.user);
+      
       const { id } = req.params;
       const userId = req.user!.id;
+      
+      console.log('File ID to delete:', id);
+      console.log('User ID making request:', userId);
 
       await this.fileService.deleteFile(id, userId);
       res.status(204).send();
     } catch (error) {
+      console.error('Delete file error:', error);
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {

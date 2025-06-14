@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { AppError } from '../utils/errors';
 import type { CourseFile, CreateFileData, UpdateFileData } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import { FILE_PROCESSING_QUEUE } from '../config/queue';
+import { enqueueFileProcessing, enqueueFileCleanup } from '../config/pgmqQueue';
 import { transformCourseFile, transformCourseFiles } from '../utils/transformers';
 
 // Create a service role client specifically for storage operations
@@ -90,6 +90,10 @@ export class FileService {
   }
 
   async getFile(fileId: string, userId: string): Promise<CourseFile> {
+    console.log('=== getFile called ===');
+    console.log('File ID:', fileId);
+    console.log('User ID:', userId);
+    
     const { data: file, error } = await supabase
       .from('course_files')
       .select(
@@ -108,12 +112,18 @@ export class FileService {
       .single();
 
     if (error || !file) {
+      console.error('File not found:', error);
       throw new AppError('File not found', 404);
     }
 
     // Check access
     const course = (file as any).modules.courses;
+    console.log('Course owner:', course.user_id);
+    console.log('Current user:', userId);
+    console.log('Access check:', course.user_id === userId);
+    
     if (course.user_id !== userId) {
+      console.error('Access denied - user does not own course');
       throw new AppError('Access denied', 403);
     }
 
@@ -211,12 +221,8 @@ export class FileService {
       throw new AppError('Failed to create file record: ' + createError.message, 500);
     }
 
-    // Queue file for processing
-    await FILE_PROCESSING_QUEUE.add('process-file', {
-      fileId: newFile.id,
-      userId,
-      processingOptions: data.processingOptions,
-    });
+    // Queue file for processing using PGMQ
+    await enqueueFileProcessing(newFile.id, userId, data.processingOptions);
 
     return transformCourseFile(newFile);
   }
@@ -259,24 +265,23 @@ export class FileService {
   }
 
   async deleteFile(fileId: string, userId: string): Promise<void> {
-    // Verify ownership
-    const file = await this.getFile(fileId, userId);
-
-    const { data: module } = await supabase
-      .from('modules')
-      .select(
-        `
-        courses!inner(
-          user_id
-        )
-      `
-      )
-      .eq('id', (file as any).module_id)
-      .single();
-
-    if (!module || (module as any).courses.user_id !== userId) {
-      throw new AppError('Access denied', 403);
+    console.log('=== deleteFile called ===');
+    console.log('File ID:', fileId);
+    console.log('User ID:', userId);
+    
+    // Get file with ownership check
+    let file;
+    try {
+      file = await this.getFile(fileId, userId);
+      console.log('File retrieved successfully:', file.id);
+    } catch (error) {
+      console.error('Failed to get file in deleteFile:', error);
+      throw error; // Re-throw the error from getFile
     }
+
+    // Since getFile already checks ownership, we don't need to check again
+    // The module query here is redundant and might be causing issues
+    console.log('File ownership already verified by getFile method');
 
     // Delete from storage
     const { error: storageError } = await supabase.storage
@@ -294,8 +299,8 @@ export class FileService {
       throw new AppError('Failed to delete file', 500);
     }
 
-    // Queue cleanup job
-    await FILE_PROCESSING_QUEUE.add('cleanup-file', { fileId });
+    // Queue cleanup job using PGMQ
+    await enqueueFileCleanup(fileId);
   }
 
   async reorderFiles(moduleId: string, fileIds: string[], userId: string): Promise<CourseFile[]> {

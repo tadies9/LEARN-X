@@ -1,289 +1,574 @@
 import { supabase } from '../../config/supabase';
+import { redisClient } from '../../config/redis';
 import { logger } from '../../utils/logger';
-import { EmbeddingService } from '../embeddings/EmbeddingService';
-import { SearchResult } from '../../types/ai';
+import { VectorEmbeddingService } from '../embeddings/VectorEmbeddingService';
+import { ContentType } from '../document/DocumentAnalyzer';
+
+export interface SearchOptions {
+  limit?: number;
+  offset?: number;
+  threshold?: number;
+  searchType?: 'vector' | 'keyword' | 'hybrid';
+  filters?: SearchFilters;
+  weightVector?: number; // Weight for vector search (0-1)
+  weightKeyword?: number; // Weight for keyword search (0-1)
+  includeContent?: boolean;
+  highlightMatches?: boolean;
+}
+
+export interface SearchFilters {
+  courseId?: string;
+  moduleId?: string;
+  fileId?: string;
+  fileTypes?: string[];
+  contentTypes?: ContentType[];
+  importance?: ('high' | 'medium' | 'low')[];
+  dateRange?: {
+    start?: Date;
+    end?: Date;
+  };
+}
+
+export interface SearchResult {
+  id: string;
+  fileId: string;
+  fileName: string;
+  content: string;
+  highlights?: string[];
+  score: number;
+  vectorScore?: number;
+  keywordScore?: number;
+  metadata: {
+    chunkIndex: number;
+    contentType: string;
+    importance: string;
+    sectionTitle?: string;
+    concepts?: string[];
+    keywords?: string[];
+  };
+  context?: {
+    before?: string;
+    after?: string;
+  };
+}
+
+export interface SearchResponse {
+  results: SearchResult[];
+  totalCount: number;
+  searchTime: number;
+  cached: boolean;
+  query: {
+    original: string;
+    processed: string;
+    keywords: string[];
+    filters: SearchFilters;
+  };
+}
 
 export class HybridSearchService {
-  private embeddingService: EmbeddingService;
-  private semanticWeight: number = 0.7;
-  private keywordWeight: number = 0.3;
+  private embeddinService: VectorEmbeddingService;
+  private readonly CACHE_TTL = 300; // 5 minutes
+  private readonly CACHE_PREFIX = 'search:';
 
   constructor() {
-    this.embeddingService = new EmbeddingService();
+    this.embeddinService = new VectorEmbeddingService();
   }
 
   async search(
     query: string,
-    fileId: string,
     userId: string,
-    limit: number = 20
-  ): Promise<SearchResult[]> {
-    try {
-      // Run semantic and keyword searches in parallel
-      const [semanticResults, keywordResults] = await Promise.all([
-        this.semanticSearch(query, fileId, userId, limit),
-        this.keywordSearch(query, fileId, limit),
-      ]);
+    options: SearchOptions = {}
+  ): Promise<SearchResponse> {
+    const startTime = Date.now();
+    
+    // Set default options
+    const opts: Required<SearchOptions> = {
+      limit: options.limit || 10,
+      offset: options.offset || 0,
+      threshold: options.threshold || 0.7,
+      searchType: options.searchType || 'hybrid',
+      filters: options.filters || {},
+      weightVector: options.weightVector ?? 0.7,
+      weightKeyword: options.weightKeyword ?? 0.3,
+      includeContent: options.includeContent ?? true,
+      highlightMatches: options.highlightMatches ?? true,
+    };
 
-      // Merge and score results
-      return this.mergeResults(
-        semanticResults,
-        keywordResults,
-        this.semanticWeight,
-        this.keywordWeight
-      );
-    } catch (error) {
-      logger.error('Hybrid search failed:', error);
-      throw error;
+    // Check cache
+    const cacheKey = this.generateCacheKey(query, userId, opts);
+    const cached = await this.getFromCache(cacheKey);
+    if (cached) {
+      return {
+        ...cached,
+        cached: true,
+        searchTime: Date.now() - startTime,
+      };
     }
+
+    logger.info('[HybridSearch] Performing search', {
+      query,
+      userId,
+      searchType: opts.searchType,
+    });
+
+    // Process query
+    const processedQuery = this.preprocessQuery(query);
+    const keywords = this.extractKeywords(processedQuery);
+
+    let results: SearchResult[] = [];
+
+    // Perform search based on type
+    switch (opts.searchType) {
+      case 'vector':
+        results = await this.vectorSearch(processedQuery, opts);
+        break;
+      case 'keyword':
+        results = await this.keywordSearch(keywords, userId, opts);
+        break;
+      case 'hybrid':
+        results = await this.hybridSearch(processedQuery, keywords, userId, opts);
+        break;
+    }
+
+    // Apply post-processing
+    results = this.rankResults(results, opts);
+    
+    if (opts.highlightMatches) {
+      results = this.highlightResults(results, keywords);
+    }
+
+    if (opts.includeContent) {
+      results = await this.enrichWithContext(results);
+    }
+
+    // Get total count
+    const totalCount = await this.getTotalCount(userId, opts.filters);
+
+    const response: SearchResponse = {
+      results: results.slice(opts.offset, opts.offset + opts.limit),
+      totalCount,
+      searchTime: Date.now() - startTime,
+      cached: false,
+      query: {
+        original: query,
+        processed: processedQuery,
+        keywords,
+        filters: opts.filters,
+      },
+    };
+
+    // Cache the response
+    await this.cacheResponse(cacheKey, response);
+
+    return response;
   }
 
-  private async semanticSearch(
+  private async vectorSearch(
     query: string,
-    fileId: string,
-    userId: string,
-    limit: number
+    options: Required<SearchOptions>
   ): Promise<SearchResult[]> {
-    try {
-      // Generate embedding for the query
-      const queryEmbedding = await this.embeddingService.generateEmbedding(query, userId);
+    // Generate embedding for query
+    const queryEmbedding = await this.embeddinService.generateEmbedding(query);
 
-      // Search using pgvector cosine similarity
-      const { data, error } = await supabase.rpc('search_chunks_by_embedding', {
-        query_embedding: queryEmbedding,
-        file_id: fileId,
-        match_threshold: 0.7,
-        match_count: limit,
-      });
+    // Format embedding for PostgreSQL vector type
+    const embeddingStr = `[${queryEmbedding.join(',')}]`;
 
-      if (error) {
-        logger.error('Semantic search error:', error);
-        return [];
-      }
+    // Use the correct search_similar_chunks function
+    const { data, error } = await supabase.rpc('search_similar_chunks', {
+      query_embedding: embeddingStr,
+      match_count: options.limit + options.offset,
+      similarity_threshold: options.threshold
+    });
 
-      return data.map((row: any) => ({
-        chunkId: row.chunk_id,
-        content: row.content,
-        score: row.similarity,
-        metadata: row.metadata,
-      }));
-    } catch (error) {
-      logger.error('Semantic search failed:', error);
-      return [];
+    if (error) {
+      logger.error('[HybridSearch] Vector search error:', error);
+      throw new Error('Vector search failed');
     }
+
+    return this.transformSimilarChunksResults(data || []);
   }
 
   private async keywordSearch(
-    query: string,
-    fileId: string,
-    limit: number
+    keywords: string[],
+    userId: string,
+    options: Required<SearchOptions>
   ): Promise<SearchResult[]> {
-    try {
-      // Use PostgreSQL full-text search
-      const { data, error } = await supabase
-        .from('file_chunks')
-        .select('id, content, metadata')
-        .eq('file_id', fileId)
-        .textSearch('content', query, {
-          config: 'english',
-          type: 'websearch',
-        })
-        .limit(limit);
+    // Build keyword search query
+    const searchPattern = keywords.join(' | ');
+    
+    let query = supabase
+      .from('semantic_chunks')
+      .select(`
+        id,
+        file_id,
+        file_name,
+        content,
+        chunk_index,
+        chunk_type,
+        importance,
+        section_title,
+        concepts,
+        keywords,
+        course_id,
+        module_id
+      `)
+      .textSearch('content', searchPattern, {
+        type: 'websearch',
+        config: 'english',
+      });
 
-      if (error) {
-        logger.error('Keyword search error:', error);
-        return [];
-      }
+    // Apply filters
+    query = this.applyKeywordFilters(query, userId, options.filters);
 
-      // Calculate relevance scores
-      return data.map((row: any, index: number) => ({
-        chunkId: row.id,
-        content: row.content,
-        score: 1 - index / data.length, // Simple ranking based on order
-        metadata: row.metadata,
-      }));
-    } catch (error) {
-      logger.error('Keyword search failed:', error);
-      return [];
+    // Add limit and offset
+    query = query
+      .range(options.offset, options.offset + options.limit - 1)
+      .order('chunk_index', { ascending: true });
+
+    const { data, error } = await query;
+
+    if (error) {
+      logger.error('[HybridSearch] Keyword search error:', error);
+      throw new Error('Keyword search failed');
     }
+
+    return this.transformKeywordResults(data || [], keywords);
+  }
+
+  private async hybridSearch(
+    query: string,
+    keywords: string[],
+    userId: string,
+    options: Required<SearchOptions>
+  ): Promise<SearchResult[]> {
+    // Perform both searches in parallel
+    const [vectorResults, keywordResults] = await Promise.all([
+      this.vectorSearch(query, options),
+      this.keywordSearch(keywords, userId, options),
+    ]);
+
+    // Merge and deduplicate results
+    const mergedResults = this.mergeResults(
+      vectorResults,
+      keywordResults,
+      options.weightVector,
+      options.weightKeyword
+    );
+
+    return mergedResults;
   }
 
   private mergeResults(
-    semanticResults: SearchResult[],
+    vectorResults: SearchResult[],
     keywordResults: SearchResult[],
-    semanticWeight: number,
+    vectorWeight: number,
     keywordWeight: number
   ): SearchResult[] {
-    const mergedMap = new Map<string, SearchResult>();
+    const resultMap = new Map<string, SearchResult>();
 
-    // Add semantic results with weighted scores
-    semanticResults.forEach((result) => {
-      mergedMap.set(result.chunkId, {
-        ...result,
-        score: result.score * semanticWeight,
-      });
-    });
-
-    // Add or update with keyword results
-    keywordResults.forEach((result) => {
-      const existing = mergedMap.get(result.chunkId);
+    // Add vector results
+    vectorResults.forEach(result => {
+      const existing = resultMap.get(result.id);
       if (existing) {
-        // Combine scores if chunk appears in both results
-        existing.score += result.score * keywordWeight;
+        existing.score = (existing.vectorScore || 0) * vectorWeight + 
+                        (result.vectorScore || 0) * vectorWeight;
+        existing.vectorScore = result.vectorScore;
       } else {
-        // Add new result with weighted score
-        mergedMap.set(result.chunkId, {
-          ...result,
-          score: result.score * keywordWeight,
-        });
+        result.score = (result.vectorScore || 0) * vectorWeight;
+        resultMap.set(result.id, result);
       }
     });
 
-    // Convert to array and sort by combined score
-    const merged = Array.from(mergedMap.values());
-    merged.sort((a, b) => b.score - a.score);
-
-    // Normalize scores to 0-1 range
-    const maxScore = merged[0]?.score || 1;
-    merged.forEach((result) => {
-      result.score = result.score / maxScore;
+    // Add keyword results
+    keywordResults.forEach(result => {
+      const existing = resultMap.get(result.id);
+      if (existing) {
+        existing.score += (result.keywordScore || 0) * keywordWeight;
+        existing.keywordScore = result.keywordScore;
+      } else {
+        result.score = (result.keywordScore || 0) * keywordWeight;
+        resultMap.set(result.id, result);
+      }
     });
 
-    return merged;
+    // Convert to array and sort by score
+    return Array.from(resultMap.values())
+      .sort((a, b) => b.score - a.score);
   }
 
-  async logSearch(
-    query: string,
-    resultsCount: number,
-    userId: string,
-    clickedResults?: string[]
-  ): Promise<void> {
-    try {
-      await supabase.from('search_logs').insert({
-        user_id: userId,
-        query,
-        results_count: resultsCount,
-        clicked_results: clickedResults || [],
-      });
-    } catch (error) {
-      logger.error('Failed to log search:', error);
-    }
+  private rankResults(
+    results: SearchResult[],
+    _options: Required<SearchOptions>
+  ): SearchResult[] {
+    // Apply additional ranking factors
+    return results.map(result => {
+      let boost = 1.0;
+
+      // Boost high importance content
+      if (result.metadata.importance === 'high') {
+        boost *= 1.2;
+      } else if (result.metadata.importance === 'low') {
+        boost *= 0.8;
+      }
+
+      // Boost certain content types
+      if (['definition', 'summary', 'introduction'].includes(result.metadata.contentType)) {
+        boost *= 1.1;
+      }
+
+      // Boost if chunk is start of section
+      if (result.metadata.sectionTitle) {
+        boost *= 1.05;
+      }
+
+      result.score *= boost;
+      return result;
+    }).sort((a, b) => b.score - a.score);
   }
 
-  async getFileChunks(fileId: string): Promise<any[]> {
-    try {
-      const { data: chunks, error } = await supabase
-        .from('file_chunks')
-        .select(
-          `
-          id,
-          content,
-          position,
-          metadata,
-          chunk_embeddings (
-            embedding
-          )
-        `
-        )
-        .eq('file_id', fileId)
-        .order('position');
-
-      if (error) throw error;
-
-      return chunks || [];
-    } catch (error) {
-      logger.error('Failed to get file chunks:', error);
-      throw error;
-    }
-  }
-
-  async clusterChunks(chunks: any[]): Promise<any[]> {
-    try {
-      // Simple clustering based on position and content similarity
-      // In a production system, this would use more sophisticated clustering algorithms
-      const sections: any[] = [];
-      let currentSection: any = null;
-      const sectionSize = 5; // Group every 5 chunks into a section
-
-      chunks.forEach((chunk, index) => {
-        if (index % sectionSize === 0) {
-          if (currentSection) {
-            sections.push(currentSection);
+  private highlightResults(
+    results: SearchResult[],
+    keywords: string[]
+  ): SearchResult[] {
+    return results.map(result => {
+      const highlights: string[] = [];
+      const content = result.content.toLowerCase();
+      
+      keywords.forEach(keyword => {
+        const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+        const matches = content.match(regex);
+        if (matches) {
+          // Extract surrounding context
+          const index = content.indexOf(keyword.toLowerCase());
+          if (index !== -1) {
+            const start = Math.max(0, index - 50);
+            const end = Math.min(content.length, index + keyword.length + 50);
+            const highlight = result.content.substring(start, end);
+            highlights.push(highlight);
           }
-          currentSection = {
-            id: `section-${sections.length + 1}`,
-            suggestedTitle: `Section ${sections.length + 1}`,
-            summary: '',
-            chunkIds: [],
-            startPage: chunk.metadata?.page || 1,
-            endPage: chunk.metadata?.page || 1,
-            topics: [],
+        }
+      });
+
+      result.highlights = highlights;
+      return result;
+    });
+  }
+
+  private async enrichWithContext(results: SearchResult[]): Promise<SearchResult[]> {
+    // Get context for each result (previous and next chunks)
+    const enrichedResults = await Promise.all(
+      results.map(async (result) => {
+        const { data: contextChunks } = await supabase
+          .from('file_chunks')
+          .select('chunk_index, content')
+          .eq('file_id', result.fileId)
+          .in('chunk_index', [
+            result.metadata.chunkIndex - 1,
+            result.metadata.chunkIndex + 1,
+          ]);
+
+        if (contextChunks && contextChunks.length > 0) {
+          const before = contextChunks.find(
+            c => c.chunk_index === result.metadata.chunkIndex - 1
+          );
+          const after = contextChunks.find(
+            c => c.chunk_index === result.metadata.chunkIndex + 1
+          );
+
+          result.context = {
+            before: before?.content.slice(-200), // Last 200 chars
+            after: after?.content.slice(0, 200), // First 200 chars
           };
         }
 
-        currentSection.chunkIds.push(chunk.id);
-        currentSection.endPage = chunk.metadata?.page || currentSection.endPage;
+        return result;
+      })
+    );
 
-        // Extract topics from content (simplified)
-        const topics = this.extractTopics(chunk.content);
-        currentSection.topics = [...new Set([...currentSection.topics, ...topics])];
+    return enrichedResults;
+  }
+
+
+
+  private applyKeywordFilters(query: any, _userId: string, filters: SearchFilters): any {
+    // Similar to applyFilters but for keyword search
+    // User access is handled through the view
+    
+    if (filters.courseId) {
+      query = query.eq('course_id', filters.courseId);
+    }
+
+    if (filters.moduleId) {
+      query = query.eq('module_id', filters.moduleId);
+    }
+
+    if (filters.fileId) {
+      query = query.eq('file_id', filters.fileId);
+    }
+
+    if (filters.fileTypes && filters.fileTypes.length > 0) {
+      query = query.in('mime_type', filters.fileTypes);
+    }
+
+    if (filters.contentTypes && filters.contentTypes.length > 0) {
+      query = query.in('chunk_type', filters.contentTypes);
+    }
+
+    if (filters.importance && filters.importance.length > 0) {
+      query = query.in('importance', filters.importance);
+    }
+
+    return query;
+  }
+
+  private transformSimilarChunksResults(data: any[]): SearchResult[] {
+    return data.map(item => ({
+      id: item.chunk_id,
+      fileId: item.file_id,
+      fileName: 'Unknown', // Will be enriched later
+      content: item.content,
+      score: item.similarity,
+      vectorScore: item.similarity,
+      metadata: {
+        chunkIndex: 0, // Not available in this function
+        contentType: item.chunk_type || 'text',
+        importance: 'medium', // Default
+        sectionTitle: item.section_title,
+        concepts: [],
+        keywords: [],
+      },
+    }));
+  }
+
+  private transformKeywordResults(data: any[], keywords: string[]): SearchResult[] {
+    return data.map(item => {
+      // Calculate keyword score based on matches
+      const content = item.content.toLowerCase();
+      let score = 0;
+      keywords.forEach(keyword => {
+        const regex = new RegExp(`\\b${keyword.toLowerCase()}\\b`, 'g');
+        const matches = content.match(regex);
+        if (matches) {
+          score += matches.length;
+        }
       });
 
-      if (currentSection) {
-        sections.push(currentSection);
+      // Normalize score
+      const normalizedScore = Math.min(score / keywords.length / 10, 1);
+
+      return {
+        id: item.id,
+        fileId: item.file_id,
+        fileName: item.file_name,
+        content: item.content,
+        score: normalizedScore,
+        keywordScore: normalizedScore,
+        metadata: {
+          chunkIndex: item.chunk_index,
+          contentType: item.chunk_type,
+          importance: item.importance,
+          sectionTitle: item.section_title,
+          concepts: item.concepts ? JSON.parse(item.concepts) : [],
+          keywords: item.keywords ? JSON.parse(item.keywords) : [],
+        },
+      };
+    });
+  }
+
+  private preprocessQuery(query: string): string {
+    // Clean and normalize query
+    return query
+      .toLowerCase()
+      .replace(/[^\w\s]/g, ' ') // Remove special characters
+      .replace(/\s+/g, ' ') // Normalize whitespace
+      .trim();
+  }
+
+  private extractKeywords(query: string): string[] {
+    // Extract meaningful keywords from query
+    const stopWords = new Set([
+      'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for',
+      'from', 'has', 'he', 'in', 'is', 'it', 'its', 'of', 'on',
+      'that', 'the', 'to', 'was', 'will', 'with', 'what', 'when',
+      'where', 'who', 'why', 'how',
+    ]);
+
+    return query
+      .split(/\s+/)
+      .filter(word => word.length > 2 && !stopWords.has(word))
+      .map(word => word.trim());
+  }
+
+  private async getTotalCount(userId: string, filters: SearchFilters): Promise<number> {
+    let query = supabase
+      .from('semantic_chunks')
+      .select('id', { count: 'exact', head: true });
+
+    query = this.applyKeywordFilters(query, userId, filters);
+
+    const { count, error } = await query;
+
+    if (error) {
+      logger.error('[HybridSearch] Count query error:', error);
+      return 0;
+    }
+
+    return count || 0;
+  }
+
+  private generateCacheKey(
+    query: string,
+    userId: string,
+    options: Required<SearchOptions>
+  ): string {
+    const key = {
+      q: query,
+      u: userId,
+      ...options,
+    };
+    
+    return `${this.CACHE_PREFIX}${Buffer.from(JSON.stringify(key)).toString('base64')}`;
+  }
+
+  private async getFromCache(key: string): Promise<SearchResponse | null> {
+    try {
+      const cached = await redisClient.get(key);
+      if (cached) {
+        return JSON.parse(cached);
       }
-
-      // Generate titles and summaries for each section
-      for (const section of sections) {
-        const sectionChunks = chunks.filter((c) => section.chunkIds.includes(c.id));
-        const combinedContent = sectionChunks.map((c) => c.content).join(' ');
-
-        // Extract the most prominent topic as title
-        section.suggestedTitle = this.generateSectionTitle(combinedContent);
-        section.summary = this.generateSectionSummary(combinedContent);
-      }
-
-      return sections;
     } catch (error) {
-      logger.error('Failed to cluster chunks:', error);
-      throw error;
+      logger.warn('[HybridSearch] Cache retrieval error:', error);
+    }
+    return null;
+  }
+
+  private async cacheResponse(key: string, response: SearchResponse): Promise<void> {
+    try {
+      await redisClient.setex(key, this.CACHE_TTL, JSON.stringify(response));
+    } catch (error) {
+      logger.warn('[HybridSearch] Cache storage error:', error);
     }
   }
 
-  private extractTopics(content: string): string[] {
-    // Simple topic extraction - in production, use NLP
-    const words = content.toLowerCase().split(/\s+/);
-    const commonWords = new Set([
-      'the',
-      'a',
-      'an',
-      'and',
-      'or',
-      'but',
-      'in',
-      'on',
-      'at',
-      'to',
-      'for',
-    ]);
-
-    const topics = words.filter((word) => word.length > 4 && !commonWords.has(word)).slice(0, 5);
-
-    return [...new Set(topics)];
-  }
-
-  private generateSectionTitle(content: string): string {
-    // Extract first meaningful sentence or phrase
-    const sentences = content.split(/[.!?]+/);
-    const firstSentence = sentences[0]?.trim() || 'Untitled Section';
-
-    // Limit to reasonable length
-    return firstSentence.length > 50 ? firstSentence.substring(0, 50) + '...' : firstSentence;
-  }
-
-  private generateSectionSummary(content: string): string {
-    // Simple summary - take first 200 characters
-    const summary = content.substring(0, 200).trim();
-    return summary + (content.length > 200 ? '...' : '');
+  async clearCache(userId?: string): Promise<void> {
+    try {
+      if (userId) {
+        // Clear cache for specific user
+        const pattern = `${this.CACHE_PREFIX}*${userId}*`;
+        const keys = await redisClient.keys(pattern);
+        if (keys.length > 0) {
+          await redisClient.del(...keys);
+        }
+      } else {
+        // Clear all search cache
+        const keys = await redisClient.keys(`${this.CACHE_PREFIX}*`);
+        if (keys.length > 0) {
+          await redisClient.del(...keys);
+        }
+      }
+      logger.info('[HybridSearch] Cache cleared', { userId });
+    } catch (error) {
+      logger.error('[HybridSearch] Error clearing cache:', error);
+    }
   }
 }

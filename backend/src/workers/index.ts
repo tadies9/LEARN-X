@@ -1,11 +1,17 @@
 import { logger } from '../utils/logger';
 
-// Import workers
-import './fileProcessingWorker';
-import './notificationWorker';
-import './embeddingWorker';
+// Import the main PGMQ worker system
+import { startPGMQWorkers } from './pgmq';
 
-logger.info('Workers started successfully');
+// Start all PGMQ workers
+startPGMQWorkers()
+  .then(() => {
+    logger.info('All PGMQ workers started successfully');
+  })
+  .catch((error) => {
+    logger.error('Failed to start PGMQ workers:', error);
+    process.exit(1);
+  });
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {

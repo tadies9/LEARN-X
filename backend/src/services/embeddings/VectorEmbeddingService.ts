@@ -20,7 +20,7 @@ export interface Embedding {
   model: string;
 }
 
-export class EmbeddingService {
+export class VectorEmbeddingService {
   private model: string = 'text-embedding-3-small';
   private dimensions: number = 1536;
   private batchSize: number = 50;
@@ -127,31 +127,45 @@ export class EmbeddingService {
 
   private async storeEmbeddings(chunks: Chunk[], embeddings: number[][]): Promise<void> {
     try {
-      // Store embeddings in file_chunks metadata
-      const updates = chunks.map((chunk, index) => {
-        return supabase
+      // Prepare data for insertion into file_embeddings table
+      const embeddingRecords = chunks.map((chunk, index) => ({
+        chunk_id: chunk.id,
+        embedding: `[${embeddings[index].join(',')}]`, // Format as PostgreSQL array
+        model_version: this.model,
+      }));
+
+      // Store embeddings in the new vector table
+      const { error: insertError } = await supabase
+        .from('file_embeddings')
+        .upsert(embeddingRecords, {
+          onConflict: 'chunk_id,model_version',
+        });
+
+      if (insertError) {
+        throw insertError;
+      }
+
+      // Update chunk metadata for each chunk individually to avoid null file_id issues
+      for (const chunk of chunks) {
+        const { error: updateError } = await supabase
           .from('file_chunks')
           .update({
-            metadata: {
+            chunk_metadata: {
               ...chunk.metadata,
-              embedding: embeddings[index],
               embedding_model: this.model,
               embedding_generated_at: new Date().toISOString(),
+              has_embedding: true,
             },
           })
           .eq('id', chunk.id);
-      });
 
-      // Execute all updates
-      const results = await Promise.all(updates);
-
-      // Check for errors
-      const errors = results.filter((result) => result.error);
-      if (errors.length > 0) {
-        throw errors[0].error;
+        if (updateError) {
+          logger.error(`Failed to update metadata for chunk ${chunk.id}:`, updateError);
+          throw updateError;
+        }
       }
 
-      logger.info(`Stored ${embeddings.length} embeddings in file_chunks metadata`);
+      logger.info(`Stored ${embeddings.length} embeddings in file_embeddings table`);
     } catch (error) {
       logger.error('Failed to store embeddings:', error);
       throw error;
@@ -161,22 +175,28 @@ export class EmbeddingService {
   async getFileEmbeddings(fileId: string): Promise<Embedding[]> {
     try {
       const { data, error } = await supabase
-        .from('file_chunks')
-        .select('id, metadata')
-        .eq('file_id', fileId)
-        .order('chunk_index');
+        .from('file_embeddings')
+        .select(`
+          chunk_id,
+          embedding,
+          model_version,
+          file_chunks!inner(
+            file_id
+          )
+        `)
+        .eq('file_chunks.file_id', fileId);
 
       if (error) {
         throw error;
       }
 
-      return data
-        .filter((chunk) => chunk.metadata?.embedding)
-        .map((chunk) => ({
-          chunkId: chunk.id,
-          embedding: chunk.metadata.embedding,
-          model: chunk.metadata.embedding_model || this.model,
-        }));
+      return data.map((record) => ({
+        chunkId: record.chunk_id,
+        embedding: Array.isArray(record.embedding) 
+          ? record.embedding 
+          : JSON.parse(record.embedding),
+        model: record.model_version,
+      }));
     } catch (error) {
       logger.error('Failed to get file embeddings:', error);
       throw error;
@@ -185,10 +205,28 @@ export class EmbeddingService {
 
   async deleteFileEmbeddings(fileId: string): Promise<void> {
     try {
-      const { error } = await supabase.from('chunk_embeddings').delete().eq('file_id', fileId);
+      // Get chunk IDs for the file
+      const { data: chunks, error: chunkError } = await supabase
+        .from('file_chunks')
+        .select('id')
+        .eq('file_id', fileId);
 
-      if (error) {
-        throw error;
+      if (chunkError) {
+        throw chunkError;
+      }
+
+      if (chunks && chunks.length > 0) {
+        const chunkIds = chunks.map(c => c.id);
+        
+        // Delete embeddings for these chunks
+        const { error } = await supabase
+          .from('file_embeddings')
+          .delete()
+          .in('chunk_id', chunkIds);
+
+        if (error) {
+          throw error;
+        }
       }
 
       logger.info(`Deleted embeddings for file ${fileId}`);
@@ -201,18 +239,81 @@ export class EmbeddingService {
   async checkEmbeddingsExist(fileId: string): Promise<boolean> {
     try {
       const { count, error } = await supabase
-        .from('chunk_embeddings')
-        .select('*', { count: 'exact', head: true })
-        .eq('file_id', fileId);
+        .from('file_embeddings')
+        .select('chunk_id', { count: 'exact', head: true })
+        .eq('file_chunks.file_id', fileId)
+        .not('file_chunks', 'is', null);
 
       if (error) {
-        throw error;
+        // Fallback to checking via chunks
+        const { data: chunks } = await supabase
+          .from('file_chunks')
+          .select('id')
+          .eq('file_id', fileId)
+          .limit(1);
+
+        if (chunks && chunks.length > 0) {
+          const { count: embCount } = await supabase
+            .from('file_embeddings')
+            .select('*', { count: 'exact', head: true })
+            .eq('chunk_id', chunks[0].id);
+
+          return (embCount || 0) > 0;
+        }
+        return false;
       }
 
       return (count || 0) > 0;
     } catch (error) {
       logger.error('Failed to check embeddings existence:', error);
       return false;
+    }
+  }
+
+  async searchSimilarChunks(
+    queryEmbedding: number[],
+    options: {
+      matchCount?: number;
+      fileIdFilter?: string;
+      threshold?: number;
+    } = {}
+  ): Promise<Array<{
+    chunkId: string;
+    content: string;
+    metadata: any;
+    similarity: number;
+    fileId: string;
+  }>> {
+    try {
+      const { matchCount = 10, fileIdFilter, threshold = 0.7 } = options;
+
+      // Format embedding for PostgreSQL
+      const embeddingStr = `[${queryEmbedding.join(',')}]`;
+
+      // Use the SQL function we created
+      const { data, error } = await supabase.rpc('search_similar_chunks', {
+        query_embedding: embeddingStr,
+        match_count: matchCount,
+        file_id_filter: fileIdFilter,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Filter by threshold if specified
+      return (data || [])
+        .filter((result: any) => result.similarity >= threshold)
+        .map((result: any) => ({
+          chunkId: result.chunk_id,
+          content: result.content,
+          metadata: result.chunk_metadata,
+          similarity: result.similarity,
+          fileId: result.file_id,
+        }));
+    } catch (error) {
+      logger.error('Failed to search similar chunks:', error);
+      throw error;
     }
   }
 }
