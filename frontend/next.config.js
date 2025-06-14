@@ -3,7 +3,7 @@ const nextConfig = {
   /* config options here */
   reactStrictMode: true,
   swcMinify: true,
-  // output: 'standalone', // Temporarily disable to avoid build trace timeout
+  output: 'standalone',
   trailingSlash: false,
   experimental: {
     esmExternals: false,
