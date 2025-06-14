@@ -10,17 +10,21 @@ export const metadata: Metadata = {
 
 interface StudyPageProps {
   params: {
-    id: string;     // courseId
+    id: string; // courseId
     fileId: string; // specific file to study
   };
 }
 
 export default async function StudyPage({ params }: StudyPageProps) {
   const supabase = createClient();
-  
+
   // Get current user
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser();
+  if (userError || !user) {
+    console.error('User not authenticated:', userError);
     notFound();
   }
 
@@ -32,6 +36,7 @@ export default async function StudyPage({ params }: StudyPageProps) {
     .single();
 
   if (courseError || !course) {
+    console.error('Course not found:', { courseId: params.id, error: courseError });
     notFound();
   }
 
@@ -43,28 +48,41 @@ export default async function StudyPage({ params }: StudyPageProps) {
   // Fetch file data
   const { data: file, error: fileError } = await supabase
     .from('course_files')
-    .select(`
+    .select(
+      `
       id,
       name,
-      file_path,
-      file_type,
-      file_url,
+      original_name,
+      storage_path,
+      mime_type,
       status,
-      embedding_status,
-      module:course_modules(
-        id,
-        title
-      )
-    `)
+      metadata,
+      module_id,
+      course_id
+    `
+    )
     .eq('id', params.fileId)
     .single();
 
   if (fileError || !file) {
+    console.error('File not found:', { fileId: params.fileId, error: fileError });
     notFound();
   }
 
+  // Fetch module data if file has a module
+  let moduleTitle: string | undefined;
+  if (file.module_id) {
+    const { data: module } = await supabase
+      .from('modules')
+      .select('title')
+      .eq('id', file.module_id)
+      .single();
+
+    moduleTitle = module?.title;
+  }
+
   // Check if file is processed and ready
-  if (file.status !== 'processed' || file.embedding_status !== 'completed') {
+  if (file.status !== 'processed') {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
@@ -86,15 +104,31 @@ export default async function StudyPage({ params }: StudyPageProps) {
     .limit(1)
     .single();
 
+  // Generate signed URL for the file using backend API
+  let fileUrl = '';
+  try {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/files/${params.fileId}/working-signed-url`
+    );
+    if (response.ok) {
+      const data = await response.json();
+      fileUrl = data.data.url;
+    } else {
+      console.error('Failed to get signed URL:', response.status, response.statusText);
+    }
+  } catch (error) {
+    console.error('Error fetching signed URL:', error);
+  }
+
   return (
     <StudyLayout
       courseId={params.id}
       courseTitle={course.title}
       fileId={params.fileId}
       fileName={file.name}
-      fileUrl={file.file_url}
-      fileType={file.file_type}
-      moduleTitle={file.module?.title}
+      fileUrl={fileUrl}
+      fileType={file.mime_type}
+      moduleTitle={moduleTitle}
       userId={user.id}
       userPersona={persona}
     />

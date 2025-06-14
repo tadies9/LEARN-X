@@ -7,16 +7,25 @@ import { FILE_PROCESSING_QUEUE } from '../config/queue';
 import { transformCourseFile, transformCourseFiles } from '../utils/transformers';
 
 // Create a service role client specifically for storage operations
-const supabaseServiceRole = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_KEY!,
-  {
+const supabaseServiceRole = (() => {
+  const url = process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceKey) {
+    console.error('Missing Supabase configuration:', {
+      hasUrl: !!url,
+      hasServiceKey: !!serviceKey,
+      envKeys: Object.keys(process.env).filter((k) => k.includes('SUPABASE')),
+    });
+  }
+
+  return createClient(url!, serviceKey!, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
     },
-  }
-);
+  });
+})();
 
 export class FileService {
   private bucketName = 'course-files';
@@ -333,23 +342,47 @@ export class FileService {
     console.log('File found:', {
       id: file.id,
       name: file.name,
-      storage_path: (file as any).storage_path,
+      storage_path: file.storagePath,
     });
 
     console.log('Creating signed URL with Supabase service role client...');
-    const { data, error } = await supabaseServiceRole.storage
-      .from(this.bucketName)
-      .createSignedUrl((file as any).storage_path, expiresIn);
 
-    if (error || !data) {
-      console.error('Supabase signed URL error:', error);
-      throw new AppError(
-        'Failed to generate signed URL: ' + (error?.message || 'Unknown error'),
-        500
-      );
+    try {
+      // Try with service role client first
+      const { data, error } = await supabaseServiceRole.storage
+        .from(this.bucketName)
+        .createSignedUrl(file.storagePath, expiresIn);
+
+      if (!error && data?.signedUrl) {
+        console.log('Signed URL created successfully with service role');
+        return data.signedUrl;
+      }
+
+      console.error('Service role signed URL error:', error);
+    } catch (serviceError) {
+      console.error('Service role client error:', serviceError);
     }
 
-    console.log('Signed URL created successfully');
-    return data.signedUrl;
+    // Fallback to regular client
+    console.log('Trying with regular supabase client...');
+    try {
+      const { data, error } = await supabase.storage
+        .from(this.bucketName)
+        .createSignedUrl(file.storagePath, expiresIn);
+
+      if (error || !data) {
+        console.error('Regular client signed URL error:', error);
+        throw new AppError(
+          'Failed to generate signed URL: ' + (error?.message || 'Unknown error'),
+          500
+        );
+      }
+
+      console.log('Signed URL created successfully with regular client');
+      return data.signedUrl;
+    } catch (fallbackError) {
+      console.error('All attempts to create signed URL failed:', fallbackError);
+      throw new AppError('Failed to generate signed URL', 500);
+    }
   }
 }

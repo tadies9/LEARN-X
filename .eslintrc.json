@@ -34,5 +34,5 @@
       }
     ]
   },
-  "ignorePatterns": ["dist", "build", ".next", "node_modules"]
+  "ignorePatterns": ["dist", "build", ".next", "node_modules", "frontend/public/pdf.worker.min.js"]
 }

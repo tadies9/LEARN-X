@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { PDFViewer } from '@/components/learning/PdfViewer';
+import { FileViewer } from '@/components/learning/FileViewer';
 import { AIChat } from '@/components/learning/AiChat';
 import { ProgressTracker } from '@/components/learning/ProgressTracker';
 import { QuizComponent } from '@/components/learning/QuizComponent';
@@ -32,16 +32,22 @@ interface LearningLayoutProps {
   courseId: string;
   courseTitle: string;
   pdfUrl: string;
-  modules: Module[];
+  modules?: Module[];
   questions?: Question[];
+  fileId?: string | null;
+  fileName?: string | null;
+  fileMimeType?: string;
 }
 
 export function LearningLayout({
   courseId,
   courseTitle,
   pdfUrl,
-  modules,
+  modules = [],
   questions = [],
+  fileId,
+  fileName,
+  fileMimeType,
 }: LearningLayoutProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
@@ -136,7 +142,11 @@ export function LearningLayout({
               </div>
 
               <TabsContent value="document" className="flex-1 p-6 mt-0">
-                <PDFViewer url={pdfUrl} title={courseTitle} />
+                <FileViewer
+                  url={pdfUrl}
+                  fileName={fileName || courseTitle || 'Document'}
+                  mimeType={fileMimeType}
+                />
               </TabsContent>
 
               <TabsContent value="quiz" className="flex-1 p-6 mt-0">

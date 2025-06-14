@@ -29,6 +29,14 @@ const nextConfig = {
       net: false,
       tls: false,
     };
+
+    // Configure PDF.js worker
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'pdfjs-dist/build/pdf.worker.min.js': false,
+      'pdfjs-dist/build/pdf.worker.min.mjs': false,
+    };
+
     return config;
   },
   // Configure server to use port 3001
@@ -37,6 +45,34 @@ const nextConfig = {
       {
         source: '/_next/webpack-hmr',
         destination: 'http://localhost:3000/_next/webpack-hmr',
+      },
+    ];
+  },
+
+  // Add headers for CORS and worker files
+  async headers() {
+    return [
+      {
+        source: '/pdf.worker.min.js',
+        headers: [
+          {
+            key: 'Cross-Origin-Embedder-Policy',
+            value: 'require-corp',
+          },
+          {
+            key: 'Cross-Origin-Resource-Policy',
+            value: 'cross-origin',
+          },
+        ],
+      },
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cross-Origin-Opener-Policy',
+            value: 'same-origin-allow-popups',
+          },
+        ],
       },
     ];
   },

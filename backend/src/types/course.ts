@@ -42,6 +42,7 @@ export interface CourseFile {
   name: string;
   description?: string;
   filePath: string;
+  storagePath: string;
   mimeType: string;
   size: number;
   position: number;

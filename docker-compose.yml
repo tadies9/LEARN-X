@@ -1,20 +1,4 @@
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-      - NEXT_PUBLIC_API_URL=http://localhost:8080/api
-    env_file:
-      - ./frontend/.env.local
-    depends_on:
-      - backend
-    networks:
-      - learn-x-network
-
   backend:
     build:
       context: ./backend

@@ -1,24 +1,4 @@
 services:
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=development
-      - WATCHPACK_POLLING=true
-    env_file:
-      - ./frontend/.env.local
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-      - /app/.next
-    depends_on:
-      - backend
-    networks:
-      - learn-x-network
-
   backend:
     build:
       context: ./backend
@@ -38,6 +18,25 @@ services:
       - learn-x-network
     depends_on:
       - redis
+
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    environment:
+      - NODE_ENV=development
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ./backend/src:/app/src
+      - ./backend/.env:/app/.env
+    networks:
+      - learn-x-network
+    depends_on:
+      - redis
+    command: npm run start:worker
 
   redis:
     image: redis:7-alpine

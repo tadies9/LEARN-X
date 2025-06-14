@@ -12,6 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { useToast } from '@/components/ui/use-toast';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { moduleApi } from '@/lib/api/module';
 import { fileApi } from '@/lib/api/file';
 import type { Module, CourseFile } from '@/lib/types/course';
@@ -32,10 +33,14 @@ import {
   Video,
   FileImage,
   Download,
+  Sparkles,
+  Grid,
+  List,
 } from 'lucide-react';
 import { EditModuleDialog } from './EditModuleDialog';
 import { UploadFileDialog } from './UploadFileDialog';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface CollapsibleModuleListProps {
   modules?: Module[];
@@ -61,12 +66,14 @@ export function CollapsibleModuleList({
   onReorder,
 }: CollapsibleModuleListProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [editingModule, setEditingModule] = useState<Module | null>(null);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
   const [moduleFiles, setModuleFiles] = useState<Record<string, CourseFile[]>>({});
   const [uploadingToModule, setUploadingToModule] = useState<string | null>(null);
   const [draggedModule, setDraggedModule] = useState<Module | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'grid'>('list');
 
   const toggleModule = async (moduleId: string) => {
     const newExpanded = new Set(expandedModules);
@@ -195,6 +202,25 @@ export function CollapsibleModuleList({
         variant: 'destructive',
       });
     }
+  };
+
+  const handlePersonalize = (file: CourseFile) => {
+    // Get courseId from current URL
+    const pathSegments = window.location.pathname.split('/');
+    const courseIdIndex = pathSegments.indexOf('courses');
+
+    if (courseIdIndex === -1 || courseIdIndex >= pathSegments.length - 1) {
+      console.error('Could not extract course ID from URL');
+      return;
+    }
+
+    const courseId = pathSegments[courseIdIndex + 1];
+
+    // Navigate to the learn page with file context
+    // Since the study/[fileId] page might have issues, use the learn page with query params
+    router.push(
+      `/courses/${courseId}/learn?fileId=${file.id}&fileName=${encodeURIComponent(file.name)}`
+    );
   };
 
   const getFileIcon = (mimeType: string) => {
@@ -382,17 +408,38 @@ export function CollapsibleModuleList({
             {/* Expandable Content */}
             {isExpanded && (
               <CardContent className="pt-0 ml-11">
-                <div className="space-y-2">
-                  {(() => {
-                    console.log('Rendering files for module:', module.id);
-                    console.log('Files array:', files);
-                    console.log('Files length:', files.length);
-                    console.log('Files type:', typeof files);
-                    console.log('Is array?', Array.isArray(files));
+                {/* View Mode Toggle */}
+                {files.length > 0 && (
+                  <div className="flex justify-between items-center mb-4">
+                    <div className="text-sm text-muted-foreground">
+                      {files.length} {files.length === 1 ? 'file' : 'files'}
+                    </div>
+                    <ToggleGroup
+                      type="single"
+                      value={viewMode}
+                      onValueChange={(value) => value && setViewMode(value as 'list' | 'grid')}
+                    >
+                      <ToggleGroupItem value="list" aria-label="List view">
+                        <List className="h-4 w-4" />
+                      </ToggleGroupItem>
+                      <ToggleGroupItem value="grid" aria-label="Grid view">
+                        <Grid className="h-4 w-4" />
+                      </ToggleGroupItem>
+                    </ToggleGroup>
+                  </div>
+                )}
 
+                <div
+                  className={
+                    viewMode === 'grid'
+                      ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3'
+                      : 'space-y-2'
+                  }
+                >
+                  {(() => {
                     if (!files || files.length === 0) {
                       return (
-                        <div className="text-center py-6 text-muted-foreground">
+                        <div className="text-center py-6 text-muted-foreground col-span-full">
                           <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
                           <p className="text-sm">No files in this module yet.</p>
                           <Button
@@ -408,54 +455,132 @@ export function CollapsibleModuleList({
                       );
                     }
 
-                    return files.map((file) => (
-                      <div
-                        key={file.id}
-                        className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors"
-                      >
-                        <div className="text-muted-foreground">{getFileIcon(file.mimeType)}</div>
+                    return files.map((file) => {
+                      if (viewMode === 'grid') {
+                        return (
+                          <Card key={file.id} className="group hover:shadow-md transition-all">
+                            <CardContent className="p-4">
+                              <div className="flex flex-col items-center text-center space-y-3">
+                                <div className="p-3 rounded-lg bg-muted/50 text-muted-foreground">
+                                  {getFileIcon(file.mimeType)}
+                                </div>
 
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium truncate">{file.name}</span>
-                            <Badge variant="outline" className="text-xs">
-                              {file.status}
-                            </Badge>
+                                <div className="w-full space-y-2">
+                                  <h4 className="font-medium text-sm truncate">{file.name}</h4>
+                                  <Badge variant="outline" className="text-xs">
+                                    {file.status}
+                                  </Badge>
+                                </div>
+
+                                {file.description && (
+                                  <p className="text-xs text-muted-foreground line-clamp-2">
+                                    {file.description}
+                                  </p>
+                                )}
+
+                                <div className="text-xs text-muted-foreground">
+                                  <div>{formatFileSize(file.size)}</div>
+                                  <div>
+                                    {file.createdAt
+                                      ? new Date(file.createdAt).toLocaleDateString()
+                                      : 'Recently uploaded'}
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-1 pt-2">
+                                  <Button
+                                    variant="outline"
+                                    size="icon"
+                                    onClick={() => handlePersonalize(file)}
+                                    className="h-8 w-8 border-purple-200 text-purple-600 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300"
+                                    title="Personalized Learning"
+                                  >
+                                    <Sparkles className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDownloadFile(file.id)}
+                                    className="h-8 w-8"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => handleDeleteFile(file.id, module.id)}
+                                    className="h-8 w-8 text-destructive hover:text-destructive"
+                                  >
+                                    <Trash className="h-3 w-3" />
+                                  </Button>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      }
+
+                      // List view
+                      return (
+                        <div
+                          key={file.id}
+                          className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors"
+                        >
+                          <div className="text-muted-foreground">{getFileIcon(file.mimeType)}</div>
+
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium truncate">{file.name}</span>
+                              <Badge variant="outline" className="text-xs">
+                                {file.status}
+                              </Badge>
+                            </div>
+                            {file.description && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                {file.description}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                              <span>{formatFileSize(file.size)}</span>
+                              <span>•</span>
+                              <span>
+                                {file.createdAt
+                                  ? new Date(file.createdAt).toLocaleDateString()
+                                  : 'Recently uploaded'}
+                              </span>
+                            </div>
                           </div>
-                          {file.description && (
-                            <p className="text-xs text-muted-foreground mt-1">{file.description}</p>
-                          )}
-                          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
-                            <span>{formatFileSize(file.size)}</span>
-                            <span>•</span>
-                            <span>
-                              {file.createdAt
-                                ? new Date(file.createdAt).toLocaleDateString()
-                                : 'Recently uploaded'}
-                            </span>
+
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              onClick={() => handlePersonalize(file)}
+                              className="h-8 w-8 border-purple-200 text-purple-600 hover:bg-purple-50 hover:text-purple-700 hover:border-purple-300"
+                              title="Personalized Learning"
+                            >
+                              <Sparkles className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDownloadFile(file.id)}
+                              className="h-8 w-8"
+                            >
+                              <Download className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleDeleteFile(file.id, module.id)}
+                              className="h-8 w-8 text-destructive hover:text-destructive"
+                            >
+                              <Trash className="h-3 w-3" />
+                            </Button>
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDownloadFile(file.id)}
-                            className="h-8 w-8"
-                          >
-                            <Download className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteFile(file.id, module.id)}
-                            className="h-8 w-8 text-destructive hover:text-destructive"
-                          >
-                            <Trash className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-                    ));
+                      );
+                    });
                   })()}
                 </div>
               </CardContent>
