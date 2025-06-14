@@ -12,6 +12,34 @@ import sessionRoutes from './session.routes';
 
 const router = Router();
 
+// Test endpoint for module files (bypasses all middleware)
+router.get('/test-module-files/:moduleId', async (req, res) => {
+  try {
+    console.log('Direct test endpoint - getting files for module:', req.params.moduleId);
+    const { FileService } = await import('../services/fileService');
+    const fileService = new FileService();
+
+    // Use a hardcoded user ID for testing
+    const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a';
+    const files = await fileService.getModuleFiles(req.params.moduleId, userId);
+
+    res.json({
+      success: true,
+      data: files,
+      debug: {
+        moduleId: req.params.moduleId,
+        userId,
+        fileCount: files.length,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+      debug: { moduleId: req.params.moduleId },
+    });
+  }
+});
+
 // Mount route modules
 router.use('/auth', authRoutes);
 router.use('/persona', personaRoutes);

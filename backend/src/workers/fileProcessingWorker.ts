@@ -25,11 +25,11 @@ FILE_PROCESSING_QUEUE.process('process-file', async (job: Job<FileProcessingJobD
     logger.info(`Starting file processing for file ${fileId}`);
 
     // Update file status to processing
-    await supabase.from('files').update({ status: 'processing' }).eq('id', fileId);
+    await supabase.from('course_files').update({ status: 'processing' }).eq('id', fileId);
 
     // Get file details
     const { data: file, error: fileError } = await supabase
-      .from('files')
+      .from('course_files')
       .select('*')
       .eq('id', fileId)
       .single();
@@ -41,21 +41,24 @@ FILE_PROCESSING_QUEUE.process('process-file', async (job: Job<FileProcessingJobD
     // Process based on file type
     let extractedContent: string;
 
-    if (file.file_type === 'pdf' || file.file_type === 'application/pdf') {
+    if (file.mime_type === 'pdf' || file.mime_type === 'application/pdf') {
       extractedContent = await fileProcessingService.extractPdfText(file.storage_path);
-    } else if (file.file_type.includes('word') || file.file_type.includes('doc')) {
+    } else if (file.mime_type.includes('word') || file.mime_type.includes('doc')) {
       extractedContent = await fileProcessingService.extractWordText(file.storage_path);
-    } else if (file.file_type.includes('text') || file.file_type === 'txt') {
+    } else if (file.mime_type.includes('text') || file.mime_type === 'txt') {
       extractedContent = await fileProcessingService.extractPlainText(file.storage_path);
     } else {
-      throw new Error(`Unsupported file type: ${file.file_type}`);
+      throw new Error(`Unsupported file type: ${file.mime_type}`);
     }
 
     // Update job progress
     await job.progress(30);
 
     // Extract metadata
-    const metadata = await fileProcessingService.extractMetadata(extractedContent, file.filename);
+    const metadata = await fileProcessingService.extractMetadata(
+      extractedContent,
+      file.name || file.original_name
+    );
     await job.progress(40);
 
     // Chunk the content
@@ -70,7 +73,7 @@ FILE_PROCESSING_QUEUE.process('process-file', async (job: Job<FileProcessingJobD
       file_id: fileId,
       content: chunk.content,
       metadata: chunk.metadata,
-      position: index + 1,
+      chunk_index: index,
     }));
 
     const { error: chunkError } = await supabase.from('file_chunks').insert(chunkRecords);
@@ -84,26 +87,26 @@ FILE_PROCESSING_QUEUE.process('process-file', async (job: Job<FileProcessingJobD
     // Get chunk IDs from the inserted records
     const { data: insertedChunks } = await supabase
       .from('file_chunks')
-      .select('id, content, position')
+      .select('id, content, chunk_index')
       .eq('file_id', fileId)
-      .order('position');
+      .order('chunk_index');
 
     // Queue embedding generation for all chunks at once
     if (insertedChunks && insertedChunks.length > 0) {
       await EMBEDDING_QUEUE.add('generate-embeddings', {
         fileId,
         userId,
-        chunks: insertedChunks.map(chunk => ({
+        chunks: insertedChunks.map((chunk) => ({
           id: chunk.id,
           content: chunk.content,
-          position: chunk.position,
+          position: chunk.chunk_index,
         })),
       });
     }
 
     // Update file status and metadata
     await supabase
-      .from('files')
+      .from('course_files')
       .update({
         status: 'processed',
         metadata: {
@@ -123,7 +126,7 @@ FILE_PROCESSING_QUEUE.process('process-file', async (job: Job<FileProcessingJobD
       type: 'file-processed',
       data: {
         fileId,
-        fileName: file.filename,
+        fileName: file.name || file.original_name,
         chunkCount: chunks.length,
       },
     });
@@ -140,7 +143,7 @@ FILE_PROCESSING_QUEUE.process('process-file', async (job: Job<FileProcessingJobD
 
     // Update file status to failed
     await supabase
-      .from('files')
+      .from('course_files')
       .update({
         status: 'failed',
         metadata: {

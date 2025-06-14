@@ -127,20 +127,31 @@ export class EmbeddingService {
 
   private async storeEmbeddings(chunks: Chunk[], embeddings: number[][]): Promise<void> {
     try {
-      const records = chunks.map((chunk, index) => ({
-        file_id: chunk.fileId,
-        chunk_id: chunk.id,
-        embedding: embeddings[index],
-        model: this.model,
-      }));
+      // Store embeddings in file_chunks metadata
+      const updates = chunks.map((chunk, index) => {
+        return supabase
+          .from('file_chunks')
+          .update({
+            metadata: {
+              ...chunk.metadata,
+              embedding: embeddings[index],
+              embedding_model: this.model,
+              embedding_generated_at: new Date().toISOString(),
+            },
+          })
+          .eq('id', chunk.id);
+      });
 
-      const { error } = await supabase.from('chunk_embeddings').insert(records);
+      // Execute all updates
+      const results = await Promise.all(updates);
 
-      if (error) {
-        throw error;
+      // Check for errors
+      const errors = results.filter((result) => result.error);
+      if (errors.length > 0) {
+        throw errors[0].error;
       }
 
-      logger.info(`Stored ${records.length} embeddings in database`);
+      logger.info(`Stored ${embeddings.length} embeddings in file_chunks metadata`);
     } catch (error) {
       logger.error('Failed to store embeddings:', error);
       throw error;
@@ -150,20 +161,22 @@ export class EmbeddingService {
   async getFileEmbeddings(fileId: string): Promise<Embedding[]> {
     try {
       const { data, error } = await supabase
-        .from('chunk_embeddings')
-        .select('chunk_id, embedding, model')
+        .from('file_chunks')
+        .select('id, metadata')
         .eq('file_id', fileId)
-        .order('chunk_id');
+        .order('chunk_index');
 
       if (error) {
         throw error;
       }
 
-      return data.map((row) => ({
-        chunkId: row.chunk_id,
-        embedding: row.embedding,
-        model: row.model,
-      }));
+      return data
+        .filter((chunk) => chunk.metadata?.embedding)
+        .map((chunk) => ({
+          chunkId: chunk.id,
+          embedding: chunk.metadata.embedding,
+          model: chunk.metadata.embedding_model || this.model,
+        }));
     } catch (error) {
       logger.error('Failed to get file embeddings:', error);
       throw error;

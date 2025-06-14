@@ -5,7 +5,7 @@ import { TrustedBy } from '@/components/sections/TrustedBy';
 import { FeaturesGrid } from '@/components/sections/FeaturesGrid';
 import { HowItWorks } from '@/components/sections/HowItWorks';
 import { ForEducators } from '@/components/sections/ForEducators';
-import { CTAFinal } from '@/components/sections/CTAFinal';
+import { CTAFinal } from '@/components/sections/CtaFinal';
 
 export default function HomePage() {
   return (

@@ -29,18 +29,27 @@ interface FileMetadata {
 export class FileProcessingService {
   async extractPdfText(filePath: string): Promise<string> {
     try {
+      logger.info(`Downloading PDF from storage: ${filePath}`);
+
       // Download file from Supabase Storage
       const { data, error } = await supabase.storage.from('course-files').download(filePath);
 
-      if (error || !data) {
-        throw new Error('Failed to download file');
+      if (error) {
+        logger.error('Supabase download error:', error);
+        throw new Error(`Failed to download file: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error('No data returned from storage');
       }
 
       // Convert blob to buffer
       const buffer = Buffer.from(await data.arrayBuffer());
+      logger.info(`Downloaded file size: ${buffer.length} bytes`);
 
       // Extract text from PDF
       const pdfData = await pdf(buffer);
+      logger.info(`Extracted ${pdfData.text.length} characters from PDF`);
 
       return pdfData.text;
     } catch (error) {
@@ -51,18 +60,27 @@ export class FileProcessingService {
 
   async extractWordText(filePath: string): Promise<string> {
     try {
+      logger.info(`Downloading Word document from storage: ${filePath}`);
+
       // Download file from Supabase Storage
       const { data, error } = await supabase.storage.from('course-files').download(filePath);
 
-      if (error || !data) {
-        throw new Error('Failed to download file');
+      if (error) {
+        logger.error('Supabase download error:', error);
+        throw new Error(`Failed to download file: ${error.message}`);
+      }
+
+      if (!data) {
+        throw new Error('No data returned from storage');
       }
 
       // Convert blob to buffer
       const buffer = Buffer.from(await data.arrayBuffer());
+      logger.info(`Downloaded file size: ${buffer.length} bytes`);
 
       // Extract text from Word document
       const result = await mammoth.extractRawText({ buffer });
+      logger.info(`Extracted ${result.value.length} characters from Word document`);
 
       return result.value;
     } catch (error) {

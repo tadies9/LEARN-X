@@ -40,7 +40,12 @@ export class CostTracker {
       });
 
       if (error) {
-        logger.error('Failed to track AI request:', error);
+        if (error.code === '42P01') {
+          logger.warn('AI cost tracking disabled: ai_requests table does not exist');
+          return; // Skip further processing if table doesn't exist
+        } else {
+          logger.error('Failed to track AI request:', error);
+        }
       }
 
       // Check if user is approaching daily limit
@@ -62,6 +67,10 @@ export class CostTracker {
         .gte('created_at', today.toISOString());
 
       if (error) {
+        if (error.code === '42P01') {
+          // Table doesn't exist, return 0 spend
+          return 0;
+        }
         logger.error('Failed to get user daily spend:', error);
         return 0;
       }
@@ -84,6 +93,10 @@ export class CostTracker {
         .gte('created_at', today.toISOString());
 
       if (error) {
+        if (error.code === '42P01') {
+          // Table doesn't exist, return 0 spend
+          return 0;
+        }
         logger.error('Failed to get total daily spend:', error);
         return 0;
       }
@@ -155,6 +168,10 @@ export class CostTracker {
       const { data, error } = await query;
 
       if (error) {
+        if (error.code === '42P01') {
+          // Table doesn't exist, return empty stats
+          return this.getEmptyStats();
+        }
         logger.error('Failed to get dashboard stats:', error);
         throw error;
       }
@@ -206,5 +223,23 @@ export class CostTracker {
       logger.error('Failed to generate dashboard stats:', error);
       throw error;
     }
+  }
+
+  private getEmptyStats() {
+    return {
+      today: {
+        requests: 0,
+        cost: 0,
+        tokens: 0,
+        cacheHitRate: 0,
+      },
+      byModel: {},
+      byType: {},
+      hourly: Array.from({ length: 24 }, (_, i) => ({
+        hour: i,
+        requests: 0,
+        cost: 0,
+      })),
+    };
   }
 }

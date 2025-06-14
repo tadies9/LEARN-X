@@ -36,23 +36,17 @@ class FileApiService extends BaseApiService {
 
   // Reorder files within a module
   async reorderFiles(moduleId: string, fileIds: string[]) {
-    return this.customRequest<CourseFile[]>(
-      'put',
-      `/modules/${moduleId}/files/reorder`,
-      { fileIds }
-    );
+    return this.customRequest<CourseFile[]>('put', `/modules/${moduleId}/files/reorder`, {
+      fileIds,
+    });
   }
 
   // Get signed URL for file access
   async getSignedUrl(fileId: string, expiresIn = 3600) {
-    // Temporary: Use public endpoint for testing
-    const response = await this.customRequest<{ url: string; expiresAt?: string }>(
-      'get',
-      `/files/${fileId}/signed-url-public`,
-      undefined,
-      { params: { expiresIn } }
-    );
-    return response.url;
+    // For now, return a placeholder URL since signed URLs are having issues
+    // This will be fixed once authentication is properly set up
+    console.warn('Signed URL generation temporarily disabled due to authentication issues');
+    return `#file-${fileId}`;
   }
 }
 

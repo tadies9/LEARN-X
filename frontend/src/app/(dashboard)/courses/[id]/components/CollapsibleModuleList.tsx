@@ -55,7 +55,11 @@ interface ModuleContentItem {
   isPublished: boolean;
 }
 
-export function CollapsibleModuleList({ modules = [], onUpdate, onReorder }: CollapsibleModuleListProps) {
+export function CollapsibleModuleList({
+  modules = [],
+  onUpdate,
+  onReorder,
+}: CollapsibleModuleListProps) {
   const { toast } = useToast();
   const [editingModule, setEditingModule] = useState<Module | null>(null);
   const [expandedModules, setExpandedModules] = useState<Set<string>>(new Set());
@@ -66,22 +70,35 @@ export function CollapsibleModuleList({ modules = [], onUpdate, onReorder }: Col
 
   const toggleModule = async (moduleId: string) => {
     const newExpanded = new Set(expandedModules);
-    
+
     if (newExpanded.has(moduleId)) {
       newExpanded.delete(moduleId);
     } else {
       newExpanded.add(moduleId);
-      // Load module files if not already loaded
-      if (!moduleFiles[moduleId]) {
+      // Always reload files when expanding (remove cache check temporarily)
+      try {
+        console.log('Loading files for module:', moduleId);
+        const files = await moduleApi.getModuleFiles(moduleId);
+        console.log('Files received from API:', files);
+        console.log('Files type:', typeof files);
+        console.log('Is array?', Array.isArray(files));
+        if (files && typeof files === 'object' && !Array.isArray(files)) {
+          console.log('Files object keys:', Object.keys(files));
+        }
+        setModuleFiles((prev) => ({ ...prev, [moduleId]: files }));
+      } catch (error) {
+        console.error('Error loading module files:', error);
+        // Try the test endpoint as fallback
         try {
-          const files = await moduleApi.getModuleFiles(moduleId);
-          setModuleFiles(prev => ({ ...prev, [moduleId]: files }));
-        } catch (error) {
-          console.error('Error loading module files:', error);
+          const response = await fetch(`/api/v1/test/module/${moduleId}/files`);
+          const data = await response.json();
+          console.log('Test endpoint response:', data);
+        } catch (e) {
+          console.error('Test endpoint also failed:', e);
         }
       }
     }
-    
+
     setExpandedModules(newExpanded);
   };
 
@@ -135,7 +152,7 @@ export function CollapsibleModuleList({ modules = [], onUpdate, onReorder }: Col
     // Reload module files
     try {
       const files = await moduleApi.getModuleFiles(moduleId);
-      setModuleFiles(prev => ({ ...prev, [moduleId]: files }));
+      setModuleFiles((prev) => ({ ...prev, [moduleId]: files }));
       setUploadingToModule(null);
       onUpdate(); // Also refresh the module list to update file counts
     } catch (error) {
@@ -156,7 +173,7 @@ export function CollapsibleModuleList({ modules = [], onUpdate, onReorder }: Col
       });
       // Reload module files
       const files = await moduleApi.getModuleFiles(moduleId);
-      setModuleFiles(prev => ({ ...prev, [moduleId]: files }));
+      setModuleFiles((prev) => ({ ...prev, [moduleId]: files }));
       onUpdate();
     } catch (error) {
       toast({
@@ -274,7 +291,7 @@ export function CollapsibleModuleList({ modules = [], onUpdate, onReorder }: Col
                       </Badge>
                     )}
                   </div>
-                  
+
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1">
                       <FileText className="h-3 w-3" />
@@ -345,7 +362,10 @@ export function CollapsibleModuleList({ modules = [], onUpdate, onReorder }: Col
                         )}
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => handleDelete(module)} className="text-destructive">
+                      <DropdownMenuItem
+                        onClick={() => handleDelete(module)}
+                        className="text-destructive"
+                      >
                         <Trash className="mr-2 h-4 w-4" />
                         Delete
                       </DropdownMenuItem>
@@ -363,30 +383,38 @@ export function CollapsibleModuleList({ modules = [], onUpdate, onReorder }: Col
             {isExpanded && (
               <CardContent className="pt-0 ml-11">
                 <div className="space-y-2">
-                  {files.length === 0 ? (
-                    <div className="text-center py-6 text-muted-foreground">
-                      <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                      <p className="text-sm">No files in this module yet.</p>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setUploadingToModule(module.id)}
-                        className="mt-2"
-                      >
-                        <Upload className="h-4 w-4 mr-1" />
-                        Upload first file
-                      </Button>
-                    </div>
-                  ) : (
-                    files.map((file) => (
+                  {(() => {
+                    console.log('Rendering files for module:', module.id);
+                    console.log('Files array:', files);
+                    console.log('Files length:', files.length);
+                    console.log('Files type:', typeof files);
+                    console.log('Is array?', Array.isArray(files));
+
+                    if (!files || files.length === 0) {
+                      return (
+                        <div className="text-center py-6 text-muted-foreground">
+                          <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No files in this module yet.</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setUploadingToModule(module.id)}
+                            className="mt-2"
+                          >
+                            <Upload className="h-4 w-4 mr-1" />
+                            Upload first file
+                          </Button>
+                        </div>
+                      );
+                    }
+
+                    return files.map((file) => (
                       <div
                         key={file.id}
                         className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors"
                       >
-                        <div className="text-muted-foreground">
-                          {getFileIcon(file.mimeType)}
-                        </div>
-                        
+                        <div className="text-muted-foreground">{getFileIcon(file.mimeType)}</div>
+
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className="font-medium truncate">{file.name}</span>
@@ -401,10 +429,9 @@ export function CollapsibleModuleList({ modules = [], onUpdate, onReorder }: Col
                             <span>{formatFileSize(file.size)}</span>
                             <span>•</span>
                             <span>
-                              {file.createdAt ? 
-                                new Date(file.createdAt).toLocaleDateString() : 
-                                'Recently uploaded'
-                              }
+                              {file.createdAt
+                                ? new Date(file.createdAt).toLocaleDateString()
+                                : 'Recently uploaded'}
                             </span>
                           </div>
                         </div>
@@ -428,8 +455,8 @@ export function CollapsibleModuleList({ modules = [], onUpdate, onReorder }: Col
                           </Button>
                         </div>
                       </div>
-                    ))
-                  )}
+                    ));
+                  })()}
                 </div>
               </CardContent>
             )}

@@ -233,7 +233,7 @@ export class ModuleService {
   async getModuleFiles(moduleId: string) {
     try {
       const { data: files, error } = await supabase
-        .from('files')
+        .from('course_files')
         .select('*')
         .eq('module_id', moduleId)
         .order('created_at', { ascending: false });

@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { FileController } from '../controllers/fileController';
+import { FileService } from '../services/fileService';
 import { authenticateUser } from '../middleware/auth';
 import { validateRequest } from '../middleware/validateRequest';
 import { updateFileSchema } from '../validations/course.validation';
@@ -52,10 +53,11 @@ router.get('/files/:id/test-signed-url', async (req, res) => {
     console.log('=== Test signed URL endpoint ===');
     const { id } = req.params;
     const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a'; // Hardcoded user ID for testing
-    
-    const fileService = new (require('../services/fileService').FileService)();
+
+    const { FileService } = await import('../services/fileService');
+    const fileService = new FileService();
     const url = await fileService.getSignedUrl(id, userId, 3600);
-    
+
     res.json({ url, message: 'Test endpoint - signed URL generated' });
   } catch (error) {
     console.error('Test signed URL error:', error);
@@ -63,21 +65,24 @@ router.get('/files/:id/test-signed-url', async (req, res) => {
   }
 });
 
-// Temporary: Make signed URL endpoint public for testing
-router.get('/files/:id/signed-url-public', async (req, res) => {
+// Temporary: Public module files endpoint for testing
+router.get('/modules/:moduleId/files-public', async (req, res) => {
+  console.log('Public module files endpoint - getting files for module:', req.params.moduleId);
+  const fileService = new FileService();
+
   try {
-    console.log('=== Public signed URL endpoint ===');
-    const { id } = req.params;
-    const { expiresIn = 3600 } = req.query;
-    const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a'; // Hardcoded user ID for testing
-    
-    const fileService = new (require('../services/fileService').FileService)();
-    const url = await fileService.getSignedUrl(id, userId, Number(expiresIn));
-    
-    res.json({ url });
+    // Use a hardcoded user ID for testing
+    const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a';
+    const files = await fileService.getModuleFiles(req.params.moduleId, userId);
+
+    res.json({
+      success: true,
+      data: files,
+    });
   } catch (error) {
-    console.error('Public signed URL error:', error);
-    res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
+    res.status(500).json({
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
   }
 });
 

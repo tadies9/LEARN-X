@@ -7,12 +7,21 @@ export class FileController {
 
   getModuleFiles = async (req: Request, res: Response) => {
     try {
+      console.log('=== FileController.getModuleFiles called ===');
       const { moduleId } = req.params;
       const userId = req.user!.id;
+      console.log('Module ID:', moduleId);
+      console.log('User ID:', userId);
 
       const files = await this.fileService.getModuleFiles(moduleId, userId);
-      res.json(files);
+      console.log('Files returned from service:', files);
+
+      res.json({
+        success: true,
+        data: files,
+      });
     } catch (error) {
+      console.error('Error in getModuleFiles:', error);
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -27,7 +36,10 @@ export class FileController {
       const userId = req.user!.id;
 
       const file = await this.fileService.getFile(id, userId);
-      res.json(file);
+      res.json({
+        success: true,
+        data: file,
+      });
     } catch (error) {
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
@@ -47,7 +59,7 @@ export class FileController {
         bodyKeys: Object.keys(req.body),
         userId: req.user?.id,
       });
-      
+
       if (!req.file) {
         throw new AppError('No file provided', 400);
       }
@@ -78,7 +90,10 @@ export class FileController {
 
       const file = await this.fileService.uploadFile(req.file, fileData, userId);
 
-      res.status(201).json(file);
+      res.status(201).json({
+        success: true,
+        data: file,
+      });
     } catch (error) {
       console.error('Upload error in controller:', error);
       if (error instanceof AppError) {
@@ -96,7 +111,10 @@ export class FileController {
       const userId = req.user!.id;
 
       const file = await this.fileService.updateFile(id, req.body, userId);
-      res.json(file);
+      res.json({
+        success: true,
+        data: file,
+      });
     } catch (error) {
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
@@ -133,7 +151,10 @@ export class FileController {
       }
 
       const files = await this.fileService.reorderFiles(moduleId, fileIds, userId);
-      res.json(files);
+      res.json({
+        success: true,
+        data: files,
+      });
     } catch (error) {
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
@@ -149,7 +170,7 @@ export class FileController {
       console.log('File ID:', req.params.id);
       console.log('User:', req.user ? { id: req.user.id, email: req.user.email } : 'NO USER');
       console.log('Query params:', req.query);
-      
+
       const { id } = req.params;
       const { expiresIn = 3600 } = req.query;
       const userId = req.user!.id;
@@ -158,7 +179,10 @@ export class FileController {
       const url = await this.fileService.getSignedUrl(id, userId, Number(expiresIn));
       console.log('Signed URL generated successfully');
 
-      res.json({ url });
+      res.json({
+        success: true,
+        data: { url },
+      });
     } catch (error) {
       console.error('=== getSignedUrl error ===');
       console.error('Error details:', error);

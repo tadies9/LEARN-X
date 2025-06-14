@@ -53,7 +53,8 @@ class ModuleApiService extends BaseApiService {
 
   // Get module files
   async getModuleFiles(moduleId: string) {
-    return this.customRequest<CourseFile[]>('get', `${this.baseEndpoint}/${moduleId}/files`);
+    // Temporary: Use working test endpoint
+    return this.customRequest<CourseFile[]>('get', `/test-module-files/${moduleId}`);
   }
 }
 

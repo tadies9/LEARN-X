@@ -1,9 +1,22 @@
 import { supabase } from '../config/supabase';
+import { createClient } from '@supabase/supabase-js';
 import { AppError } from '../utils/errors';
 import type { CourseFile, CreateFileData, UpdateFileData } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { FILE_PROCESSING_QUEUE } from '../config/queue';
 import { transformCourseFile, transformCourseFiles } from '../utils/transformers';
+
+// Create a service role client specifically for storage operations
+const supabaseServiceRole = createClient(
+  process.env.SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+  }
+);
 
 export class FileService {
   private bucketName = 'course-files';
@@ -16,7 +29,7 @@ export class FileService {
     console.log('=== getModuleFiles called ===');
     console.log('Module ID:', moduleId);
     console.log('User ID:', userId);
-    
+
     // First verify the user has access to this module
     const { data: module, error: moduleError } = await supabase
       .from('modules')
@@ -32,7 +45,7 @@ export class FileService {
     // Check if user has access to the course
     const { data: course, error: courseError } = await supabase
       .from('courses')
-      .select('id')
+      .select('id, user_id')
       .eq('id', module.course_id)
       .or(`user_id.eq.${userId},is_public.eq.true`)
       .single();
@@ -41,6 +54,8 @@ export class FileService {
       console.error('Access denied:', courseError);
       throw new AppError('Access denied', 403);
     }
+
+    console.log('Access check passed - Course owner:', course.user_id, 'Current user:', userId);
 
     // Get files
     console.log('Fetching files for module:', moduleId);
@@ -61,7 +76,7 @@ export class FileService {
     // Transform snake_case to camelCase for frontend
     const transformedFiles = transformCourseFiles(files || []);
     console.log('Transformed files:', transformedFiles);
-    
+
     return transformedFiles;
   }
 
@@ -102,10 +117,13 @@ export class FileService {
     userId: string
   ): Promise<CourseFile> {
     console.log('=== FileService.uploadFile called ===');
-    console.log('File:', file ? { name: file.originalname, size: file.size, mimetype: file.mimetype } : 'NO FILE');
+    console.log(
+      'File:',
+      file ? { name: file.originalname, size: file.size, mimetype: file.mimetype } : 'NO FILE'
+    );
     console.log('Data:', data);
     console.log('UserId:', userId);
-    
+
     // Verify user owns the module's course
     const { data: module, error: moduleError } = await supabase
       .from('modules')
@@ -134,9 +152,9 @@ export class FileService {
       bucket: this.bucketName,
       fileName,
       size: file.size,
-      mimetype: file.mimetype
+      mimetype: file.mimetype,
     });
-    
+
     const { error: uploadError } = await supabase.storage
       .from(this.bucketName)
       .upload(fileName, file.buffer, {
@@ -150,7 +168,7 @@ export class FileService {
 
     // Get course_id from module
     const courseId = (module as any).courses.id;
-    
+
     // Create file record
     const { data: newFile, error: createError } = await supabase
       .from('course_files')
@@ -300,7 +318,7 @@ export class FileService {
           .eq('module_id', moduleId);
       }
     }
-    
+
     return this.getModuleFiles(moduleId, userId);
   }
 
@@ -309,19 +327,26 @@ export class FileService {
     console.log('File ID:', fileId);
     console.log('User ID:', userId);
     console.log('Expires in:', expiresIn);
-    
+
     console.log('Getting file details...');
     const file = await this.getFile(fileId, userId);
-    console.log('File found:', { id: file.id, name: file.name, storage_path: (file as any).storage_path });
+    console.log('File found:', {
+      id: file.id,
+      name: file.name,
+      storage_path: (file as any).storage_path,
+    });
 
-    console.log('Creating signed URL with Supabase...');
-    const { data, error } = await supabase.storage
+    console.log('Creating signed URL with Supabase service role client...');
+    const { data, error } = await supabaseServiceRole.storage
       .from(this.bucketName)
       .createSignedUrl((file as any).storage_path, expiresIn);
 
     if (error || !data) {
       console.error('Supabase signed URL error:', error);
-      throw new AppError('Failed to generate signed URL: ' + (error?.message || 'Unknown error'), 500);
+      throw new AppError(
+        'Failed to generate signed URL: ' + (error?.message || 'Unknown error'),
+        500
+      );
     }
 
     console.log('Signed URL created successfully');

@@ -25,13 +25,17 @@ EMBEDDING_QUEUE.process('generate-embeddings', async (job: Job<EmbeddingJobData>
 
     // Update file status to processing
     await supabase
-      .from('files')
-      .update({ embedding_status: 'processing' })
+      .from('course_files')
+      .update({
+        metadata: {
+          embedding_status: 'processing',
+        },
+      })
       .eq('id', fileId);
 
     // Process chunks in batches
     await embeddingService.processBatch(
-      chunks.map(chunk => ({
+      chunks.map((chunk) => ({
         id: chunk.id,
         fileId,
         content: chunk.content,
@@ -42,10 +46,13 @@ EMBEDDING_QUEUE.process('generate-embeddings', async (job: Job<EmbeddingJobData>
 
     // Update file status to completed
     await supabase
-      .from('files')
-      .update({ 
-        embedding_status: 'completed',
-        embeddings_generated_at: new Date().toISOString(),
+      .from('course_files')
+      .update({
+        status: 'completed',
+        metadata: {
+          embedding_status: 'completed',
+          embeddings_generated_at: new Date().toISOString(),
+        },
       })
       .eq('id', fileId);
 
@@ -66,13 +73,20 @@ EMBEDDING_QUEUE.process('generate-embeddings', async (job: Job<EmbeddingJobData>
     };
   } catch (error) {
     logger.error(`Error generating embeddings for file ${fileId}:`, error);
-    
+
     // Update file status to failed
     await supabase
-      .from('files')
-      .update({ embedding_status: 'failed' })
+      .from('course_files')
+      .update({
+        status: 'failed',
+        processing_error: error instanceof Error ? error.message : 'Embedding generation failed',
+        metadata: {
+          embedding_status: 'failed',
+          embedding_error: error instanceof Error ? error.message : 'Unknown error',
+        },
+      })
       .eq('id', fileId);
-    
+
     // Send error notification
     await NOTIFICATION_QUEUE.add('send-notification', {
       userId,
@@ -81,7 +95,7 @@ EMBEDDING_QUEUE.process('generate-embeddings', async (job: Job<EmbeddingJobData>
       message: 'There was an error processing your file for AI features. Please try again.',
       data: { fileId, error: error instanceof Error ? error.message : 'Unknown error' },
     });
-    
+
     throw error;
   }
 });
