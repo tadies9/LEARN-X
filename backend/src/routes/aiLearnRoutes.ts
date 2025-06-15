@@ -26,7 +26,6 @@ router.get('/test-sse', (_req: Request, res: Response) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('Access-Control-Allow-Origin', '*');
 
   // Send test events
   sendSSE(res, 'message', { type: 'test', data: 'SSE is working!' });
@@ -53,8 +52,6 @@ router.get('/generate-outline', authenticateSSE, async (req: Request, res: Respo
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3002');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
 
     // Send initial event
     sendSSE(res, 'message', { type: 'outline-start' });
@@ -186,8 +183,6 @@ router.post('/explain/stream', authenticateUser, async (req: Request, res: Respo
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
-    res.setHeader('Access-Control-Allow-Origin', process.env.FRONTEND_URL || 'http://localhost:3002');
-    res.setHeader('Access-Control-Allow-Credentials', 'true');
 
     // Get file chunks
     const { data: file, error: fileError } = await supabase
@@ -328,15 +323,15 @@ Keep it conversational and encouraging.`;
       max_tokens: 2000,
     });
 
-    // Stream chunks to client
+    // Stream chunks to client using proper SSE format
     for await (const chunk of stream) {
       const content = chunk.choices[0]?.delta?.content || '';
       if (content) {
-        sendSSE(res, 'message', { type: 'content-chunk', data: content });
+        sendSSE(res, 'message', { type: 'content', data: content });
       }
     }
 
-    // Send completion
+    // Send completion signal
     sendSSE(res, 'message', { type: 'complete' });
     res.end();
 

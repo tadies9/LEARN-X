@@ -244,9 +244,28 @@ export default function LearnPage({ params }: { params: { id: string } }) {
 
                 try {
                   const parsed = JSON.parse(data);
-                  if (parsed.content) {
-                    setStreamingContent((prev) => prev + parsed.content);
+                  // Handle proper SSE format: {type: 'content', data: 'text'}
+                  if (parsed.type === 'content' && parsed.data) {
+                    setStreamingContent((prev) => prev + parsed.data);
                     // Auto-scroll to bottom
+                    if (contentRef.current) {
+                      contentRef.current.scrollTop = contentRef.current.scrollHeight;
+                    }
+                  }
+                  // Handle completion
+                  else if (parsed.type === 'complete') {
+                    setIsStreaming(false);
+                    break;
+                  }
+                  // Handle errors
+                  else if (parsed.type === 'error') {
+                    setError(parsed.data?.message || 'Streaming error occurred');
+                    setIsStreaming(false);
+                    break;
+                  }
+                  // Fallback for old format
+                  else if (parsed.content) {
+                    setStreamingContent((prev) => prev + parsed.content);
                     if (contentRef.current) {
                       contentRef.current.scrollTop = contentRef.current.scrollHeight;
                     }

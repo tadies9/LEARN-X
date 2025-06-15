@@ -74,6 +74,12 @@ export const authenticateUser = async (
   } catch (error) {
     logger.error('Authentication error:', error);
 
+    // Set CORS headers for error responses
+    res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+
     if (error instanceof AppError) {
       return res.status(error.statusCode).json({
         success: false,

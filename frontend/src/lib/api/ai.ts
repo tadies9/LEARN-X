@@ -76,7 +76,7 @@ export class AIApiService {
   }
 
   /**
-   * Stream explanation for a topic (returns fetch Response)
+   * Stream explanation using fetch with proper SSE parsing (production-ready)
    */
   static async streamExplanation(params: {
     fileId?: string;
@@ -95,7 +95,10 @@ export class AIApiService {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${params.token}`,
+        'Accept': 'text/event-stream',
+        'Cache-Control': 'no-cache',
       },
+      credentials: 'include', // Required for CORS with credentials
       body: JSON.stringify({
         fileId: params.fileId,
         topicId: params.topicId,
