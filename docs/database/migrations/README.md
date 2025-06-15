@@ -1,49 +1,66 @@
 # Database Migrations
 
-This directory contains all database migration scripts for the LEARN-X platform.
+## 🚨 **Migration Strategy Change**
 
-## Migration Files
+**As of the database cleanup, this directory no longer contains migration files.**
 
-- **COMPLETE_MIGRATION.sql** - Complete database setup migration (creates all tables, indexes, and policies)
-- **PERSONAS_MIGRATION.sql** - Adds persona-related tables and features
+All database schema information has been consolidated into:
+- **`docs/database/schema/CURRENT_SCHEMA.sql`** - Single source of truth for current database state
 
-## Migration Strategy
+## 🔄 **Current Migration Approach**
 
-1. **Initial Setup**: Run `COMPLETE_MIGRATION.sql` for new installations
-2. **Feature Migrations**: Apply specific migration files as features are added
-3. **Version Control**: All migrations are tracked in git
+### Active Migrations
+All active migrations are now located in:
+- **`backend/src/migrations/`** - Backend-specific migrations (8 files)
+  - PGMQ setup, vector search, embeddings, etc.
 
-## Running Migrations
+### Schema Reference
+For complete database structure, use:
+- **`docs/database/schema/CURRENT_SCHEMA.sql`** - Complete current schema
+- **`docs/database/schema/QUICK_REFERENCE.md`** - Developer quick reference
+
+## 📋 **Migration Best Practices**
+
+1. **New Features**: Add migrations to `backend/src/migrations/`
+2. **Schema Changes**: Use Supabase migrations via CLI
+3. **Documentation**: Update `CURRENT_SCHEMA.sql` after changes
+4. **Testing**: Always test against actual database state
+
+## 🗂️ **Migration Locations**
+
+| Location | Purpose | Status |
+|----------|---------|--------|
+| `backend/src/migrations/` | Active backend migrations | ✅ Active |
+| `docs/database/schema/` | Schema documentation | ✅ Current |
+| `docs/database/migrations/` | Legacy migrations | ❌ Cleaned up |
+
+## 🔧 **Running Migrations**
 
 ### Using Supabase CLI
 ```bash
-# Apply migrations
+# Apply new migrations
 supabase db push
 
 # Reset database (development only)
 supabase db reset
 ```
 
-### Manual Application
-1. Connect to your Supabase project
-2. Navigate to SQL Editor
-3. Run migration files in order
+### For New Installations
+Use the complete schema file:
+```sql
+-- Apply the complete current schema
+\i docs/database/schema/CURRENT_SCHEMA.sql
+```
 
-## Migration Best Practices
+## 📝 **Related Documentation**
 
-1. Always test migrations in development first
-2. Include rollback statements when possible
-3. Document breaking changes
-4. Never modify existing migration files
-5. Create new migrations for schema changes
+- [Current Schema](../schema/CURRENT_SCHEMA.sql) - Complete database schema
+- [Schema README](../schema/README.md) - Schema documentation
+- [Quick Reference](../schema/QUICK_REFERENCE.md) - Developer guide
 
-## Migration Order
+## ⚠️ **Important Notes**
 
-1. `COMPLETE_MIGRATION.sql` (base schema)
-2. `PERSONAS_MIGRATION.sql` (persona features)
-3. Future migrations as needed
-
-## Related Documentation
-
-- [Schema Documentation](../schema/README.md)
-- [Database Overview](../README.md)
+1. **No legacy migrations** - All outdated migration files have been removed
+2. **Single source of truth** - Use `CURRENT_SCHEMA.sql` for schema reference
+3. **Active migrations only** - Only `backend/src/migrations/` contains active files
+4. **Database verified** - Current schema matches actual database state
