@@ -116,8 +116,8 @@ export default function LearnPage({ params }: { params: { id: string } }) {
       if (session?.user?.id) {
         const supabase = createClient();
         const { data: profileData } = await supabase
-          .from('profiles')
-          .select('*')
+          .from('users')
+          .select('*, persona:personas(*)')
           .eq('id', session.user.id)
           .single();
 
@@ -268,9 +268,14 @@ export default function LearnPage({ params }: { params: { id: string } }) {
       const cachedContent = await contentCache.get(cacheOptions);
 
       if (cachedContent) {
-        // Use cached content
+        // Use cached content - set it immediately without streaming
         setStreamingContent(cachedContent);
         setIsStreaming(false);
+        
+        // Trigger effect immediately after topic/subtopic change
+        if (contentRef.current) {
+          contentRef.current.scrollTop = 0;
+        }
         return;
       }
 
@@ -339,7 +344,8 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                   // Handle proper SSE format: {type: 'content', data: 'text'}
                   if (parsed.type === 'content' && parsed.data) {
                     fullContent += parsed.data;
-                    setStreamingContent((prev) => prev + parsed.data);
+                    // Update content gradually for better UX
+                    setStreamingContent(fullContent);
                     // Auto-scroll to bottom
                     if (contentRef.current) {
                       contentRef.current.scrollTop = contentRef.current.scrollHeight;
@@ -359,7 +365,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                   // Fallback for old format
                   else if (parsed.content) {
                     fullContent += parsed.content;
-                    setStreamingContent((prev) => prev + parsed.content);
+                    setStreamingContent(fullContent);
                     if (contentRef.current) {
                       contentRef.current.scrollTop = contentRef.current.scrollHeight;
                     }
@@ -513,6 +519,13 @@ export default function LearnPage({ params }: { params: { id: string } }) {
     setReaction(null); // Reset reaction for new content
     setQuickNote(''); // Reset note
   };
+
+  // Trigger content loading when selection changes
+  useEffect(() => {
+    if (selectedTopic && selectedSubtopic && session?.access_token) {
+      streamContent();
+    }
+  }, [selectedTopic, selectedSubtopic, activeMode, streamContent, session?.access_token]);
 
   // Handle reaction
   const handleReaction = async (reactionType: 'positive' | 'neutral' | 'negative') => {

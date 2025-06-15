@@ -119,10 +119,12 @@ export function useProgressivePreload({
    */
   const preloadContent = useCallback(
     async (topicId: string, subtopic?: string) => {
-      if (!session?.user?.id) return;
+      // Use user from auth hook if session is not ready
+      const userId = session?.user?.id || user?.id;
+      if (!userId) return;
 
       const cacheOptions: CacheOptions = {
-        userId: session.user.id,
+        userId,
         fileId,
         topicId,
         subtopic,
@@ -131,9 +133,10 @@ export function useProgressivePreload({
         persona,
       };
 
+      console.log('[Preload] Starting preload for:', { topicId, subtopic });
       await contentCache.preload(cacheOptions, () => fetchContent(topicId, subtopic));
     },
-    [fileId, fileVersion, mode, persona, session?.user?.id, fetchContent]
+    [fileId, fileVersion, mode, persona, session?.user?.id, user?.id, fetchContent]
   );
 
   /**
@@ -165,9 +168,11 @@ export function useProgressivePreload({
 
     // Strategy 1: If viewing a topic overview (no subtopic), preload all its subtopics
     if (!currentSubtopic && topic.subtopics.length > 0) {
+      console.log('[Preload] Strategy 1: Preloading all subtopics for topic', topic.id);
       topic.subtopics.forEach((subtopic, index) => {
         const delay = index * 500; // Stagger by 500ms
         preloadTimersRef.current[`${topic.id}-${subtopic.id}`] = setTimeout(() => {
+          console.log('[Preload] Loading subtopic:', subtopic.id);
           preloadContent(topic.id, subtopic.id);
         }, delay);
       });
@@ -177,7 +182,9 @@ export function useProgressivePreload({
     // Strategy 2: If viewing a subtopic, preload next subtopic after 2s
     if (currentSubtopic && subtopicIndex < topic.subtopics.length - 1) {
       const nextSubtopic = topic.subtopics[subtopicIndex + 1];
+      console.log('[Preload] Strategy 2: Will preload next subtopic in 2s:', nextSubtopic.id);
       preloadTimersRef.current['next'] = setTimeout(() => {
+        console.log('[Preload] Loading next subtopic:', nextSubtopic.id);
         preloadContent(topic.id, nextSubtopic.id);
       }, 2000);
     }
@@ -224,10 +231,11 @@ export function useProgressivePreload({
     preloadContent,
     getCacheStats,
     isPreloading: (topicId: string, subtopic?: string) => {
-      if (!session?.user?.id) return false;
+      const userId = session?.user?.id || user?.id;
+      if (!userId) return false;
 
       return contentCache.isPreloading({
-        userId: session.user.id,
+        userId,
         fileId,
         topicId,
         subtopic,
