@@ -23,7 +23,7 @@ router.get('/learn-test', (_req, res) => {
 // Test endpoint for module files (bypasses all middleware)
 router.get('/test-module-files/:moduleId', async (req, res) => {
   try {
-    console.log('Direct test endpoint - getting files for module:', req.params.moduleId);
+    // Direct test endpoint - getting files for module
     const { FileService } = await import('../services/fileService');
     const fileService = new FileService();
 

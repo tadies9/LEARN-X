@@ -3,7 +3,7 @@
  * Implements the preloading strategy for learning content
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { contentCache, CacheOptions } from '../cache/ContentCache';
 import { AIApiService } from '../api/ai';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,7 +21,13 @@ interface PreloadOptions {
     }>;
   }>;
   fileVersion: string;
-  persona?: any;
+  persona?: {
+    interests?: string[];
+    learningStyle?: string;
+    professionalBackground?: string;
+    field?: string;
+    communicationStyle?: string;
+  };
   mode?: string;
 }
 
@@ -32,109 +38,129 @@ export function useProgressivePreload({
   topics,
   fileVersion,
   persona,
-  mode = 'explain'
+  mode = 'explain',
 }: PreloadOptions) {
-  const { session } = useAuth();
+  const { user } = useAuth();
+  const [session, setSession] = useState<any>(null);
+  
+  useEffect(() => {
+    const getSession = async () => {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+    };
+    getSession();
+  }, []);
   const preloadTimersRef = useRef<{ [key: string]: NodeJS.Timeout }>({});
-  const currentIndexRef = useRef<{ topicIndex: number; subtopicIndex: number }>({ 
-    topicIndex: -1, 
-    subtopicIndex: -1 
+  const currentIndexRef = useRef<{ topicIndex: number; subtopicIndex: number }>({
+    topicIndex: -1,
+    subtopicIndex: -1,
   });
 
   /**
    * Fetch content from API
    */
-  const fetchContent = useCallback(async (topicId: string, subtopic?: string) => {
-    if (!session?.access_token) return '';
+  const fetchContent = useCallback(
+    async (topicId: string, subtopic?: string) => {
+      if (!session?.access_token) return '';
 
-    const response = await AIApiService.streamExplanation({
-      fileId,
-      topicId,
-      subtopic,
-      mode,
-      token: session.access_token
-    });
+      const response = await AIApiService.streamExplanation({
+        fileId,
+        topicId,
+        subtopic,
+        mode,
+        token: session.access_token,
+      });
 
-    if (!response.ok) {
-      throw new Error(`Failed to fetch content: ${response.status}`);
-    }
+      if (!response.ok) {
+        throw new Error(`Failed to fetch content: ${response.status}`);
+      }
 
-    // Read the stream and collect content
-    const reader = response.body?.getReader();
-    const decoder = new TextDecoder();
-    let content = '';
+      // Read the stream and collect content
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let content = '';
 
-    if (reader) {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      if (reader) {
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
 
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
+          const chunk = decoder.decode(value);
+          const lines = chunk.split('\n');
 
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            if (data === '[DONE]') continue;
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
 
-            try {
-              const parsed = JSON.parse(data);
-              if (parsed.content) {
-                content += parsed.content;
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.content) {
+                  content += parsed.content;
+                }
+              } catch (e) {
+                // Skip invalid JSON
               }
-            } catch (e) {
-              // Skip invalid JSON
             }
           }
         }
       }
-    }
 
-    return content;
-  }, [fileId, mode, session?.access_token]);
+      return content;
+    },
+    [fileId, mode, session?.access_token]
+  );
 
   /**
    * Preload a specific content
    */
-  const preloadContent = useCallback(async (topicId: string, subtopic?: string) => {
-    if (!session?.user?.id) return;
+  const preloadContent = useCallback(
+    async (topicId: string, subtopic?: string) => {
+      if (!session?.user?.id) return;
 
-    const cacheOptions: CacheOptions = {
-      userId: session.user.id,
-      fileId,
-      topicId,
-      subtopic,
-      mode,
-      version: fileVersion,
-      persona
-    };
+      const cacheOptions: CacheOptions = {
+        userId: session.user.id,
+        fileId,
+        topicId,
+        subtopic,
+        mode,
+        version: fileVersion,
+        persona,
+      };
 
-    await contentCache.preload(cacheOptions, () => fetchContent(topicId, subtopic));
-  }, [fileId, fileVersion, mode, persona, session?.user?.id, fetchContent]);
+      await contentCache.preload(cacheOptions, () => fetchContent(topicId, subtopic));
+    },
+    [fileId, fileVersion, mode, persona, session?.user?.id, fetchContent]
+  );
 
   /**
    * Update current position and trigger preloading
    */
   const updatePosition = useCallback(() => {
     // Find current topic and subtopic indices
-    const topicIndex = topics.findIndex(t => t.id === currentTopic);
+    const topicIndex = topics.findIndex((t) => t.id === currentTopic);
     if (topicIndex === -1) return;
 
     const topic = topics[topicIndex];
-    const subtopicIndex = currentSubtopic 
-      ? topic.subtopics.findIndex(st => st.id === currentSubtopic)
+    const subtopicIndex = currentSubtopic
+      ? topic.subtopics.findIndex((st) => st.id === currentSubtopic)
       : -1;
 
     // Check if position changed
-    if (currentIndexRef.current.topicIndex === topicIndex && 
-        currentIndexRef.current.subtopicIndex === subtopicIndex) {
+    if (
+      currentIndexRef.current.topicIndex === topicIndex &&
+      currentIndexRef.current.subtopicIndex === subtopicIndex
+    ) {
       return;
     }
 
     currentIndexRef.current = { topicIndex, subtopicIndex };
 
     // Clear existing timers
-    Object.values(preloadTimersRef.current).forEach(timer => clearTimeout(timer));
+    Object.values(preloadTimersRef.current).forEach((timer) => clearTimeout(timer));
     preloadTimersRef.current = {};
 
     // Strategy 1: If viewing a topic overview (no subtopic), preload all its subtopics
@@ -185,7 +211,7 @@ export function useProgressivePreload({
 
     // Cleanup timers on unmount
     return () => {
-      Object.values(preloadTimersRef.current).forEach(timer => clearTimeout(timer));
+      Object.values(preloadTimersRef.current).forEach((timer) => clearTimeout(timer));
     };
   }, [updatePosition]);
 
@@ -199,7 +225,7 @@ export function useProgressivePreload({
     getCacheStats,
     isPreloading: (topicId: string, subtopic?: string) => {
       if (!session?.user?.id) return false;
-      
+
       return contentCache.isPreloading({
         userId: session.user.id,
         fileId,
@@ -207,8 +233,8 @@ export function useProgressivePreload({
         subtopic,
         mode,
         version: fileVersion,
-        persona
+        persona,
       });
-    }
+    },
   };
 }

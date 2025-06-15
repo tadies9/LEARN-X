@@ -3,7 +3,7 @@
  * Handles caching strategy with memory and IndexedDB layers
  */
 
-import { indexedDBManager, CachedContent } from '../db/IndexedDBManager';
+import { indexedDBManager } from '../db/IndexedDBManager';
 import crypto from 'crypto-js';
 
 interface CacheOptions {
@@ -13,7 +13,13 @@ interface CacheOptions {
   subtopic?: string;
   mode: string;
   version: string;
-  persona?: any;
+  persona?: {
+    interests?: string[];
+    learningStyle?: string;
+    professionalBackground?: string;
+    field?: string;
+    communicationStyle?: string;
+  };
 }
 
 interface MemoryCacheItem {
@@ -38,17 +44,17 @@ class ContentCache {
   /**
    * Generate hash of persona for change detection
    */
-  private hashPersona(persona: any): string {
+  private hashPersona(persona: CacheOptions['persona']): string {
     if (!persona) return 'no-persona';
-    
+
     const personaString = JSON.stringify({
       interests: persona.interests,
       learningStyle: persona.learningStyle,
       professionalBackground: persona.professionalBackground,
       field: persona.field,
-      communicationStyle: persona.communicationStyle
+      communicationStyle: persona.communicationStyle,
     });
-    
+
     return crypto.SHA256(personaString).toString();
   }
 
@@ -57,7 +63,7 @@ class ContentCache {
    */
   async get(options: CacheOptions): Promise<string | null> {
     const key = this.generateKey(options);
-    
+
     // Check memory cache first
     const memoryItem = this.memoryCache.get(key);
     if (memoryItem) {
@@ -71,13 +77,14 @@ class ContentCache {
     if (cachedContent) {
       // Validate version and persona
       const currentPersonaHash = this.hashPersona(options.persona);
-      
-      if (cachedContent.version === options.version && 
-          cachedContent.personaHash === currentPersonaHash) {
-        
+
+      if (
+        cachedContent.version === options.version &&
+        cachedContent.personaHash === currentPersonaHash
+      ) {
         // Add to memory cache for faster access
         this.addToMemoryCache(key, cachedContent.content);
-        
+
         return cachedContent.content;
       }
     }
@@ -91,10 +98,10 @@ class ContentCache {
   async set(options: CacheOptions, content: string): Promise<void> {
     const key = this.generateKey(options);
     const personaHash = this.hashPersona(options.persona);
-    
+
     // Add to memory cache
     this.addToMemoryCache(key, content);
-    
+
     // Save to IndexedDB
     await indexedDBManager.set(
       key,
@@ -104,7 +111,7 @@ class ContentCache {
         topicId: options.topicId,
         subtopic: options.subtopic,
         mode: options.mode,
-        userId: options.userId
+        userId: options.userId,
       },
       options.version,
       personaHash
@@ -116,9 +123,9 @@ class ContentCache {
    */
   async preload(options: CacheOptions, fetchFn: () => Promise<string>): Promise<void> {
     const key = this.generateKey(options);
-    
+
     // Skip if already cached or being preloaded
-    if (await this.get(options) || this.preloadInProgress.has(key)) {
+    if ((await this.get(options)) || this.preloadInProgress.has(key)) {
       return;
     }
 
@@ -184,11 +191,11 @@ class ContentCache {
     preloadQueueSize: number;
   }> {
     const indexedDBStats = await indexedDBManager.getCacheSize();
-    
+
     return {
       memoryCacheSize: this.memoryCache.size,
       indexedDBStats,
-      preloadQueueSize: this.preloadQueue.size
+      preloadQueueSize: this.preloadQueue.size,
     };
   }
 
@@ -200,22 +207,22 @@ class ContentCache {
     if (this.memoryCache.size >= this.maxMemoryItems) {
       let oldestKey = '';
       let oldestTime = Date.now();
-      
+
       for (const [k, v] of this.memoryCache) {
         if (v.timestamp < oldestTime) {
           oldestTime = v.timestamp;
           oldestKey = k;
         }
       }
-      
+
       if (oldestKey) {
         this.memoryCache.delete(oldestKey);
       }
     }
-    
+
     this.memoryCache.set(key, {
       content,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -232,10 +239,10 @@ class ContentCache {
    */
   async clear(options: CacheOptions): Promise<void> {
     const key = this.generateKey(options);
-    
+
     // Clear from memory cache
     this.memoryCache.delete(key);
-    
+
     // Clear from IndexedDB
     await indexedDBManager.delete(key);
   }

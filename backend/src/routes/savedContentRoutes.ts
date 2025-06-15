@@ -25,7 +25,7 @@ const updateSavedContentSchema = z.object({
 // Save content
 router.post('/save', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as Request & { user: { id: string } }).user.id;
     const data = saveContentSchema.parse(req.body);
 
     // Check if already saved
@@ -60,20 +60,18 @@ router.post('/save', authenticateUser, async (req: Request, res: Response) => {
       res.json({ success: true, message: 'Content updated' });
     } else {
       // Create new
-      const { error } = await supabase
-        .from('saved_content')
-        .insert({
-          user_id: userId,
-          file_id: data.fileId,
-          topic_id: data.topicId,
-          subtopic: data.subtopic || '',
-          content: data.content,
-          mode: data.mode,
-          tags: data.tags || [],
-          notes: data.notes || '',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        });
+      const { error } = await supabase.from('saved_content').insert({
+        user_id: userId,
+        file_id: data.fileId,
+        topic_id: data.topicId,
+        subtopic: data.subtopic || '',
+        content: data.content,
+        mode: data.mode,
+        tags: data.tags || [],
+        notes: data.notes || '',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
 
       if (error) {
         logger.error('Error saving content:', error);
@@ -92,12 +90,13 @@ router.post('/save', authenticateUser, async (req: Request, res: Response) => {
 // Get saved content
 router.get('/list', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as Request & { user: { id: string } }).user.id;
     const { fileId, limit = 50, offset = 0 } = req.query;
 
     let query = supabase
       .from('saved_content')
-      .select(`
+      .select(
+        `
         *,
         course_files!inner(
           id,
@@ -108,7 +107,8 @@ router.get('/list', authenticateUser, async (req: Request, res: Response) => {
             title
           )
         )
-      `)
+      `
+      )
       .eq('user_id', userId)
       .order('updated_at', { ascending: false })
       .range(Number(offset), Number(offset) + Number(limit) - 1);
@@ -143,7 +143,7 @@ router.get('/list', authenticateUser, async (req: Request, res: Response) => {
 // Get specific saved content
 router.get('/:id', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as Request & { user: { id: string } }).user.id;
     const { id } = req.params;
 
     const { data, error } = await supabase
@@ -168,7 +168,7 @@ router.get('/:id', authenticateUser, async (req: Request, res: Response) => {
 // Update saved content (tags/notes)
 router.patch('/:id', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as Request & { user: { id: string } }).user.id;
     const { id } = req.params;
     const updates = updateSavedContentSchema.parse(req.body);
 
@@ -197,7 +197,7 @@ router.patch('/:id', authenticateUser, async (req: Request, res: Response) => {
 // Delete saved content
 router.delete('/:id', authenticateUser, async (req: Request, res: Response) => {
   try {
-    const userId = (req as any).user.id;
+    const userId = (req as Request & { user: { id: string } }).user.id;
     const { id } = req.params;
 
     const { error } = await supabase
