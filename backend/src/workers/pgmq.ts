@@ -31,7 +31,8 @@ async function processFileJob(job: any): Promise<void> {
     // Get file details
     const { data: file, error: fileError } = await supabase
       .from('course_files')
-      .select(`
+      .select(
+        `
         *,
         modules!inner(
           id,
@@ -42,7 +43,8 @@ async function processFileJob(job: any): Promise<void> {
             user_id
           )
         )
-      `)
+      `
+      )
       .eq('id', fileId)
       .single();
 
@@ -59,7 +61,7 @@ async function processFileJob(job: any): Promise<void> {
     // Update status to processing
     await supabase
       .from('course_files')
-      .update({ 
+      .update({
         status: 'processing',
         updated_at: new Date().toISOString(),
       })
@@ -69,7 +71,9 @@ async function processFileJob(job: any): Promise<void> {
     let extractedContent: string;
     if (file.mime_type === 'application/pdf') {
       extractedContent = await fileProcessingService.extractPdfText(file.storage_path);
-    } else if (file.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+    } else if (
+      file.mime_type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ) {
       extractedContent = await fileProcessingService.extractWordText(file.storage_path);
     } else if (file.mime_type?.startsWith('text/')) {
       extractedContent = await fileProcessingService.extractPlainText(file.storage_path);
@@ -96,19 +100,37 @@ async function processFileJob(job: any): Promise<void> {
 
     logger.info(`[FileProcessor] Created ${chunks.length} semantic chunks for file ${fileId}`);
 
-    // Save chunks to database
-    const chunksToInsert = chunks.map((chunk: any, index: number) => ({
-      file_id: fileId,
-      chunk_index: index,
-      content: chunk.content,
-      content_length: chunk.content.length,
-      chunk_type: chunk.metadata?.type || 'text',
-      importance: chunk.metadata?.importance || 'medium',
-      section_title: chunk.metadata?.title || null,
-      hierarchy_level: chunk.metadata?.level || 0,
-      concepts: chunk.metadata?.concepts || [],
-      created_at: new Date().toISOString(),
-    }));
+    // Save chunks to database with individual sanitization
+    const chunksToInsert = chunks.map((chunk: any, index: number) => {
+      // Sanitize chunk content to prevent Unicode insertion errors
+      const sanitizedContent = fileProcessingService.sanitizeChunkContent(chunk.content);
+
+      // Also sanitize metadata fields that might contain problematic characters
+      const sanitizedSectionTitle = chunk.metadata?.title
+        ? fileProcessingService.sanitizeChunkContent(chunk.metadata.title)
+        : null;
+
+      const sanitizedConcepts = Array.isArray(chunk.metadata?.concepts)
+        ? chunk.metadata.concepts.map((concept: string) =>
+            typeof concept === 'string'
+              ? fileProcessingService.sanitizeChunkContent(concept)
+              : concept
+          )
+        : [];
+
+      return {
+        file_id: fileId,
+        chunk_index: index,
+        content: sanitizedContent,
+        content_length: sanitizedContent.length,
+        chunk_type: chunk.metadata?.type || 'text',
+        importance: chunk.metadata?.importance || 'medium',
+        section_title: sanitizedSectionTitle,
+        hierarchy_level: chunk.metadata?.level || 0,
+        concepts: sanitizedConcepts,
+        created_at: new Date().toISOString(),
+      };
+    });
 
     const { data: insertedChunks, error: chunksError } = await supabase
       .from('file_chunks')
@@ -120,26 +142,22 @@ async function processFileJob(job: any): Promise<void> {
     }
 
     // Queue embedding generation for all chunks as a batch
-    await pgmqService.enqueue(
-      QUEUE_NAMES.EMBEDDING_GENERATION,
-      'generate_embeddings',
-      {
+    await pgmqService.enqueue(QUEUE_NAMES.EMBEDDING_GENERATION, 'generate_embeddings', {
+      fileId,
+      userId,
+      chunks: insertedChunks.map((chunk) => ({
+        id: chunk.id,
         fileId,
-        userId,
-        chunks: insertedChunks.map((chunk) => ({
-          id: chunk.id,
-          fileId,
-          content: chunk.content,
-          position: chunk.chunk_index,
-          metadata: {}, // Add empty metadata object to prevent undefined access
-        })),
-      }
-    );
+        content: chunk.content,
+        position: chunk.chunk_index,
+        metadata: {}, // Add empty metadata object to prevent undefined access
+      })),
+    });
 
     // Update file status to completed
     await supabase
       .from('course_files')
-      .update({ 
+      .update({
         status: 'completed',
         processed_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -147,20 +165,19 @@ async function processFileJob(job: any): Promise<void> {
       .eq('id', fileId);
 
     logger.info(`[FileProcessor] Successfully processed file ${fileId}`);
-
   } catch (error) {
     logger.error(`[FileProcessor] Failed to process file ${fileId}:`, error);
-    
+
     // Update file status to failed
     await supabase
       .from('course_files')
-      .update({ 
+      .update({
         status: 'failed',
         error_message: error instanceof Error ? error.message : 'Unknown error',
         updated_at: new Date().toISOString(),
       })
       .eq('id', fileId);
-    
+
     throw error;
   }
 }
@@ -186,10 +203,14 @@ async function processEmbeddingJob(job: any): Promise<void> {
 
   try {
     // Import the VectorEmbeddingService
-    const { VectorEmbeddingService } = await import('../services/embeddings/VectorEmbeddingService');
+    const { VectorEmbeddingService } = await import(
+      '../services/embeddings/VectorEmbeddingService'
+    );
     const embeddingService = new VectorEmbeddingService();
 
-    logger.info(`[EmbeddingGenerator] Generating embeddings for ${chunks.length} chunks of file ${fileId}`);
+    logger.info(
+      `[EmbeddingGenerator] Generating embeddings for ${chunks.length} chunks of file ${fileId}`
+    );
 
     // Process chunks using the proper service
     await embeddingService.processBatch(chunks, userId);
@@ -209,10 +230,9 @@ async function processEmbeddingJob(job: any): Promise<void> {
       .eq('id', fileId);
 
     logger.info(`[EmbeddingGenerator] Successfully generated embeddings for file ${fileId}`);
-
   } catch (error) {
     logger.error(`[EmbeddingGenerator] Failed to generate embeddings for file ${fileId}:`, error);
-    
+
     // Update file status to failed
     await supabase
       .from('course_files')
@@ -244,24 +264,21 @@ async function processNotificationJob(job: any): Promise<void> {
 
   try {
     // Create notification in database
-    const { error: notificationError } = await supabase
-      .from('notifications')
-      .insert({
-        user_id: userId,
-        type,
-        title: data.title,
-        message: data.message,
-        data: data.metadata || {},
-        read: false,
-        created_at: new Date().toISOString(),
-      });
+    const { error: notificationError } = await supabase.from('notifications').insert({
+      user_id: userId,
+      type,
+      title: data.title,
+      message: data.message,
+      data: data.metadata || {},
+      read: false,
+      created_at: new Date().toISOString(),
+    });
 
     if (notificationError) {
       throw new Error(`Failed to create notification: ${notificationError.message}`);
     }
 
     logger.info(`[NotificationProcessor] Created ${type} notification for user ${userId}`);
-
   } catch (error) {
     logger.error(`[NotificationProcessor] Failed to process notification:`, error);
     throw error;
@@ -275,41 +292,28 @@ export async function startPGMQWorkers(): Promise<void> {
   logger.info('[PGMQ] Starting all workers...');
 
   try {
-    // Start file processing worker
-    pgmqService.processQueue(
-      QUEUE_NAMES.FILE_PROCESSING,
-      processFileJob,
-      {
-        batchSize: 1,
-        pollInterval: 2000,
-        visibilityTimeout: 60,
-      }
-    );
+    // Start file processing worker with proper timeout
+    pgmqService.processQueue(QUEUE_NAMES.FILE_PROCESSING, processFileJob, {
+      batchSize: 1,
+      pollInterval: 2000,
+      visibilityTimeout: 300, // 5 minutes for file processing
+    });
 
-    // Start embedding worker
-    pgmqService.processQueue(
-      QUEUE_NAMES.EMBEDDING_GENERATION,
-      processEmbeddingJob,
-      {
-        batchSize: 5,
-        pollInterval: 1000,
-        visibilityTimeout: 30,
-      }
-    );
+    // Start embedding worker with proper timeout
+    pgmqService.processQueue(QUEUE_NAMES.EMBEDDING_GENERATION, processEmbeddingJob, {
+      batchSize: 5,
+      pollInterval: 1000,
+      visibilityTimeout: 600, // 10 minutes for embedding generation
+    });
 
     // Start notification worker
-    pgmqService.processQueue(
-      QUEUE_NAMES.NOTIFICATION,
-      processNotificationJob,
-      {
-        batchSize: 10,
-        pollInterval: 5000,
-        visibilityTimeout: 15,
-      }
-    );
+    pgmqService.processQueue(QUEUE_NAMES.NOTIFICATION, processNotificationJob, {
+      batchSize: 10,
+      pollInterval: 5000,
+      visibilityTimeout: 15,
+    });
 
     logger.info('[PGMQ] All workers started successfully');
-
   } catch (error) {
     logger.error('[PGMQ] Failed to start workers:', error);
     throw error;
@@ -321,11 +325,11 @@ export async function startPGMQWorkers(): Promise<void> {
  */
 export function stopPGMQWorkers(): void {
   logger.info('[PGMQ] Stopping all workers...');
-  
+
   pgmqService.stopProcessing(QUEUE_NAMES.FILE_PROCESSING);
   pgmqService.stopProcessing(QUEUE_NAMES.EMBEDDING_GENERATION);
   pgmqService.stopProcessing(QUEUE_NAMES.NOTIFICATION);
-  
+
   logger.info('[PGMQ] All workers stopped');
 }
 
@@ -335,11 +339,11 @@ export const enqueueFileProcessing = async (
   userId: string,
   processingOptions?: any
 ) => {
-  return pgmqService.enqueue(
-    QUEUE_NAMES.FILE_PROCESSING,
-    'process_file',
-    { fileId, userId, processingOptions }
-  );
+  return pgmqService.enqueue(QUEUE_NAMES.FILE_PROCESSING, 'process_file', {
+    fileId,
+    userId,
+    processingOptions,
+  });
 };
 
 export const enqueueEmbeddingGeneration = async (
@@ -348,21 +352,14 @@ export const enqueueEmbeddingGeneration = async (
   content: string,
   userId: string
 ) => {
-  return pgmqService.enqueue(
-    QUEUE_NAMES.EMBEDDING_GENERATION,
-    'generate_embedding',
-    { fileId, chunkIndex, content, userId }
-  );
+  return pgmqService.enqueue(QUEUE_NAMES.EMBEDDING_GENERATION, 'generate_embedding', {
+    fileId,
+    chunkIndex,
+    content,
+    userId,
+  });
 };
 
-export const enqueueNotification = async (
-  type: string,
-  userId: string,
-  data: any
-) => {
-  return pgmqService.enqueue(
-    QUEUE_NAMES.NOTIFICATION,
-    'send_notification',
-    { type, userId, data }
-  );
+export const enqueueNotification = async (type: string, userId: string, data: any) => {
+  return pgmqService.enqueue(QUEUE_NAMES.NOTIFICATION, 'send_notification', { type, userId, data });
 };

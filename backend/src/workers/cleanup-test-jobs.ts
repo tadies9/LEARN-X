@@ -5,13 +5,10 @@ async function cleanupTestJobs() {
   try {
     // Clean up the specific test job from job_tracking
     const testJobId = '7e1feb56-c87c-4ceb-8242-8acc4f9939af';
-    
+
     logger.info('Cleaning up test job from job_tracking...');
-    const { error: deleteError } = await supabase
-      .from('job_tracking')
-      .delete()
-      .eq('id', testJobId);
-    
+    const { error: deleteError } = await supabase.from('job_tracking').delete().eq('id', testJobId);
+
     if (deleteError) {
       logger.error('Error deleting test job:', deleteError);
     } else {
@@ -20,15 +17,15 @@ async function cleanupTestJobs() {
 
     // Archive any messages from PGMQ queues that are for test jobs
     const queues = ['file_processing', 'embedding_generation', 'notification'];
-    
+
     for (const queueName of queues) {
       logger.info(`Checking queue: ${queueName}`);
-      
+
       // Read messages to find test jobs
       const { data: messages, error: readError } = await supabase.rpc('pgmq_read', {
         queue_name: queueName,
         vt: 0, // Don't hide messages
-        qty: 100
+        qty: 100,
       });
 
       if (readError) {
@@ -38,22 +35,23 @@ async function cleanupTestJobs() {
 
       if (messages && messages.length > 0) {
         logger.info(`Found ${messages.length} messages in ${queueName}`);
-        
+
         for (const message of messages) {
           try {
             const msgData = message.message;
             // Check if it's a test job or has no fileId
-            if (msgData.job_id === testJobId || 
-                msgData.job_type === 'test_job' ||
-                (!msgData.payload?.fileId && msgData.job_type === 'process_file')) {
-              
+            if (
+              msgData.job_id === testJobId ||
+              msgData.job_type === 'test_job' ||
+              (!msgData.payload?.fileId && msgData.job_type === 'process_file')
+            ) {
               logger.info(`Archiving test/invalid message ${message.msg_id} from ${queueName}`);
-              
+
               const { error: archiveError } = await supabase.rpc('pgmq_archive', {
                 queue_name: queueName,
-                msg_id: message.msg_id
+                msg_id: message.msg_id,
               });
-              
+
               if (archiveError) {
                 logger.error(`Error archiving message ${message.msg_id}:`, archiveError);
               } else {
@@ -78,11 +76,8 @@ async function cleanupTestJobs() {
     if (!failedError && failedJobs) {
       logger.info(`Found ${failedJobs.length} failed jobs to clean`);
       for (const job of failedJobs) {
-        const { error } = await supabase
-          .from('job_tracking')
-          .delete()
-          .eq('id', job.id);
-        
+        const { error } = await supabase.from('job_tracking').delete().eq('id', job.id);
+
         if (!error) {
           logger.info(`Deleted failed job ${job.id}`);
         }

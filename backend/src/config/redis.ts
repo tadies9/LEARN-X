@@ -6,12 +6,12 @@ const getRedisConfig = () => {
   // In local development, REDIS_HOST is 'localhost'
   const redisHost = process.env.REDIS_HOST || 'localhost';
   const redisPort = parseInt(process.env.REDIS_PORT || '6379');
-  
+
   // Only use REDIS_URL if it doesn't point to localhost in Docker
   if (process.env.REDIS_URL && !process.env.REDIS_URL.includes('localhost')) {
     return process.env.REDIS_URL;
   }
-  
+
   const config = {
     host: redisHost,
     port: redisPort,
@@ -23,7 +23,7 @@ const getRedisConfig = () => {
     },
     lazyConnect: true, // Don't connect immediately
   };
-  
+
   console.log(`Redis config: connecting to ${redisHost}:${redisPort}`);
   return config;
 };

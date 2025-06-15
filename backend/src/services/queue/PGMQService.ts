@@ -54,7 +54,12 @@ export class PGMQService {
       });
 
       if (error) {
+        logger.error('[PGMQ] RPC enqueue_job error', { error, queueName, jobType });
         throw error;
+      }
+
+      if (!data) {
+        logger.warn('[PGMQ] enqueue_job returned no job ID', { queueName, jobType });
       }
 
       logger.info(`[PGMQ] Job enqueued`, {
@@ -86,11 +91,7 @@ export class PGMQService {
       visibilityTimeout?: number;
     } = {}
   ): Promise<void> {
-    const {
-      batchSize = 1,
-      pollInterval = 1000,
-      visibilityTimeout = 30,
-    } = options;
+    const { batchSize = 1, pollInterval = 1000, visibilityTimeout = 30 } = options;
 
     logger.info(`[PGMQ] Starting processor for queue: ${queueName}`);
 
@@ -118,20 +119,20 @@ export class PGMQService {
           await Promise.all(
             messages.map(async (message: any) => {
               const job = this.messageToJob(queueName, message);
-              
+
               try {
                 // Mark job as started
                 await this.markJobStarted(job.id);
-                
+
                 // Process the job
                 await handler(job);
-                
+
                 // Delete message from queue using wrapper function
                 await this.deleteMessage(queueName, message.msg_id);
-                
+
                 // Mark job as completed
                 await this.markJobCompleted(job.id);
-                
+
                 logger.info(`[PGMQ] Job completed`, {
                   queueName,
                   jobId: job.id,
@@ -143,16 +144,16 @@ export class PGMQService {
                   error: error instanceof Error ? error.message : String(error),
                   errorStack: error instanceof Error ? error.stack : undefined,
                 });
-                
+
                 // Mark job as failed
                 await this.markJobFailed(
                   job.id,
                   error instanceof Error ? error.message : 'Unknown error'
                 );
-                
+
                 // Check if message is poison
                 const isPoisonMessage = await this.checkPoisonMessage(job.id);
-                
+
                 if (isPoisonMessage) {
                   // Archive the poison message using wrapper function
                   await this.archiveMessage(queueName, message.msg_id);
