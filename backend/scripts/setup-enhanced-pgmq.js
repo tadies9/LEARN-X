@@ -105,7 +105,7 @@ GRANT ALL ON enhanced_job_tracking TO service_role;
     console.log('\n🔍 Verifying setup...');
     
     // Check queues
-    const { data: queueMetrics, error: metricsError } = await supabase.rpc('pgmq_metrics_all');
+    const { data: queueMetrics, error: metricsError } = await supabase.rpc('pgmq.metrics_all');
     
     if (metricsError) {
       console.error('❌ Failed to get queue metrics:', metricsError.message);
