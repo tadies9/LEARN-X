@@ -10,6 +10,7 @@ import { AppError } from '../utils/errors';
 import { QuizType } from '../services/ai/PromptTemplates';
 import { redisClient } from '../config/redis';
 import { supabase } from '../config/supabase';
+import { openAIService } from '../services/openai/OpenAIService';
 
 // Initialize services using centralized Redis client
 const contentService = new ContentGenerationService(redisClient);
@@ -499,76 +500,76 @@ export class AIController {
 
       logger.info('[AI] Found chunks:', { count: chunks.length });
 
-      // Transform chunks to match SearchResult interface
-      const transformedChunks = chunks.map((chunk: any) => ({
-        id: chunk.id,
-        fileId: chunk.file_id,
-        fileName: fileCheck.name || 'Unknown',
-        content: chunk.content,
-        score: 1.0,
-        metadata: {
-          chunkIndex: chunk.chunk_index,
-          contentType: chunk.chunk_type || 'text',
-          importance: chunk.importance || 'medium',
-          sectionTitle: chunk.section_title,
-          concepts: chunk.concepts ? (Array.isArray(chunk.concepts) ? chunk.concepts : JSON.parse(chunk.concepts)) : [],
-          keywords: [], // No keywords column in database
-          page: chunk.metadata?.page || 0,
-          hierarchyLevel: chunk.hierarchy_level || 1,
-          isStartOfSection: chunk.is_start_of_section || false,
-          isEndOfSection: chunk.is_end_of_section || false,
-        },
-      }));
+      // Combine chunks content for GPT analysis
+      const documentContent = chunks
+        .slice(0, 10) // Limit to first 10 chunks for context window
+        .map((c: any) => c.content)
+        .join('\n\n');
 
-      // Group chunks into semantic sections using metadata
-      const sectionsMap = new Map<string, any>();
+      // Use GPT-4o to generate meaningful outline
+      const outlinePrompt = `Analyze this document and create a learning outline with 3-5 main topics.
+
+Document content:
+${documentContent.substring(0, 8000)} // Limit for context window
+
+Requirements:
+1. Create 3-5 main topics based on the document's major themes
+2. Each topic should have a clear, descriptive title
+3. Each topic should have a brief summary (1-2 sentences)
+4. Topics should follow a logical learning progression
+
+Return a JSON object with this structure:
+{
+  "sections": [{
+    "id": "section-0",
+    "title": "Clear Topic Title",
+    "summary": "Brief description of what this topic covers",
+    "chunkIds": [],
+    "chunkCount": 0,
+    "startPage": 0,
+    "endPage": 0,
+    "topics": ["key", "concepts", "related", "to", "topic"]
+  }]
+}`;
+
+      logger.info('[AI] Generating outline with GPT-4o...');
       
-      transformedChunks.forEach((chunk) => {
-        const sectionTitle = chunk.metadata?.sectionTitle || 'Untitled Section';
-        const hierarchyLevel = chunk.metadata?.hierarchyLevel || 1;
-        
-        if (!sectionsMap.has(sectionTitle)) {
-          sectionsMap.set(sectionTitle, {
-            id: `section-${sectionsMap.size}`,
-            suggestedTitle: sectionTitle,
-            summary: `Content from ${sectionTitle}`,
-            chunkIds: [],
-            chunkCount: 0,
-            startPage: chunk.metadata?.page || 0,
-            endPage: chunk.metadata?.page || 0,
-            topics: chunk.metadata?.concepts || [],
-            hierarchyLevel
-          });
-        }
-        
-        const section = sectionsMap.get(sectionTitle)!;
-        section.chunkIds.push(chunk.id);
-        section.chunkCount++;
-        section.endPage = Math.max(section.endPage, chunk.metadata?.page || 0);
-        
-        // Merge topics
-        if (chunk.metadata?.concepts) {
-          section.topics = [...new Set([...section.topics, ...chunk.metadata.concepts])];
-        }
+      const completion = await openAIService.getClient().chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: outlinePrompt }],
+        response_format: { type: 'json_object' },
+        temperature: 0.7,
       });
-      
-      const sections = Array.from(sectionsMap.values());
 
-      logger.info('[AI] Generated sections:', { count: sections.length });
+      const outlineResponse = completion.choices[0].message.content || '{}';
+      const outlineData = JSON.parse(outlineResponse);
+      const sections = outlineData.sections || [];
 
-      // Generate section titles and summaries
-      const outline = await Promise.all(
-        sections.map(async (section: any) => ({
-          id: section.id,
-          title: section.suggestedTitle,
+      if (sections.length === 0) {
+        throw new AppError('Failed to generate outline topics', 500);
+      }
+
+      // Map chunks to sections based on content relevance
+      const outline = sections.map((section: any, index: number) => {
+        // For MVP, distribute chunks evenly among sections
+        const chunksPerSection = Math.ceil(chunks.length / sections.length);
+        const startIdx = index * chunksPerSection;
+        const endIdx = Math.min((index + 1) * chunksPerSection, chunks.length);
+        const sectionChunks = chunks.slice(startIdx, endIdx);
+        
+        return {
+          id: section.id || `section-${index}`,
+          title: section.title,
           summary: section.summary,
-          chunkIds: section.chunkIds,
-          chunkCount: section.chunkIds.length,
-          startPage: section.startPage,
-          endPage: section.endPage,
-          topics: section.topics,
-        }))
-      );
+          chunkIds: sectionChunks.map((c: any) => c.id),
+          chunkCount: sectionChunks.length,
+          startPage: sectionChunks[0]?.metadata?.page || 0,
+          endPage: sectionChunks[sectionChunks.length - 1]?.metadata?.page || 0,
+          topics: section.topics || [],
+        };
+      });
+
+      logger.info('[AI] Generated outline with topics:', outline.map((s: any) => s.title));
 
       res.json({
         success: true,

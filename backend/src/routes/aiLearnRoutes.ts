@@ -219,8 +219,9 @@ router.post('/explain/stream', authenticateUser, async (req: Request, res: Respo
 
     // Build personalized prompt based on mode
     let systemPrompt = `You are an expert tutor creating personalized learning content. 
-You must return content formatted in HTML for display in a web interface.
-Use proper HTML tags like <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <div>, etc.`;
+Return ONLY the inner HTML content - do NOT include <html>, <head>, <body> or any wrapper tags.
+Use semantic HTML tags like <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <div>, etc.
+Start directly with the content (e.g., <h2>Topic Title</h2>).`;
     
     if (persona) {
       systemPrompt += `\n\nStudent Profile:
@@ -247,18 +248,18 @@ Use this document content as reference:
 ${relevantChunks.substring(0, 3000)}
 
 Requirements:
-1. Use HTML formatting with proper tags
+1. Return ONLY content HTML - no <html>, <head>, <body> tags
 2. Include a personalized analogy box using the student's interests
 3. Break down complex concepts into simple terms
 4. Use the student's preferred communication style
 5. Include emoji sparingly for engagement
 
 Structure:
-- Start with an engaging introduction
-- Include a highlighted analogy box (use a div with inline styles)
-- Explain key concepts clearly
-- Provide relevant examples
-- End with a brief summary`;
+- Start directly with <h2> for the topic title
+- Include a highlighted analogy box: <div style="background: #f0f7ff; padding: 16px; border-radius: 8px; margin: 16px 0;">
+- Explain key concepts clearly with <h3> subheadings
+- Provide relevant examples in <ul> or <ol> lists
+- End with a brief summary in a <div>`;
         break;
 
       case 'summary':
@@ -267,11 +268,11 @@ Structure:
 Use this document content as reference:
 ${relevantChunks.substring(0, 2000)}
 
-Format as HTML with:
-- A clear heading
-- 5-7 key bullet points
-- Important terms in bold
-- A takeaway message at the end`;
+Format as HTML fragments (no wrapper tags):
+- Start with <h2>Summary</h2>
+- 5-7 key bullet points in <ul>
+- Important terms in <strong>
+- A takeaway message in a styled <div>`;
         break;
 
       case 'flashcards':
@@ -280,11 +281,12 @@ Format as HTML with:
 Use this document content as reference:
 ${relevantChunks.substring(0, 2000)}
 
-Format each flashcard as HTML with:
-- A div container with border styling
-- Clear question in an h4 tag
-- Answer in a details/summary element for click-to-reveal
-- Focus on key concepts and definitions`;
+Format each flashcard as HTML fragments (no wrapper tags):
+- Start with <h2>Flashcards</h2>
+- Each card in a <div style="border: 1px solid #ddd; padding: 16px; margin: 8px 0; border-radius: 8px;">
+- Question in <h4>
+- Answer in <details><summary>Click to reveal</summary>answer here</details>
+- Focus on key concepts`;
         break;
 
       case 'quiz':
@@ -293,11 +295,13 @@ Format each flashcard as HTML with:
 Use this document content as reference:
 ${relevantChunks.substring(0, 2000)}
 
-Format as HTML with:
-- Multiple choice questions (4 options each)
-- Use ordered lists with type="A"
-- Include the correct answer in a hidden element
-- Questions should test understanding, not just memorization`;
+Format as HTML fragments (no wrapper tags):
+- Start with <h2>Quiz Questions</h2>
+- Each question in a <div style="margin-bottom: 24px;">
+- Question text in <h4>
+- Options in <ol type="A">
+- Show correct answer clearly marked
+- Include brief explanation`;
         break;
 
       case 'chat':
