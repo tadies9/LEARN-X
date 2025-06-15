@@ -283,12 +283,13 @@ export default function LearnPage({ params }: { params: { id: string } }) {
       if (!currentTopic) return;
 
       switch (activeMode) {
-        case 'summary':
+        case 'summary': {
           const summaryResult = await AIApiService.generateSummary(fileId!, 'key-points');
           setStreamingContent(`<div class="summary"><h3>Summary</h3><p>${summaryResult.summary}</p></div>`);
           break;
+        }
 
-        case 'flashcards':
+        case 'flashcards': {
           const flashcardsResult = await AIApiService.generateFlashcards(fileId!, currentTopic.chunkIds);
           const flashcardsHtml = flashcardsResult.flashcards.map((card, index) => `
             <div class="flashcard mb-4 p-4 border rounded-lg">
@@ -305,8 +306,9 @@ export default function LearnPage({ params }: { params: { id: string } }) {
           `).join('');
           setStreamingContent(`<div class="flashcards"><h3>Flashcards (${flashcardsResult.count})</h3>${flashcardsHtml}</div>`);
           break;
+        }
 
-        case 'quiz':
+        case 'quiz': {
           const quizResult = await AIApiService.generateQuiz(fileId!, 'multiple_choice', currentTopic.chunkIds);
           const quizHtml = quizResult.questions.map((q, index) => `
             <div class="quiz-question mb-6 p-4 border rounded-lg">
@@ -328,6 +330,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
           `).join('');
           setStreamingContent(`<div class="quiz"><h3>Quiz (${quizResult.count} questions)</h3>${quizHtml}</div>`);
           break;
+        }
 
         default:
           setStreamingContent('<p>Select a mode to generate content.</p>');

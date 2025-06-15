@@ -176,8 +176,8 @@ router.post('/explain/stream', authenticateUser, async (req: Request, res: Respo
 
   console.log('[AI Learn] Explain stream request:', { fileId, topicId, subtopic, mode, userId });
 
-  if (!fileId || !topicId || !subtopic) {
-    res.status(400).json({ error: 'Missing required parameters' });
+  if (!fileId || !topicId) {
+    res.status(400).json({ error: 'Missing required parameters: fileId and topicId are required' });
     return;
   }
 
@@ -211,6 +211,15 @@ router.post('/explain/stream', authenticateUser, async (req: Request, res: Respo
       .single();
 
     const persona = profile?.persona as any;
+    
+    console.log('[AI Learn] User profile:', { userId, hasProfile: !!profile, hasPersona: !!persona });
+    if (persona) {
+      console.log('[AI Learn] Persona details:', {
+        interests: persona.interests,
+        learningStyle: persona.learningStyle,
+        professionalBackground: persona.professionalBackground
+      });
+    }
 
     // Build personalized prompt based on mode
     let systemPrompt = `You are an expert tutor creating personalized learning content. 
@@ -236,7 +245,7 @@ Adapt explanations to their ${persona.professionalBackground || 'student'} level
     
     switch (mode) {
       case 'explain':
-        userPrompt = `Explain the "${subtopic}" section of the topic "${topicId}" in a personalized way.
+        userPrompt = `Explain the ${subtopic ? `"${subtopic}" section of` : ''} the topic "${topicId}" in a personalized way.
 
 Use this document content as reference:
 ${relevantChunks.substring(0, 3000)}
