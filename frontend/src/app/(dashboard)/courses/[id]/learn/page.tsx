@@ -59,7 +59,6 @@ export default function LearnPage({ params }: { params: { id: string } }) {
 
   // Auth & Profile
   const { user: _user } = useAuth();
-  const { loadProfile } = useProfile();
   const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<{ persona?: any } | null>(null);
   const [fileVersion, setFileVersion] = useState<string>('');
@@ -121,7 +120,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
           .select('*')
           .eq('id', session.user.id)
           .single();
-        
+
         if (profileData) {
           setProfile(profileData);
         }
