@@ -1,5 +1,4 @@
 import { UserPersona } from '../../types';
-import { logger } from '../../utils/logger';
 
 /**
  * Deep Personalization Engine
@@ -7,7 +6,6 @@ import { logger } from '../../utils/logger';
  * into educational content without explicitly announcing it
  */
 export class DeepPersonalizationEngine {
-  
   /**
    * Extract the user's primary contextual lens for explanations
    */
@@ -16,12 +14,12 @@ export class DeepPersonalizationEngine {
     if (persona.primaryInterests && persona.primaryInterests.length > 0) {
       return persona.primaryInterests[0];
     }
-    
+
     // Fallback to professional background
     if (persona.currentRole && persona.currentRole !== 'Student') {
       return persona.currentRole.toLowerCase();
     }
-    
+
     // Default lens
     return 'everyday life';
   }
@@ -34,49 +32,57 @@ export class DeepPersonalizationEngine {
     experiences: string[];
     domains: string[];
   } {
-    const anchors = {
+    const anchors: {
+      places: string[];
+      experiences: string[];
+      domains: string[];
+    } = {
       places: [],
       experiences: [],
-      domains: []
+      domains: [],
     };
 
     // Extract from interests
     const interests = [...(persona.primaryInterests || []), ...(persona.hobbies || [])];
-    
-    interests.forEach(interest => {
+
+    interests.forEach((interest) => {
       const lowerInterest = interest.toLowerCase();
-      
+
       // Sports/games → experiences and places
       if (['basketball', 'football', 'soccer', 'tennis', 'golf'].includes(lowerInterest)) {
         anchors.experiences.push(`playing ${interest}`, `watching ${interest} games`);
         anchors.places.push(`${interest} court`, `${interest} field`, 'sports arena');
         anchors.domains.push(interest, 'athletics', 'competition', 'teamwork');
       }
-      
+
       // Gaming → experiences and domains
       else if (['gaming', 'video games', 'rpg', 'strategy games'].includes(lowerInterest)) {
         anchors.experiences.push('leveling up', 'resource management', 'strategic planning');
         anchors.domains.push('game mechanics', 'progression systems', 'virtual economies');
       }
-      
+
       // Technology → domains and experiences
-      else if (['computer science', 'programming', 'software', 'ai', 'machine learning'].includes(lowerInterest)) {
+      else if (
+        ['computer science', 'programming', 'software', 'ai', 'machine learning'].includes(
+          lowerInterest
+        )
+      ) {
         anchors.experiences.push('debugging code', 'optimizing algorithms', 'system design');
         anchors.domains.push('software development', 'data structures', 'computational thinking');
       }
-      
+
       // Music → experiences and domains
       else if (['music', 'piano', 'guitar', 'singing'].includes(lowerInterest)) {
         anchors.experiences.push('practicing scales', 'composing melodies', 'performing');
         anchors.domains.push('harmony', 'rhythm', 'musical composition');
       }
-      
+
       // Business/Finance → domains and experiences
       else if (['business', 'finance', 'economics', 'entrepreneurship'].includes(lowerInterest)) {
         anchors.experiences.push('market analysis', 'investment decisions', 'business planning');
         anchors.domains.push('market dynamics', 'financial systems', 'economic principles');
       }
-      
+
       // General interests
       else {
         anchors.domains.push(interest);
@@ -95,10 +101,13 @@ export class DeepPersonalizationEngine {
   /**
    * Generate personalization instructions for natural integration
    */
-  buildPersonalizationInstructions(persona: UserPersona, contentType: 'explanation' | 'summary' | 'examples'): string {
+  buildPersonalizationInstructions(
+    persona: UserPersona,
+    contentType: 'explanation' | 'summary' | 'examples'
+  ): string {
     const primaryLens = this.getPrimaryLens(persona);
     const anchors = this.getContextualAnchors(persona);
-    
+
     const baseInstructions = `
 PERSONALIZATION CONTEXT:
 Primary Lens: ${primaryLens}
@@ -120,34 +129,43 @@ TONE AND STYLE:
 - ${this.getLearningStyleInstruction(persona)}`;
 
     if (contentType === 'explanation') {
-      return baseInstructions + `
+      return (
+        baseInstructions +
+        `
 
 EXPLANATION APPROACH:
 - Open with a hook using their primary interest
 - Build explanations using ${primaryLens} terminology naturally
 - Use progressive complexity matching their technical level
 - Connect abstract concepts to their concrete experiences
-- End with implications relevant to their goals`;
+- End with implications relevant to their goals`
+      );
     }
-    
+
     if (contentType === 'summary') {
-      return baseInstructions + `
+      return (
+        baseInstructions +
+        `
 
 SUMMARY APPROACH:
 - Frame key points through their conceptual lens
 - Use their domain's organizational patterns
 - Highlight connections to their interests
-- Structure using familiar frameworks from ${primaryLens}`;
+- Structure using familiar frameworks from ${primaryLens}`
+      );
     }
-    
+
     if (contentType === 'examples') {
-      return baseInstructions + `
+      return (
+        baseInstructions +
+        `
 
 EXAMPLE APPROACH:
 - Draw scenarios from ${anchors.domains.join(', ')}
 - Use situations they'd actually encounter
 - Build on experiences like: ${anchors.experiences.join(', ')}
-- Make examples feel personally relevant`;
+- Make examples feel personally relevant`
+      );
     }
 
     return baseInstructions;
@@ -157,14 +175,14 @@ EXAMPLE APPROACH:
    * Build a deeply personalized prompt that creates seamless integration
    */
   buildDeepPersonalizedPrompt(
-    persona: UserPersona, 
-    content: string, 
+    persona: UserPersona,
+    content: string,
     contentType: 'explanation' | 'summary' | 'examples',
     topic?: string
   ): string {
     const instructions = this.buildPersonalizationInstructions(persona, contentType);
     const primaryLens = this.getPrimaryLens(persona);
-    
+
     const systemPrompt = `You are an expert educator who creates deeply personalized content. Your specialty is weaving a learner's interests naturally into educational explanations without ever announcing the personalization.
 
 ${instructions}
@@ -193,26 +211,31 @@ Create content that makes the learner think "This was written exactly for me" wi
   /**
    * Generate natural analogies from user's domain
    */
-  generateNaturalAnalogy(concept: string, persona: UserPersona): {
+  generateNaturalAnalogy(
+    concept: string,
+    persona: UserPersona
+  ): {
     setup: string;
     mechanism: string;
     connection: string;
   } {
-    const primaryLens = this.getPrimaryLens(persona);
     const anchors = this.getContextualAnchors(persona);
-    
+
     // This would typically be generated by AI, but here's the structure
     return {
       setup: `Consider how ${anchors.experiences[0] || 'familiar systems'} operate`,
       mechanism: `The key process involves ${anchors.domains[0] || 'structured interactions'}`,
-      connection: `In the same way, ${concept} follows similar patterns`
+      connection: `In the same way, ${concept} follows similar patterns`,
     };
   }
 
   /**
    * Quality validation for personalized content
    */
-  validatePersonalization(content: string, persona: UserPersona): {
+  validatePersonalization(
+    content: string,
+    persona: UserPersona
+  ): {
     score: number;
     issues: string[];
     suggestions: string[];
@@ -227,10 +250,10 @@ Create content that makes the learner think "This was written exactly for me" wi
       /as a .* enthusiast/i,
       /because you like/i,
       /given your interest in/i,
-      /for someone who loves/i
+      /for someone who loves/i,
     ];
 
-    explicitPatterns.forEach(pattern => {
+    explicitPatterns.forEach((pattern) => {
       if (pattern.test(content)) {
         issues.push('Explicit personalization announcement detected');
         score -= 20;
@@ -240,10 +263,11 @@ Create content that makes the learner think "This was written exactly for me" wi
     // Check if primary interest is naturally integrated
     const primaryLens = this.getPrimaryLens(persona);
     const lensTerms = primaryLens.toLowerCase().split(' ');
-    const hasNaturalIntegration = lensTerms.some(term => 
-      content.toLowerCase().includes(term) && 
-      !content.toLowerCase().includes(`since you ${term}`) &&
-      !content.toLowerCase().includes(`as a ${term}`)
+    const hasNaturalIntegration = lensTerms.some(
+      (term) =>
+        content.toLowerCase().includes(term) &&
+        !content.toLowerCase().includes(`since you ${term}`) &&
+        !content.toLowerCase().includes(`as a ${term}`)
     );
 
     if (!hasNaturalIntegration) {
@@ -253,7 +277,7 @@ Create content that makes the learner think "This was written exactly for me" wi
     }
 
     // Check for natural flow
-    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = content.split(/[.!?]+/).filter((s) => s.trim().length > 0);
     if (sentences.length < 3) {
       issues.push('Content too brief for proper personalization');
       score -= 10;
@@ -268,7 +292,7 @@ Create content that makes the learner think "This was written exactly for me" wi
     return {
       score: Math.max(0, score),
       issues,
-      suggestions
+      suggestions,
     };
   }
 
@@ -313,7 +337,7 @@ Create content that makes the learner think "This was written exactly for me" wi
     const examples: string[] = [];
 
     // This would be AI-generated, but here's the approach:
-    anchors.domains.slice(0, count).forEach(domain => {
+    anchors.domains.slice(0, count).forEach((domain) => {
       examples.push(`Consider how ${concept} appears in ${domain} contexts...`);
     });
 
@@ -323,26 +347,29 @@ Create content that makes the learner think "This was written exactly for me" wi
   /**
    * Adapt complexity based on user's technical level and background
    */
-  getComplexityLevel(persona: UserPersona, topic: string): {
+  getComplexityLevel(
+    persona: UserPersona,
+    topic: string
+  ): {
     conceptualDepth: 'surface' | 'moderate' | 'deep';
     technicalLanguage: 'minimal' | 'balanced' | 'extensive';
     exampleSophistication: 'basic' | 'intermediate' | 'advanced';
   } {
     const baseLevel = persona.technicalLevel || 'intermediate';
-    
+
     // Adjust based on domain familiarity
     const interests = [...(persona.primaryInterests || []), ...(persona.hobbies || [])];
     const topicLower = topic.toLowerCase();
-    const hasDomainExpertise = interests.some(interest => 
-      topicLower.includes(interest.toLowerCase()) || 
-      interest.toLowerCase().includes(topicLower)
+    const hasDomainExpertise = interests.some(
+      (interest) =>
+        topicLower.includes(interest.toLowerCase()) || interest.toLowerCase().includes(topicLower)
     );
 
     if (hasDomainExpertise && baseLevel !== 'beginner') {
       return {
         conceptualDepth: 'deep',
         technicalLanguage: 'extensive',
-        exampleSophistication: 'advanced'
+        exampleSophistication: 'advanced',
       };
     }
 
@@ -350,18 +377,18 @@ Create content that makes the learner think "This was written exactly for me" wi
       beginner: {
         conceptualDepth: 'surface',
         technicalLanguage: 'minimal',
-        exampleSophistication: 'basic'
+        exampleSophistication: 'basic',
       },
       intermediate: {
         conceptualDepth: 'moderate',
         technicalLanguage: 'balanced',
-        exampleSophistication: 'intermediate'
+        exampleSophistication: 'intermediate',
       },
       advanced: {
         conceptualDepth: 'deep',
         technicalLanguage: 'extensive',
-        exampleSophistication: 'advanced'
-      }
+        exampleSophistication: 'advanced',
+      },
     };
 
     return levelMap[baseLevel] || levelMap.intermediate;

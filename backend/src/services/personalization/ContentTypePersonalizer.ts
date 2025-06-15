@@ -1,24 +1,18 @@
 import { UserPersona } from '../../types';
 import { deepPersonalizationEngine } from './DeepPersonalizationEngine';
-import { logger } from '../../utils/logger';
 
 /**
  * Content-Type Specific Personalizer
  * Handles specialized personalization for each learning mode
  */
 export class ContentTypePersonalizer {
-
   /**
    * Create a personalized introduction that immediately hooks the learner
    */
-  generatePersonalizedIntroduction(
-    topic: string,
-    content: string,
-    persona: UserPersona
-  ): string {
+  generatePersonalizedIntroduction(topic: string, content: string, persona: UserPersona): string {
     const primaryLens = deepPersonalizationEngine.getPrimaryLens(persona);
     const anchors = deepPersonalizationEngine.getContextualAnchors(persona);
-    
+
     return `You are creating the opening moments of a learning experience. Your goal is to immediately capture the learner's attention using their world.
 
 LEARNER PROFILE:
@@ -72,7 +66,7 @@ Generate an introduction that hooks them from the first sentence using their wor
     const levelInstructions = {
       foundation: `Start with the most basic, intuitive understanding using ${primaryLens} fundamentals. Focus on "what it is" rather than "how it works."`,
       intermediate: `Build deeper understanding using ${primaryLens} systems and processes. Explain mechanisms and relationships.`,
-      advanced: `Explore sophisticated applications and edge cases using advanced ${primaryLens} scenarios. Focus on mastery and nuanced understanding.`
+      advanced: `Explore sophisticated applications and edge cases using advanced ${primaryLens} scenarios. Focus on mastery and nuanced understanding.`,
     };
 
     return `Create a ${currentLevel}-level explanation of "${concept}" that builds understanding progressively through the lens of ${primaryLens}.
@@ -120,7 +114,7 @@ Create an explanation that feels like it was written by an expert in both the su
       basic: `Simple, clear examples that illustrate the fundamental concept`,
       application: `Practical applications they would actually use or encounter`,
       'problem-solving': `Problem scenarios that require applying the concept`,
-      'real-world': `Complex, realistic situations from their professional/personal context`
+      'real-world': `Complex, realistic situations from their professional/personal context`,
     };
 
     return `Generate ${exampleType} examples of "${concept}" using realistic scenarios from the learner's world.
@@ -165,7 +159,7 @@ Generate 2-3 examples that make the concept immediately relevant and applicable 
     const practiceInstructions = {
       guided: `Step-by-step practice with hints and scaffolding`,
       independent: `Self-directed problems that test understanding`,
-      challenge: `Complex scenarios that require creative application`
+      challenge: `Complex scenarios that require creative application`,
     };
 
     return `Create ${practiceType} practice problems for "${concept}" using scenarios from the learner's domain.
@@ -209,7 +203,7 @@ Generate problems that feel like real challenges they would encounter in ${prima
       review: `Reinforcement summary highlighting key takeaways for retention`,
       application: `Action-oriented summary focusing on practical use`,
       'next-steps': `Forward-looking summary preparing for advanced topics`,
-      connections: `Relationship summary showing how concepts link together`
+      connections: `Relationship summary showing how concepts link together`,
     };
 
     return `Create a ${summaryPurpose} summary that connects the learning to the user's goals and framework.

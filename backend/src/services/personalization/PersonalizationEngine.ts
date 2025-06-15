@@ -13,27 +13,26 @@ export interface PersonalizationParams {
 export class PersonalizationEngine {
   async getUserPersona(userId: string): Promise<UserPersona | null> {
     try {
-      // First try user_personas table
+      // Query the personas table (with JSONB fields)
       const { data: personaData, error: personaError } = await supabase
-        .from('user_personas')
+        .from('personas')
         .select('*')
         .eq('user_id', userId)
         .single();
 
       if (!personaError && personaData) {
-        return this.mapToUserPersona(personaData);
+        return this.mapPersonasTableToUserPersona(personaData);
       }
 
-      // Fallback to profiles table with persona field
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
+      // Fallback to user_personas table (older format)
+      const { data: userPersonaData, error: userPersonaError } = await supabase
+        .from('user_personas')
         .select('*')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single();
 
-      if (!profileError && profile?.persona) {
-        // Map the profile persona to UserPersona format
-        return this.mapProfilePersonaToUserPersona(userId, profile.persona);
+      if (!userPersonaError && userPersonaData) {
+        return this.mapToUserPersona(userPersonaData);
       }
 
       // No persona found, return null (not an error)
@@ -45,28 +44,57 @@ export class PersonalizationEngine {
     }
   }
 
-  private mapProfilePersonaToUserPersona(userId: string, persona: any): UserPersona {
-    // Map profile persona format to UserPersona
+  private mapPersonasTableToUserPersona(data: any): UserPersona {
+    // Map from personas table with JSONB fields according to exact structure
+    const professional = data.professional_context || {};
+    const interests = data.personal_interests || {};
+    const learningStyle = data.learning_style || {};
+    const contentPrefs = data.content_preferences || {};
+    const communication = data.communication_tone || {};
+
     return {
-      id: `profile-${userId}`,
-      userId: userId,
-      currentRole: persona.professionalBackground || 'Student',
-      industry: persona.field || 'General',
-      experienceYears: 0, // Not available in profile persona
-      careerGoals: persona.goals || [],
-      technicalLevel: persona.experienceLevel || 'beginner',
-      primaryInterests: persona.interests || [],
-      secondaryInterests: [],
-      hobbies: persona.hobbies || [],
-      learningStyle: persona.learningStyle || 'visual',
-      learningGoals: persona.goals || [],
+      id: data.id,
+      userId: data.user_id,
+      
+      // Professional Context from JSONB
+      currentRole: professional.role || 'Student',
+      industry: professional.industry || 'General',
+      experienceYears: professional.experienceYears || 0,
+      careerGoals: professional.careerAspirations ? [professional.careerAspirations] : [],
+      technicalLevel: professional.technicalLevel || 'beginner',
+      
+      // Personal Interests from JSONB
+      primaryInterests: interests.primary || [],
+      secondaryInterests: interests.secondary || [],
+      hobbies: interests.hobbies || [], // Not in current structure but keeping for compatibility
+      
+      // Learning Style from JSONB
+      learningStyle: learningStyle.primary || 'visual',
+      learningGoals: interests.learningTopics || [],
       preferredContentTypes: [],
-      dailyLearningTime: 30,
-      preferredSessionLength: 15,
-      createdAt: new Date(),
-      updatedAt: new Date()
+      dailyLearningTime: 30, // Default as not in current structure
+      preferredSessionLength: 15, // Default as not in current structure
+      
+      // Content Preferences from JSONB
+      contentDensity: contentPrefs.density === 'balanced' ? 'comprehensive' : (contentPrefs.density || 'concise'),
+      explanationDepth: contentPrefs.detailTolerance || 'moderate',
+      exampleFrequency: contentPrefs.examplesPerConcept <= 1 ? 'low' : 
+                       contentPrefs.examplesPerConcept <= 3 ? 'medium' : 'high',
+      visualPreference: 'moderate', // Not in current structure, using default
+      
+      // Communication Style from JSONB
+      communicationTone: communication.style === 'professional_friendly' ? 'friendly' : 
+                        (communication.style || 'friendly'),
+      formalityLevel: communication.technicalComfort >= 0.7 ? 'formal' : 
+                     communication.technicalComfort >= 0.3 ? 'neutral' : 'informal',
+      encouragementLevel: communication.encouragementLevel || 'moderate',
+      humorAppreciation: communication.humorAppropriate ? 'moderate' : 'none',
+      
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
     };
   }
+
 
   private mapToUserPersona(data: any): UserPersona {
     return {
@@ -169,18 +197,30 @@ export class PersonalizationEngine {
 
   async getPersona(personaId: string): Promise<UserPersona | null> {
     try {
+      // First try personas table (JSONB format)
+      const { data: personaData, error: personaError } = await supabase
+        .from('personas')
+        .select('*')
+        .eq('id', personaId)
+        .single();
+
+      if (!personaError && personaData) {
+        return this.mapPersonasTableToUserPersona(personaData);
+      }
+
+      // Fallback to user_personas table
       const { data, error } = await supabase
         .from('user_personas')
         .select('*')
         .eq('id', personaId)
         .single();
 
-      if (error) {
-        logger.error('Failed to fetch persona by id:', error);
-        return null;
+      if (!error && data) {
+        return this.mapToUserPersona(data);
       }
 
-      return this.mapToUserPersona(data);
+      logger.error('Failed to fetch persona by id');
+      return null;
     } catch (error) {
       logger.error('Error getting persona by id:', error);
       return null;
@@ -189,6 +229,18 @@ export class PersonalizationEngine {
 
   async getLatestPersona(userId: string): Promise<UserPersona | null> {
     try {
+      // First try personas table (JSONB format)
+      const { data: personaData, error: personaError } = await supabase
+        .from('personas')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+
+      if (!personaError && personaData) {
+        return this.mapPersonasTableToUserPersona(personaData);
+      }
+
+      // Fallback to user_personas table
       const { data, error } = await supabase
         .from('user_personas')
         .select('*')
@@ -197,12 +249,12 @@ export class PersonalizationEngine {
         .limit(1)
         .single();
 
-      if (error) {
-        logger.error('Failed to fetch latest persona:', error);
-        return null;
+      if (!error && data) {
+        return this.mapToUserPersona(data);
       }
 
-      return this.mapToUserPersona(data);
+      logger.info(`No persona found for user ${userId}`);
+      return null;
     } catch (error) {
       logger.error('Error getting latest persona:', error);
       return null;

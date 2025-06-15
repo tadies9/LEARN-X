@@ -6,7 +6,6 @@ import { deepPersonalizationEngine } from './DeepPersonalizationEngine';
  * Enhances content for visual learners with descriptive imagery from their domain
  */
 export class VisualPersonalizationEngine {
-
   /**
    * Generate visual descriptions using imagery from user's domain
    */
@@ -23,7 +22,7 @@ export class VisualPersonalizationEngine {
       diagram: `Create a mental diagram of ${concept} using visual elements from ${primaryLens}`,
       process: `Visualize the ${concept} process using ${primaryLens} workflow imagery`,
       comparison: `Show visual contrasts and comparisons using ${primaryLens} visual metaphors`,
-      metaphor: `Paint a vivid visual metaphor for ${concept} using ${primaryLens} imagery`
+      metaphor: `Paint a vivid visual metaphor for ${concept} using ${primaryLens} imagery`,
     };
 
     return `Create rich visual descriptions for "${concept}" that help visual learners see and understand through ${primaryLens} imagery.
@@ -89,11 +88,7 @@ Create a mind map that a visual learner immersed in ${primaryLens} would immedia
   /**
    * Generate step-by-step visual processes
    */
-  generateVisualProcess(
-    processName: string,
-    steps: string[],
-    persona: UserPersona
-  ): string {
+  generateVisualProcess(processName: string, steps: string[], persona: UserPersona): string {
     const primaryLens = deepPersonalizationEngine.getPrimaryLens(persona);
     const anchors = deepPersonalizationEngine.getContextualAnchors(persona);
 
@@ -124,10 +119,7 @@ Create a visual process description that makes abstract steps concrete through f
   /**
    * Create visual analogies and metaphors
    */
-  generateVisualAnalogy(
-    abstractConcept: string,
-    persona: UserPersona
-  ): string {
+  generateVisualAnalogy(abstractConcept: string, persona: UserPersona): string {
     const primaryLens = deepPersonalizationEngine.getPrimaryLens(persona);
     const anchors = deepPersonalizationEngine.getContextualAnchors(persona);
 
@@ -156,49 +148,6 @@ Create an analogy so visually rich and familiar that the abstract concept become
   }
 
   /**
-   * Generate visual learning aids and diagrams
-   */
-  generateVisualLearningAid(
-    concept: string,
-    aidType: 'flowchart' | 'hierarchy' | 'cycle' | 'matrix' | 'timeline',
-    persona: UserPersona
-  ): string {
-    const primaryLens = deepPersonalizationEngine.getPrimaryLens(persona);
-    const anchors = deepPersonalizationEngine.getContextualAnchors(persona);
-
-    const aidInstructions = {
-      flowchart: `Design a visual flowchart using ${primaryLens} workflow patterns`,
-      hierarchy: `Create a visual hierarchy using ${primaryLens} organizational structures`,
-      cycle: `Show a visual cycle using ${primaryLens} cyclical processes`,
-      matrix: `Build a visual matrix using ${primaryLens} comparison frameworks`,
-      timeline: `Construct a visual timeline using ${primaryLens} progression patterns`
-    };
-
-    return `Create a ${aidType} visual learning aid for "${concept}" using ${primaryLens} visual conventions.
-
-VISUAL AID DESIGN:
-Type: ${aidInstructions[aidType]}
-Visual Framework: ${anchors.domains[0]} organizational patterns
-Visual Elements: ${anchors.experiences.slice(0, 2).join(', ')}
-
-DESIGN PRINCIPLES:
-1. Familiar Visual Language: Use shapes, symbols, and patterns from ${primaryLens}
-2. Clear Visual Hierarchy: Apply ${primaryLens} importance indicators
-3. Logical Visual Flow: Follow ${primaryLens} reading/scanning patterns
-4. Visual Grouping: Use ${primaryLens} categorization methods
-5. Interactive Elements: Include visual cues for engagement
-
-VISUAL DESCRIPTION:
-- Layout and Structure: How the aid is visually organized
-- Visual Elements: Specific shapes, colors, and symbols used
-- Connection Methods: How relationships are shown visually
-- Information Hierarchy: How importance is indicated visually
-- User Interaction: How someone would "read" or use the visual aid
-
-Generate a description so detailed that a visual learner could imagine and mentally construct the learning aid using familiar ${primaryLens} visual conventions.`;
-  }
-
-  /**
    * Create visual summaries and infographics
    */
   generateVisualSummary(
@@ -213,7 +162,7 @@ Generate a description so detailed that a visual learner could imagine and menta
       infographic: `Design a visual infographic using ${primaryLens} design aesthetics`,
       'visual-outline': `Create a visual outline using ${primaryLens} organizational patterns`,
       'concept-map': `Build a concept map using ${primaryLens} relationship visualization`,
-      'visual-story': `Tell a visual story using ${primaryLens} narrative imagery`
+      'visual-story': `Tell a visual story using ${primaryLens} narrative imagery`,
     };
 
     return `Transform the content into a ${summaryStyle} that visual learners can easily process and remember.
@@ -246,10 +195,7 @@ Create a visual summary description that helps visual learners see, understand, 
   /**
    * Generate visual mnemonics and memory aids
    */
-  generateVisualMnemonic(
-    informationToRemember: string[],
-    persona: UserPersona
-  ): string {
+  generateVisualMnemonic(informationToRemember: string[], persona: UserPersona): string {
     const primaryLens = deepPersonalizationEngine.getPrimaryLens(persona);
     const anchors = deepPersonalizationEngine.getContextualAnchors(persona);
 
@@ -279,14 +225,60 @@ Create visual mnemonics so vivid and connected to ${primaryLens} that the inform
   }
 
   /**
+   * Generate visual learning aid content
+   */
+  generateVisualLearningAid(
+    concept: string,
+    persona: UserPersona,
+    aidType: 'flowchart' | 'hierarchy' | 'cycle' | 'matrix' | 'timeline'
+  ): string {
+    const primaryLens = deepPersonalizationEngine.getPrimaryLens(persona);
+    const anchors = deepPersonalizationEngine.getContextualAnchors(persona);
+
+    const aidDescriptions = {
+      flowchart: `Create a visual flowchart showing the process flow using ${primaryLens} visual metaphors`,
+      hierarchy: `Design a hierarchical diagram using ${primaryLens} organizational structures`,
+      cycle: `Illustrate the cyclical process using ${primaryLens} recurring patterns`,
+      matrix: `Build a comparison matrix using ${primaryLens} categorization methods`,
+      timeline: `Construct a timeline using ${primaryLens} progression markers`,
+    };
+
+    return `Design a ${aidType} visual learning aid for understanding "${concept}" through a ${primaryLens} perspective.
+
+VISUAL AID SPECIFICATIONS:
+Type: ${aidType}
+Visual Style: ${aidDescriptions[aidType]}
+Theme Elements: ${anchors.domains.join(', ')}
+Primary Lens: ${primaryLens}
+
+VISUAL STRUCTURE:
+1. Central Concept: "${concept}" visualized through ${primaryLens} imagery
+2. Visual Elements: Use icons, shapes, and symbols from ${primaryLens}
+3. Color Scheme: Apply colors that resonate with ${primaryLens} aesthetics
+4. Spatial Layout: Organize information using ${primaryLens} spatial patterns
+5. Visual Connections: Show relationships using ${primaryLens} linking methods
+
+DETAILED VISUAL DESCRIPTION:
+Provide a rich, detailed description of the visual aid that enables visual learners to:
+- Mentally construct the complete visual representation
+- Understand spatial relationships and flow
+- Remember key connections through visual memory
+- Apply the concept using the visual framework
+
+Make the description so vivid and detailed that learners can "see" the entire diagram in their mind's eye, using familiar visual elements from their ${primaryLens} world.`;
+  }
+
+  /**
    * Check if user is a visual learner and needs enhanced visual content
    */
   isVisualLearner(persona: UserPersona): boolean {
-    return persona.learningStyle === 'visual' || 
-           persona.visualPreference === 'high' ||
-           (persona.primaryInterests || []).some(interest => 
-             ['design', 'art', 'architecture', 'gaming', 'photography'].includes(interest.toLowerCase())
-           );
+    return (
+      persona.learningStyle === 'visual' ||
+      persona.visualPreference === 'heavy' ||
+      (persona.primaryInterests || []).some((interest) =>
+        ['design', 'art', 'architecture', 'gaming', 'photography'].includes(interest.toLowerCase())
+      )
+    );
   }
 
   /**

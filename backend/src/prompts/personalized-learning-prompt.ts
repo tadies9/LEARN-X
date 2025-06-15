@@ -68,37 +68,34 @@ export interface PersonalizationContext {
   learning_style: 'visual' | 'auditory' | 'kinesthetic' | 'reading';
   communication_style: 'casual' | 'formal' | 'academic';
   field_of_study?: string;
-  
+
   // Content context
   topic: string;
   difficulty_level: 'beginner' | 'intermediate' | 'advanced';
   content_type: 'explanation' | 'example' | 'practice' | 'summary';
 }
 
-export function buildPersonalizedPrompt(
-  content: string,
-  context: PersonalizationContext
-): string {
+export function buildPersonalizedPrompt(content: string, context: PersonalizationContext): string {
   // Replace template variables
   let prompt = PERSONALIZED_LEARNING_PROMPT;
-  
+
   // Replace all context variables
   Object.entries(context).forEach(([key, value]) => {
     const regex = new RegExp(`{{${key}}}`, 'g');
     prompt = prompt.replace(regex, Array.isArray(value) ? value.join(', ') : String(value));
   });
-  
+
   // Handle conditionals
   prompt = processConditionals(prompt, context);
-  
+
   return `${prompt}\n\nCONTENT TO PERSONALIZE:\n${content}`;
 }
 
 function processConditionals(template: string, context: any): string {
   // Simple conditional processor for {{#if}} blocks
   const conditionalRegex = /{{#if \(eq (\w+) '([^']+)'\)}}([\s\S]*?){{\/if}}/g;
-  
-  return template.replace(conditionalRegex, (match, field, value, content) => {
+
+  return template.replace(conditionalRegex, (_match, field, value, content) => {
     if (context[field] === value) {
       return content.trim();
     }
