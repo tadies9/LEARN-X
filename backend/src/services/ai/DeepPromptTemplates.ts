@@ -7,7 +7,6 @@ import { deepPersonalizationEngine } from '../personalization/DeepPersonalizatio
  * without ever announcing the personalization
  */
 export class DeepPromptTemplates {
-
   /**
    * Build an explanation prompt with deep, natural personalization
    */
@@ -124,10 +123,13 @@ Generate examples that make the concept click immediately because they're drawn 
    */
   buildStreamingExplanationPrompt(persona: UserPersona, chunks: any[], topic: string): string {
     const primaryLens = deepPersonalizationEngine.getPrimaryLens(persona);
-    const instructions = deepPersonalizationEngine.buildPersonalizationInstructions(persona, 'explanation');
+    const instructions = deepPersonalizationEngine.buildPersonalizationInstructions(
+      persona,
+      'explanation'
+    );
 
     // Combine chunks content
-    const content = chunks.map(chunk => chunk.content).join('\n\n');
+    const content = chunks.map((chunk) => chunk.content).join('\n\n');
 
     return `You are creating a streaming explanation that weaves the learner's interests naturally throughout the content.
 
@@ -218,10 +220,13 @@ Generate questions that feel naturally relevant to someone immersed in ${primary
       visual: `Paint vivid mental pictures using ${primaryLens} imagery. Describe how concepts "look" and "appear" in their world.`,
       auditory: `Use rhythmic language and conversational flow. Reference sounds, patterns, and verbal explanations from ${primaryLens}.`,
       kinesthetic: `Focus on actions, processes, and hands-on understanding. Emphasize how things "work" and "move" in ${primaryLens}.`,
-      reading: `Structure with clear logical progression. Use precise language that builds understanding systematically.`
+      reading: `Structure with clear logical progression. Use precise language that builds understanding systematically.`,
     };
 
-    return approaches[persona.learningStyle || 'mixed'] || `Blend multiple approaches while maintaining the ${primaryLens} perspective throughout.`;
+    return (
+      approaches[persona.learningStyle || 'mixed'] ||
+      `Blend multiple approaches while maintaining the ${primaryLens} perspective throughout.`
+    );
   }
 
   private getSummaryStructure(persona: UserPersona, format: string): string {
@@ -245,7 +250,11 @@ Generate questions that feel naturally relevant to someone immersed in ${primary
   /**
    * Build a quality validation prompt
    */
-  buildQualityCheckPrompt(originalContent: string, personalizedContent: string, persona: UserPersona): string {
+  buildQualityCheckPrompt(
+    originalContent: string,
+    personalizedContent: string,
+    persona: UserPersona
+  ): string {
     return `Evaluate the quality of this personalized educational content.
 
 ORIGINAL CONTENT:

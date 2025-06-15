@@ -4,6 +4,7 @@ import { ContentGenerationService } from '../services/content/ContentGenerationS
 import { DeepContentGenerationService } from '../services/content/DeepContentGenerationService';
 import { HybridSearchService } from '../services/search/HybridSearchService';
 import { PersonalizationEngine } from '../services/personalization/PersonalizationEngine';
+import { deepPersonalizationEngine } from '../services/personalization/DeepPersonalizationEngine';
 import { CostTracker } from '../services/ai/CostTracker';
 import { aiErrorHandler } from '../services/ai/ErrorHandler';
 import { logger } from '../utils/logger';
@@ -82,14 +83,14 @@ export class AIController {
         searchType: 'hybrid',
         includeContent: true,
         weightVector: 0.8, // Prioritize semantic understanding for explanations
-        weightKeyword: 0.2
+        weightKeyword: 0.2,
       });
 
-      const chunks = searchResponse.results.map(result => ({
+      const chunks = searchResponse.results.map((result) => ({
         id: result.id,
         content: result.content,
         metadata: result.metadata,
-        score: result.score
+        score: result.score,
       }));
 
       if (chunks.length === 0) {
@@ -110,16 +111,18 @@ export class AIController {
         subtopic,
         persona,
         stream: true,
-        model: 'gpt-4o'
+        model: 'gpt-4o',
       });
 
       // Stream with structured SSE format
       for await (const chunk of generator) {
-        res.write(`data: ${JSON.stringify({ 
-          type: 'content', 
-          data: chunk,
-          timestamp: Date.now()
-        })}\n\n`);
+        res.write(
+          `data: ${JSON.stringify({
+            type: 'content',
+            data: chunk,
+            timestamp: Date.now(),
+          })}\n\n`
+        );
       }
 
       // Send completion signal
@@ -132,10 +135,12 @@ export class AIController {
       if (!res.headersSent) {
         res.status(error instanceof AppError ? error.statusCode : 500).json(errorResponse);
       } else {
-        res.write(`data: ${JSON.stringify({ 
-          type: 'error', 
-          data: { message: errorResponse.error }
-        })}\n\n`);
+        res.write(
+          `data: ${JSON.stringify({
+            type: 'error',
+            data: { message: errorResponse.error },
+          })}\n\n`
+        );
         res.end();
       }
     }
@@ -160,7 +165,7 @@ export class AIController {
         filters: { fileId },
         limit: 100, // Get all chunks for comprehensive summary
         searchType: 'keyword', // Get all chunks, not just semantically similar
-        includeContent: true
+        includeContent: true,
       });
 
       if (searchResponse.results.length === 0) {
@@ -168,18 +173,12 @@ export class AIController {
       }
 
       // Sort chunks by index to maintain document order
-      const sortedChunks = searchResponse.results.sort((a, b) => 
-        a.metadata.chunkIndex - b.metadata.chunkIndex
+      const sortedChunks = searchResponse.results.sort(
+        (a, b) => a.metadata.chunkIndex - b.metadata.chunkIndex
       );
 
       // Combine content intelligently based on chunk types
       const content = this.combineChunksIntelligently(sortedChunks);
-
-      // If no persona, create a default one
-      const summaryParams: any = {
-        content,
-        format,
-      };
 
       if (persona) {
         // Use deep personalization for summary
@@ -187,17 +186,14 @@ export class AIController {
           content,
           format,
           persona,
-          model: 'gpt-4o'
+          model: 'gpt-4o',
         });
-        
+
         res.json({
           success: true,
           data: {
             summary: result.content,
             format,
-            personalizationScore: result.personalizationScore,
-            qualityMetrics: result.qualityMetrics,
-            cached: result.cached
           },
         });
       } else {
@@ -209,15 +205,13 @@ export class AIController {
           temperature: 0.7,
           max_tokens: 1000,
         });
-        
+
         const summary = completion.choices[0].message.content || 'Failed to generate summary';
         res.json({
           success: true,
           data: {
             summary,
             format,
-            personalizationScore: 0,
-            cached: false
           },
         });
       }
@@ -248,46 +242,74 @@ export class AIController {
           .select('*')
           .in('id', chunkIds)
           .order('chunk_index');
-          
+
         if (error || !chunks || chunks.length === 0) {
           throw new AppError('Failed to fetch specified chunks', 404);
         }
-        
-        content = chunks.map(c => c.content).join('\n\n');
+
+        content = chunks.map((c) => c.content).join('\n\n');
       } else {
         // Get important chunks for flashcard generation
-        const searchResponse = await searchService.search('key concepts definitions important', userId, {
-          filters: { 
-            fileId,
-            contentTypes: ['definition', 'summary'] as any,
-            importance: ['high', 'medium']
-          },
-          limit: 20,
-          searchType: 'hybrid',
-          weightVector: 0.6,
-          weightKeyword: 0.4
-        });
+        const searchResponse = await searchService.search(
+          'key concepts definitions important',
+          userId,
+          {
+            filters: {
+              fileId,
+              contentTypes: ['definition', 'summary'] as any,
+              importance: ['high', 'medium'],
+            },
+            limit: 20,
+            searchType: 'hybrid',
+            weightVector: 0.6,
+            weightKeyword: 0.4,
+          }
+        );
 
         if (searchResponse.results.length === 0) {
           throw new AppError('No suitable content found for flashcard generation', 404);
         }
 
         content = searchResponse.results
-          .map(r => `${r.metadata.sectionTitle ? `[${r.metadata.sectionTitle}]\n` : ''}${r.content}`)
+          .map(
+            (r) => `${r.metadata.sectionTitle ? `[${r.metadata.sectionTitle}]\n` : ''}${r.content}`
+          )
           .join('\n\n');
       }
 
-      const flashcards = await contentService.generateFlashcards({
-        content,
-      });
+      // Get user persona for personalization
+      const persona = await personalizationEngine.getUserPersona(userId);
 
-      res.json({
-        success: true,
-        data: {
-          flashcards,
-          count: flashcards.length,
-        },
-      });
+      if (persona) {
+        // Use deep personalization for flashcards
+        const result = await deepContentService.generateDeepFlashcards({
+          content,
+          persona,
+          contextualExamples: true,
+          model: 'gpt-4o',
+        });
+
+        res.json({
+          success: true,
+          data: {
+            flashcards: result.flashcards,
+            count: result.flashcards.length,
+          },
+        });
+      } else {
+        // Fallback to basic generation
+        const flashcards = await contentService.generateFlashcards({
+          content,
+        });
+
+        res.json({
+          success: true,
+          data: {
+            flashcards,
+            count: flashcards.length,
+          },
+        });
+      }
     } catch (error) {
       logger.error('Generate flashcards error:', error);
       const errorResponse = aiErrorHandler.handle(error);
@@ -311,18 +333,18 @@ export class AIController {
       if (chunkIds && chunkIds.length > 0) {
         // Get specific chunks for targeted quiz
         const chunks = await this.getChunksByIds(chunkIds);
-        content = chunks.map(c => c.content).join('\n\n');
+        content = chunks.map((c) => c.content).join('\n\n');
       } else {
         // Get diverse content for comprehensive quiz
         const searchResponse = await searchService.search('', userId, {
-          filters: { 
+          filters: {
             fileId,
             contentTypes: ['definition', 'explanation', 'example', 'theory'],
-            importance: ['high', 'medium']
+            importance: ['high', 'medium'],
           },
           limit: 30,
           searchType: 'keyword', // Get a good spread of content
-          includeContent: true
+          includeContent: true,
         });
 
         if (searchResponse.results.length === 0) {
@@ -332,24 +354,50 @@ export class AIController {
         // Select diverse chunks for balanced quiz
         const diverseChunks = this.selectDiverseChunks(searchResponse.results, 15);
         content = diverseChunks
-          .map(r => `${r.metadata.sectionTitle ? `[${r.metadata.sectionTitle}]\n` : ''}${r.content}`)
+          .map(
+            (r) => `${r.metadata.sectionTitle ? `[${r.metadata.sectionTitle}]\n` : ''}${r.content}`
+          )
           .join('\n\n');
       }
 
+      // Get user persona for personalization
+      const persona = await personalizationEngine.getUserPersona(userId);
       const quizType = type as QuizType;
-      const questions = await contentService.generateQuiz({
-        content,
-        type: quizType,
-      });
 
-      res.json({
-        success: true,
-        data: {
-          questions,
-          type,
-          count: questions.length,
-        },
-      });
+      if (persona) {
+        // Use deep personalization for quiz
+        const result = await deepContentService.generateDeepQuiz({
+          content,
+          type: quizType,
+          persona,
+          adaptiveDifficulty: true,
+          model: 'gpt-4o',
+        });
+
+        res.json({
+          success: true,
+          data: {
+            questions: result.questions,
+            type,
+            count: result.questions.length,
+          },
+        });
+      } else {
+        // Fallback to basic generation
+        const questions = await contentService.generateQuiz({
+          content,
+          type: quizType,
+        });
+
+        res.json({
+          success: true,
+          data: {
+            questions,
+            type,
+            count: questions.length,
+          },
+        });
+      }
     } catch (error) {
       logger.error('Generate quiz error:', error);
       const errorResponse = aiErrorHandler.handle(error);
@@ -364,7 +412,7 @@ export class AIController {
 
       const searchResponse = await searchService.search(query, userId, {
         filters: fileId ? { fileId } : {},
-        limit
+        limit,
       });
       const results = searchResponse.results;
 
@@ -484,18 +532,18 @@ export class AIController {
       }
 
       // Handle both array and object formats for courses
-      const courseUserId = Array.isArray(fileCheck.courses) 
-        ? fileCheck.courses[0]?.user_id 
+      const courseUserId = Array.isArray(fileCheck.courses)
+        ? fileCheck.courses[0]?.user_id
         : (fileCheck.courses as any)?.user_id;
-        
-      logger.info('[AI] Authorization check:', { 
-        courseUserId, 
-        userId, 
+
+      logger.info('[AI] Authorization check:', {
+        courseUserId,
+        userId,
         coursesType: Array.isArray(fileCheck.courses) ? 'array' : 'object',
         courses: fileCheck.courses,
-        match: courseUserId === userId 
+        match: courseUserId === userId,
       });
-        
+
       if (courseUserId !== userId) {
         logger.error('[AI] Access denied:', { courseUserId, userId });
         res.status(403).json({
@@ -508,7 +556,8 @@ export class AIController {
       // Fetch file chunks directly from database
       const { data: chunks, error: chunksError } = await supabase
         .from('file_chunks')
-        .select(`
+        .select(
+          `
           id,
           file_id,
           content,
@@ -521,7 +570,8 @@ export class AIController {
           hierarchy_level,
           is_start_of_section,
           is_end_of_section
-        `)
+        `
+        )
         .eq('file_id', fileId)
         .order('chunk_index', { ascending: true });
 
@@ -552,8 +602,44 @@ export class AIController {
         .map((c: any) => c.content)
         .join('\n\n');
 
-      // Use GPT-4o to generate meaningful outline
-      const outlinePrompt = `Analyze this document and create a learning outline with 3-5 main topics.
+      // Check if user has a persona for personalized outline
+      const persona = await personalizationEngine.getUserPersona(userId);
+
+      let outlinePrompt: string;
+
+      if (persona) {
+        // Use personalized prompt
+        const primaryLens = deepPersonalizationEngine.getPrimaryLens(persona);
+        const anchors = deepPersonalizationEngine.getContextualAnchors(persona);
+
+        outlinePrompt = `Analyze this document and create a learning outline that naturally aligns with a ${primaryLens} perspective.
+
+Document content:
+${documentContent.substring(0, 8000)} // Limit for context window
+
+Requirements:
+1. Create 3-5 main topics based on the document's major themes
+2. Each topic should have a clear, descriptive title that resonates with someone from ${anchors.domains.join(', ')}
+3. Each topic should have a brief summary (1-2 sentences) that connects to ${primaryLens} concepts where relevant
+4. Topics should follow a logical learning progression for someone with ${persona.technicalLevel} technical knowledge
+5. NEVER say "for basketball fans" or announce the personalization - make it feel natural
+
+Return a JSON object with this structure:
+{
+  "sections": [{
+    "id": "section-0",
+    "title": "Clear Topic Title",
+    "summary": "Brief description of what this topic covers",
+    "chunkIds": [],
+    "chunkCount": 0,
+    "startPage": 0,
+    "endPage": 0,
+    "topics": ["key", "concepts", "related", "to", "topic"]
+  }]
+}`;
+      } else {
+        // Use standard prompt
+        outlinePrompt = `Analyze this document and create a learning outline with 3-5 main topics.
 
 Document content:
 ${documentContent.substring(0, 8000)} // Limit for context window
@@ -577,14 +663,15 @@ Return a JSON object with this structure:
     "topics": ["key", "concepts", "related", "to", "topic"]
   }]
 }`;
+      }
 
       logger.info('[AI] Generating outline with GPT-4o...');
-      
+
       const completion = await openAIService.getClient().chat.completions.create({
         model: 'gpt-4o',
         messages: [{ role: 'user', content: outlinePrompt }],
         response_format: { type: 'json_object' },
-        temperature: 0.7,
+        temperature: persona ? 0.75 : 0.7, // Slightly higher creativity for personalized
       });
 
       const outlineResponse = completion.choices[0].message.content || '{}';
@@ -602,7 +689,7 @@ Return a JSON object with this structure:
         const startIdx = index * chunksPerSection;
         const endIdx = Math.min((index + 1) * chunksPerSection, chunks.length);
         const sectionChunks = chunks.slice(startIdx, endIdx);
-        
+
         return {
           id: section.id || `section-${index}`,
           title: section.title,
@@ -615,7 +702,10 @@ Return a JSON object with this structure:
         };
       });
 
-      logger.info('[AI] Generated outline with topics:', outline.map((s: any) => s.title));
+      logger.info(
+        '[AI] Generated outline with topics:',
+        outline.map((s: any) => s.title)
+      );
 
       res.json({
         success: true,
@@ -667,7 +757,7 @@ Return a JSON object with this structure:
       // Get relevant context
       const contextResponse = await searchService.search(params.message, userId, {
         filters: params.fileId ? { fileId: params.fileId } : {},
-        limit: 10
+        limit: 10,
       });
       const context = contextResponse.results;
 
@@ -687,11 +777,13 @@ Return a JSON object with this structure:
       };
 
       for await (const chunk of deepContentService.streamPersonalizedChat(chatParams)) {
-        res.write(`data: ${JSON.stringify({ 
-          type: 'content',
-          data: chunk,
-          timestamp: Date.now()
-        })}\n\n`);
+        res.write(
+          `data: ${JSON.stringify({
+            type: 'content',
+            data: chunk,
+            timestamp: Date.now(),
+          })}\n\n`
+        );
       }
 
       // Send citations
@@ -701,31 +793,33 @@ Return a JSON object with this structure:
         text: r.content.substring(0, 100),
       }));
 
-      res.write(`data: ${JSON.stringify({ 
-        type: 'citations', 
-        data: citations 
-      })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({
+          type: 'citations',
+          data: citations,
+        })}\n\n`
+      );
       res.write(`data: ${JSON.stringify({ type: 'complete' })}\n\n`);
       res.end();
     } catch (error) {
       const handledError = aiErrorHandler.handle(error);
       logger.error('Chat error:', error);
 
-      res.write(`data: ${JSON.stringify({ 
-        type: 'error', 
-        data: { message: handledError.error }
-      })}\n\n`);
+      res.write(
+        `data: ${JSON.stringify({
+          type: 'error',
+          data: { message: handledError.error },
+        })}\n\n`
+      );
       res.end();
     }
   }
 
-
-
   private combineChunksIntelligently(chunks: any[]): string {
     // Group by content type and section
     const sections = new Map<string, any[]>();
-    
-    chunks.forEach(chunk => {
+
+    chunks.forEach((chunk) => {
       const section = chunk.metadata?.sectionTitle || 'Main Content';
       if (!sections.has(section)) {
         sections.set(section, []);
@@ -742,15 +836,17 @@ Return a JSON object with this structure:
 
       // Sort by importance and content type
       const sortedChunks = sectionChunks.sort((a, b) => {
-        const importanceOrder = { 'high': 0, 'medium': 1, 'low': 2 };
-        const aImportance = importanceOrder[a.metadata?.importance as keyof typeof importanceOrder || 'medium'];
-        const bImportance = importanceOrder[b.metadata?.importance as keyof typeof importanceOrder || 'medium'];
-        
+        const importanceOrder = { high: 0, medium: 1, low: 2 };
+        const aImportance =
+          importanceOrder[(a.metadata?.importance as keyof typeof importanceOrder) || 'medium'];
+        const bImportance =
+          importanceOrder[(b.metadata?.importance as keyof typeof importanceOrder) || 'medium'];
+
         if (aImportance !== bImportance) return aImportance - bImportance;
         return a.metadata.chunkIndex - b.metadata.chunkIndex;
       });
 
-      sortedChunks.forEach(chunk => {
+      sortedChunks.forEach((chunk) => {
         if (chunk.metadata?.contentType === 'definition') {
           combinedContent += `**Definition:** ${chunk.content}\n\n`;
         } else if (chunk.metadata?.contentType === 'summary') {
@@ -765,10 +861,7 @@ Return a JSON object with this structure:
   }
 
   private async getChunksByIds(chunkIds: string[]): Promise<any[]> {
-    const { data, error } = await supabase
-      .from('file_chunks')
-      .select('*')
-      .in('id', chunkIds);
+    const { data, error } = await supabase.from('file_chunks').select('*').in('id', chunkIds);
 
     if (error) {
       logger.error('Failed to get chunks by IDs:', error);
@@ -781,7 +874,7 @@ Return a JSON object with this structure:
   private selectDiverseChunks(chunks: any[], targetCount: number): any[] {
     // Group by content type
     const typeGroups = new Map<string, any[]>();
-    chunks.forEach(chunk => {
+    chunks.forEach((chunk) => {
       const type = chunk.metadata?.contentType || 'general';
       if (!typeGroups.has(type)) {
         typeGroups.set(type, []);
