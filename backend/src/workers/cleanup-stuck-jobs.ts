@@ -47,7 +47,7 @@ async function cleanupStuckJobs() {
     for (const queueName of queues) {
       try {
         // Archive any messages that have been retried too many times
-        const { data: archivedData, error: archiveError } = await supabase.rpc('pgmq_archive', {
+        const { data: archivedData, error: archiveError } = await supabase.rpc('pgmq.archive', {
           queue_name: queueName,
           max_age_seconds: 300, // Archive messages older than 5 minutes
         });

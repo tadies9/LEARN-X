@@ -22,7 +22,7 @@ async function cleanupTestJobs() {
       logger.info(`Checking queue: ${queueName}`);
 
       // Read messages to find test jobs
-      const { data: messages, error: readError } = await supabase.rpc('pgmq_read', {
+      const { data: messages, error: readError } = await supabase.rpc('pgmq.read', {
         queue_name: queueName,
         vt: 0, // Don't hide messages
         qty: 100,
@@ -47,7 +47,7 @@ async function cleanupTestJobs() {
             ) {
               logger.info(`Archiving test/invalid message ${message.msg_id} from ${queueName}`);
 
-              const { error: archiveError } = await supabase.rpc('pgmq_archive', {
+              const { error: archiveError } = await supabase.rpc('pgmq.archive', {
                 queue_name: queueName,
                 msg_id: message.msg_id,
               });

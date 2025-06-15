@@ -101,8 +101,8 @@ export class PGMQService {
       }
 
       try {
-        // Read messages from queue using wrapper function
-        const { data: messagesJson, error } = await supabase.rpc('pgmq_read', {
+        // Read messages from queue using PGMQ schema function
+        const { data: messagesJson, error } = await supabase.rpc('pgmq.read', {
           queue_name: queueName,
           vt: visibilityTimeout,
           qty: batchSize,
@@ -374,7 +374,7 @@ export class PGMQService {
   }
 
   private async deleteMessage(queueName: string, messageId: bigint): Promise<void> {
-    const { error } = await supabase.rpc('pgmq_delete', {
+    const { error } = await supabase.rpc('pgmq.delete', {
       queue_name: queueName,
       msg_id: messageId,
     });
@@ -385,7 +385,7 @@ export class PGMQService {
   }
 
   private async archiveMessage(queueName: string, messageId: bigint): Promise<void> {
-    const { error } = await supabase.rpc('pgmq_archive', {
+    const { error } = await supabase.rpc('pgmq.archive', {
       queue_name: queueName,
       msg_id: messageId,
     });

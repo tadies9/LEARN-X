@@ -51,15 +51,15 @@ export class EnhancedPGMQClient {
 
       switch (queueConfig.type) {
         case 'unlogged':
-          rpcFunction = 'pgmq_create_unlogged';
+          rpcFunction = 'pgmq.create_unlogged';
           break;
         case 'partitioned':
-          rpcFunction = 'pgmq_create_partitioned';
+          rpcFunction = 'pgmq.create_partitioned';
           params.partition_interval = queueConfig.partitionInterval;
           params.retention_interval = queueConfig.retentionInterval;
           break;
         default:
-          rpcFunction = 'pgmq_create';
+          rpcFunction = 'pgmq.create';
       }
 
       const { error } = await supabase.rpc(rpcFunction, params);
@@ -87,7 +87,7 @@ export class EnhancedPGMQClient {
     await this.ensureQueueExists(queueName);
 
     try {
-      const { data, error } = await supabase.rpc('pgmq_send', {
+      const { data, error } = await supabase.rpc('pgmq.send', {
         queue_name: queueName,
         msg: message,
         delay: delay
@@ -118,7 +118,7 @@ export class EnhancedPGMQClient {
     }
 
     try {
-      const { data, error } = await supabase.rpc('pgmq_send_batch', {
+      const { data, error } = await supabase.rpc('pgmq.send_batch', {
         queue_name: queueName,
         msgs: messages,
         delay: options.delay || 0
@@ -149,7 +149,7 @@ export class EnhancedPGMQClient {
     }
 
     try {
-      const { data, error } = await supabase.rpc('pgmq_read_with_poll', {
+      const { data, error } = await supabase.rpc('pgmq.read_with_poll', {
         queue_name: queueName,
         vt: queueConfig.visibilityTimeout,
         qty: queueConfig.batchSize,
@@ -179,7 +179,7 @@ export class EnhancedPGMQClient {
     const queueConfig = this.config.queues[queueName];
 
     try {
-      const { data, error } = await supabase.rpc('pgmq_read', {
+      const { data, error } = await supabase.rpc('pgmq.read', {
         queue_name: queueName,
         vt: queueConfig.visibilityTimeout,
         qty: queueConfig.batchSize
@@ -204,7 +204,7 @@ export class EnhancedPGMQClient {
    */
   async delete(queueName: QueueName, msgId: bigint): Promise<boolean> {
     try {
-      const { data, error } = await supabase.rpc('pgmq_delete', {
+      const { data, error } = await supabase.rpc('pgmq.delete', {
         queue_name: queueName,
         msg_id: msgId
       });
@@ -226,7 +226,7 @@ export class EnhancedPGMQClient {
     if (msgIds.length === 0) return [];
 
     try {
-      const { data, error } = await supabase.rpc('pgmq_delete_batch', {
+      const { data, error } = await supabase.rpc('pgmq.delete', {
         queue_name: queueName,
         msg_ids: msgIds
       });
@@ -246,7 +246,7 @@ export class EnhancedPGMQClient {
    */
   async archive(queueName: QueueName, msgId: bigint): Promise<boolean> {
     try {
-      const { data, error } = await supabase.rpc('pgmq_archive', {
+      const { data, error } = await supabase.rpc('pgmq.archive', {
         queue_name: queueName,
         msg_id: msgId
       });
@@ -268,7 +268,7 @@ export class EnhancedPGMQClient {
     if (msgIds.length === 0) return [];
 
     try {
-      const { data, error } = await supabase.rpc('pgmq_archive_batch', {
+      const { data, error } = await supabase.rpc('pgmq.archive', {
         queue_name: queueName,
         msg_ids: msgIds
       });
@@ -288,7 +288,7 @@ export class EnhancedPGMQClient {
    */
   async getQueueMetrics(queueName: QueueName): Promise<QueueMetrics | null> {
     try {
-      const { data, error } = await supabase.rpc('pgmq_metrics', {
+      const { data, error } = await supabase.rpc('pgmq.metrics', {
         queue_name: queueName
       });
 
@@ -305,7 +305,7 @@ export class EnhancedPGMQClient {
    */
   async getAllQueueMetrics(): Promise<QueueMetrics[]> {
     try {
-      const { data, error } = await supabase.rpc('pgmq_metrics_all');
+      const { data, error } = await supabase.rpc('pgmq.metrics_all');
 
       if (error) throw error;
       return data || [];
@@ -320,7 +320,7 @@ export class EnhancedPGMQClient {
    */
   async purge(queueName: QueueName): Promise<number> {
     try {
-      const { data, error } = await supabase.rpc('pgmq_purge_queue', {
+      const { data, error } = await supabase.rpc('pgmq.purge_queue', {
         queue_name: queueName
       });
 
