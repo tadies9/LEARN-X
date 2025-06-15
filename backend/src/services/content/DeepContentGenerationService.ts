@@ -1,6 +1,9 @@
 import { openAIService } from '../openai/OpenAIService';
 import { deepPromptTemplates } from '../ai/DeepPromptTemplates';
 import { deepPersonalizationEngine } from '../personalization/DeepPersonalizationEngine';
+import { contentTypePersonalizer } from '../personalization/ContentTypePersonalizer';
+import { adaptiveDifficultyEngine } from '../personalization/AdaptiveDifficultyEngine';
+import { visualPersonalizationEngine } from '../personalization/VisualPersonalizationEngine';
 import { AICache } from '../cache/AICache';
 import { CostTracker } from '../ai/CostTracker';
 import { TokenCounter } from '../ai/TokenCounter';
@@ -45,6 +48,67 @@ export class DeepContentGenerationService {
   constructor(redis: Redis) {
     this.cache = new AICache(redis);
     this.costTracker = new CostTracker();
+  }
+
+  /**
+   * Generate personalized introduction that immediately hooks the learner
+   */
+  async generatePersonalizedIntroduction(
+    topic: string,
+    content: string,
+    persona: UserPersona
+  ): Promise<PersonalizedContent> {
+    try {
+      const prompt = contentTypePersonalizer.generatePersonalizedIntroduction(topic, content, persona);
+      
+      // Get adaptive difficulty adjustment
+      const engagementData = await adaptiveDifficultyEngine.analyzeEngagement(persona.userId, topic);
+      const difficultyAdjustment = adaptiveDifficultyEngine.calculateDifficultyAdjustment(
+        engagementData,
+        persona,
+        topic
+      );
+      
+      // Add visual enhancements if needed
+      const visualEnhancements = visualPersonalizationEngine.isVisualLearner(persona)
+        ? visualPersonalizationEngine.generateVisualEnhancementInstructions(persona)
+        : '';
+
+      const fullPrompt = `${prompt}\n\n${adaptiveDifficultyEngine.generateDifficultyInstructions(difficultyAdjustment, persona)}\n\n${visualEnhancements}`;
+
+      const response = await openAIService.getClient().chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are creating the perfect opening moment for a personalized learning experience.',
+          },
+          {
+            role: 'user',
+            content: fullPrompt,
+          },
+        ],
+        temperature: 0.8, // Higher creativity for hooks
+        max_tokens: 600,
+      });
+
+      const introduction = response.choices[0].message.content || '';
+      
+      // Validate quality
+      const validation = deepPersonalizationEngine.validatePersonalization(introduction, persona);
+      const qualityMetrics = await this.evaluateQualityMetrics('', introduction, persona);
+
+      return {
+        content: introduction,
+        personalizationScore: validation.score,
+        qualityMetrics,
+        cached: false
+      };
+
+    } catch (error) {
+      logger.error('Failed to generate personalized introduction:', error);
+      throw error;
+    }
   }
 
   /**
@@ -385,6 +449,319 @@ export class DeepContentGenerationService {
     }
   }
 
+  /**
+   * Generate progressive concept explanation with adaptive difficulty
+   */
+  async generateProgressiveExplanation(
+    concept: string,
+    content: string,
+    persona: UserPersona,
+    currentLevel: 'foundation' | 'intermediate' | 'advanced' = 'foundation'
+  ): Promise<PersonalizedContent> {
+    try {
+      // Get engagement data and adjust difficulty
+      const engagementData = await adaptiveDifficultyEngine.analyzeEngagement(persona.userId, concept);
+      const difficultyAdjustment = adaptiveDifficultyEngine.calculateDifficultyAdjustment(
+        engagementData,
+        persona,
+        concept
+      );
+
+      const prompt = contentTypePersonalizer.generateProgressiveExplanation(
+        concept,
+        content,
+        persona,
+        currentLevel
+      );
+
+      // Add difficulty and visual enhancements
+      const difficultyInstructions = adaptiveDifficultyEngine.generateDifficultyInstructions(difficultyAdjustment, persona);
+      const visualEnhancements = visualPersonalizationEngine.isVisualLearner(persona)
+        ? visualPersonalizationEngine.generateVisualEnhancementInstructions(persona)
+        : '';
+
+      const fullPrompt = `${prompt}\n\n${difficultyInstructions}\n\n${visualEnhancements}`;
+
+      const response = await openAIService.getClient().chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are creating progressive explanations that build understanding naturally through the learner\'s domain.',
+          },
+          {
+            role: 'user',
+            content: fullPrompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: this.getOptimalMaxTokens(persona, content),
+      });
+
+      const explanation = response.choices[0].message.content || '';
+      const validation = deepPersonalizationEngine.validatePersonalization(explanation, persona);
+      const qualityMetrics = await this.evaluateQualityMetrics(content, explanation, persona);
+
+      return {
+        content: explanation,
+        personalizationScore: validation.score,
+        qualityMetrics,
+        cached: false
+      };
+
+    } catch (error) {
+      logger.error('Failed to generate progressive explanation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate contextual examples from user's domain
+   */
+  async generateContextualExamples(
+    concept: string,
+    persona: UserPersona,
+    exampleType: 'basic' | 'application' | 'problem-solving' | 'real-world' = 'application',
+    count: number = 3
+  ): Promise<string[]> {
+    try {
+      const prompt = contentTypePersonalizer.generateContextualExamples(concept, persona, exampleType);
+
+      const response = await openAIService.getClient().chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'Generate realistic, relevant examples that make concepts immediately applicable in the learner\'s domain.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.8, // Higher creativity for diverse examples
+        max_tokens: 1200,
+      });
+
+      const content = response.choices[0].message.content || '';
+      return this.parseExamples(content, count);
+
+    } catch (error) {
+      logger.error('Failed to generate contextual examples:', error);
+      return [`Example of ${concept} in your field...`]; // Fallback
+    }
+  }
+
+  /**
+   * Generate personalized practice problems
+   */
+  async generatePersonalizedPractice(
+    concept: string,
+    persona: UserPersona,
+    practiceType: 'guided' | 'independent' | 'challenge' = 'independent'
+  ): Promise<PersonalizedContent> {
+    try {
+      const prompt = contentTypePersonalizer.generatePersonalizedPractice(concept, persona, practiceType);
+
+      // Adjust difficulty based on engagement
+      const engagementData = await adaptiveDifficultyEngine.analyzeEngagement(persona.userId, concept);
+      const difficultyAdjustment = adaptiveDifficultyEngine.calculateDifficultyAdjustment(
+        engagementData,
+        persona,
+        concept
+      );
+
+      const difficultyInstructions = adaptiveDifficultyEngine.generateDifficultyInstructions(difficultyAdjustment, persona);
+      const fullPrompt = `${prompt}\n\n${difficultyInstructions}`;
+
+      const response = await openAIService.getClient().chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'Create practice problems that feel like real challenges from the learner\'s domain.',
+          },
+          {
+            role: 'user',
+            content: fullPrompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      });
+
+      const practice = response.choices[0].message.content || '';
+      const validation = deepPersonalizationEngine.validatePersonalization(practice, persona);
+      const qualityMetrics = await this.evaluateQualityMetrics('', practice, persona);
+
+      return {
+        content: practice,
+        personalizationScore: validation.score,
+        qualityMetrics,
+        cached: false
+      };
+
+    } catch (error) {
+      logger.error('Failed to generate personalized practice:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate goal-oriented summary
+   */
+  async generateGoalOrientedSummary(
+    content: string,
+    persona: UserPersona,
+    summaryPurpose: 'review' | 'application' | 'next-steps' | 'connections' = 'review'
+  ): Promise<PersonalizedContent> {
+    try {
+      const prompt = contentTypePersonalizer.generateGoalOrientedSummary(content, persona, summaryPurpose);
+
+      // Add visual enhancements if needed
+      const visualEnhancements = visualPersonalizationEngine.isVisualLearner(persona)
+        ? visualPersonalizationEngine.generateVisualSummary(content, persona, 'visual-outline')
+        : '';
+
+      const fullPrompt = visualEnhancements ? `${prompt}\n\n${visualEnhancements}` : prompt;
+
+      const response = await openAIService.getClient().chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'Create summaries that connect learning to the user\'s goals and make every insight personally relevant.',
+          },
+          {
+            role: 'user',
+            content: fullPrompt,
+          },
+        ],
+        temperature: 0.6,
+        max_tokens: this.getSummaryMaxTokens(summaryPurpose, persona.contentDensity),
+      });
+
+      const summary = response.choices[0].message.content || '';
+      const validation = deepPersonalizationEngine.validatePersonalization(summary, persona);
+      const qualityMetrics = await this.evaluateQualityMetrics(content, summary, persona);
+
+      return {
+        content: summary,
+        personalizationScore: validation.score,
+        qualityMetrics,
+        cached: false
+      };
+
+    } catch (error) {
+      logger.error('Failed to generate goal-oriented summary:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate adaptive quiz with real-time difficulty adjustment
+   */
+  async generateAdaptiveQuiz(
+    content: string,
+    persona: UserPersona,
+    questionType: 'multiple_choice' | 'scenario_analysis' | 'problem_solving' | 'application' = 'application'
+  ): Promise<PersonalizedContent> {
+    try {
+      // Get current learning state for difficulty adjustment
+      const learningState = await adaptiveDifficultyEngine.getLearningState(persona.userId);
+      
+      const prompt = contentTypePersonalizer.generatePersonalizedQuiz(content, persona, questionType);
+
+      // Adjust difficulty based on mastery level
+      const difficultyAdjustment = learningState.currentMastery > 80 
+        ? 'Include challenging edge cases and complex scenarios'
+        : learningState.currentMastery < 50
+        ? 'Focus on fundamental understanding with clear, supportive questions'
+        : 'Use balanced difficulty with practical applications';
+
+      const fullPrompt = `${prompt}\n\nDIFFICULTY ADJUSTMENT: ${difficultyAdjustment}`;
+
+      const response = await openAIService.getClient().chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'Create quiz questions that feel like realistic assessments from the learner\'s professional domain.',
+          },
+          {
+            role: 'user',
+            content: fullPrompt,
+          },
+        ],
+        temperature: 0.6,
+        max_tokens: 1500,
+      });
+
+      const quiz = response.choices[0].message.content || '';
+      const validation = deepPersonalizationEngine.validatePersonalization(quiz, persona);
+      const qualityMetrics = await this.evaluateQualityMetrics(content, quiz, persona);
+
+      return {
+        content: quiz,
+        personalizationScore: validation.score,
+        qualityMetrics,
+        cached: false
+      };
+
+    } catch (error) {
+      logger.error('Failed to generate adaptive quiz:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate visual learning aids for visual learners
+   */
+  async generateVisualLearningAid(
+    concept: string,
+    persona: UserPersona,
+    aidType: 'flowchart' | 'hierarchy' | 'cycle' | 'matrix' | 'timeline' = 'flowchart'
+  ): Promise<PersonalizedContent> {
+    if (!visualPersonalizationEngine.isVisualLearner(persona)) {
+      throw new Error('Visual learning aids are only generated for visual learners');
+    }
+
+    try {
+      const prompt = visualPersonalizationEngine.generateVisualLearningAid(concept, persona, aidType);
+
+      const response = await openAIService.getClient().chat.completions.create({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'system',
+            content: 'Create detailed visual learning aid descriptions that help visual learners construct mental models.',
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      });
+
+      const visualAid = response.choices[0].message.content || '';
+      const validation = deepPersonalizationEngine.validatePersonalization(visualAid, persona);
+      const qualityMetrics = await this.evaluateQualityMetrics('', visualAid, persona);
+
+      return {
+        content: visualAid,
+        personalizationScore: validation.score,
+        qualityMetrics,
+        cached: false
+      };
+
+    } catch (error) {
+      logger.error('Failed to generate visual learning aid:', error);
+      throw error;
+    }
+  }
+
   // Helper methods
 
   private generateCacheKey(params: DeepExplanationParams): string {
@@ -427,11 +804,16 @@ export class DeepContentGenerationService {
     return Math.min(baseTokens, 2000);
   }
 
-  private getSummaryMaxTokens(format: string, density?: string): number {
+  private getSummaryMaxTokens(format: string | 'review' | 'application' | 'next-steps' | 'connections', density?: string): number {
+    // Handle both summary formats and purposes
     const formatTokens = {
       'key-points': 800,
       'comprehensive': 1500,
-      'visual-map': 1000
+      'visual-map': 1000,
+      'review': 1000,
+      'application': 1200,
+      'next-steps': 800,
+      'connections': 1000
     };
 
     const baseTokens = formatTokens[format as keyof typeof formatTokens] || 1000;
