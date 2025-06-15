@@ -8,11 +8,18 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
+import { AIApiService, type OutlineSection } from '@/lib/api/ai';
 import { createClient } from '@/lib/supabase/client';
 
 interface Topic {
   id: string;
   title: string;
+  summary: string;
+  chunkIds: string[];
+  chunkCount: number;
+  startPage: number;
+  endPage: number;
+  topics: string[];
   subtopics: Subtopic[];
   progress: number;
 }
@@ -37,8 +44,10 @@ export default function LearnPage({ params }: { params: { id: string } }) {
   const courseId = params.id;
 
   // Auth & Profile
-  const { session } = useAuth();
-  const { profile } = useProfile();
+  const { user } = useAuth();
+  const { loadProfile } = useProfile();
+  const [session, setSession] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
 
   // UI State
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
@@ -63,14 +72,36 @@ export default function LearnPage({ params }: { params: { id: string } }) {
   const contentRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Get session
+  useEffect(() => {
+    const getSession = async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      setSession(session);
+    };
+    getSession();
+  }, []);
+
   // Initialize outline generation when component mounts
   useEffect(() => {
-    console.log('[LearnPage] useEffect triggered:', { fileId, hasSession: !!session, hasToken: !!session?.access_token });
+    console.log('[LearnPage] useEffect triggered:', { 
+      fileId, 
+      fileName,
+      hasSession: !!session, 
+      hasToken: !!session?.access_token,
+      searchParams: Object.fromEntries(searchParams.entries())
+    });
     
-    if (!fileId || !session?.access_token) {
-      console.log('[LearnPage] Missing fileId or session token');
+    if (!fileId) {
+      console.log('[LearnPage] Missing fileId parameter');
+      setError('File ID is required. Please select a file to personalize.');
       setIsLoadingOutline(false);
       return;
+    }
+
+    if (!session?.access_token) {
+      console.log('[LearnPage] Missing session token, waiting for authentication...');
+      return; // Don't set loading to false, wait for session
     }
 
     generateOutline();
@@ -85,77 +116,66 @@ export default function LearnPage({ params }: { params: { id: string } }) {
     };
   }, [fileId, session]);
 
-  // Generate outline using SSE
+  // Generate outline using new API
   const generateOutline = async () => {
     try {
       setIsLoadingOutline(true);
       setError(null);
 
       console.log('[LearnPage] Starting outline generation for file:', fileId);
-      console.log('[LearnPage] API URL:', process.env.NEXT_PUBLIC_API_URL);
 
-      // Create SSE connection for outline generation with auth token
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/ai/learn/generate-outline?fileId=${fileId}&token=${session.access_token}`;
-      console.log('[LearnPage] SSE URL:', url);
+      // Use the new AI API to generate outline
+      const response = await AIApiService.generateOutline(fileId!);
       
-      const eventSource = new EventSource(url);
+      console.log('[LearnPage] Outline response received:', response);
 
-      eventSourceRef.current = eventSource;
-
-      eventSource.onmessage = (event) => {
-        console.log('[LearnPage] SSE message received:', event.data);
-        const data: StreamChunk = JSON.parse(event.data);
-
-        switch (data.type) {
-          case 'outline-start':
-            console.log('[LearnPage] Outline generation started');
-            break;
-
-          case 'topic':
-            // Add topic to outline as it's generated
-            setOutline((prev) => [...prev, data.data as Topic]);
-            
-            // Auto-select first topic
-            if (!selectedTopic) {
-              setSelectedTopic(data.data.id);
-              setExpandedTopics(new Set([data.data.id]));
-              // Auto-select intro subtopic
-              const introSubtopic = data.data.subtopics.find((st: Subtopic) => st.type === 'intro');
-              if (introSubtopic) {
-                setSelectedSubtopic(introSubtopic.id);
-              }
-            }
-            break;
-
-          case 'complete':
-            console.log('[LearnPage] Outline generation complete');
-            setIsLoadingOutline(false);
-            eventSource.close();
-            break;
-
-          case 'error':
-            console.error('[LearnPage] Outline generation error:', data.data);
-            setError(data.data.message || 'Failed to generate outline');
-            setIsLoadingOutline(false);
-            eventSource.close();
-            break;
-        }
-      };
-
-      eventSource.onerror = (error) => {
-        console.error('[LearnPage] SSE error:', error);
-        console.error('[LearnPage] SSE readyState:', eventSource.readyState);
-        setError('Connection lost. Please refresh the page.');
+      if (!response || !response.sections || response.sections.length === 0) {
+        console.warn('[LearnPage] No sections in outline response');
+        setError('No content sections found. The file may not be processed yet.');
         setIsLoadingOutline(false);
-        eventSource.close();
-      };
+        return;
+      }
       
-      eventSource.onopen = () => {
-        console.log('[LearnPage] SSE connection opened');
-      };
+      // Transform outline sections into topics with subtopics
+      const topics: Topic[] = response.sections.map((section, index) => ({
+        id: section.id,
+        title: section.title,
+        summary: section.summary,
+        chunkIds: section.chunkIds,
+        chunkCount: section.chunkCount,
+        startPage: section.startPage,
+        endPage: section.endPage,
+        topics: section.topics,
+        subtopics: [
+          { id: `${section.id}-intro`, title: 'Introduction', type: 'intro', completed: false },
+          { id: `${section.id}-concepts`, title: 'Key Concepts', type: 'concepts', completed: false },
+          { id: `${section.id}-examples`, title: 'Examples', type: 'examples', completed: false },
+          { id: `${section.id}-practice`, title: 'Practice', type: 'practice', completed: false },
+          { id: `${section.id}-summary`, title: 'Summary', type: 'summary', completed: false },
+        ],
+        progress: 0
+      }));
+
+      console.log('[LearnPage] Generated topics:', topics);
+      setOutline(topics);
+
+      // Auto-select first topic and intro subtopic
+      if (topics.length > 0) {
+        setSelectedTopic(topics[0].id);
+        setExpandedTopics(new Set([topics[0].id]));
+        setSelectedSubtopic(topics[0].subtopics[0].id);
+        console.log('[LearnPage] Auto-selected first topic:', topics[0].id);
+      }
+
+      setIsLoadingOutline(false);
     } catch (err) {
-      console.error('[LearnPage] Error setting up outline generation:', err);
-      setError('Failed to start outline generation');
+      console.error('[LearnPage] Error generating outline:', err);
+      console.error('[LearnPage] Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : undefined,
+        response: (err as any)?.response?.data
+      });
+      setError(`Failed to generate outline: ${err instanceof Error ? err.message : 'Unknown error'}`);
       setIsLoadingOutline(false);
     }
   };
@@ -177,58 +197,149 @@ export default function LearnPage({ params }: { params: { id: string } }) {
       const abortController = new AbortController();
       abortControllerRef.current = abortController;
 
-      // Create SSE connection for content streaming with auth token
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/ai/learn/explain/stream?` +
-        `fileId=${fileId}&topicId=${selectedTopic}&subtopic=${selectedSubtopic}&mode=${activeMode}&token=${session.access_token}`;
-      const eventSource = new EventSource(url);
+      // Handle different content modes
+      if (activeMode === 'explain') {
+        // Use explanation streaming with fetch
+        try {
+          const response = await AIApiService.streamExplanation({
+            fileId: fileId || undefined,
+            topicId: selectedTopic,
+            subtopic: selectedSubtopic,
+            token: session.access_token
+          });
 
-      eventSource.onmessage = (event) => {
-        if (abortController.signal.aborted) {
-          eventSource.close();
-          return;
-        }
+          if (!response.body) {
+            throw new Error('No response body');
+          }
 
-        const data: StreamChunk = JSON.parse(event.data);
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
 
-        switch (data.type) {
-          case 'content-chunk':
-            setStreamingContent((prev) => prev + data.data);
-            // Auto-scroll to bottom
-            if (contentRef.current) {
-              contentRef.current.scrollTop = contentRef.current.scrollHeight;
+          console.log('[LearnPage] Explanation stream opened');
+
+          while (true) {
+            if (abortController.signal.aborted) {
+              reader.cancel();
+              break;
             }
-            break;
 
-          case 'complete':
-            setIsStreaming(false);
-            eventSource.close();
-            break;
+            const { done, value } = await reader.read();
+            
+            if (done) {
+              setIsStreaming(false);
+              break;
+            }
 
-          case 'error':
-            setError(data.data.message || 'Failed to stream content');
-            setIsStreaming(false);
-            eventSource.close();
-            break;
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                
+                if (data === '[DONE]') {
+                  setIsStreaming(false);
+                  break;
+                }
+
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.content) {
+                    setStreamingContent((prev) => prev + parsed.content);
+                    // Auto-scroll to bottom
+                    if (contentRef.current) {
+                      contentRef.current.scrollTop = contentRef.current.scrollHeight;
+                    }
+                  }
+                } catch (parseError) {
+                  console.warn('[LearnPage] Failed to parse SSE data:', data);
+                }
+              }
+            }
+          }
+        } catch (streamError) {
+          if (!abortController.signal.aborted) {
+            console.error('[LearnPage] Explanation streaming error:', streamError);
+            setError('Failed to load explanation. Please try again.');
+          }
+          setIsStreaming(false);
         }
-      };
 
-      eventSource.onerror = (error) => {
-        if (!abortController.signal.aborted) {
-          console.error('[LearnPage] Content streaming error:', error);
-          setError('Failed to load content. Please try again.');
-        }
-        setIsStreaming(false);
-        eventSource.close();
-      };
-
-      // Store event source for cleanup
-      eventSourceRef.current = eventSource;
+      } else {
+        // Handle other modes (summary, flashcards, quiz) with direct API calls
+        await handleNonStreamingContent();
+      }
     } catch (err) {
       console.error('[LearnPage] Error streaming content:', err);
       setError('Failed to load content');
       setIsStreaming(false);
     }
   }, [selectedTopic, selectedSubtopic, fileId, activeMode, session]);
+
+  // Handle non-streaming content modes
+  const handleNonStreamingContent = async () => {
+    try {
+      const currentTopic = outline.find(t => t.id === selectedTopic);
+      if (!currentTopic) return;
+
+      switch (activeMode) {
+        case 'summary':
+          const summaryResult = await AIApiService.generateSummary(fileId!, 'key-points');
+          setStreamingContent(`<div class="summary"><h3>Summary</h3><p>${summaryResult.summary}</p></div>`);
+          break;
+
+        case 'flashcards':
+          const flashcardsResult = await AIApiService.generateFlashcards(fileId!, currentTopic.chunkIds);
+          const flashcardsHtml = flashcardsResult.flashcards.map((card, index) => `
+            <div class="flashcard mb-4 p-4 border rounded-lg">
+              <div class="flashcard-front mb-2">
+                <strong>Card ${index + 1}:</strong> ${card.front}
+              </div>
+              <div class="flashcard-back">
+                <strong>Answer:</strong> ${card.back}
+              </div>
+              <div class="flashcard-difficulty text-sm text-gray-600 mt-2">
+                Difficulty: ${card.difficulty}
+              </div>
+            </div>
+          `).join('');
+          setStreamingContent(`<div class="flashcards"><h3>Flashcards (${flashcardsResult.count})</h3>${flashcardsHtml}</div>`);
+          break;
+
+        case 'quiz':
+          const quizResult = await AIApiService.generateQuiz(fileId!, 'multiple_choice', currentTopic.chunkIds);
+          const quizHtml = quizResult.questions.map((q, index) => `
+            <div class="quiz-question mb-6 p-4 border rounded-lg">
+              <div class="question mb-3">
+                <strong>Question ${index + 1}:</strong> ${q.question}
+              </div>
+              ${q.options ? `
+                <div class="options mb-3">
+                  ${q.options.map((opt, i) => `<div>${String.fromCharCode(65 + i)}) ${opt}</div>`).join('')}
+                </div>
+              ` : ''}
+              <div class="answer mb-2">
+                <strong>Answer:</strong> ${q.answer}
+              </div>
+              <div class="explanation text-sm text-gray-600">
+                <strong>Explanation:</strong> ${q.explanation}
+              </div>
+            </div>
+          `).join('');
+          setStreamingContent(`<div class="quiz"><h3>Quiz (${quizResult.count} questions)</h3>${quizHtml}</div>`);
+          break;
+
+        default:
+          setStreamingContent('<p>Select a mode to generate content.</p>');
+      }
+      
+      setIsStreaming(false);
+    } catch (error) {
+      console.error('[LearnPage] Error generating content:', error);
+      setError('Failed to generate content. Please try again.');
+      setIsStreaming(false);
+    }
+  };
 
   // Stream content when selection changes
   useEffect(() => {
@@ -262,19 +373,13 @@ export default function LearnPage({ params }: { params: { id: string } }) {
   const handleReaction = async (reactionType: 'positive' | 'neutral' | 'negative') => {
     setReaction(reactionType);
     
-    // Send feedback to backend
+    // Send feedback to backend using new API
     try {
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/learn/feedback`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token}`,
-        },
-        body: JSON.stringify({
-          contentId: `${selectedTopic}-${selectedSubtopic}`,
-          reaction: reactionType,
-          note: quickNote || undefined,
-        }),
+      await AIApiService.submitFeedback({
+        contentId: `${selectedTopic}-${selectedSubtopic}`,
+        helpful: reactionType === 'positive',
+        rating: reactionType === 'positive' ? 5 : reactionType === 'neutral' ? 3 : 1,
+        comments: quickNote || undefined,
       });
     } catch (err) {
       console.error('[LearnPage] Error sending feedback:', err);

@@ -14,6 +14,11 @@ import searchRoutes from './searchRoutes';
 
 const router = Router();
 
+// Test endpoint for learn routes
+router.get('/learn-test', (_req, res) => {
+  res.json({ success: true, message: 'Learn test route working!' });
+});
+
 // Test endpoint for module files (bypasses all middleware)
 router.get('/test-module-files/:moduleId', async (req, res) => {
   try {
@@ -48,13 +53,13 @@ router.use('/persona', personaRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/courses', courseRoutes);
 router.use('/modules', moduleRoutes);
-router.use('/', fileRoutes); // File routes are mixed between /files and /modules
 router.use('/notifications', notificationRoutes);
 // router.use('/users', userRoutes);
 router.use('/ai', aiRoutes);
-router.use('/ai', aiLearnRoutes); // AI learning routes
+router.use('/learn', aiLearnRoutes); // AI learning routes - mount before fileRoutes
 router.use('/sessions', sessionRoutes);
 router.use('/search', searchRoutes); // Vector search routes
+router.use('/', fileRoutes); // File routes are mixed between /files and /modules - mount last
 
 // API info
 router.get('/', (_, res) => {

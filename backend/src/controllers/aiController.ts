@@ -409,26 +409,146 @@ export class AIController {
   async generateOutline(req: Request, res: Response): Promise<void> {
     try {
       const { fileId } = req.params;
-      // const userId = (req as any).user.id;
+      const userId = (req as any).user.id;
 
-      // Fetch file chunks with embeddings
-      const searchResponse = await searchService.search('', (req as any).user.id, {
-        filters: { fileId },
-        limit: 1000,
-        includeContent: true
-      });
-      const chunks = searchResponse.results;
+      logger.info('[AI] Generating outline for file:', { fileId, userId });
 
-      if (!chunks || chunks.length === 0) {
+      // First check if file exists and belongs to user
+      const { data: fileCheck, error: fileError } = await supabase
+        .from('course_files')
+        .select('id, name, course_id, courses!inner(user_id)')
+        .eq('id', fileId)
+        .single();
+
+      logger.info('[AI] File check result:', { fileCheck, fileError });
+
+      if (fileError || !fileCheck) {
         res.status(404).json({
           success: false,
-          error: 'No content found for this file.',
+          error: 'File not found.',
         });
         return;
       }
 
+      // Handle both array and object formats for courses
+      const courseUserId = Array.isArray(fileCheck.courses) 
+        ? fileCheck.courses[0]?.user_id 
+        : (fileCheck.courses as any)?.user_id;
+        
+      logger.info('[AI] Authorization check:', { 
+        courseUserId, 
+        userId, 
+        coursesType: Array.isArray(fileCheck.courses) ? 'array' : 'object',
+        courses: fileCheck.courses,
+        match: courseUserId === userId 
+      });
+        
+      if (courseUserId !== userId) {
+        logger.error('[AI] Access denied:', { courseUserId, userId });
+        res.status(403).json({
+          success: false,
+          error: 'Access denied.',
+        });
+        return;
+      }
+
+      // Fetch file chunks directly from database
+      const { data: chunks, error: chunksError } = await supabase
+        .from('file_chunks')
+        .select(`
+          id,
+          file_id,
+          content,
+          chunk_index,
+          chunk_type,
+          importance,
+          section_title,
+          concepts,
+          metadata,
+          hierarchy_level,
+          is_start_of_section,
+          is_end_of_section
+        `)
+        .eq('file_id', fileId)
+        .order('chunk_index', { ascending: true });
+
+      logger.info('[AI] Chunks query result:', { chunksCount: chunks?.length || 0, chunksError });
+
+      if (chunksError) {
+        logger.error('[AI] Error fetching chunks:', chunksError);
+        res.status(500).json({
+          success: false,
+          error: 'Failed to fetch file content.',
+        });
+        return;
+      }
+
+      if (!chunks || chunks.length === 0) {
+        res.status(404).json({
+          success: false,
+          error: 'No content found for this file. Please ensure the file has been processed.',
+        });
+        return;
+      }
+
+      logger.info('[AI] Found chunks:', { count: chunks.length });
+
+      // Transform chunks to match SearchResult interface
+      const transformedChunks = chunks.map((chunk: any) => ({
+        id: chunk.id,
+        fileId: chunk.file_id,
+        fileName: fileCheck.name || 'Unknown',
+        content: chunk.content,
+        score: 1.0,
+        metadata: {
+          chunkIndex: chunk.chunk_index,
+          contentType: chunk.chunk_type || 'text',
+          importance: chunk.importance || 'medium',
+          sectionTitle: chunk.section_title,
+          concepts: chunk.concepts ? (Array.isArray(chunk.concepts) ? chunk.concepts : JSON.parse(chunk.concepts)) : [],
+          keywords: [], // No keywords column in database
+          page: chunk.metadata?.page || 0,
+          hierarchyLevel: chunk.hierarchy_level || 1,
+          isStartOfSection: chunk.is_start_of_section || false,
+          isEndOfSection: chunk.is_end_of_section || false,
+        },
+      }));
+
       // Group chunks into semantic sections using metadata
-      const sections = this.clusterChunksByMetadata(chunks);
+      const sectionsMap = new Map<string, any>();
+      
+      transformedChunks.forEach((chunk) => {
+        const sectionTitle = chunk.metadata?.sectionTitle || 'Untitled Section';
+        const hierarchyLevel = chunk.metadata?.hierarchyLevel || 1;
+        
+        if (!sectionsMap.has(sectionTitle)) {
+          sectionsMap.set(sectionTitle, {
+            id: `section-${sectionsMap.size}`,
+            suggestedTitle: sectionTitle,
+            summary: `Content from ${sectionTitle}`,
+            chunkIds: [],
+            chunkCount: 0,
+            startPage: chunk.metadata?.page || 0,
+            endPage: chunk.metadata?.page || 0,
+            topics: chunk.metadata?.concepts || [],
+            hierarchyLevel
+          });
+        }
+        
+        const section = sectionsMap.get(sectionTitle)!;
+        section.chunkIds.push(chunk.id);
+        section.chunkCount++;
+        section.endPage = Math.max(section.endPage, chunk.metadata?.page || 0);
+        
+        // Merge topics
+        if (chunk.metadata?.concepts) {
+          section.topics = [...new Set([...section.topics, ...chunk.metadata.concepts])];
+        }
+      });
+      
+      const sections = Array.from(sectionsMap.values());
+
+      logger.info('[AI] Generated sections:', { count: sections.length });
 
       // Generate section titles and summaries
       const outline = await Promise.all(
@@ -536,41 +656,7 @@ export class AIController {
     }
   }
 
-  private clusterChunksByMetadata(chunks: any[]): any[] {
-    // Group chunks by section title and hierarchy level
-    const sections = new Map<string, any>();
-    
-    chunks.forEach((chunk) => {
-      const sectionTitle = chunk.metadata?.sectionTitle || 'Untitled Section';
-      const hierarchyLevel = chunk.metadata?.hierarchyLevel || 1;
-      
-      if (!sections.has(sectionTitle)) {
-        sections.set(sectionTitle, {
-          id: `section-${sections.size}`,
-          suggestedTitle: sectionTitle,
-          summary: '',
-          chunkIds: [],
-          chunkCount: 0,
-          startPage: chunk.metadata?.page || 0,
-          endPage: chunk.metadata?.page || 0,
-          topics: chunk.metadata?.concepts || [],
-          hierarchyLevel
-        });
-      }
-      
-      const section = sections.get(sectionTitle)!;
-      section.chunkIds.push(chunk.id);
-      section.chunkCount++;
-      section.endPage = Math.max(section.endPage, chunk.metadata?.page || 0);
-      
-      // Merge topics
-      if (chunk.metadata?.concepts) {
-        section.topics = [...new Set([...section.topics, ...chunk.metadata.concepts])];
-      }
-    });
-    
-    return Array.from(sections.values());
-  }
+
 
   private combineChunksIntelligently(chunks: any[]): string {
     // Group by content type and section

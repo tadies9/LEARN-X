@@ -16,12 +16,12 @@ const sendSSE = (res: Response, event: string, data: any) => {
 };
 
 // Test endpoint
-router.get('/learn/test', (_req: Request, res: Response) => {
+router.get('/test', (_req: Request, res: Response) => {
   res.json({ success: true, message: 'AI Learn routes are working!' });
 });
 
 // Test SSE endpoint (no auth)
-router.get('/learn/test-sse', (_req: Request, res: Response) => {
+router.get('/test-sse', (_req: Request, res: Response) => {
   // Set up SSE
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -37,7 +37,7 @@ router.get('/learn/test-sse', (_req: Request, res: Response) => {
 });
 
 // Generate outline for a file
-router.get('/learn/generate-outline', authenticateSSE, async (req: Request, res: Response): Promise<void> => {
+router.get('/generate-outline', authenticateSSE, async (req: Request, res: Response): Promise<void> => {
   const { fileId } = req.query;
   const userId = (req as any).user.id;
 
@@ -170,8 +170,8 @@ Return a JSON object with a "topics" array containing objects with this structur
 });
 
 // Stream personalized content for a topic/subtopic
-router.get('/learn/explain/stream', authenticateSSE, async (req: Request, res: Response): Promise<void> => {
-  const { fileId, topicId, subtopic, mode } = req.query;
+router.post('/explain/stream', authenticateUser, async (req: Request, res: Response): Promise<void> => {
+  const { fileId, topicId, subtopic, mode } = req.body;
   const userId = (req as any).user.id;
 
   console.log('[AI Learn] Explain stream request:', { fileId, topicId, subtopic, mode, userId });
@@ -339,7 +339,7 @@ Keep it conversational and encouraging.`;
 });
 
 // Save user feedback
-router.post('/learn/feedback', authenticateUser, async (req: Request, res: Response) => {
+router.post('/feedback', authenticateUser, async (req: Request, res: Response) => {
   const { contentId, reaction, note } = req.body;
   const userId = (req as any).user.id;
 
@@ -374,7 +374,7 @@ router.post('/learn/feedback', authenticateUser, async (req: Request, res: Respo
 });
 
 // Regenerate content with feedback
-router.post('/learn/regenerate', authenticateUser, async (_req: Request, res: Response) => {
+router.post('/regenerate', authenticateUser, async (_req: Request, res: Response) => {
   // This would trigger a new content generation with the feedback incorporated
   res.json({ success: true, message: 'Content regeneration initiated' });
 });

@@ -6,12 +6,8 @@ import { supabase } from '../config/supabase';
 // Initialize services
 const fileProcessingService = new EnhancedFileProcessingService();
 
-// Queue names
-export const QUEUE_NAMES = {
-  FILE_PROCESSING: 'file_processing',
-  EMBEDDING: 'embedding_generation',
-  NOTIFICATION: 'notification',
-} as const;
+// Import queue names from the central config
+import { QUEUE_NAMES } from '../config/pgmqQueue';
 
 /**
  * File processing worker
@@ -19,8 +15,15 @@ export const QUEUE_NAMES = {
 async function processFileJob(job: any): Promise<void> {
   logger.info(`[FileProcessor] Processing job ${job.id}`, {
     jobType: job.jobType,
-    fileId: job.payload.fileId,
+    hasPayload: !!job.payload,
+    payload: job.payload,
   });
+
+  // Check if this is a test job or job without payload
+  if (job.jobType === 'test_job' || !job.payload) {
+    logger.warn(`[FileProcessor] Skipping test job or job without payload: ${job.id}`);
+    return; // Successfully complete the job to remove it from queue
+  }
 
   const { fileId, userId, processingOptions } = job.payload;
 
@@ -118,7 +121,7 @@ async function processFileJob(job: any): Promise<void> {
 
     // Queue embedding generation for all chunks as a batch
     await pgmqService.enqueue(
-      QUEUE_NAMES.EMBEDDING,
+      QUEUE_NAMES.EMBEDDING_GENERATION,
       'generate_embeddings',
       {
         fileId,
@@ -128,6 +131,7 @@ async function processFileJob(job: any): Promise<void> {
           fileId,
           content: chunk.content,
           position: chunk.chunk_index,
+          metadata: {}, // Add empty metadata object to prevent undefined access
         })),
       }
     );
@@ -165,9 +169,17 @@ async function processFileJob(job: any): Promise<void> {
  * Embedding generation worker - uses VectorEmbeddingService for proper batch processing
  */
 async function processEmbeddingJob(job: any): Promise<void> {
+  // Check if payload exists
+  if (!job.payload) {
+    logger.error(`[EmbeddingGenerator] Job ${job.id} has no payload`);
+    throw new Error('Job payload is missing');
+  }
+
   logger.info(`[EmbeddingGenerator] Processing job ${job.id}`, {
     jobType: job.jobType,
-    fileId: job.payload.fileId,
+    fileId: job.payload?.fileId,
+    hasPayload: !!job.payload,
+    payloadKeys: job.payload ? Object.keys(job.payload) : [],
   });
 
   const { fileId, userId, chunks } = job.payload;
@@ -276,7 +288,7 @@ export async function startPGMQWorkers(): Promise<void> {
 
     // Start embedding worker
     pgmqService.processQueue(
-      QUEUE_NAMES.EMBEDDING,
+      QUEUE_NAMES.EMBEDDING_GENERATION,
       processEmbeddingJob,
       {
         batchSize: 5,
@@ -311,7 +323,7 @@ export function stopPGMQWorkers(): void {
   logger.info('[PGMQ] Stopping all workers...');
   
   pgmqService.stopProcessing(QUEUE_NAMES.FILE_PROCESSING);
-  pgmqService.stopProcessing(QUEUE_NAMES.EMBEDDING);
+  pgmqService.stopProcessing(QUEUE_NAMES.EMBEDDING_GENERATION);
   pgmqService.stopProcessing(QUEUE_NAMES.NOTIFICATION);
   
   logger.info('[PGMQ] All workers stopped');
@@ -337,7 +349,7 @@ export const enqueueEmbeddingGeneration = async (
   userId: string
 ) => {
   return pgmqService.enqueue(
-    QUEUE_NAMES.EMBEDDING,
+    QUEUE_NAMES.EMBEDDING_GENERATION,
     'generate_embedding',
     { fileId, chunkIndex, content, userId }
   );

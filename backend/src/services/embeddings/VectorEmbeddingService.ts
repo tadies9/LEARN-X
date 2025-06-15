@@ -147,22 +147,46 @@ export class VectorEmbeddingService {
 
       // Update chunk metadata for each chunk individually to avoid null file_id issues
       for (const chunk of chunks) {
-        const { error: updateError } = await supabase
+        // First verify the chunk exists
+        const { data: existingChunk, error: fetchError } = await supabase
+          .from('file_chunks')
+          .select('id, file_id, chunk_metadata')
+          .eq('id', chunk.id)
+          .single();
+
+        if (fetchError || !existingChunk) {
+          logger.error(`Chunk ${chunk.id} not found for update:`, fetchError);
+          throw new Error(`Chunk ${chunk.id} not found in database`);
+        }
+
+        // Merge existing metadata with new embedding metadata
+        const updatedMetadata = {
+          ...(existingChunk.chunk_metadata || {}),
+          ...(chunk.metadata || {}),
+          embedding_model: this.model,
+          embedding_generated_at: new Date().toISOString(),
+          has_embedding: true,
+        };
+
+        const { data: updateResult, error: updateError } = await supabase
           .from('file_chunks')
           .update({
-            chunk_metadata: {
-              ...chunk.metadata,
-              embedding_model: this.model,
-              embedding_generated_at: new Date().toISOString(),
-              has_embedding: true,
-            },
+            chunk_metadata: updatedMetadata,
           })
-          .eq('id', chunk.id);
+          .eq('id', chunk.id)
+          .select('id');
 
         if (updateError) {
           logger.error(`Failed to update metadata for chunk ${chunk.id}:`, updateError);
           throw updateError;
         }
+
+        if (!updateResult || updateResult.length === 0) {
+          logger.error(`No rows updated for chunk ${chunk.id}`);
+          throw new Error(`Failed to update chunk ${chunk.id} - no rows affected`);
+        }
+
+        logger.debug(`Successfully updated metadata for chunk ${chunk.id}`);
       }
 
       logger.info(`Stored ${embeddings.length} embeddings in file_embeddings table`);

@@ -342,9 +342,6 @@ router.get('/files/:id/working-signed-url', async (req, res) => {
   }
 });
 
-// Apply auth middleware to all routes
-router.use(authenticateUser);
-
 // Test endpoint
 router.post('/files/test-upload', (req, res) => {
   console.log('Test upload endpoint hit');

@@ -12,7 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { courseApi } from '@/lib/api/course';
-import { SearchModal } from '@/components/search/SearchModal';
 
 import type { Course } from '@/lib/types/course';
 
@@ -25,7 +24,6 @@ export function CourseHeader({ course, onUpdate }: CourseHeaderProps) {
   const { toast } = useToast();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   const handleArchive = async () => {
     try {
@@ -118,7 +116,7 @@ export function CourseHeader({ course, onUpdate }: CourseHeaderProps) {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" onClick={() => setIsSearchOpen(true)}>
+            <Button variant="outline" disabled>
               <Search className="mr-2 h-4 w-4" />
               Search
             </Button>
@@ -152,15 +150,6 @@ export function CourseHeader({ course, onUpdate }: CourseHeaderProps) {
         </CardContent>
       </Card>
 
-      <SearchModal
-        isOpen={isSearchOpen}
-        onClose={() => setIsSearchOpen(false)}
-        courseId={course.id}
-        onResultSelect={(result) => {
-          // Navigate to the file with the search result
-          router.push(`/courses/${course.id}/learn?fileId=${result.fileId}`);
-        }}
-      />
     </>
   );
 }

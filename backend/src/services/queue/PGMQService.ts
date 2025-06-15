@@ -140,7 +140,8 @@ export class PGMQService {
                 logger.error(`[PGMQ] Job failed`, {
                   queueName,
                   jobId: job.id,
-                  error,
+                  error: error instanceof Error ? error.message : String(error),
+                  errorStack: error instanceof Error ? error.stack : undefined,
                 });
                 
                 // Mark job as failed
