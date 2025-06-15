@@ -271,22 +271,12 @@ export default function LearnPage({ params }: { params: { id: string } }) {
         // Use cached content - set it immediately without streaming
         setStreamingContent(cachedContent);
         setIsStreaming(false);
-        
-        // Scroll to top for new content
-        if (contentRef.current) {
-          contentRef.current.scrollTop = 0;
-        }
         return;
       }
 
       setIsStreaming(true);
       setStreamingContent('');
       setError(null);
-      
-      // Scroll to top when starting new content
-      if (contentRef.current) {
-        contentRef.current.scrollTop = 0;
-      }
 
       // Cancel any existing stream
       if (abortControllerRef.current) {
@@ -785,7 +775,10 @@ export default function LearnPage({ params }: { params: { id: string } }) {
           )}
 
           {/* Content Body */}
-          <div ref={contentRef} className="flex-1 overflow-y-auto p-6">
+          <div 
+            ref={contentRef} 
+            className="flex-1 overflow-y-auto p-6"
+            key={`${selectedTopic}-${selectedSubtopic}`}>
             {!selectedTopic || !selectedSubtopic ? (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <div className="text-center">
@@ -797,18 +790,26 @@ export default function LearnPage({ params }: { params: { id: string } }) {
               <div className="max-w-4xl mx-auto">
                 {/* Streaming Content */}
                 <div className="prose prose-lg max-w-none dark:prose-invert">
-                  {streamingContent ? (
+                  {isStreaming && streamingContent ? (
+                    <div>
+                      <div
+                        dangerouslySetInnerHTML={{ __html: streamingContent }}
+                        className="[&_div[style*='background-color']]:p-4 [&_div[style*='background-color']]:rounded-lg [&_div[style*='background-color']]:my-4 [&_details]:border [&_details]:p-4 [&_details]:rounded-lg [&_details]:my-2"
+                      />
+                      <div className="flex items-center gap-2 text-muted-foreground mt-4">
+                        <div className="animate-pulse rounded-full h-2 w-2 bg-primary"></div>
+                        <span className="text-sm">Generating more content...</span>
+                      </div>
+                    </div>
+                  ) : streamingContent ? (
                     <div
                       dangerouslySetInnerHTML={{ __html: streamingContent }}
                       className="[&_div[style*='background-color']]:p-4 [&_div[style*='background-color']]:rounded-lg [&_div[style*='background-color']]:my-4 [&_details]:border [&_details]:p-4 [&_details]:rounded-lg [&_details]:my-2"
                     />
                   ) : isStreaming ? (
-                    <div>
-                      <div dangerouslySetInnerHTML={{ __html: streamingContent }} />
-                      <div className="flex items-center gap-2 text-muted-foreground mt-4">
-                        <div className="animate-pulse rounded-full h-2 w-2 bg-primary"></div>
-                        <span className="text-sm">Generating more content...</span>
-                      </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
+                      <span>Loading personalized content...</span>
                     </div>
                   ) : (
                     <p className="text-muted-foreground">Content will appear here...</p>
