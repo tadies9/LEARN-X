@@ -11,6 +11,7 @@ import aiRoutes from './ai.routes';
 import sessionRoutes from './session.routes';
 import aiLearnRoutes from './aiLearnRoutes';
 import searchRoutes from './searchRoutes';
+import savedContentRoutes from './savedContentRoutes';
 
 const router = Router();
 
@@ -59,6 +60,7 @@ router.use('/ai', aiRoutes);
 router.use('/learn', aiLearnRoutes); // AI learning routes - mount before fileRoutes
 router.use('/sessions', sessionRoutes);
 router.use('/search', searchRoutes); // Vector search routes
+router.use('/saved', savedContentRoutes); // Saved content routes
 router.use('/', fileRoutes); // File routes are mixed between /files and /modules - mount last
 
 // API info

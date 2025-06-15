@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { ArrowLeft, BookOpen, MessageSquare, Brain, HelpCircle, FileText, Lightbulb, ThumbsUp, ThumbsDown, Meh, Download, RefreshCw, Settings, ChevronRight, ChevronDown } from 'lucide-react';
+import { ArrowLeft, BookOpen, MessageSquare, Brain, HelpCircle, FileText, Lightbulb, ThumbsUp, ThumbsDown, Meh, Download, RefreshCw, Settings, ChevronRight, ChevronDown, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProfile } from '@/hooks/useProfile';
 import { AIApiService, type OutlineSection } from '@/lib/api/ai';
 import { createClient } from '@/lib/supabase/client';
+import { contentCache, CacheOptions } from '@/lib/cache/ContentCache';
+import { useProgressivePreload } from '@/lib/hooks/useProgressivePreload';
+import { SavedContentApiService } from '@/lib/api/saved';
 
 interface Topic {
   id: string;
@@ -48,6 +51,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
   const { loadProfile } = useProfile();
   const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
+  const [fileVersion, setFileVersion] = useState<string>('');
 
   // UI State
   const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
@@ -72,15 +76,51 @@ export default function LearnPage({ params }: { params: { id: string } }) {
   const contentRef = useRef<HTMLDivElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Get session
+  // Progressive Preloading Hook
+  const { preloadContent, getCacheStats, isPreloading } = useProgressivePreload({
+    fileId: fileId || '',
+    currentTopic: selectedTopic || '',
+    currentSubtopic: selectedSubtopic || undefined,
+    topics: outline,
+    fileVersion,
+    persona: profile?.persona,
+    mode: activeMode
+  });
+
+  // Get session and file version
   useEffect(() => {
     const getSession = async () => {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       setSession(session);
+      
+      // Load user profile for persona
+      if (session?.user?.id) {
+        const profile = await loadProfile(session.user.id);
+        setProfile(profile);
+      }
     };
     getSession();
-  }, []);
+  }, [loadProfile]);
+
+  // Get file version for cache invalidation
+  useEffect(() => {
+    const getFileVersion = async () => {
+      if (!fileId) return;
+      
+      const supabase = createClient();
+      const { data } = await supabase
+        .from('course_files')
+        .select('updated_at')
+        .eq('id', fileId)
+        .single();
+        
+      if (data) {
+        setFileVersion(data.updated_at);
+      }
+    };
+    getFileVersion();
+  }, [fileId]);
 
   // Initialize outline generation when component mounts
   useEffect(() => {
@@ -179,9 +219,29 @@ export default function LearnPage({ params }: { params: { id: string } }) {
 
   // Stream content for selected topic/subtopic
   const streamContent = useCallback(async () => {
-    if (!selectedTopic || !selectedSubtopic || !session?.access_token) return;
+    if (!selectedTopic || !selectedSubtopic || !session?.access_token || !session?.user?.id) return;
 
     try {
+      // Check cache first
+      const cacheOptions: CacheOptions = {
+        userId: session.user.id,
+        fileId: fileId || '',
+        topicId: selectedTopic,
+        subtopic: selectedSubtopic,
+        mode: activeMode,
+        version: fileVersion,
+        persona: profile?.persona
+      };
+
+      const cachedContent = await contentCache.get(cacheOptions);
+      
+      if (cachedContent) {
+        // Use cached content
+        setStreamingContent(cachedContent);
+        setIsStreaming(false);
+        return;
+      }
+
       setIsStreaming(true);
       setStreamingContent('');
       setError(null);
@@ -212,6 +272,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
 
           const reader = response.body.getReader();
           const decoder = new TextDecoder();
+          let fullContent = '';
 
           // Stream opened
 
@@ -244,6 +305,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                   const parsed = JSON.parse(data);
                   // Handle proper SSE format: {type: 'content', data: 'text'}
                   if (parsed.type === 'content' && parsed.data) {
+                    fullContent += parsed.data;
                     setStreamingContent((prev) => prev + parsed.data);
                     // Auto-scroll to bottom
                     if (contentRef.current) {
@@ -263,6 +325,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                   }
                   // Fallback for old format
                   else if (parsed.content) {
+                    fullContent += parsed.content;
                     setStreamingContent((prev) => prev + parsed.content);
                     if (contentRef.current) {
                       contentRef.current.scrollTop = contentRef.current.scrollHeight;
@@ -273,6 +336,11 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                 }
               }
             }
+          }
+          
+          // Cache the content after successful streaming
+          if (fullContent && session?.user?.id) {
+            await contentCache.set(cacheOptions, fullContent);
           }
         } catch (streamError) {
           if (!abortController.signal.aborted) {
@@ -291,7 +359,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
       setError('Failed to load content');
       setIsStreaming(false);
     }
-  }, [selectedTopic, selectedSubtopic, fileId, activeMode, session]);
+  }, [selectedTopic, selectedSubtopic, fileId, activeMode, session, fileVersion, profile?.persona]);
 
   // Handle non-streaming content modes
   const handleNonStreamingContent = async () => {
@@ -404,6 +472,53 @@ export default function LearnPage({ params }: { params: { id: string } }) {
     } catch (err) {
       console.error('[LearnPage] Error sending feedback:', err);
     }
+  };
+
+  // Handle save content
+  const handleSaveContent = async () => {
+    if (!streamingContent || !selectedTopic || !selectedSubtopic || !session?.user?.id || !fileId) return;
+    
+    try {
+      const topic = outline.find(t => t.id === selectedTopic);
+      const subtopic = topic?.subtopics.find(st => st.id === selectedSubtopic);
+      
+      await SavedContentApiService.save({
+        fileId,
+        topicId: selectedTopic,
+        subtopic: selectedSubtopic,
+        content: streamingContent,
+        mode: activeMode,
+        tags: topic?.topics || [],
+        notes: quickNote || undefined
+      });
+      
+      alert('Content saved successfully! You can access it from your saved content library.');
+    } catch (err) {
+      console.error('[LearnPage] Error saving content:', err);
+      alert('Failed to save content. Please try again.');
+    }
+  };
+
+  // Handle regenerate with cache clear
+  const handleRegenerate = async () => {
+    if (!selectedTopic || !selectedSubtopic || !session?.user?.id) return;
+    
+    // Clear cache for this specific content
+    const cacheOptions: CacheOptions = {
+      userId: session.user.id,
+      fileId: fileId || '',
+      topicId: selectedTopic,
+      subtopic: selectedSubtopic,
+      mode: activeMode,
+      version: fileVersion,
+      persona: profile?.persona
+    };
+    
+    // Clear from cache
+    await contentCache.clear(cacheOptions);
+    
+    // Regenerate content
+    await streamContent();
   };
 
   // Calculate overall progress
@@ -564,6 +679,15 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    title="Save for Later"
+                    onClick={handleSaveContent}
+                    disabled={!streamingContent || isStreaming}
+                  >
+                    <Save className="h-4 w-4" />
+                  </Button>
                   <Button variant="ghost" size="icon" title="Download">
                     <Download className="h-4 w-4" />
                   </Button>
@@ -571,7 +695,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                     variant="ghost" 
                     size="icon" 
                     title="Regenerate"
-                    onClick={streamContent}
+                    onClick={handleRegenerate}
                     disabled={isStreaming}
                   >
                     <RefreshCw className={cn("h-4 w-4", isStreaming && "animate-spin")} />
@@ -668,6 +792,17 @@ export default function LearnPage({ params }: { params: { id: string } }) {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">Save Progress</Button>
           <Button variant="outline" size="sm">Export Notes</Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={async () => {
+              const stats = await getCacheStats();
+              console.log('Cache Stats:', stats);
+              alert(`Cache Stats:\nMemory: ${stats.memoryCacheSize} items\nIndexedDB: ${stats.indexedDBStats.count} items\nPreloading: ${stats.preloadQueueSize} items`);
+            }}
+          >
+            Cache Info
+          </Button>
         </div>
         <div className="text-sm text-muted-foreground">
           {profile?.persona?.interests && (
