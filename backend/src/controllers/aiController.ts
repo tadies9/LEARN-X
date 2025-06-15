@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { z } from 'zod';
 import { ContentGenerationService } from '../services/content/ContentGenerationService';
+import { DeepContentGenerationService } from '../services/content/DeepContentGenerationService';
 import { HybridSearchService } from '../services/search/HybridSearchService';
 import { PersonalizationEngine } from '../services/personalization/PersonalizationEngine';
 import { CostTracker } from '../services/ai/CostTracker';
@@ -14,6 +15,7 @@ import { openAIService } from '../services/openai/OpenAIService';
 
 // Initialize services using centralized Redis client
 const contentService = new ContentGenerationService(redisClient);
+const deepContentService = new DeepContentGenerationService(redisClient);
 const searchService = new HybridSearchService();
 const personalizationEngine = new PersonalizationEngine();
 const costTracker = new CostTracker();
@@ -66,7 +68,7 @@ export class AIController {
         throw new AppError('Daily AI usage limit exceeded', 429);
       }
 
-      // Get user persona
+      // Get user persona - required for deep personalization
       const persona = await personalizationEngine.getUserPersona(userId);
       if (!persona) {
         throw new AppError('User persona not found. Please complete onboarding.', 400);
@@ -101,19 +103,27 @@ export class AIController {
         Connection: 'keep-alive',
       });
 
-      // Stream explanation
-      const generator = contentService.generateExplanation({
+      // Use deep personalization for explanation streaming
+      const generator = deepContentService.generateDeepExplanation({
         chunks,
         topic: topicId,
+        subtopic,
         persona,
         stream: true,
+        model: 'gpt-4o'
       });
 
+      // Stream with structured SSE format
       for await (const chunk of generator) {
-        res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+        res.write(`data: ${JSON.stringify({ 
+          type: 'content', 
+          data: chunk,
+          timestamp: Date.now()
+        })}\n\n`);
       }
 
-      res.write('data: [DONE]\n\n');
+      // Send completion signal
+      res.write(`data: ${JSON.stringify({ type: 'complete' })}\n\n`);
       res.end();
     } catch (error) {
       logger.error('Stream explanation error:', error);
@@ -122,7 +132,10 @@ export class AIController {
       if (!res.headersSent) {
         res.status(error instanceof AppError ? error.statusCode : 500).json(errorResponse);
       } else {
-        res.write(`data: ${JSON.stringify({ error: errorResponse.error })}\n\n`);
+        res.write(`data: ${JSON.stringify({ 
+          type: 'error', 
+          data: { message: errorResponse.error }
+        })}\n\n`);
         res.end();
       }
     }
@@ -169,13 +182,22 @@ export class AIController {
       };
 
       if (persona) {
-        summaryParams.persona = persona;
-        const summary = await contentService.generateSummary(summaryParams);
+        // Use deep personalization for summary
+        const result = await deepContentService.generateDeepSummary({
+          content,
+          format,
+          persona,
+          model: 'gpt-4o'
+        });
+        
         res.json({
           success: true,
           data: {
-            summary,
+            summary: result.content,
             format,
+            personalizationScore: result.personalizationScore,
+            qualityMetrics: result.qualityMetrics,
+            cached: result.cached
           },
         });
       } else {
@@ -194,6 +216,8 @@ export class AIController {
           data: {
             summary,
             format,
+            personalizationScore: 0,
+            cached: false
           },
         });
       }
@@ -652,18 +676,22 @@ Return a JSON object with this structure:
         ? await personalizationEngine.getPersona(params.personaId)
         : await personalizationEngine.getLatestPersona(userId);
 
-      // Stream chat response
+      // Stream personalized chat response
       const chatParams = {
         message: params.message,
         context: context.map((r: any) => r.content),
         currentPage: params.currentPage,
         selectedText: params.selectedText,
-        persona,
+        persona: persona!,
         model: 'gpt-4o',
       };
 
-      for await (const chunk of contentService.streamChatResponse(chatParams)) {
-        res.write(`data: ${JSON.stringify({ content: chunk })}\n\n`);
+      for await (const chunk of deepContentService.streamPersonalizedChat(chatParams)) {
+        res.write(`data: ${JSON.stringify({ 
+          type: 'content',
+          data: chunk,
+          timestamp: Date.now()
+        })}\n\n`);
       }
 
       // Send citations
@@ -673,14 +701,20 @@ Return a JSON object with this structure:
         text: r.content.substring(0, 100),
       }));
 
-      res.write(`data: ${JSON.stringify({ citations })}\n\n`);
-      res.write('data: [DONE]\n\n');
+      res.write(`data: ${JSON.stringify({ 
+        type: 'citations', 
+        data: citations 
+      })}\n\n`);
+      res.write(`data: ${JSON.stringify({ type: 'complete' })}\n\n`);
       res.end();
     } catch (error) {
       const handledError = aiErrorHandler.handle(error);
       logger.error('Chat error:', error);
 
-      res.write(`data: ${JSON.stringify({ error: handledError.error })}\n\n`);
+      res.write(`data: ${JSON.stringify({ 
+        type: 'error', 
+        data: { message: handledError.error }
+      })}\n\n`);
       res.end();
     }
   }
