@@ -54,7 +54,7 @@ async function runMigration() {
     console.log('\n📋 Verifying installation...');
 
     // Verify queues were created
-    const { data: queues, error: queueError } = await supabase.rpc('pgmq_metrics_all');
+    const { data: queues, error: queueError } = await supabase.rpc('pgmq.metrics_all');
     
     if (queueError) {
       console.error('❌ Failed to verify queues:', queueError);
