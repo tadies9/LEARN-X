@@ -3,7 +3,7 @@
 -- ============================================================================
 -- Generated from actual Supabase database after cleanup
 -- Date: June 15, 2025
--- Total Tables: 18 active tables
+-- Total Tables: 19 active tables (including persona_history)
 -- Total Storage: ~45 MB
 -- 
 -- This file represents the ACTUAL current state of the database
@@ -48,6 +48,22 @@ CREATE TABLE IF NOT EXISTS personas (
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Persona history for ML/analytics (tracks persona evolution over time)
+CREATE TABLE IF NOT EXISTS persona_history (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES auth.users(id),
+    professional_context JSONB DEFAULT '{}',
+    personal_interests JSONB DEFAULT '{}',
+    learning_style JSONB DEFAULT '{}',
+    content_preferences JSONB DEFAULT '{}',
+    communication_tone JSONB DEFAULT '{}',
+    version INTEGER DEFAULT 1,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index for efficient user history queries
+CREATE INDEX idx_persona_history_user_created ON persona_history(user_id, created_at DESC);
 
 -- ============================================================================
 -- COURSE MANAGEMENT SYSTEM
@@ -186,7 +202,7 @@ CREATE TABLE IF NOT EXISTS search_index (
 CREATE TABLE IF NOT EXISTS study_sessions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id),
-    file_id UUID NOT NULL REFERENCES files(id), -- References legacy files table
+    file_id UUID NOT NULL REFERENCES course_files(id), -- Updated to reference course_files
     started_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
     ended_at TIMESTAMPTZ,
     duration_seconds INTEGER GENERATED ALWAYS AS (
@@ -399,7 +415,7 @@ CREATE POLICY "Users can view their own files" ON storage.objects
 -- ============================================================================
 -- SUMMARY
 -- ============================================================================
--- Total Tables: 18
+-- Total Tables: 19
 -- Total Size: ~45 MB
 -- Key Tables:
 --   - file_embeddings: 30 MB (vector search)

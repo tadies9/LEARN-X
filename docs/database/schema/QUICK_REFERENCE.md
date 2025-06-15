@@ -12,7 +12,7 @@ users → courses → modules → course_files → file_chunks → file_embeddin
 users → study_sessions → annotations → study_progress
 ```
 
-## 📊 **Current Database State (18 Tables, 45 MB)**
+## 📊 **Current Database State (19 Tables, 45 MB)**
 
 | Table | Rows | Size | Purpose |
 |-------|------|------|---------|
@@ -27,6 +27,7 @@ users → study_sessions → annotations → study_progress
 | `notifications` | 6 | 80 kB | User notifications |
 | `onboarding_analytics` | 20 | 80 kB | Analytics tracking |
 | `personas` | 1 | 80 kB | User personas |
+| `persona_history` | 0 | 0 kB | **NEW: Persona evolution tracking** |
 | `modules` | 2 | 80 kB | Course modules |
 | `users` | 1 | 80 kB | User profiles |
 | `files` | 0 | 56 kB | **Legacy (empty, kept for compatibility)** |
@@ -34,6 +35,7 @@ users → study_sessions → annotations → study_progress
 | `annotations` | 0 | 40 kB | **Active annotation system** |
 | `study_progress` | 0 | 40 kB | **Active progress tracking** |
 | `schema_migrations` | 4 | 32 kB | Migration tracking |
+| `persona_history` | 0 | 24 kB | **Persona evolution tracking (ML/analytics)** |
 
 ## 📋 **Table Relationships**
 
@@ -88,7 +90,7 @@ All user tables have Row Level Security:
 
 - ✅ **Removed 9 unused tables** (saved 3.73 MB)
 - ✅ **Preserved all active functionality**
-- ✅ **18 tables remaining** (all necessary)
+- ✅ **19 tables remaining** (all necessary)
 - ✅ **Database well-architected** (minimal waste)
 
 ## 🔧 **Development Tips**
