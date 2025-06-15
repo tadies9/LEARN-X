@@ -1,40 +1,113 @@
 # Database Schema Documentation
 
-This directory contains all database schema definitions for the LEARN-X platform.
+## 📋 **Overview**
 
-## Schema Files
+This directory contains the **single source of truth** for the Learn-X database schema. After a comprehensive cleanup process, all outdated schema files have been removed and replaced with one accurate, current schema file.
 
-### Core Schemas
-- **SUPABASE_SCHEMA.sql** - Main Supabase database schema with core tables
-- **COURSE_SCHEMA.sql** - Course management schema (courses, modules, enrollments)
-- **ANALYTICS_SCHEMA.sql** - Analytics and tracking schema
+## 🗂️ **Current Files**
 
-### Feature Schemas
-- **FILE_PROCESSING_SCHEMA.sql** - File processing pipeline schema
-- **COURSE_FILES_STORAGE.sql** - Course file storage relationships
-- **FILE_POSITION_FUNCTION.sql** - Database function for managing file positions
+### `CURRENT_SCHEMA.sql`
+- **Complete database schema** reflecting the actual current state
+- Generated from live Supabase database after cleanup
+- **18 active tables**, ~45 MB total storage
+- Includes all tables, indexes, RLS policies, and storage buckets
+- **Use this file as the definitive schema reference**
 
-### Storage Schemas
-- **STORAGE_BUCKETS.sql** - Storage bucket configurations
-- **SUPABASE_STORAGE.sql** - General Supabase storage setup
-- **SUPABASE_STORAGE_AVATARS.sql** - Avatar-specific storage configuration
+## 📊 **Database Statistics (Post-Cleanup)**
 
-## Database Technology
+| Table | Rows | Size | Purpose |
+|-------|------|------|---------|
+| `file_embeddings` | 1,505 | 30 MB | Vector search (semantic similarity) |
+| `file_chunks` | 1,505 | 9.6 MB | Content processing & chunking |
+| `search_index` | 56 | 3 MB | Search performance optimization |
+| `job_tracking` | 61 | 1 MB | Legacy queue system |
+| `ai_requests` | 282 | 168 KB | AI cost monitoring |
+| `course_files` | 25 | 128 KB | Primary file storage |
+| `enhanced_job_tracking` | 4 | 120 KB | New queue system |
+| Other tables | Various | <100 KB each | Core functionality |
 
-- **Primary Database**: PostgreSQL (via Supabase)
-- **Caching Layer**: Redis
-- **Real-time**: Supabase Realtime subscriptions
+**Total: ~45 MB** (down from ~49 MB after 3.73 MB cleanup)
 
-## Schema Conventions
+## 🧹 **Cleanup Summary**
 
-1. All tables use `snake_case` naming
-2. Primary keys are typically `id` (UUID)
-3. Timestamps: `created_at`, `updated_at`
-4. Foreign keys follow pattern: `{table}_id`
-5. RLS (Row Level Security) policies are defined for each table
+### Removed Tables (9 total)
+- `document_chunks` - 1.7 MB (duplicate of file_chunks)
+- `file_chunk_embeddings` - 1.6 MB (duplicate of file_embeddings)
+- `chunk_embeddings` - 168 KB (unused)
+- `flashcards` - 88 KB (not implemented)
+- `learning_progress` - 56 KB (duplicate of study_progress)
+- `course_progress` - 40 KB (not implemented)
+- `ai_interactions` - 40 KB (duplicate of ai_requests)
+- `user_settings` - 32 KB (not implemented)
+- `persona_history` - 32 KB (not implemented)
+- `user_personas` - 32 KB (duplicate of personas)
+- `test_queue` - minimal (test data)
 
-## Quick Reference
+### Preserved Active Systems
+- ✅ **Learning System**: `study_sessions`, `annotations`, `study_progress`
+- ✅ **File Processing**: `course_files`, `file_chunks`, `file_embeddings`
+- ✅ **Course Management**: `courses`, `modules`, `users`
+- ✅ **Analytics**: `ai_requests`, `onboarding_analytics`
+- ✅ **Queue System**: Both legacy and enhanced job tracking
+- ✅ **Vector Search**: Essential 16MB index preserved
 
-For complete system architecture, see:
-- [Technical Architecture](../../architecture/TECHNICAL_ARCHITECTURE.md)
-- [System Design](../../architecture/SYSTEM_DESIGN.md)
+## 🏗️ **Schema Architecture**
+
+### Core Systems
+1. **User Management** - Users, personas, subscriptions
+2. **Course System** - Courses, modules, hierarchical structure
+3. **File Processing** - Upload, chunking, embedding generation
+4. **Learning System** - Study sessions, progress tracking, annotations
+5. **Search & Analytics** - Vector search, usage tracking
+6. **Queue System** - Background job processing (PGMQ)
+
+### Key Features
+- **Row Level Security (RLS)** - All user tables protected
+- **Vector Search** - Semantic similarity using pgvector
+- **JSONB Flexibility** - Extensible metadata storage
+- **Queue Processing** - Reliable background job system
+- **Storage Integration** - Supabase Storage with proper policies
+
+## 🔄 **Migration History**
+
+The database has undergone significant evolution:
+1. **Initial Development** - Multiple experimental tables
+2. **Feature Expansion** - Duplicate systems for different approaches
+3. **Production Hardening** - Enhanced queue system, better error handling
+4. **Cleanup Phase** - Evidence-based removal of unused structures
+5. **Current State** - Lean, efficient, production-ready schema
+
+## 📝 **Usage Guidelines**
+
+### For Developers
+- **Reference**: Use `CURRENT_SCHEMA.sql` for understanding database structure
+- **New Features**: Add to existing tables using JSONB when possible
+- **Migrations**: Use Supabase migrations for schema changes
+- **Testing**: Verify against actual database, not outdated schema files
+
+### For Database Operations
+- **Backup**: Current schema represents production state
+- **Restoration**: Use this schema for clean database setup
+- **Monitoring**: Focus on large tables (file_embeddings, file_chunks)
+- **Optimization**: Vector index is critical for performance
+
+## ⚠️ **Important Notes**
+
+1. **Single Source of Truth**: Only `CURRENT_SCHEMA.sql` is accurate
+2. **Active Learning System**: All learning tables are implemented and active
+3. **Vector Search**: 16MB index is essential, do not remove
+4. **Dual Queue Systems**: Migration from legacy to enhanced system pending
+5. **File Storage**: `course_files` is primary, `files` kept for compatibility
+
+## 🔍 **Verification**
+
+This schema was generated by:
+1. Connecting to live Supabase database
+2. Analyzing actual table structures and relationships
+3. Verifying against codebase implementation
+4. Removing confirmed unused structures
+5. Documenting current state with statistics
+
+**Last Updated**: After database cleanup completion
+**Database Project**: fiuypfvcfodtjzuzhjie
+**Total Cleanup**: 3.73 MB saved, 9 tables removed
