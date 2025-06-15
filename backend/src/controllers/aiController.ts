@@ -162,19 +162,41 @@ export class AIController {
       // Combine content intelligently based on chunk types
       const content = this.combineChunksIntelligently(sortedChunks);
 
-      const summary = await contentService.generateSummary({
+      // If no persona, create a default one
+      const summaryParams: any = {
         content,
         format,
-        persona,
-      });
+      };
 
-      res.json({
-        success: true,
-        data: {
-          summary,
-          format,
-        },
-      });
+      if (persona) {
+        summaryParams.persona = persona;
+        const summary = await contentService.generateSummary(summaryParams);
+        res.json({
+          success: true,
+          data: {
+            summary,
+            format,
+          },
+        });
+      } else {
+        // Generate without personalization
+        const basicPrompt = `Create a ${format} summary of the following content:\n\n${content}`;
+        const completion = await openAIService.getClient().chat.completions.create({
+          model: 'gpt-4o',
+          messages: [{ role: 'user', content: basicPrompt }],
+          temperature: 0.7,
+          max_tokens: 1000,
+        });
+        
+        const summary = completion.choices[0].message.content || 'Failed to generate summary';
+        res.json({
+          success: true,
+          data: {
+            summary,
+            format,
+          },
+        });
+      }
     } catch (error) {
       logger.error('Generate summary error:', error);
       const errorResponse = aiErrorHandler.handle(error);
