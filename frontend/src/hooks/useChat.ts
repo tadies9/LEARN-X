@@ -93,11 +93,35 @@ export function useChat({ fileId, onMessage }: UseChatOptions) {
 
               try {
                 const parsed = JSON.parse(data);
-                if (parsed.content) {
+                // Handle new structured SSE format
+                if (parsed.type === 'content' && parsed.data) {
+                  assistantMessage += parsed.data;
+                } else if (parsed.type === 'citations' && parsed.data) {
+                  // Store citations to add to final message
+                  const finalMessage: ChatMessage = {
+                    id: messageId,
+                    role: 'assistant',
+                    content: assistantMessage,
+                    timestamp: new Date(),
+                    citations: parsed.data,
+                  };
+                  onMessage?.(finalMessage);
+                } else if (parsed.type === 'complete') {
+                  // Message complete
+                  if (!assistantMessage) return;
+                  const finalMessage: ChatMessage = {
+                    id: messageId,
+                    role: 'assistant',
+                    content: assistantMessage,
+                    timestamp: new Date(),
+                  };
+                  onMessage?.(finalMessage);
+                  return;
+                } else if (parsed.content) {
+                  // Fallback for old format
                   assistantMessage += parsed.content;
-                }
-                if (parsed.citations) {
-                  // Citations will be added to final message
+                } else if (parsed.citations) {
+                  // Fallback for old citations format
                 }
               } catch (e) {
                 console.error('Failed to parse chat data:', e);

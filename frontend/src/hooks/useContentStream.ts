@@ -69,10 +69,21 @@ export function useContentStream() {
 
             try {
               const parsed = JSON.parse(data);
-              if (parsed.content) {
+              // Handle new structured SSE format
+              if (parsed.type === 'content' && parsed.data) {
+                setContent((prev) => prev + parsed.data);
+              } else if (parsed.type === 'error' && parsed.data) {
+                setError(parsed.data.message || 'An error occurred');
+                setIsStreaming(false);
+                return;
+              } else if (parsed.type === 'complete') {
+                setIsStreaming(false);
+                return;
+              } else if (parsed.content) {
+                // Fallback for old format
                 setContent((prev) => prev + parsed.content);
-              }
-              if (parsed.error) {
+              } else if (parsed.error) {
+                // Fallback for old error format
                 setError(parsed.error);
                 setIsStreaming(false);
                 return;

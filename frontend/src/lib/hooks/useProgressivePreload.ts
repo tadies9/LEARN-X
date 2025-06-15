@@ -98,7 +98,11 @@ export function useProgressivePreload({
 
               try {
                 const parsed = JSON.parse(data);
-                if (parsed.content) {
+                // Handle new structured SSE format
+                if (parsed.type === 'content' && parsed.data) {
+                  content += parsed.data;
+                } else if (parsed.content) {
+                  // Fallback for old format
                   content += parsed.content;
                 }
               } catch (e) {
