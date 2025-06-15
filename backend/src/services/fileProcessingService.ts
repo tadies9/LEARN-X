@@ -2,6 +2,13 @@ import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
 import { supabase } from '../config/supabase';
 import { logger } from '../utils/logger';
+import { 
+  cleanExtractedText, 
+  cleanChunkContent, 
+  sanitizeForDatabase,
+  extractSafeText,
+  isTextSafe 
+} from '../utils/unicode-safe-text-processing';
 
 interface ChunkMetadata {
   startIndex: number;
@@ -51,7 +58,11 @@ export class FileProcessingService {
       const pdfData = await pdf(buffer);
       logger.info(`Extracted ${pdfData.text.length} characters from PDF`);
 
-      return pdfData.text;
+      // Clean the extracted text to handle Unicode issues
+      const cleanedText = await extractSafeText(() => pdfData.text);
+      logger.info(`Cleaned text: ${cleanedText.length} characters`);
+
+      return cleanedText;
     } catch (error) {
       logger.error('Error extracting PDF text:', error);
       throw new Error('Failed to extract PDF text');
@@ -82,7 +93,11 @@ export class FileProcessingService {
       const result = await mammoth.extractRawText({ buffer });
       logger.info(`Extracted ${result.value.length} characters from Word document`);
 
-      return result.value;
+      // Clean the extracted text to handle Unicode issues
+      const cleanedText = await extractSafeText(() => result.value);
+      logger.info(`Cleaned text: ${cleanedText.length} characters`);
+
+      return cleanedText;
     } catch (error) {
       logger.error('Error extracting Word text:', error);
       throw new Error('Failed to extract Word document text');
@@ -101,7 +116,10 @@ export class FileProcessingService {
       // Convert blob to text
       const text = await data.text();
 
-      return text;
+      // Clean the extracted text to handle Unicode issues
+      const cleanedText = await extractSafeText(() => text);
+
+      return cleanedText;
     } catch (error) {
       logger.error('Error extracting plain text:', error);
       throw new Error('Failed to extract plain text');
@@ -141,14 +159,17 @@ export class FileProcessingService {
 
     for (const sentence of sentences) {
       if ((currentChunk + sentence).length > chunkSize && currentChunk.length > 0) {
-        // Save current chunk
-        chunks.push({
-          content: currentChunk.trim(),
-          metadata: {
-            startIndex,
-            endIndex: startIndex + currentChunk.length,
-          },
-        });
+        // Save current chunk with cleaned content
+        const cleanedChunk = cleanChunkContent(currentChunk.trim());
+        if (cleanedChunk) {
+          chunks.push({
+            content: sanitizeForDatabase(cleanedChunk),
+            metadata: {
+              startIndex,
+              endIndex: startIndex + currentChunk.length,
+            },
+          });
+        }
 
         // Start new chunk with overlap
         const overlap = Math.min(2, currentSentences.length);
@@ -164,13 +185,16 @@ export class FileProcessingService {
 
     // Add last chunk
     if (currentChunk.trim()) {
-      chunks.push({
-        content: currentChunk.trim(),
-        metadata: {
-          startIndex,
-          endIndex: content.length,
-        },
-      });
+      const cleanedChunk = cleanChunkContent(currentChunk.trim());
+      if (cleanedChunk) {
+        chunks.push({
+          content: sanitizeForDatabase(cleanedChunk),
+          metadata: {
+            startIndex,
+            endIndex: content.length,
+          },
+        });
+      }
     }
 
     return chunks;
