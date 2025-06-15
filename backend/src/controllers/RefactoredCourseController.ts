@@ -1,11 +1,11 @@
 import { Response } from 'express';
 import { CourseService } from '../services/courseService';
-import { 
-  BaseController, 
-  AuthenticatedRequest, 
-  asyncHandler, 
+import {
+  BaseController,
+  AuthenticatedRequest,
+  asyncHandler,
   CrudHelpers,
-  PaginationResult
+  PaginationResult,
 } from '../utils/controllerHelpers';
 import type { Course, CreateCourseInput, UpdateCourseInput, CourseFilters } from '../types/course';
 
@@ -34,13 +34,16 @@ export class RefactoredCourseController extends BaseController {
   // Use the CRUD helper for standard operations
   getCourses = CrudHelpers.createGetListHandler<Course, CourseFilters>(
     {
-      getList: async (filters: CourseFilters, userId: string): Promise<PaginationResult<Course>> => {
+      getList: async (
+        filters: CourseFilters,
+        userId: string
+      ): Promise<PaginationResult<Course>> => {
         const enhancedFilters = {
           ...filters,
           userIdOrPublic: userId, // Include user's courses and public courses
         };
         return this.courseService.getCourses(enhancedFilters);
-      }
+      },
     },
     (query, userId) => ({
       ...query,
@@ -50,17 +53,18 @@ export class RefactoredCourseController extends BaseController {
 
   getCourse = CrudHelpers.createGetByIdHandler<Course>(
     {
-      getById: (courseId: string, userId: string) => this.courseService.getCourse(courseId, userId)
+      getById: (courseId: string, userId: string) => this.courseService.getCourse(courseId, userId),
     },
     'Course'
   );
 
   createCourse = CrudHelpers.createCreateHandler<Course, CreateCourseInput>(
     {
-      create: (data: CreateCourseInput, userId: string) => this.courseService.createCourse({
-        ...data,
-        userId,
-      })
+      create: (data: CreateCourseInput, userId: string) =>
+        this.courseService.createCourse({
+          ...data,
+          userId,
+        }),
     },
     (body, userId) => ({ ...body, userId }),
     'Course'
@@ -71,10 +75,7 @@ export class RefactoredCourseController extends BaseController {
     'Course'
   );
 
-  deleteCourse = CrudHelpers.createDeleteHandler(
-    this.courseService,
-    'Course'
-  );
+  deleteCourse = CrudHelpers.createDeleteHandler(this.courseService, 'Course');
 
   // Custom actions using the base controller utilities
   archiveCourse = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {

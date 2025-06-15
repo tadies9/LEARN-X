@@ -129,10 +129,10 @@ export class FileController {
       console.log('=== FileController.deleteFile ===');
       console.log('Request params:', req.params);
       console.log('Request user:', req.user);
-      
+
       const { id } = req.params;
       const userId = req.user!.id;
-      
+
       console.log('File ID to delete:', id);
       console.log('User ID making request:', userId);
 

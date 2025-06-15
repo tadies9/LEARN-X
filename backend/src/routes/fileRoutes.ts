@@ -342,19 +342,58 @@ router.get('/files/:id/working-signed-url', async (req, res) => {
   }
 });
 
-// Test endpoint
-router.post('/files/test-upload', (req, res) => {
-  console.log('Test upload endpoint hit');
-  console.log('Headers:', req.headers);
-  console.log('Body:', req.body);
-  return res.json({ message: 'Test endpoint working' });
+// Test upload endpoint (bypasses auth for testing automatic chunking)
+router.post('/files/test-upload', upload.single('file'), async (req, res) => {
+  try {
+    console.log('=== TEST UPLOAD ENDPOINT (AUTO-CHUNKING TEST) ===');
+    console.log('File:', req.file ? req.file.originalname : 'No file');
+    console.log('Body:', req.body);
+    
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file provided' });
+    }
+
+    // Use hardcoded test user and module for testing
+    const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a';
+    const moduleId = req.body.moduleId || 'd4a09fe4-bd1f-4c95-90cd-20d6ae325b84';
+    
+    const fileData = {
+      moduleId,
+      name: req.body.name || `Test-${req.file.originalname}`,
+      description: req.body.description || 'Automatic chunking test',
+      processingOptions: req.body.processingOptions ? JSON.parse(req.body.processingOptions) : undefined,
+    };
+
+    const { FileService } = await import('../services/fileService');
+    const fileService = new FileService();
+    const file = await fileService.uploadFile(req.file, fileData, userId);
+
+    console.log('✅ File uploaded successfully:', file.id);
+    
+    return res.status(201).json({
+      success: true,
+      data: file,
+      message: 'Test upload successful - automatic processing should begin shortly'
+    });
+  } catch (error) {
+    console.error('Test upload error:', error);
+    return res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Upload failed',
+      details: error instanceof Error ? error.stack : undefined
+    });
+  }
 });
 
 // File routes (all require authentication)
 router.get('/modules/:moduleId/files', authenticateUser, fileController.getModuleFiles);
 router.get('/files/:id', authenticateUser, fileController.getFile);
 router.post('/files/upload', authenticateUser, upload.single('file'), fileController.uploadFile);
-router.put('/files/:id', authenticateUser, validateRequest(updateFileSchema), fileController.updateFile);
+router.put(
+  '/files/:id',
+  authenticateUser,
+  validateRequest(updateFileSchema),
+  fileController.updateFile
+);
 router.delete('/files/:id', authenticateUser, fileController.deleteFile);
 router.put('/modules/:moduleId/files/reorder', authenticateUser, fileController.reorderFiles);
 router.get('/files/:id/signed-url', authenticateUser, fileController.getSignedUrl);

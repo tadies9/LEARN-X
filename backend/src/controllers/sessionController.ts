@@ -7,10 +7,12 @@ import { logger } from '../utils/logger';
 const sessionSchema = z.object({
   fileId: z.string().uuid(),
   duration: z.number().min(0),
-  lastPosition: z.object({
-    page: z.number().min(1),
-    scroll: z.number().min(0),
-  }).optional(),
+  lastPosition: z
+    .object({
+      page: z.number().min(1),
+      scroll: z.number().min(0),
+    })
+    .optional(),
   progress: z.object({
     completedSections: z.array(z.string()),
     viewedPages: z.array(z.number()),
@@ -23,7 +25,10 @@ const annotationSchema = z.object({
   chunkId: z.string().uuid().optional(),
   text: z.string().min(1),
   note: z.string().optional(),
-  color: z.string().regex(/^#[0-9A-F]{6}$/i).default('#FFFF00'),
+  color: z
+    .string()
+    .regex(/^#[0-9A-F]{6}$/i)
+    .default('#FFFF00'),
   position: z.object({
     page: z.number(),
     x: z.number(),
@@ -37,15 +42,19 @@ const progressSchema = z.object({
   fileId: z.string().uuid(),
   completedChunks: z.array(z.string().uuid()),
   totalTime: z.number(),
-  lastPosition: z.object({
-    page: z.number(),
-    scroll: z.number(),
-  }).optional(),
-  stats: z.object({
-    questionsAsked: z.number(),
-    flashcardsCreated: z.number(),
-    notesWritten: z.number(),
-  }).optional(),
+  lastPosition: z
+    .object({
+      page: z.number(),
+      scroll: z.number(),
+    })
+    .optional(),
+  stats: z
+    .object({
+      questionsAsked: z.number(),
+      flashcardsCreated: z.number(),
+      notesWritten: z.number(),
+    })
+    .optional(),
 });
 
 class SessionController {
@@ -63,7 +72,8 @@ class SessionController {
         .limit(1)
         .single();
 
-      if (error && error.code !== 'PGRST116') { // Not found is ok
+      if (error && error.code !== 'PGRST116') {
+        // Not found is ok
         throw error;
       }
 
