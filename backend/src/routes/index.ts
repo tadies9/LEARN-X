@@ -12,6 +12,7 @@ import sessionRoutes from './session.routes';
 import aiLearnRoutes from './aiLearnRoutes';
 import searchRoutes from './searchRoutes';
 import savedContentRoutes from './savedContentRoutes';
+import { healthRoutes } from './healthRoutes';
 
 const router = Router();
 
@@ -61,6 +62,7 @@ router.use('/learn', aiLearnRoutes); // AI learning routes - mount before fileRo
 router.use('/sessions', sessionRoutes);
 router.use('/search', searchRoutes); // Vector search routes
 router.use('/saved', savedContentRoutes); // Saved content routes
+router.use('/', healthRoutes); // Health and monitoring routes
 router.use('/', fileRoutes); // File routes are mixed between /files and /modules - mount last
 
 // API info
@@ -76,6 +78,7 @@ router.get('/', (_, res) => {
       users: '/users',
       files: '/files',
       ai: '/ai',
+      health: '/health',
     },
   });
 });

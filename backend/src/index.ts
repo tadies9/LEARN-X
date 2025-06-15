@@ -12,13 +12,11 @@ import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
 import { logger } from './utils/logger';
 import routes from './routes';
-import { startPGMQWorkers } from './workers/pgmq';
-
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Start PGMQ Workers
-startPGMQWorkers();
+// Note: Workers are now started separately via enhanced-pgmq-worker.ts
+// This follows the separation of concerns principle for better reliability
 
 // Middleware
 app.use(helmet());

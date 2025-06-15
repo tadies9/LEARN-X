@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { AppError } from '../utils/errors';
 import type { CourseFile, CreateFileData, UpdateFileData } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import { enqueueFileProcessing, enqueueFileCleanup } from '../config/pgmqQueue';
+import { queueOrchestrator } from './queue/QueueOrchestrator';
 import { transformCourseFile, transformCourseFiles } from '../utils/transformers';
 import { logger } from '../utils/logger';
 
@@ -222,10 +222,20 @@ export class FileService {
       throw new AppError('Failed to create file record: ' + createError.message, 500);
     }
 
-    // Queue file for processing using PGMQ
+    // Queue file for processing using Enhanced PGMQ
     try {
-      await enqueueFileProcessing(newFile.id, userId, data.processingOptions);
-      console.log('✅ File queued for processing:', newFile.id);
+      const msgId = await queueOrchestrator.enqueueFileProcessing(
+        newFile.id, 
+        userId, 
+        data.processingOptions
+      );
+      console.log('✅ File queued for processing:', newFile.id, 'Message ID:', msgId);
+      logger.info('File processing enqueued', { 
+        fileId: newFile.id, 
+        msgId, 
+        fileName: file.originalname,
+        options: data.processingOptions 
+      });
     } catch (queueError) {
       console.error('❌ Failed to queue file for processing:', queueError);
       // Don't fail the upload, but log the error
@@ -307,8 +317,8 @@ export class FileService {
       throw new AppError('Failed to delete file', 500);
     }
 
-    // Queue cleanup job using PGMQ
-    await enqueueFileCleanup(fileId);
+    // TODO: Implement cleanup job in enhanced PGMQ system
+    // await queueOrchestrator.enqueueCleanup(fileId, 'cleanup_file', { fileId });
   }
 
   async reorderFiles(moduleId: string, fileIds: string[], userId: string): Promise<CourseFile[]> {
