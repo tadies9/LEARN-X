@@ -1,7 +1,7 @@
 // Transform snake_case database fields to camelCase for frontend
 export function transformCourseFile(file: any): any {
   if (!file) return null;
-  
+
   return {
     id: file.id,
     courseId: file.course_id,

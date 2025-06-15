@@ -5,11 +5,9 @@ import { ModuleService } from '../services/moduleService';
 import { FileService } from '../services/fileService';
 
 // Generic permission middleware factory
-export function createOwnershipMiddleware<T extends { checkOwnership: (id: string, userId: string) => Promise<boolean> }>(
-  service: T,
-  paramName = 'id',
-  action = 'access this resource'
-) {
+export function createOwnershipMiddleware<
+  T extends { checkOwnership: (id: string, userId: string) => Promise<boolean> },
+>(service: T, paramName = 'id', action = 'access this resource') {
   return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
       const userId = req.user?.id;
@@ -59,7 +57,11 @@ export class PermissionMiddleware {
     'modify this course'
   );
 
-  static requireCourseAccess = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  static requireCourseAccess = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -103,7 +105,11 @@ export class PermissionMiddleware {
     'modify this module'
   );
 
-  static requireModuleAccess = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  static requireModuleAccess = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -147,7 +153,11 @@ export class PermissionMiddleware {
     'modify this file'
   );
 
-  static requireFileAccess = async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  static requireFileAccess = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -188,7 +198,7 @@ export class PermissionMiddleware {
   static requireRole(allowedRoles: string[]) {
     return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
       const userRole = req.user?.role;
-      
+
       if (!userRole || !allowedRoles.includes(userRole)) {
         return res.status(403).json({
           success: false,

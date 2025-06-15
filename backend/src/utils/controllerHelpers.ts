@@ -38,18 +38,13 @@ export abstract class BaseController {
     return req.user.id;
   }
 
-  protected sendSuccess<T>(
-    res: Response,
-    data?: T,
-    message?: string,
-    statusCode = 200
-  ): void {
+  protected sendSuccess<T>(res: Response, data?: T, message?: string, statusCode = 200): void {
     const response: ApiResponse<T> = {
       success: true,
       ...(data !== undefined && { data }),
       ...(message && { message }),
     };
-    
+
     res.status(statusCode).json(response);
   }
 
@@ -69,15 +64,11 @@ export abstract class BaseController {
         totalPages: Math.ceil(result.total / result.limit),
       },
     };
-    
+
     res.json(response);
   }
 
-  protected sendError(
-    res: Response,
-    message: string,
-    statusCode = 500
-  ): void {
+  protected sendError(res: Response, message: string, statusCode = 500): void {
     res.status(statusCode).json({
       success: false,
       message,
@@ -110,14 +101,14 @@ export function asyncHandler(
       return await fn(req, res);
     } catch (error) {
       logger.error('Controller error:', error);
-      
+
       if (error instanceof AppError) {
         return res.status(error.statusCode).json({
           success: false,
           message: error.message,
         });
       }
-      
+
       return res.status(500).json({
         success: false,
         message: 'Internal server error',
@@ -184,10 +175,10 @@ export class CrudHelpers {
   ) {
     return asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
       const userId = req.user!.id;
-      const filters = filterTransform ? filterTransform(req.query, userId) : req.query as F;
-      
+      const filters = filterTransform ? filterTransform(req.query, userId) : (req.query as F);
+
       const result = await service.getList(filters, userId);
-      
+
       const controller = new (class extends BaseController {})();
       controller.sendPaginatedSuccess(res, result);
     });
@@ -202,14 +193,14 @@ export class CrudHelpers {
     return asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
       const userId = req.user!.id;
       const id = req.params.id;
-      
+
       const resource = await service.getById(id, userId);
-      
+
       const controller = new (class extends BaseController {})();
       if (!resource) {
         return controller.sendNotFound(res, resourceName);
       }
-      
+
       controller.sendSuccess(res, resource);
     });
   }
@@ -223,10 +214,10 @@ export class CrudHelpers {
   ) {
     return asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
       const userId = req.user!.id;
-      const data = dataTransform ? dataTransform(req.body, userId) : req.body as C;
-      
+      const data = dataTransform ? dataTransform(req.body, userId) : (req.body as C);
+
       const resource = await service.create(data, userId);
-      
+
       const controller = new (class extends BaseController {})();
       controller.sendSuccess(res, resource, `${resourceName} created successfully`, 201);
     });
@@ -242,15 +233,15 @@ export class CrudHelpers {
     return asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
       const userId = req.user!.id;
       const id = req.params.id;
-      
+
       const controller = new (class extends BaseController {})();
-      
+
       // Check ownership
       const hasOwnership = await service.checkOwnership(id, userId);
       if (!hasOwnership) {
         return controller.sendForbidden(res, `update this ${resourceName.toLowerCase()}`);
       }
-      
+
       const resource = await service.update(id, req.body, userId);
       controller.sendSuccess(res, resource, `${resourceName} updated successfully`);
     });
@@ -266,15 +257,15 @@ export class CrudHelpers {
     return asyncHandler(async (req: AuthenticatedRequest, res: Response) => {
       const userId = req.user!.id;
       const id = req.params.id;
-      
+
       const controller = new (class extends BaseController {})();
-      
+
       // Check ownership
       const hasOwnership = await service.checkOwnership(id, userId);
       if (!hasOwnership) {
         return controller.sendForbidden(res, `delete this ${resourceName.toLowerCase()}`);
       }
-      
+
       await service.delete(id, userId);
       controller.sendSuccess(res, undefined, `${resourceName} deleted successfully`);
     });
@@ -284,27 +275,27 @@ export class CrudHelpers {
 // Validation helpers
 export function validateRequired(data: Record<string, any>, fields: string[]): string[] {
   const missing: string[] = [];
-  
+
   for (const field of fields) {
     if (data[field] === undefined || data[field] === null || data[field] === '') {
       missing.push(field);
     }
   }
-  
+
   return missing;
 }
 
 export function validateRequestBody(requiredFields: string[]) {
   return (req: AuthenticatedRequest, res: Response, next: Function) => {
     const missing = validateRequired(req.body, requiredFields);
-    
+
     if (missing.length > 0) {
       return res.status(400).json({
         success: false,
         message: `Missing required fields: ${missing.join(', ')}`,
       });
     }
-    
+
     next();
   };
 }

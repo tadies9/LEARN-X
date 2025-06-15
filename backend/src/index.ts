@@ -138,12 +138,8 @@ if (process.env.NODE_ENV === 'development') {
       const { HybridSearchService } = await import('./services/search/HybridSearchService');
       const searchService = new HybridSearchService();
       const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a'; // Hardcoded test user
-      
-      const { 
-        query, 
-        filters = {},
-        options = {},
-      } = req.body;
+
+      const { query, filters = {}, options = {} } = req.body;
 
       if (!query || typeof query !== 'string' || query.trim().length === 0) {
         return res.status(400).json({
@@ -179,18 +175,11 @@ if (process.env.NODE_ENV === 'development') {
 
       const [courses, fileTypes, contentTypes] = await Promise.all([
         // Get user's courses
-        supabase
-          .from('courses')
-          .select('id, title')
-          .eq('user_id', userId)
-          .order('title'),
-        
+        supabase.from('courses').select('id, title').eq('user_id', userId).order('title'),
+
         // Get distinct file types
-        supabase
-          .from('course_files')
-          .select('mime_type')
-          .eq('courses.user_id', userId),
-        
+        supabase.from('course_files').select('mime_type').eq('courses.user_id', userId),
+
         // Get available content types
         Promise.resolve({
           data: [
