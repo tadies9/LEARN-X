@@ -138,11 +138,8 @@ export class AIController {
         throw new AppError('Daily AI usage limit exceeded', 429);
       }
 
-      // Get user persona
+      // Get user persona (optional)
       const persona = await personalizationEngine.getUserPersona(userId);
-      if (!persona) {
-        throw new AppError('User persona not found', 400);
-      }
 
       // Get all file chunks with semantic understanding
       const searchResponse = await searchService.search('', userId, {
@@ -199,7 +196,16 @@ export class AIController {
 
       if (chunkIds && chunkIds.length > 0) {
         // Get specific chunks for targeted flashcards
-        const chunks = await this.getChunksByIds(chunkIds);
+        const { data: chunks, error } = await supabase
+          .from('file_chunks')
+          .select('*')
+          .in('id', chunkIds)
+          .order('chunk_index');
+          
+        if (error || !chunks || chunks.length === 0) {
+          throw new AppError('Failed to fetch specified chunks', 404);
+        }
+        
         content = chunks.map(c => c.content).join('\n\n');
       } else {
         // Get important chunks for flashcard generation

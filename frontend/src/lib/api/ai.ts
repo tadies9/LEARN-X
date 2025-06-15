@@ -89,7 +89,7 @@ export class AIApiService {
     const baseUrl = API_CLIENT.defaults.baseURL;
     const fullUrl = `${baseUrl}/learn/explain/stream`;
     
-    console.log('[AIApiService] Streaming to URL:', fullUrl);
+    // Streaming to endpoint
     
     const response = await fetch(fullUrl, {
       method: 'POST',

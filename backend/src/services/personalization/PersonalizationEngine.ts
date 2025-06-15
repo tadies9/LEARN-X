@@ -13,22 +13,59 @@ export interface PersonalizationParams {
 export class PersonalizationEngine {
   async getUserPersona(userId: string): Promise<UserPersona | null> {
     try {
-      const { data, error } = await supabase
+      // First try user_personas table
+      const { data: personaData, error: personaError } = await supabase
         .from('user_personas')
         .select('*')
         .eq('user_id', userId)
         .single();
 
-      if (error) {
-        logger.error('Failed to fetch user persona:', error);
-        return null;
+      if (!personaError && personaData) {
+        return this.mapToUserPersona(personaData);
       }
 
-      return this.mapToUserPersona(data);
+      // Fallback to profiles table with persona field
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (!profileError && profile?.persona) {
+        // Map the profile persona to UserPersona format
+        return this.mapProfilePersonaToUserPersona(userId, profile.persona);
+      }
+
+      // No persona found, return null (not an error)
+      logger.info(`No persona found for user ${userId}`);
+      return null;
     } catch (error) {
       logger.error('Error getting user persona:', error);
       return null;
     }
+  }
+
+  private mapProfilePersonaToUserPersona(userId: string, persona: any): UserPersona {
+    // Map profile persona format to UserPersona
+    return {
+      id: `profile-${userId}`,
+      userId: userId,
+      currentRole: persona.professionalBackground || 'Student',
+      industry: persona.field || 'General',
+      experienceYears: 0, // Not available in profile persona
+      careerGoals: persona.goals || [],
+      technicalLevel: persona.experienceLevel || 'beginner',
+      primaryInterests: persona.interests || [],
+      secondaryInterests: [],
+      hobbies: persona.hobbies || [],
+      learningStyle: persona.learningStyle || 'visual',
+      learningGoals: persona.goals || [],
+      preferredContentTypes: [],
+      dailyLearningTime: 30,
+      preferredSessionLength: 15,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
   }
 
   private mapToUserPersona(data: any): UserPersona {

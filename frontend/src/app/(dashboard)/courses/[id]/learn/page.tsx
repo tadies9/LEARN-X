@@ -84,23 +84,20 @@ export default function LearnPage({ params }: { params: { id: string } }) {
 
   // Initialize outline generation when component mounts
   useEffect(() => {
-    console.log('[LearnPage] useEffect triggered:', { 
-      fileId, 
-      fileName,
-      hasSession: !!session, 
-      hasToken: !!session?.access_token,
-      searchParams: Object.fromEntries(searchParams.entries())
-    });
+    // Log only in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[LearnPage] Initializing with fileId:', fileId);
+    }
     
     if (!fileId) {
-      console.log('[LearnPage] Missing fileId parameter');
+      // Missing fileId is expected on first load
       setError('File ID is required. Please select a file to personalize.');
       setIsLoadingOutline(false);
       return;
     }
 
     if (!session?.access_token) {
-      console.log('[LearnPage] Missing session token, waiting for authentication...');
+      // Waiting for authentication
       return; // Don't set loading to false, wait for session
     }
 
@@ -122,12 +119,12 @@ export default function LearnPage({ params }: { params: { id: string } }) {
       setIsLoadingOutline(true);
       setError(null);
 
-      console.log('[LearnPage] Starting outline generation for file:', fileId);
+      // Starting outline generation
 
       // Use the new AI API to generate outline
       const response = await AIApiService.generateOutline(fileId!);
       
-      console.log('[LearnPage] Outline response received:', response);
+      // Outline response received
 
       if (!response || !response.sections || response.sections.length === 0) {
         console.warn('[LearnPage] No sections in outline response');
@@ -156,7 +153,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
         progress: 0
       }));
 
-      console.log('[LearnPage] Generated topics:', topics);
+      // Generated topics
       setOutline(topics);
 
       // Auto-select first topic and intro subtopic
@@ -164,7 +161,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
         setSelectedTopic(topics[0].id);
         setExpandedTopics(new Set([topics[0].id]));
         setSelectedSubtopic(topics[0].subtopics[0].id);
-        console.log('[LearnPage] Auto-selected first topic:', topics[0].id);
+        // Auto-selected first topic
       }
 
       setIsLoadingOutline(false);
@@ -216,7 +213,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
           const reader = response.body.getReader();
           const decoder = new TextDecoder();
 
-          console.log('[LearnPage] Explanation stream opened');
+          // Stream opened
 
           while (true) {
             if (abortController.signal.aborted) {

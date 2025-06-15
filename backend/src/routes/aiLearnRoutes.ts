@@ -3,6 +3,7 @@ import { authenticateUser } from '../middleware/auth';
 import { authenticateSSE } from '../middleware/sseAuth';
 import { supabase } from '../config/supabase';
 import { OpenAI } from 'openai';
+import { logger } from '../utils/logger';
 
 const router = Router();
 const openai = new OpenAI({
@@ -40,7 +41,7 @@ router.get('/generate-outline', authenticateSSE, async (req: Request, res: Respo
   const { fileId } = req.query;
   const userId = (req as any).user.id;
 
-  console.log('[AI Learn] Generate outline request:', { fileId, userId });
+  logger.info('[AI Learn] Generate outline request:', { fileId, userId });
 
   if (!fileId) {
     res.status(400).json({ error: 'File ID is required' });
@@ -71,7 +72,7 @@ router.get('/generate-outline', authenticateSSE, async (req: Request, res: Respo
       return;
     }
 
-    console.log('[AI Learn] File found:', { 
+    logger.info('[AI Learn] File found:', { 
       id: file.id, 
       filename: file.filename,
       chunksCount: file.chunks?.length || 0 
@@ -112,7 +113,7 @@ Return a JSON object with a "topics" array containing objects with this structur
   }]
 }`;
 
-    console.log('[AI Learn] Generating outline with GPT-4o...');
+    logger.info('[AI Learn] Generating outline with GPT-4o...');
     
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -122,7 +123,7 @@ Return a JSON object with a "topics" array containing objects with this structur
     });
 
     const responseContent = completion.choices[0].message.content || '{}';
-    console.log('[AI Learn] GPT response received, length:', responseContent.length);
+    logger.info('[AI Learn] GPT response received, length:', responseContent.length);
     
     const outlineData = JSON.parse(responseContent);
     const topics = Array.isArray(outlineData) ? outlineData : (outlineData.topics || []);
@@ -134,7 +135,7 @@ Return a JSON object with a "topics" array containing objects with this structur
       return;
     }
 
-    console.log('[AI Learn] Generated topics:', topics.length);
+    logger.info('[AI Learn] Generated topics:', topics.length);
 
     // Stream topics one by one
     for (let i = 0; i < topics.length; i++) {
@@ -171,7 +172,7 @@ router.post('/explain/stream', authenticateUser, async (req: Request, res: Respo
   const { fileId, topicId, subtopic, mode } = req.body;
   const userId = (req as any).user.id;
 
-  console.log('[AI Learn] Explain stream request:', { fileId, topicId, subtopic, mode, userId });
+  logger.info('[AI Learn] Explain stream request:', { fileId, topicId, subtopic, mode, userId });
 
   if (!fileId || !topicId) {
     res.status(400).json({ error: 'Missing required parameters: fileId and topicId are required' });
@@ -207,9 +208,9 @@ router.post('/explain/stream', authenticateUser, async (req: Request, res: Respo
 
     const persona = profile?.persona as any;
     
-    console.log('[AI Learn] User profile:', { userId, hasProfile: !!profile, hasPersona: !!persona });
+    logger.info('[AI Learn] User profile:', { userId, hasProfile: !!profile, hasPersona: !!persona });
     if (persona) {
-      console.log('[AI Learn] Persona details:', {
+      logger.info('[AI Learn] Persona details:', {
         interests: persona.interests,
         learningStyle: persona.learningStyle,
         professionalBackground: persona.professionalBackground
@@ -309,7 +310,7 @@ Keep it conversational and encouraging.`;
         userPrompt = `Explain "${topicId}" - ${subtopic} based on the document content.`;
     }
 
-    console.log(`[AI Learn] Streaming ${mode} content with GPT-4o...`);
+    logger.info(`[AI Learn] Streaming ${mode} content with GPT-4o...`);
 
     // Stream response from GPT-4o
     const stream = await openai.chat.completions.create({
@@ -361,7 +362,7 @@ router.post('/feedback', authenticateUser, async (req: Request, res: Response) =
 
     if (error) {
       // If table doesn't exist, just log it
-      console.log('[AI Learn] Learning Feedback:', {
+      logger.info('[AI Learn] Learning Feedback:', {
         userId,
         contentId,
         reaction,
