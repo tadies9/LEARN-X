@@ -205,6 +205,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
             fileId: fileId || undefined,
             topicId: selectedTopic,
             subtopic: selectedSubtopic,
+            mode: activeMode,
             token: session.access_token
           });
 

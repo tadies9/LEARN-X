@@ -82,6 +82,7 @@ export class AIApiService {
     fileId?: string;
     topicId: string;
     subtopic?: string;
+    mode?: string;
     token: string;
   }): Promise<Response> {
     // Use the same base URL as API_CLIENT
@@ -103,6 +104,7 @@ export class AIApiService {
         fileId: params.fileId,
         topicId: params.topicId,
         subtopic: params.subtopic,
+        mode: params.mode || 'explain',
       }),
     });
 
