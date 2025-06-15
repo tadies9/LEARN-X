@@ -48,7 +48,7 @@ export interface HierarchyNode {
   children: HierarchyNode[];
 }
 
-export type ContentType = 
+export type ContentType =
   | 'definition'
   | 'explanation'
   | 'example'
@@ -97,16 +97,8 @@ export class DocumentAnalyzer {
       /\\begin\{align\}[\s\S]+?\\end\{align\}/,
       /\\\[[\s\S]+?\\\]/,
     ],
-    code: [
-      /```[\s\S]+?```/,
-      /~~~[\s\S]+?~~~/,
-      /^\s{4,}.+$/m,
-    ],
-    list: [
-      /^[\s]*[-*+]\s+.+$/m,
-      /^[\s]*\d+\.\s+.+$/m,
-      /^[\s]*[a-z]\)\s+.+$/im,
-    ],
+    code: [/```[\s\S]+?```/, /~~~[\s\S]+?~~~/, /^\s{4,}.+$/m],
+    list: [/^[\s]*[-*+]\s+.+$/m, /^[\s]*\d+\.\s+.+$/m, /^[\s]*[a-z]\)\s+.+$/im],
     question: [
       /^(?:\d+\.\s*)?(?:Q:|Question:?)\s*(.+\?)/im,
       /^(?:\d+\.\s*)?.+\?$/m,
@@ -119,9 +111,9 @@ export class DocumentAnalyzer {
   };
 
   analyzeStructure(content: string, fileName?: string): DocumentStructure {
-    logger.info('[DocumentAnalyzer] Analyzing document structure', { 
+    logger.info('[DocumentAnalyzer] Analyzing document structure', {
       contentLength: content.length,
-      fileName 
+      fileName,
     });
 
     const sections = this.extractSections(content);
@@ -130,7 +122,7 @@ export class DocumentAnalyzer {
     const hierarchy = this.buildHierarchy(sections);
 
     // Classify content type for each section
-    sections.forEach(section => {
+    sections.forEach((section) => {
       section.contentType = this.classifyContent(section.content);
       section.keywords = this.extractKeywords(section.content);
     });
@@ -307,17 +299,11 @@ export class DocumentAnalyzer {
         /hypothesis/i,
         /methodology/i,
       ],
-      professional: [
-        /professional/i,
-        /certification/i,
-        /compliance/i,
-        /regulation/i,
-        /standard/i,
-      ],
+      professional: [/professional/i, /certification/i, /compliance/i, /regulation/i, /standard/i],
     };
 
     for (const [level, patterns] of Object.entries(indicators)) {
-      if (patterns.some(pattern => pattern.test(content))) {
+      if (patterns.some((pattern) => pattern.test(content))) {
         return level as DocumentMetadata['academicLevel'];
       }
     }
@@ -397,9 +383,10 @@ export class DocumentAnalyzer {
     }
 
     // Convert to percentages
-    Object.keys(distribution).forEach(key => {
-      distribution[key as keyof ContentTypeDistribution] = 
-        Math.round((distribution[key as keyof ContentTypeDistribution] / totalSentences) * 100);
+    Object.keys(distribution).forEach((key) => {
+      distribution[key as keyof ContentTypeDistribution] = Math.round(
+        (distribution[key as keyof ContentTypeDistribution] / totalSentences) * 100
+      );
     });
 
     return distribution;
@@ -447,29 +434,54 @@ export class DocumentAnalyzer {
   }
 
   private hasPattern(text: string, patterns: RegExp[]): boolean {
-    return patterns.some(pattern => pattern.test(text));
+    return patterns.some((pattern) => pattern.test(text));
   }
 
   private extractKeywords(text: string): string[] {
     // Simple keyword extraction - can be enhanced with NLP
-    const words = text.toLowerCase()
+    const words = text
+      .toLowerCase()
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
-      .filter(word => word.length > 4);
+      .filter((word) => word.length > 4);
 
     const stopWords = new Set([
-      'about', 'above', 'after', 'again', 'against', 'being',
-      'below', 'between', 'through', 'during', 'before', 'after',
-      'above', 'below', 'these', 'those', 'there', 'where', 'which',
-      'while', 'within', 'without', 'would', 'should', 'could',
+      'about',
+      'above',
+      'after',
+      'again',
+      'against',
+      'being',
+      'below',
+      'between',
+      'through',
+      'during',
+      'before',
+      'after',
+      'above',
+      'below',
+      'these',
+      'those',
+      'there',
+      'where',
+      'which',
+      'while',
+      'within',
+      'without',
+      'would',
+      'should',
+      'could',
     ]);
 
     const keywords = words
-      .filter(word => !stopWords.has(word))
-      .reduce((acc, word) => {
-        acc[word] = (acc[word] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
+      .filter((word) => !stopWords.has(word))
+      .reduce(
+        (acc, word) => {
+          acc[word] = (acc[word] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      );
 
     // Return top 5 keywords
     return Object.entries(keywords)

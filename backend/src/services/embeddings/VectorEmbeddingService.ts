@@ -135,10 +135,11 @@ export class VectorEmbeddingService {
       }));
 
       // Store embeddings in the new vector table
+      // Note: file_embeddings table doesn't have file_id column
       const { error: insertError } = await supabase
         .from('file_embeddings')
         .upsert(embeddingRecords, {
-          onConflict: 'chunk_id,model_version',
+          onConflict: 'chunk_id',  // Changed from 'chunk_id,model_version' based on unique constraint
         });
 
       if (insertError) {
@@ -200,14 +201,16 @@ export class VectorEmbeddingService {
     try {
       const { data, error } = await supabase
         .from('file_embeddings')
-        .select(`
+        .select(
+          `
           chunk_id,
           embedding,
           model_version,
           file_chunks!inner(
             file_id
           )
-        `)
+        `
+        )
         .eq('file_chunks.file_id', fileId);
 
       if (error) {
@@ -216,8 +219,8 @@ export class VectorEmbeddingService {
 
       return data.map((record) => ({
         chunkId: record.chunk_id,
-        embedding: Array.isArray(record.embedding) 
-          ? record.embedding 
+        embedding: Array.isArray(record.embedding)
+          ? record.embedding
           : JSON.parse(record.embedding),
         model: record.model_version,
       }));
@@ -240,13 +243,10 @@ export class VectorEmbeddingService {
       }
 
       if (chunks && chunks.length > 0) {
-        const chunkIds = chunks.map(c => c.id);
-        
+        const chunkIds = chunks.map((c) => c.id);
+
         // Delete embeddings for these chunks
-        const { error } = await supabase
-          .from('file_embeddings')
-          .delete()
-          .in('chunk_id', chunkIds);
+        const { error } = await supabase.from('file_embeddings').delete().in('chunk_id', chunkIds);
 
         if (error) {
           throw error;
@@ -301,13 +301,15 @@ export class VectorEmbeddingService {
       fileIdFilter?: string;
       threshold?: number;
     } = {}
-  ): Promise<Array<{
-    chunkId: string;
-    content: string;
-    metadata: any;
-    similarity: number;
-    fileId: string;
-  }>> {
+  ): Promise<
+    Array<{
+      chunkId: string;
+      content: string;
+      metadata: any;
+      similarity: number;
+      fileId: string;
+    }>
+  > {
     try {
       const { matchCount = 10, fileIdFilter, threshold = 0.7 } = options;
 

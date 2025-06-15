@@ -51,7 +51,11 @@ export class EnhancedFileProcessingService {
       const pdfData = await pdf(buffer);
       logger.info(`[FileProcessing] Extracted ${pdfData.text.length} characters from PDF`);
 
-      return pdfData.text;
+      // Sanitize Unicode characters to prevent database insertion errors
+      const sanitizedText = this.sanitizeUnicodeText(pdfData.text);
+      logger.info(`[FileProcessing] Text sanitized, final length: ${sanitizedText.length} characters`);
+
+      return sanitizedText;
     } catch (error) {
       logger.error('[FileProcessing] Error extracting PDF text:', error);
       throw new Error('Failed to extract PDF text');
@@ -80,9 +84,15 @@ export class EnhancedFileProcessingService {
 
       // Extract text from Word document
       const result = await mammoth.extractRawText({ buffer });
-      logger.info(`[FileProcessing] Extracted ${result.value.length} characters from Word document`);
+      logger.info(
+        `[FileProcessing] Extracted ${result.value.length} characters from Word document`
+      );
 
-      return result.value;
+      // Sanitize Unicode characters to prevent database insertion errors
+      const sanitizedText = this.sanitizeUnicodeText(result.value);
+      logger.info(`[FileProcessing] Text sanitized, final length: ${sanitizedText.length} characters`);
+
+      return sanitizedText;
     } catch (error) {
       logger.error('[FileProcessing] Error extracting Word text:', error);
       throw new Error('Failed to extract Word document text');
@@ -101,10 +111,77 @@ export class EnhancedFileProcessingService {
       // Convert blob to text
       const text = await data.text();
 
-      return text;
+      // Sanitize Unicode characters to prevent database insertion errors
+      const sanitizedText = this.sanitizeUnicodeText(text);
+
+      return sanitizedText;
     } catch (error) {
       logger.error('[FileProcessing] Error extracting plain text:', error);
       throw new Error('Failed to extract plain text');
+    }
+  }
+
+  /**
+   * Public method to sanitize chunk content before database insertion
+   */
+  public sanitizeChunkContent(text: string): string {
+    return this.sanitizeUnicodeText(text);
+  }
+
+  /**
+   * Sanitizes text to remove problematic Unicode characters that cause database insertion errors
+   */
+  private sanitizeUnicodeText(text: string): string {
+    try {
+      // Start with basic null byte removal
+      let sanitized = text.replace(/\0/g, '');
+      
+      // ULTRA AGGRESSIVE: Remove ALL backslashes that aren't standard escapes
+      // This will catch any backslash-u sequences that PostgreSQL might interpret
+      sanitized = sanitized.replace(/\\/g, (match, offset, string) => {
+        const nextChar = string[offset + 1];
+        // Only keep standard JSON/SQL escape sequences
+        if (['n', 'r', 't', 'b', 'f', 'a', 'v', '"', "'", '\\'].includes(nextChar)) {
+          return match;
+        }
+        // Remove any other backslash sequences entirely
+        return '';
+      });
+      
+      // Remove other problematic control characters (using character class ranges)
+      sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
+      
+      // Replace multiple whitespace with single space
+      sanitized = sanitized.replace(/\s+/g, ' ');
+      
+      // Normalize Unicode characters to canonical form
+      sanitized = sanitized.normalize('NFC');
+      
+      // Remove any remaining null bytes or non-printable characters
+      sanitized = sanitized.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
+      
+      // Final safety check - replace any remaining problematic sequences
+      sanitized = sanitized.replace(/[\uFFFD]/g, ''); // Remove replacement characters
+      
+      // Extra safety: JSON stringify and parse to ensure no problematic sequences
+      try {
+        const jsonTest = JSON.stringify(sanitized);
+        sanitized = JSON.parse(jsonTest);
+      } catch (jsonError) {
+        logger.warn('[FileProcessing] JSON test failed, using fallback sanitization');
+        sanitized = sanitized.replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, ' ');
+      }
+      
+      logger.info(`[FileProcessing] Text sanitization completed. Original length: ${text.length}, Sanitized length: ${sanitized.length}`);
+      
+      return sanitized.trim();
+    } catch (error) {
+      logger.error('[FileProcessing] Error during text sanitization:', error);
+      // Return a heavily sanitized version as fallback
+      return text
+        .replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, ' ') // Keep only printable ASCII and Unicode
+        .replace(/\s+/g, ' ')
+        .trim();
     }
   }
 
@@ -113,7 +190,7 @@ export class EnhancedFileProcessingService {
     const structure = this.documentAnalyzer.analyzeStructure(content, fileName);
 
     const metadata: FileMetadata = {
-      wordCount: content.split(/\s+/).filter(word => word.length > 0).length,
+      wordCount: content.split(/\s+/).filter((word) => word.length > 0).length,
       pageCount: structure.sections.length > 0 ? Math.ceil(structure.sections.length / 3) : 1,
       language: structure.metadata.language,
       extractedTitle: structure.title,
@@ -130,16 +207,12 @@ export class EnhancedFileProcessingService {
     return metadata;
   }
 
-  async chunkContent(
-    content: string, 
-    fileName: string,
-    options?: ChunkOptions
-  ): Promise<any[]> {
+  async chunkContent(content: string, fileName: string, options?: ChunkOptions): Promise<any[]> {
     logger.info('[FileProcessing] Starting semantic chunking');
 
     // Analyze document structure
     const structure = this.documentAnalyzer.analyzeStructure(content, fileName);
-    
+
     logger.info('[FileProcessing] Document analysis complete', {
       sections: structure.sections.length,
       documentType: structure.metadata.documentType,
@@ -247,7 +320,7 @@ export class EnhancedFileProcessingService {
     // Use simple chunking for backward compatibility
     const chunks: any[] = [];
     const sentences = content.match(/[^.!?]+[.!?]+/g) || [];
-    
+
     let currentChunk = '';
     let startIndex = 0;
 

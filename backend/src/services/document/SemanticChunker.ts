@@ -63,11 +63,7 @@ export class SemanticChunker {
     other: { min: 200, max: 1000 },
   };
 
-  chunk(
-    content: string,
-    structure: DocumentStructure,
-    options: ChunkOptions = {}
-  ): Chunk[] {
+  chunk(content: string, structure: DocumentStructure, options: ChunkOptions = {}): Chunk[] {
     const opts = { ...this.DEFAULT_OPTIONS, ...options };
     logger.info('[SemanticChunker] Starting semantic chunking', {
       contentLength: content.length,
@@ -108,19 +104,19 @@ export class SemanticChunker {
 
     const processSection = (section: Section, parentTitle?: string) => {
       const sectionChunks = this.chunkSection(section, options, parentTitle);
-      
-      sectionChunks.forEach(chunk => {
+
+      sectionChunks.forEach((chunk) => {
         chunk.metadata.position = globalPosition++;
         chunks.push(chunk);
       });
 
       // Process subsections
-      section.subsections.forEach(subsection => {
+      section.subsections.forEach((subsection) => {
         processSection(subsection, section.title);
       });
     };
 
-    sections.forEach(section => processSection(section));
+    sections.forEach((section) => processSection(section));
 
     return chunks;
   }
@@ -132,7 +128,7 @@ export class SemanticChunker {
   ): Chunk[] {
     const chunks: Chunk[] = [];
     const contentType = section.contentType || 'other';
-    
+
     // Get adaptive size for this content type
     const sizeConstraints = options.adaptiveSize
       ? this.ADAPTIVE_SIZES[contentType]
@@ -140,43 +136,33 @@ export class SemanticChunker {
 
     // Split section content into semantic units
     const semanticUnits = this.splitIntoSemanticUnits(section.content, contentType);
-    
+
     let currentChunk = '';
     let unitIndex = 0;
 
     for (const unit of semanticUnits) {
       const potentialChunk = currentChunk + (currentChunk ? '\n\n' : '') + unit;
-      
+
       if (potentialChunk.length > sizeConstraints.max && currentChunk) {
         // Save current chunk
-        chunks.push(this.createChunk(
-          currentChunk,
-          section,
-          contentType,
-          parentTitle,
-          unitIndex === 1,
-          false
-        ));
+        chunks.push(
+          this.createChunk(currentChunk, section, contentType, parentTitle, unitIndex === 1, false)
+        );
         currentChunk = unit;
       } else if (potentialChunk.length >= sizeConstraints.min) {
         currentChunk = potentialChunk;
       } else {
         currentChunk = potentialChunk;
       }
-      
+
       unitIndex++;
     }
 
     // Save remaining content
     if (currentChunk) {
-      chunks.push(this.createChunk(
-        currentChunk,
-        section,
-        contentType,
-        parentTitle,
-        chunks.length === 0,
-        true
-      ));
+      chunks.push(
+        this.createChunk(currentChunk, section, contentType, parentTitle, chunks.length === 0, true)
+      );
     }
 
     return chunks;
@@ -184,40 +170,40 @@ export class SemanticChunker {
 
   private splitIntoSemanticUnits(content: string, contentType: ContentType): string[] {
     const units: string[] = [];
-    
+
     switch (contentType) {
       case 'code':
         // Split by code blocks
         units.push(...this.splitCodeContent(content));
         break;
-        
+
       case 'list':
         // Split by list items
         units.push(...this.splitListContent(content));
         break;
-        
+
       case 'equation':
         // Keep equations together
         units.push(content);
         break;
-        
+
       case 'definition':
         // Split by sentences but keep definitions together
         units.push(...this.splitDefinitionContent(content));
         break;
-        
+
       default:
         // Split by paragraphs, then sentences if needed
         units.push(...this.splitByParagraphsAndSentences(content));
     }
 
-    return units.filter(unit => unit.trim().length > 0);
+    return units.filter((unit) => unit.trim().length > 0);
   }
 
   private splitCodeContent(content: string): string[] {
     const codeBlocks = content.match(/```[\s\S]*?```/g) || [];
     const nonCodeParts = content.split(/```[\s\S]*?```/);
-    
+
     const units: string[] = [];
     for (let i = 0; i < nonCodeParts.length; i++) {
       if (nonCodeParts[i].trim()) {
@@ -227,7 +213,7 @@ export class SemanticChunker {
         units.push(codeBlocks[i]);
       }
     }
-    
+
     return units;
   }
 
@@ -239,7 +225,7 @@ export class SemanticChunker {
 
     for (const line of lines) {
       const isListItem = /^[\s]*[-*+•]\s+|^[\s]*\d+[.)]\s+|^[\s]*[a-z][.)]\s+/i.test(line);
-      
+
       if (isListItem) {
         currentList.push(line);
         inList = true;
@@ -303,7 +289,7 @@ export class SemanticChunker {
         // Split long paragraphs by sentences
         const sentences = this.splitIntoSentences(paragraph);
         let currentUnit = '';
-        
+
         for (const sentence of sentences) {
           const potential = currentUnit + (currentUnit ? ' ' : '') + sentence;
           if (potential.length > 400 && currentUnit) {
@@ -313,7 +299,7 @@ export class SemanticChunker {
             currentUnit = potential;
           }
         }
-        
+
         if (currentUnit) {
           units.push(currentUnit);
         }
@@ -331,7 +317,7 @@ export class SemanticChunker {
 
     for (const sentence of sentences) {
       buffer += sentence;
-      
+
       // Check if this is likely a complete sentence
       if (this.isCompleteSentence(buffer)) {
         refined.push(buffer.trim());
@@ -363,8 +349,8 @@ export class SemanticChunker {
       /^[A-Z][^:]+:\s+/,
       /\bdefinition\b/i,
     ];
-    
-    return patterns.some(pattern => pattern.test(sentence));
+
+    return patterns.some((pattern) => pattern.test(sentence));
   }
 
   private createChunk(
@@ -376,7 +362,7 @@ export class SemanticChunker {
     isEnd: boolean
   ): Chunk {
     const id = `chunk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     return {
       id,
       content: content.trim(),
@@ -396,7 +382,10 @@ export class SemanticChunker {
     };
   }
 
-  private calculateImportance(content: string, contentType: ContentType): 'high' | 'medium' | 'low' {
+  private calculateImportance(
+    content: string,
+    contentType: ContentType
+  ): 'high' | 'medium' | 'low' {
     // High importance for definitions, summaries, and introductions
     if (['definition', 'summary', 'introduction', 'conclusion'].includes(contentType)) {
       return 'high';
@@ -409,7 +398,7 @@ export class SemanticChunker {
       /\b(?:note|remember|recall|caution|warning)\b/i,
     ];
 
-    if (highImportanceIndicators.some(pattern => pattern.test(content))) {
+    if (highImportanceIndicators.some((pattern) => pattern.test(content))) {
       return 'high';
     }
 
@@ -424,22 +413,22 @@ export class SemanticChunker {
   private extractConcepts(content: string): string[] {
     // Extract important concepts (capitalized phrases, technical terms)
     const concepts: string[] = [];
-    
+
     // Extract capitalized phrases (likely proper nouns or important concepts)
     const capitalizedPhrases = content.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g) || [];
     concepts.push(...capitalizedPhrases);
 
     // Extract quoted terms
     const quotedTerms = content.match(/["']([^"']+)["']/g) || [];
-    concepts.push(...quotedTerms.map(term => term.replace(/["']/g, '')));
+    concepts.push(...quotedTerms.map((term) => term.replace(/["']/g, '')));
 
     // Extract terms in parentheses (often abbreviations or clarifications)
     const parentheticalTerms = content.match(/\(([^)]+)\)/g) || [];
-    concepts.push(...parentheticalTerms.map(term => term.replace(/[()]/g, '')));
+    concepts.push(...parentheticalTerms.map((term) => term.replace(/[()]/g, '')));
 
     // Deduplicate and filter
     return [...new Set(concepts)]
-      .filter(concept => concept.length > 2 && concept.length < 50)
+      .filter((concept) => concept.length > 2 && concept.length < 50)
       .slice(0, 10);
   }
 
@@ -502,7 +491,7 @@ export class SemanticChunker {
   }
 
   private enhanceMetadata(chunks: Chunk[], structure: DocumentStructure): Chunk[] {
-    return chunks.map(chunk => ({
+    return chunks.map((chunk) => ({
       ...chunk,
       metadata: {
         ...chunk.metadata,
@@ -524,7 +513,7 @@ export class SemanticChunker {
 
     for (const paragraph of paragraphs) {
       const potential = currentChunk + (currentChunk ? '\n\n' : '') + paragraph;
-      
+
       if (potential.length > options.maxChunkSize && currentChunk) {
         chunks.push({
           id: `chunk-${chunkIndex++}`,

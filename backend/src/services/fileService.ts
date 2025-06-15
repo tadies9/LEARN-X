@@ -5,6 +5,7 @@ import type { CourseFile, CreateFileData, UpdateFileData } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { enqueueFileProcessing, enqueueFileCleanup } from '../config/pgmqQueue';
 import { transformCourseFile, transformCourseFiles } from '../utils/transformers';
+import { logger } from '../utils/logger';
 
 // Create a service role client specifically for storage operations
 const supabaseServiceRole = (() => {
@@ -93,7 +94,7 @@ export class FileService {
     console.log('=== getFile called ===');
     console.log('File ID:', fileId);
     console.log('User ID:', userId);
-    
+
     const { data: file, error } = await supabase
       .from('course_files')
       .select(
@@ -121,7 +122,7 @@ export class FileService {
     console.log('Course owner:', course.user_id);
     console.log('Current user:', userId);
     console.log('Access check:', course.user_id === userId);
-    
+
     if (course.user_id !== userId) {
       console.error('Access denied - user does not own course');
       throw new AppError('Access denied', 403);
@@ -222,7 +223,14 @@ export class FileService {
     }
 
     // Queue file for processing using PGMQ
-    await enqueueFileProcessing(newFile.id, userId, data.processingOptions);
+    try {
+      await enqueueFileProcessing(newFile.id, userId, data.processingOptions);
+      console.log('✅ File queued for processing:', newFile.id);
+    } catch (queueError) {
+      console.error('❌ Failed to queue file for processing:', queueError);
+      // Don't fail the upload, but log the error
+      logger.error('Failed to queue file processing', { fileId: newFile.id, error: queueError });
+    }
 
     return transformCourseFile(newFile);
   }
@@ -268,7 +276,7 @@ export class FileService {
     console.log('=== deleteFile called ===');
     console.log('File ID:', fileId);
     console.log('User ID:', userId);
-    
+
     // Get file with ownership check
     let file;
     try {
