@@ -29,24 +29,44 @@ export class SearchAccuracyService {
    */
   async analyzeQueryIntent(query: string): Promise<QueryIntent> {
     const lowerQuery = query.toLowerCase();
-    
+
     // Detect query type based on patterns
     let type: QueryIntent['type'] = 'general';
     const expectedContentTypes: string[] = [];
 
-    if (lowerQuery.includes('what is') || lowerQuery.includes('define') || lowerQuery.includes('definition')) {
+    if (
+      lowerQuery.includes('what is') ||
+      lowerQuery.includes('define') ||
+      lowerQuery.includes('definition')
+    ) {
       type = 'definition';
       expectedContentTypes.push('definition', 'key-concept');
-    } else if (lowerQuery.includes('explain') || lowerQuery.includes('how does') || lowerQuery.includes('why')) {
+    } else if (
+      lowerQuery.includes('explain') ||
+      lowerQuery.includes('how does') ||
+      lowerQuery.includes('why')
+    ) {
       type = 'explanation';
       expectedContentTypes.push('explanation', 'theory');
-    } else if (lowerQuery.includes('example') || lowerQuery.includes('instance') || lowerQuery.includes('demonstrate')) {
+    } else if (
+      lowerQuery.includes('example') ||
+      lowerQuery.includes('instance') ||
+      lowerQuery.includes('demonstrate')
+    ) {
       type = 'example';
       expectedContentTypes.push('example', 'practice');
-    } else if (lowerQuery.includes('difference') || lowerQuery.includes('compare') || lowerQuery.includes('versus')) {
+    } else if (
+      lowerQuery.includes('difference') ||
+      lowerQuery.includes('compare') ||
+      lowerQuery.includes('versus')
+    ) {
       type = 'comparison';
       expectedContentTypes.push('comparison', 'explanation');
-    } else if (lowerQuery.includes('how to') || lowerQuery.includes('steps') || lowerQuery.includes('implement')) {
+    } else if (
+      lowerQuery.includes('how to') ||
+      lowerQuery.includes('steps') ||
+      lowerQuery.includes('implement')
+    ) {
       type = 'how-to';
       expectedContentTypes.push('practice', 'example', 'steps');
     }
@@ -66,14 +86,10 @@ export class SearchAccuracyService {
   /**
    * Perform intent-aware search with improved accuracy
    */
-  async searchWithIntent(
-    query: string,
-    userId: string,
-    options: any = {}
-  ): Promise<any> {
+  async searchWithIntent(query: string, userId: string, options: any = {}): Promise<any> {
     // Analyze query intent
     const intent = await this.analyzeQueryIntent(query);
-    
+
     logger.info('[SearchAccuracy] Query intent analysis:', {
       query,
       intent,
@@ -83,11 +99,7 @@ export class SearchAccuracyService {
     const searchOptions = this.optimizeSearchForIntent(intent, options);
 
     // Perform enhanced search
-    const results = await this.enhancedSearch.semanticSearch(
-      query,
-      userId,
-      searchOptions
-    );
+    const results = await this.enhancedSearch.semanticSearch(query, userId, searchOptions);
 
     // Post-process results based on intent
     const improvedResults = await this.postProcessResults(results, intent, query);
@@ -168,35 +180,21 @@ export class SearchAccuracyService {
   /**
    * Post-process results to improve accuracy
    */
-  private async postProcessResults(
-    results: any,
-    intent: QueryIntent,
-    query: string
-  ): Promise<any> {
+  private async postProcessResults(results: any, intent: QueryIntent, query: string): Promise<any> {
     let processedResults = [...results.results];
 
     // 1. Filter by intent-specific criteria
     if (intent.expectedContentTypes.length > 0) {
-      processedResults = this.boostByContentType(
-        processedResults,
-        intent.expectedContentTypes
-      );
+      processedResults = this.boostByContentType(processedResults, intent.expectedContentTypes);
     }
 
     // 2. Concept matching boost
     if (intent.concepts.length > 0) {
-      processedResults = this.boostByConceptMatch(
-        processedResults,
-        intent.concepts
-      );
+      processedResults = this.boostByConceptMatch(processedResults, intent.concepts);
     }
 
     // 3. Re-rank based on query-specific relevance
-    processedResults = await this.rerankByRelevance(
-      processedResults,
-      query,
-      intent
-    );
+    processedResults = await this.rerankByRelevance(processedResults, query, intent);
 
     // 4. Ensure diversity for broader queries
     if (intent.type === 'general' || intent.type === 'comparison') {
@@ -213,34 +211,36 @@ export class SearchAccuracyService {
    * Boost results that match expected content types
    */
   private boostByContentType(results: any[], expectedTypes: string[]): any[] {
-    return results.map(result => {
-      if (expectedTypes.includes(result.metadata.contentType)) {
-        result.score *= 1.2;
-        result.intentMatch = true;
-      }
-      return result;
-    }).sort((a, b) => b.score - a.score);
+    return results
+      .map((result) => {
+        if (expectedTypes.includes(result.metadata.contentType)) {
+          result.score *= 1.2;
+          result.intentMatch = true;
+        }
+        return result;
+      })
+      .sort((a, b) => b.score - a.score);
   }
 
   /**
    * Boost results that contain query concepts
    */
   private boostByConceptMatch(results: any[], concepts: string[]): any[] {
-    return results.map(result => {
-      const resultConcepts = result.metadata.concepts || [];
-      const matchCount = concepts.filter(c => 
-        resultConcepts.some((rc: string) => 
-          rc.toLowerCase().includes(c.toLowerCase())
-        )
-      ).length;
+    return results
+      .map((result) => {
+        const resultConcepts = result.metadata.concepts || [];
+        const matchCount = concepts.filter((c) =>
+          resultConcepts.some((rc: string) => rc.toLowerCase().includes(c.toLowerCase()))
+        ).length;
 
-      if (matchCount > 0) {
-        result.score *= (1 + 0.1 * matchCount);
-        result.conceptMatches = matchCount;
-      }
+        if (matchCount > 0) {
+          result.score *= 1 + 0.1 * matchCount;
+          result.conceptMatches = matchCount;
+        }
 
-      return result;
-    }).sort((a, b) => b.score - a.score);
+        return result;
+      })
+      .sort((a, b) => b.score - a.score);
   }
 
   /**
@@ -266,10 +266,7 @@ export class SearchAccuracyService {
         }
 
         // Keyword density
-        const keywordDensity = this.calculateKeywordDensity(
-          result.content,
-          intent.keywords
-        );
+        const keywordDensity = this.calculateKeywordDensity(result.content, intent.keywords);
         relevance += keywordDensity * 0.3;
 
         // Structure bonus (for well-structured content)
@@ -324,19 +321,31 @@ export class SearchAccuracyService {
    */
   private extractConcepts(query: string): string[] {
     const concepts: string[] = [];
-    
+
     // Common ML/AI concepts (expand this list based on your domain)
     const knownConcepts = [
-      'machine learning', 'neural network', 'deep learning',
-      'artificial intelligence', 'algorithm', 'optimization',
-      'gradient descent', 'backpropagation', 'training',
-      'model', 'dataset', 'feature', 'classification',
-      'regression', 'clustering', 'supervised learning',
-      'unsupervised learning', 'reinforcement learning',
+      'machine learning',
+      'neural network',
+      'deep learning',
+      'artificial intelligence',
+      'algorithm',
+      'optimization',
+      'gradient descent',
+      'backpropagation',
+      'training',
+      'model',
+      'dataset',
+      'feature',
+      'classification',
+      'regression',
+      'clustering',
+      'supervised learning',
+      'unsupervised learning',
+      'reinforcement learning',
     ];
 
     const lowerQuery = query.toLowerCase();
-    knownConcepts.forEach(concept => {
+    knownConcepts.forEach((concept) => {
       if (lowerQuery.includes(concept)) {
         concepts.push(concept);
       }
@@ -359,22 +368,57 @@ export class SearchAccuracyService {
    */
   private extractEnhancedKeywords(query: string): string[] {
     const stopWords = new Set([
-      'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for',
-      'from', 'has', 'he', 'in', 'is', 'it', 'its', 'of', 'on',
-      'that', 'the', 'to', 'was', 'will', 'with', 'what', 'when',
-      'where', 'who', 'why', 'how', 'can', 'could', 'should',
-      'would', 'does', 'do', 'did', 'explain', 'show', 'tell',
+      'a',
+      'an',
+      'and',
+      'are',
+      'as',
+      'at',
+      'be',
+      'by',
+      'for',
+      'from',
+      'has',
+      'he',
+      'in',
+      'is',
+      'it',
+      'its',
+      'of',
+      'on',
+      'that',
+      'the',
+      'to',
+      'was',
+      'will',
+      'with',
+      'what',
+      'when',
+      'where',
+      'who',
+      'why',
+      'how',
+      'can',
+      'could',
+      'should',
+      'would',
+      'does',
+      'do',
+      'did',
+      'explain',
+      'show',
+      'tell',
     ]);
 
     const words = query
       .toLowerCase()
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
-      .filter(word => word.length > 2 && !stopWords.has(word));
+      .filter((word) => word.length > 2 && !stopWords.has(word));
 
     // Add stemmed versions (simplified)
     const keywords = new Set(words);
-    words.forEach(word => {
+    words.forEach((word) => {
       if (word.endsWith('ing')) {
         keywords.add(word.slice(0, -3));
       } else if (word.endsWith('ed')) {
@@ -393,10 +437,10 @@ export class SearchAccuracyService {
   private calculateTextSimilarity(text1: string, text2: string): number {
     const words1 = new Set(text1.toLowerCase().split(/\s+/));
     const words2 = new Set(text2.toLowerCase().split(/\s+/));
-    
-    const intersection = new Set([...words1].filter(x => words2.has(x)));
+
+    const intersection = new Set([...words1].filter((x) => words2.has(x)));
     const union = new Set([...words1, ...words2]);
-    
+
     return intersection.size / union.size;
   }
 
@@ -406,9 +450,9 @@ export class SearchAccuracyService {
   private calculateKeywordDensity(content: string, keywords: string[]): number {
     const lowerContent = content.toLowerCase();
     const contentWords = lowerContent.split(/\s+/).length;
-    
+
     let keywordCount = 0;
-    keywords.forEach(keyword => {
+    keywords.forEach((keyword) => {
       const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
       const matches = lowerContent.match(regex);
       if (matches) {
@@ -425,7 +469,7 @@ export class SearchAccuracyService {
   private isLikelyNounPhrase(phrase: string): boolean {
     const words = phrase.split(' ');
     if (words.length !== 2) return false;
-    
+
     // Simple heuristic: avoid phrases starting with verbs
     const verbStarts = ['is', 'are', 'was', 'were', 'have', 'has', 'had'];
     return !verbStarts.includes(words[0]);
@@ -436,10 +480,10 @@ export class SearchAccuracyService {
    */
   private calculateSearchMetrics(results: any, intent: QueryIntent): SearchMetrics {
     const topResults = results.results.slice(0, 10);
-    
+
     // Precision: How many results match the intent
-    const relevantCount = topResults.filter((r: any) => 
-      r.intentMatch || r.relevanceScore > 0.7
+    const relevantCount = topResults.filter(
+      (r: any) => r.intentMatch || r.relevanceScore > 0.7
     ).length;
     const precision = topResults.length > 0 ? relevantCount / topResults.length : 0;
 
@@ -448,14 +492,12 @@ export class SearchAccuracyService {
     const recall = relevantCount / expectedResults;
 
     // F1 Score
-    const f1Score = precision + recall > 0 
-      ? 2 * (precision * recall) / (precision + recall)
-      : 0;
+    const f1Score = precision + recall > 0 ? (2 * (precision * recall)) / (precision + recall) : 0;
 
     // Average relevance score
-    const avgRelevance = topResults.reduce((sum: number, r: any) => 
-      sum + (r.relevanceScore || r.score), 0
-    ) / Math.max(topResults.length, 1);
+    const avgRelevance =
+      topResults.reduce((sum: number, r: any) => sum + (r.relevanceScore || r.score), 0) /
+      Math.max(topResults.length, 1);
 
     // Diversity score
     const uniqueSections = new Set(topResults.map((r: any) => r.metadata.sectionTitle));
@@ -488,9 +530,7 @@ export class SearchAccuracyService {
         timestamp: new Date().toISOString(),
       };
 
-      await supabase
-        .from('search_feedback')
-        .insert(feedback);
+      await supabase.from('search_feedback').insert(feedback);
 
       logger.info('[SearchAccuracy] Feedback recorded:', {
         searchId,

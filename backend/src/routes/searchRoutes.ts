@@ -11,11 +11,7 @@ const searchService = new HybridSearchService();
 router.post('/search', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { 
-      query, 
-      filters = {},
-      options = {},
-    } = req.body;
+    const { query, filters = {}, options = {} } = req.body;
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       res.status(400).json({
@@ -118,12 +114,14 @@ router.post('/search/module/:moduleId', authenticateUser, async (req: Request, r
     // Verify user has access to the module
     const { data: module } = await supabase
       .from('modules')
-      .select(`
+      .select(
+        `
         id,
         courses!inner(
           user_id
         )
-      `)
+      `
+      )
       .eq('id', moduleId)
       .single();
 
@@ -160,11 +158,7 @@ router.post('/search/module/:moduleId', authenticateUser, async (req: Request, r
 router.post('/search/advanced', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
-    const { 
-      query,
-      filters = {},
-      options = {},
-    } = req.body;
+    const { query, filters = {}, options = {} } = req.body;
 
     if (!query || typeof query !== 'string' || query.trim().length === 0) {
       res.status(400).json({
@@ -211,9 +205,9 @@ router.post('/search/advanced', authenticateUser, async (req: Request, res: Resp
 router.delete('/search/cache', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
-    
+
     await searchService.clearCache(userId);
-    
+
     res.json({
       success: true,
       message: 'Search cache cleared',
@@ -231,22 +225,15 @@ router.delete('/search/cache', authenticateUser, async (req: Request, res: Respo
 router.get('/search/filters', authenticateUser, async (req: Request, res: Response) => {
   try {
     const userId = req.user!.id;
-    
+
     // Get available filters for the user
     const [courses, fileTypes, contentTypes] = await Promise.all([
       // Get user's courses
-      supabase
-        .from('courses')
-        .select('id, title')
-        .eq('user_id', userId)
-        .order('title'),
-      
+      supabase.from('courses').select('id, title').eq('user_id', userId).order('title'),
+
       // Get distinct file types
-      supabase
-        .from('course_files')
-        .select('mime_type')
-        .eq('courses.user_id', userId),
-      
+      supabase.from('course_files').select('mime_type').eq('courses.user_id', userId),
+
       // Get available content types
       Promise.resolve({
         data: [
@@ -287,11 +274,7 @@ if (process.env.NODE_ENV === 'development') {
   router.post('/debug/search', async (req: Request, res: Response) => {
     try {
       const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a'; // Hardcoded test user
-      const { 
-        query, 
-        filters = {},
-        options = {},
-      } = req.body;
+      const { query, filters = {}, options = {} } = req.body;
 
       if (!query || typeof query !== 'string' || query.trim().length === 0) {
         res.status(400).json({
@@ -330,18 +313,11 @@ if (process.env.NODE_ENV === 'development') {
 
       const [courses, fileTypes, contentTypes] = await Promise.all([
         // Get user's courses
-        supabase
-          .from('courses')
-          .select('id, title')
-          .eq('user_id', userId)
-          .order('title'),
-        
+        supabase.from('courses').select('id, title').eq('user_id', userId).order('title'),
+
         // Get distinct file types
-        supabase
-          .from('course_files')
-          .select('mime_type')
-          .eq('courses.user_id', userId),
-        
+        supabase.from('course_files').select('mime_type').eq('courses.user_id', userId),
+
         // Get available content types
         Promise.resolve({
           data: [

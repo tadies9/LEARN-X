@@ -1,4 +1,9 @@
-import { HybridSearchService, SearchOptions, SearchResult, SearchResponse } from './HybridSearchService';
+import {
+  HybridSearchService,
+  SearchOptions,
+  SearchResult,
+  SearchResponse,
+} from './HybridSearchService';
 import { VectorEmbeddingService } from '../embeddings/VectorEmbeddingService';
 import { supabase } from '../../config/supabase';
 
@@ -51,11 +56,7 @@ export class EnhancedSearchService extends HybridSearchService {
 
     // 1. Context-aware reranking
     if (enhancedOptions.rerank) {
-      enhancedResults = await this.semanticRerank(
-        query,
-        enhancedResults,
-        enhancedOptions
-      );
+      enhancedResults = await this.semanticRerank(query, enhancedResults, enhancedOptions);
     }
 
     // 2. Add contextual relevance scores
@@ -66,10 +67,7 @@ export class EnhancedSearchService extends HybridSearchService {
 
     // 3. Apply diversity optimization
     if (enhancedOptions.diversityFactor && enhancedOptions.diversityFactor > 0) {
-      enhancedResults = this.optimizeForDiversity(
-        enhancedResults,
-        enhancedOptions.diversityFactor
-      );
+      enhancedResults = this.optimizeForDiversity(enhancedResults, enhancedOptions.diversityFactor);
     }
 
     return {
@@ -91,23 +89,23 @@ export class EnhancedSearchService extends HybridSearchService {
     const resultEmbeddings = await this.getResultEmbeddings(results);
 
     // Calculate semantic scores
-    const semanticScores = resultEmbeddings.map(embedding =>
+    const semanticScores = resultEmbeddings.map((embedding) =>
       this.cosineSimilarity(queryEmbedding, embedding)
     );
 
     // Combine with existing scores
-    return results.map((result, index) => {
-      const semanticScore = semanticScores[index];
-      const combinedScore = 
-        (result.score * 0.4) + 
-        (semanticScore * 0.6);
+    return results
+      .map((result, index) => {
+        const semanticScore = semanticScores[index];
+        const combinedScore = result.score * 0.4 + semanticScore * 0.6;
 
-      return {
-        ...result,
-        semanticScore,
-        score: combinedScore,
-      };
-    }).sort((a, b) => b.score - a.score);
+        return {
+          ...result,
+          semanticScore,
+          score: combinedScore,
+        };
+      })
+      .sort((a, b) => b.score - a.score);
   }
 
   private async addContextualRelevance(
@@ -124,10 +122,7 @@ export class EnhancedSearchService extends HybridSearchService {
         );
 
         // Calculate contextual relevance based on surrounding content
-        const contextualRelevance = this.calculateContextualRelevance(
-          result,
-          contextChunks
-        );
+        const contextualRelevance = this.calculateContextualRelevance(result, contextChunks);
 
         return {
           ...result,
@@ -155,9 +150,8 @@ export class EnhancedSearchService extends HybridSearchService {
 
         remaining.forEach((candidate, index) => {
           const diversity = this.calculateDiversity(candidate, selected);
-          const combinedScore = 
-            candidate.score * (1 - diversityFactor) + 
-            diversity * diversityFactor;
+          const combinedScore =
+            candidate.score * (1 - diversityFactor) + diversity * diversityFactor;
 
           if (combinedScore > bestScore) {
             bestScore = combinedScore;
@@ -183,7 +177,7 @@ export class EnhancedSearchService extends HybridSearchService {
       concepts: 0,
     };
 
-    selected.forEach(result => {
+    selected.forEach((result) => {
       // Different section
       if (result.metadata.sectionTitle !== candidate.metadata.sectionTitle) {
         factors.section += 1;
@@ -197,18 +191,15 @@ export class EnhancedSearchService extends HybridSearchService {
       // Different concepts
       const resultConcepts = new Set(result.metadata.concepts || []);
       const candidateConcepts = new Set(candidate.metadata.concepts || []);
-      const intersection = new Set(
-        [...resultConcepts].filter(x => candidateConcepts.has(x))
-      );
-      factors.concepts += 1 - (intersection.size / Math.max(resultConcepts.size, candidateConcepts.size, 1));
+      const intersection = new Set([...resultConcepts].filter((x) => candidateConcepts.has(x)));
+      factors.concepts +=
+        1 - intersection.size / Math.max(resultConcepts.size, candidateConcepts.size, 1);
     });
 
     // Normalize diversity score
     return (
-      factors.section * 0.3 +
-      factors.contentType * 0.3 +
-      factors.concepts * 0.4
-    ) / selected.length;
+      (factors.section * 0.3 + factors.contentType * 0.3 + factors.concepts * 0.4) / selected.length
+    );
   }
 
   private async getResultEmbeddings(results: SearchResult[]): Promise<number[][]> {
@@ -222,9 +213,7 @@ export class EnhancedSearchService extends HybridSearchService {
           .single();
 
         if (data?.embedding) {
-          return Array.isArray(data.embedding) 
-            ? data.embedding 
-            : JSON.parse(data.embedding);
+          return Array.isArray(data.embedding) ? data.embedding : JSON.parse(data.embedding);
         }
 
         // Generate embedding if not cached
@@ -251,15 +240,12 @@ export class EnhancedSearchService extends HybridSearchService {
     return data || [];
   }
 
-  private calculateContextualRelevance(
-    result: SearchResult,
-    contextChunks: any[]
-  ): number {
+  private calculateContextualRelevance(result: SearchResult, contextChunks: any[]): number {
     // Calculate relevance based on context continuity and coherence
     let relevance = 0;
     const resultIndex = result.metadata.chunkIndex;
 
-    contextChunks.forEach(chunk => {
+    contextChunks.forEach((chunk) => {
       const distance = Math.abs(chunk.chunk_index - resultIndex);
       if (distance === 0) return; // Skip self
 
@@ -280,7 +266,7 @@ export class EnhancedSearchService extends HybridSearchService {
 
   private getSharedConcepts(concepts1: string[], concepts2: string[]): string[] {
     const set1 = new Set(concepts1);
-    return concepts2.filter(c => set1.has(c));
+    return concepts2.filter((c) => set1.has(c));
   }
 
   private cosineSimilarity(vec1: number[], vec2: number[]): number {
@@ -315,9 +301,7 @@ export class EnhancedSearchService extends HybridSearchService {
 
     if (previousResults && previousResults.length > 0) {
       // Filter out previously seen results
-      results.results = results.results.filter(
-        r => !previousResults.includes(r.id)
-      );
+      results.results = results.results.filter((r) => !previousResults.includes(r.id));
     }
 
     return results;

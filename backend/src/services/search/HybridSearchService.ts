@@ -80,7 +80,7 @@ export class HybridSearchService {
     options: SearchOptions = {}
   ): Promise<SearchResponse> {
     const startTime = Date.now();
-    
+
     // Set default options
     const opts: Required<SearchOptions> = {
       limit: options.limit || 10,
@@ -132,7 +132,7 @@ export class HybridSearchService {
 
     // Apply post-processing
     results = this.rankResults(results, opts);
-    
+
     if (opts.highlightMatches) {
       results = this.highlightResults(results, keywords);
     }
@@ -177,7 +177,7 @@ export class HybridSearchService {
     const { data, error } = await supabase.rpc('search_similar_chunks', {
       query_embedding: embeddingStr,
       match_count: options.limit + options.offset,
-      similarity_threshold: options.threshold
+      similarity_threshold: options.threshold,
     });
 
     if (error) {
@@ -195,10 +195,11 @@ export class HybridSearchService {
   ): Promise<SearchResult[]> {
     // Build keyword search query
     const searchPattern = keywords.join(' | ');
-    
+
     let query = supabase
       .from('semantic_chunks')
-      .select(`
+      .select(
+        `
         id,
         file_id,
         file_name,
@@ -211,7 +212,8 @@ export class HybridSearchService {
         keywords,
         course_id,
         module_id
-      `)
+      `
+      )
       .textSearch('content', searchPattern, {
         type: 'websearch',
         config: 'english',
@@ -267,11 +269,11 @@ export class HybridSearchService {
     const resultMap = new Map<string, SearchResult>();
 
     // Add vector results
-    vectorResults.forEach(result => {
+    vectorResults.forEach((result) => {
       const existing = resultMap.get(result.id);
       if (existing) {
-        existing.score = (existing.vectorScore || 0) * vectorWeight + 
-                        (result.vectorScore || 0) * vectorWeight;
+        existing.score =
+          (existing.vectorScore || 0) * vectorWeight + (result.vectorScore || 0) * vectorWeight;
         existing.vectorScore = result.vectorScore;
       } else {
         result.score = (result.vectorScore || 0) * vectorWeight;
@@ -280,7 +282,7 @@ export class HybridSearchService {
     });
 
     // Add keyword results
-    keywordResults.forEach(result => {
+    keywordResults.forEach((result) => {
       const existing = resultMap.get(result.id);
       if (existing) {
         existing.score += (result.keywordScore || 0) * keywordWeight;
@@ -292,49 +294,44 @@ export class HybridSearchService {
     });
 
     // Convert to array and sort by score
-    return Array.from(resultMap.values())
+    return Array.from(resultMap.values()).sort((a, b) => b.score - a.score);
+  }
+
+  private rankResults(results: SearchResult[], _options: Required<SearchOptions>): SearchResult[] {
+    // Apply additional ranking factors
+    return results
+      .map((result) => {
+        let boost = 1.0;
+
+        // Boost high importance content
+        if (result.metadata.importance === 'high') {
+          boost *= 1.2;
+        } else if (result.metadata.importance === 'low') {
+          boost *= 0.8;
+        }
+
+        // Boost certain content types
+        if (['definition', 'summary', 'introduction'].includes(result.metadata.contentType)) {
+          boost *= 1.1;
+        }
+
+        // Boost if chunk is start of section
+        if (result.metadata.sectionTitle) {
+          boost *= 1.05;
+        }
+
+        result.score *= boost;
+        return result;
+      })
       .sort((a, b) => b.score - a.score);
   }
 
-  private rankResults(
-    results: SearchResult[],
-    _options: Required<SearchOptions>
-  ): SearchResult[] {
-    // Apply additional ranking factors
-    return results.map(result => {
-      let boost = 1.0;
-
-      // Boost high importance content
-      if (result.metadata.importance === 'high') {
-        boost *= 1.2;
-      } else if (result.metadata.importance === 'low') {
-        boost *= 0.8;
-      }
-
-      // Boost certain content types
-      if (['definition', 'summary', 'introduction'].includes(result.metadata.contentType)) {
-        boost *= 1.1;
-      }
-
-      // Boost if chunk is start of section
-      if (result.metadata.sectionTitle) {
-        boost *= 1.05;
-      }
-
-      result.score *= boost;
-      return result;
-    }).sort((a, b) => b.score - a.score);
-  }
-
-  private highlightResults(
-    results: SearchResult[],
-    keywords: string[]
-  ): SearchResult[] {
-    return results.map(result => {
+  private highlightResults(results: SearchResult[], keywords: string[]): SearchResult[] {
+    return results.map((result) => {
       const highlights: string[] = [];
       const content = result.content.toLowerCase();
-      
-      keywords.forEach(keyword => {
+
+      keywords.forEach((keyword) => {
         const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
         const matches = content.match(regex);
         if (matches) {
@@ -362,18 +359,13 @@ export class HybridSearchService {
           .from('file_chunks')
           .select('chunk_index, content')
           .eq('file_id', result.fileId)
-          .in('chunk_index', [
-            result.metadata.chunkIndex - 1,
-            result.metadata.chunkIndex + 1,
-          ]);
+          .in('chunk_index', [result.metadata.chunkIndex - 1, result.metadata.chunkIndex + 1]);
 
         if (contextChunks && contextChunks.length > 0) {
           const before = contextChunks.find(
-            c => c.chunk_index === result.metadata.chunkIndex - 1
+            (c) => c.chunk_index === result.metadata.chunkIndex - 1
           );
-          const after = contextChunks.find(
-            c => c.chunk_index === result.metadata.chunkIndex + 1
-          );
+          const after = contextChunks.find((c) => c.chunk_index === result.metadata.chunkIndex + 1);
 
           result.context = {
             before: before?.content.slice(-200), // Last 200 chars
@@ -388,12 +380,10 @@ export class HybridSearchService {
     return enrichedResults;
   }
 
-
-
   private applyKeywordFilters(query: any, _userId: string, filters: SearchFilters): any {
     // Similar to applyFilters but for keyword search
     // User access is handled through the view
-    
+
     if (filters.courseId) {
       query = query.eq('course_id', filters.courseId);
     }
@@ -422,7 +412,7 @@ export class HybridSearchService {
   }
 
   private transformSimilarChunksResults(data: any[]): SearchResult[] {
-    return data.map(item => ({
+    return data.map((item) => ({
       id: item.chunk_id,
       fileId: item.file_id,
       fileName: 'Unknown', // Will be enriched later
@@ -441,11 +431,11 @@ export class HybridSearchService {
   }
 
   private transformKeywordResults(data: any[], keywords: string[]): SearchResult[] {
-    return data.map(item => {
+    return data.map((item) => {
       // Calculate keyword score based on matches
       const content = item.content.toLowerCase();
       let score = 0;
-      keywords.forEach(keyword => {
+      keywords.forEach((keyword) => {
         const regex = new RegExp(`\\b${keyword.toLowerCase()}\\b`, 'g');
         const matches = content.match(regex);
         if (matches) {
@@ -487,22 +477,46 @@ export class HybridSearchService {
   private extractKeywords(query: string): string[] {
     // Extract meaningful keywords from query
     const stopWords = new Set([
-      'a', 'an', 'and', 'are', 'as', 'at', 'be', 'by', 'for',
-      'from', 'has', 'he', 'in', 'is', 'it', 'its', 'of', 'on',
-      'that', 'the', 'to', 'was', 'will', 'with', 'what', 'when',
-      'where', 'who', 'why', 'how',
+      'a',
+      'an',
+      'and',
+      'are',
+      'as',
+      'at',
+      'be',
+      'by',
+      'for',
+      'from',
+      'has',
+      'he',
+      'in',
+      'is',
+      'it',
+      'its',
+      'of',
+      'on',
+      'that',
+      'the',
+      'to',
+      'was',
+      'will',
+      'with',
+      'what',
+      'when',
+      'where',
+      'who',
+      'why',
+      'how',
     ]);
 
     return query
       .split(/\s+/)
-      .filter(word => word.length > 2 && !stopWords.has(word))
-      .map(word => word.trim());
+      .filter((word) => word.length > 2 && !stopWords.has(word))
+      .map((word) => word.trim());
   }
 
   private async getTotalCount(userId: string, filters: SearchFilters): Promise<number> {
-    let query = supabase
-      .from('semantic_chunks')
-      .select('id', { count: 'exact', head: true });
+    let query = supabase.from('semantic_chunks').select('id', { count: 'exact', head: true });
 
     query = this.applyKeywordFilters(query, userId, filters);
 
@@ -526,7 +540,7 @@ export class HybridSearchService {
       u: userId,
       ...options,
     };
-    
+
     return `${this.CACHE_PREFIX}${Buffer.from(JSON.stringify(key)).toString('base64')}`;
   }
 
