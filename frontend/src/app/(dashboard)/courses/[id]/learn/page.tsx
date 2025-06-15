@@ -272,7 +272,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
         setStreamingContent(cachedContent);
         setIsStreaming(false);
         
-        // Trigger effect immediately after topic/subtopic change
+        // Scroll to top for new content
         if (contentRef.current) {
           contentRef.current.scrollTop = 0;
         }
@@ -282,6 +282,11 @@ export default function LearnPage({ params }: { params: { id: string } }) {
       setIsStreaming(true);
       setStreamingContent('');
       setError(null);
+      
+      // Scroll to top when starting new content
+      if (contentRef.current) {
+        contentRef.current.scrollTop = 0;
+      }
 
       // Cancel any existing stream
       if (abortControllerRef.current) {
@@ -346,14 +351,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                     fullContent += parsed.data;
                     // Update content gradually for better UX
                     setStreamingContent(fullContent);
-                    // Only auto-scroll if user is near the bottom (within 100px)
-                    if (contentRef.current) {
-                      const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
-                      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-                      if (isNearBottom) {
-                        contentRef.current.scrollTop = contentRef.current.scrollHeight;
-                      }
-                    }
+                    // No auto-scrolling - let user control their reading position
                   }
                   // Handle completion
                   else if (parsed.type === 'complete') {
@@ -370,14 +368,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                   else if (parsed.content) {
                     fullContent += parsed.content;
                     setStreamingContent(fullContent);
-                    // Only auto-scroll if user is near the bottom
-                    if (contentRef.current) {
-                      const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
-                      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
-                      if (isNearBottom) {
-                        contentRef.current.scrollTop = contentRef.current.scrollHeight;
-                      }
-                    }
+                    // No auto-scrolling - let user control their reading position
                   }
                 } catch (parseError) {
                   console.warn('[LearnPage] Failed to parse SSE data:', data);
