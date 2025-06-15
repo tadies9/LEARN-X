@@ -346,9 +346,13 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                     fullContent += parsed.data;
                     // Update content gradually for better UX
                     setStreamingContent(fullContent);
-                    // Auto-scroll to bottom
+                    // Only auto-scroll if user is near the bottom (within 100px)
                     if (contentRef.current) {
-                      contentRef.current.scrollTop = contentRef.current.scrollHeight;
+                      const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
+                      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+                      if (isNearBottom) {
+                        contentRef.current.scrollTop = contentRef.current.scrollHeight;
+                      }
                     }
                   }
                   // Handle completion
@@ -366,8 +370,13 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                   else if (parsed.content) {
                     fullContent += parsed.content;
                     setStreamingContent(fullContent);
+                    // Only auto-scroll if user is near the bottom
                     if (contentRef.current) {
-                      contentRef.current.scrollTop = contentRef.current.scrollHeight;
+                      const { scrollTop, scrollHeight, clientHeight } = contentRef.current;
+                      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+                      if (isNearBottom) {
+                        contentRef.current.scrollTop = contentRef.current.scrollHeight;
+                      }
                     }
                   }
                 } catch (parseError) {
@@ -803,9 +812,12 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                       className="[&_div[style*='background-color']]:p-4 [&_div[style*='background-color']]:rounded-lg [&_div[style*='background-color']]:my-4 [&_details]:border [&_details]:p-4 [&_details]:rounded-lg [&_details]:my-2"
                     />
                   ) : isStreaming ? (
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-                      <span>Loading personalized content...</span>
+                    <div>
+                      <div dangerouslySetInnerHTML={{ __html: streamingContent }} />
+                      <div className="flex items-center gap-2 text-muted-foreground mt-4">
+                        <div className="animate-pulse rounded-full h-2 w-2 bg-primary"></div>
+                        <span className="text-sm">Generating more content...</span>
+                      </div>
                     </div>
                   ) : (
                     <p className="text-muted-foreground">Content will appear here...</p>
