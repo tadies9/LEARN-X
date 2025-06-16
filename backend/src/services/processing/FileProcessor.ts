@@ -11,12 +11,13 @@ import { supabase } from '../../config/supabase';
 import { logger } from '../../utils/logger';
 import { QueueJob } from '../queue/EnhancedPGMQClient';
 
+
 export interface FileProcessingJob {
   fileId: string;
   userId: string;
   processingOptions?: {
     chunkSize?: number;
-    priority?: 'low' | 'medium' | 'high';
+    priority?: number; // Use integer priorities
     [key: string]: any;
   };
   queuedAt: string;
@@ -236,6 +237,15 @@ export class FileProcessor {
    * Saves chunks to database with batch insertion and sanitization
    */
   private async saveChunksBatch(fileId: string, chunks: any[]): Promise<any[]> {
+    // First, delete any existing chunks for this file to avoid duplicates
+    const { error: deleteError } = await supabase
+      .from('file_chunks')
+      .delete()
+      .eq('file_id', fileId);
+    
+    if (deleteError) {
+      logger.warn(`[FileProcessor] Failed to delete existing chunks:`, deleteError);
+    }
     const chunksToInsert = chunks.map((chunk: any, index: number) => {
       // Sanitize all text content
       const sanitizedContent = this.fileProcessingService.sanitizeChunkContent(chunk.content);

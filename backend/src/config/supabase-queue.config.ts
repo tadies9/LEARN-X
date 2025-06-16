@@ -4,6 +4,7 @@
  */
 
 export type QueueName = 'file_processing' | 'embedding_generation' | 'notification' | 'cleanup';
+export type PriorityLevel = 'low' | 'medium' | 'high' | 'critical';
 
 export interface QueueSettings {
   type: 'standard' | 'unlogged' | 'partitioned';
@@ -218,6 +219,28 @@ export const QUEUE_PRIORITIES = {
   LOW: 3,
   BACKGROUND: 1,
 } as const;
+
+/**
+ * Convert string priority to integer priority
+ */
+export function mapPriorityToInteger(priority?: PriorityLevel | number): number {
+  if (typeof priority === 'number') {
+    return priority;
+  }
+  
+  switch (priority) {
+    case 'critical':
+      return QUEUE_PRIORITIES.CRITICAL;
+    case 'high':
+      return QUEUE_PRIORITIES.HIGH;
+    case 'medium':
+      return QUEUE_PRIORITIES.MEDIUM;
+    case 'low':
+      return QUEUE_PRIORITIES.LOW;
+    default:
+      return QUEUE_PRIORITIES.MEDIUM; // Default
+  }
+}
 
 /**
  * Queue names constants for type safety

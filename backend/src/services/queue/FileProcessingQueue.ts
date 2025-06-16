@@ -5,15 +5,16 @@
  */
 
 import { EnhancedPGMQClient, QueueJob } from './EnhancedPGMQClient';
-import { ENHANCED_QUEUE_NAMES } from '../../config/supabase-queue.config';
+import { ENHANCED_QUEUE_NAMES, mapPriorityToInteger } from '../../config/supabase-queue.config';
 import { logger } from '../../utils/logger';
+import { supabase } from '../../config/supabase';
 
 export interface FileProcessingPayload {
   fileId: string;
   userId: string;
   processingOptions?: {
     chunkSize?: number;
-    priority?: 'low' | 'medium' | 'high';
+    priority?: number; // Use integer priorities
     [key: string]: any;
   };
   queuedAt: string;
@@ -82,7 +83,7 @@ export class FileProcessingQueue {
       logger.info(`[FileProcessingQueue] Enqueued file processing: ${fileId}`, {
         msgId: msgId.toString(),
         userId,
-        priority: options?.priority || 'medium'
+        priority: options?.priority || mapPriorityToInteger('medium')
       });
 
       return msgId;
@@ -205,6 +206,9 @@ export class FileProcessingQueue {
         attempt: job.read_ct
       });
 
+      // Mark job as started in enhanced job tracking
+      await this.markJobStarted(job.msg_id);
+
       // Import dynamically to avoid circular dependencies
       const { FileProcessor } = await import('../processing/FileProcessor');
       const processor = new FileProcessor();
@@ -215,8 +219,11 @@ export class FileProcessingQueue {
       // Delete message on success
       await this.client.delete(this.queueName, job.msg_id);
       
-      // Update metrics
+      // Mark job as completed in enhanced job tracking
       const processingTime = Date.now() - startTime;
+      await this.markJobCompleted(job.msg_id, processingTime);
+      
+      // Update metrics
       this.updateAverageProcessingTime(processingTime);
       
       logger.info(`[FileProcessingQueue] File processed successfully: ${fileId}`, {
@@ -237,6 +244,12 @@ export class FileProcessingQueue {
           msgId: job.msg_id.toString()
         });
       } else {
+        // Mark job as failed in enhanced job tracking
+        await this.markJobFailed(
+          job.msg_id, 
+          error instanceof Error ? error.message : 'Unknown error'
+        );
+        
         // Archive the failed job for analysis
         await this.client.archive(this.queueName, job.msg_id);
         
@@ -318,5 +331,61 @@ export class FileProcessingQueue {
    */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Mark job as started in enhanced job tracking
+   */
+  private async markJobStarted(messageId: bigint): Promise<void> {
+    try {
+      const workerId = process.env.WORKER_ID || `enhanced-pgmq-${process.pid}`;
+      const { error } = await supabase.rpc('mark_enhanced_job_started', {
+        p_message_id: messageId,
+        p_worker_id: workerId
+      });
+
+      if (error) {
+        logger.warn(`[FileProcessingQueue] Failed to mark job as started: ${error.message}`);
+      }
+    } catch (error) {
+      logger.warn('[FileProcessingQueue] Error marking job as started:', error);
+    }
+  }
+
+  /**
+   * Mark job as completed in enhanced job tracking
+   */
+  private async markJobCompleted(messageId: bigint, processingTimeMs: number): Promise<void> {
+    try {
+      const { error } = await supabase.rpc('mark_enhanced_job_completed', {
+        p_message_id: messageId,
+        p_processing_time_ms: processingTimeMs
+      });
+
+      if (error) {
+        logger.warn(`[FileProcessingQueue] Failed to mark job as completed: ${error.message}`);
+      }
+    } catch (error) {
+      logger.warn('[FileProcessingQueue] Error marking job as completed:', error);
+    }
+  }
+
+  /**
+   * Mark job as failed in enhanced job tracking
+   */
+  private async markJobFailed(messageId: bigint, errorMessage: string): Promise<void> {
+    try {
+      const { error } = await supabase.rpc('mark_enhanced_job_failed', {
+        p_message_id: messageId,
+        p_error_message: errorMessage,
+        p_should_retry: true
+      });
+
+      if (error) {
+        logger.warn(`[FileProcessingQueue] Failed to mark job as failed: ${error.message}`);
+      }
+    } catch (error) {
+      logger.warn('[FileProcessingQueue] Error marking job as failed:', error);
+    }
   }
 }

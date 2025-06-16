@@ -5,7 +5,7 @@
  */
 
 import { EnhancedPGMQClient, QueueJob } from './EnhancedPGMQClient';
-import { ENHANCED_QUEUE_NAMES } from '../../config/supabase-queue.config';
+import { ENHANCED_QUEUE_NAMES, mapPriorityToInteger } from '../../config/supabase-queue.config';
 import { logger } from '../../utils/logger';
 import { supabase } from '../../config/supabase';
 
@@ -15,7 +15,7 @@ export interface NotificationPayload {
   title: string;
   message: string;
   data?: Record<string, any>;
-  priority?: 'low' | 'medium' | 'high';
+  priority?: number; // Use integer priorities
   queuedAt: string;
 }
 
@@ -60,7 +60,7 @@ export class NotificationQueue {
       logger.debug(`[NotificationQueue] Enqueued notification: ${notification.type}`, {
         msgId: msgId.toString(),
         userId: notification.userId,
-        priority: notification.priority || 'medium'
+        priority: notification.priority || mapPriorityToInteger('medium')
       });
 
       return msgId;
@@ -203,7 +203,7 @@ export const createFileProcessingNotification = (
       title: 'File Processing Complete',
       message: `Your file "${fileName}" has been successfully processed and is ready for use.`,
       data: { fileId, fileName },
-      priority: 'medium'
+      priority: mapPriorityToInteger('medium')
     };
   } else {
     return {
@@ -212,7 +212,7 @@ export const createFileProcessingNotification = (
       title: 'File Processing Failed',
       message: `We encountered an issue processing your file "${fileName}". Please try uploading again.`,
       data: { fileId, fileName },
-      priority: 'high'
+      priority: mapPriorityToInteger('high')
     };
   }
 };

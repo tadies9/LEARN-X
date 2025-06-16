@@ -108,9 +108,10 @@ export class FileApiService {
   /**
    * Listen to file processing updates via SSE
    */
-  static getProcessingUpdatesUrl(fileId: string, token: string): string {
+  static getProcessingUpdatesUrl(fileId: string): string {
     const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-    return `${baseUrl}/files/${fileId}/processing-updates?token=${token}`;
+    // Token will be handled by the API client headers
+    return `${baseUrl}/files/${fileId}/processing-updates`;
   }
 }
 

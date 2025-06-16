@@ -8,7 +8,7 @@ import { FileProcessingQueue } from './FileProcessingQueue';
 import { EmbeddingQueue } from './EmbeddingQueue';
 import { NotificationQueue } from './NotificationQueue';
 import { enhancedPGMQClient, QueueMetrics } from './EnhancedPGMQClient';
-import { ENHANCED_QUEUE_NAMES } from '../../config/supabase-queue.config';
+import { ENHANCED_QUEUE_NAMES, PriorityLevel, mapPriorityToInteger } from '../../config/supabase-queue.config';
 import { logger } from '../../utils/logger';
 
 export interface QueueHealth {
@@ -47,12 +47,18 @@ export class QueueOrchestrator {
     userId: string,
     options?: {
       chunkSize?: number;
-      priority?: 'low' | 'medium' | 'high';
+      priority?: PriorityLevel;
       [key: string]: any;
     }
   ): Promise<string> {
     try {
-      const msgId = await this.fileQueue.enqueue(fileId, userId, options);
+      // Convert string priority to integer for the queue
+      const queueOptions = options ? {
+        ...options,
+        priority: mapPriorityToInteger(options.priority)
+      } : undefined;
+      
+      const msgId = await this.fileQueue.enqueue(fileId, userId, queueOptions);
       
       logger.info(`[QueueOrchestrator] File processing enqueued: ${fileId}`, {
         msgId: msgId.toString(),
@@ -107,7 +113,7 @@ export class QueueOrchestrator {
     title: string,
     message: string,
     data?: Record<string, any>,
-    priority: 'low' | 'medium' | 'high' = 'medium'
+    priority: PriorityLevel = 'medium'
   ): Promise<string> {
     try {
       const msgId = await this.notificationQueue.enqueue({
@@ -116,7 +122,7 @@ export class QueueOrchestrator {
         title,
         message,
         data,
-        priority
+        priority: mapPriorityToInteger(priority)
       });
 
       logger.debug(`[QueueOrchestrator] Notification enqueued: ${type} for ${userId}`);

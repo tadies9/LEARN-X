@@ -13,6 +13,7 @@ import {
 
 import { getFileIcon, formatFileSize } from '../utils/fileHelpers';
 import type { UploadedFile } from '@/lib/api/files';
+import { FileProcessingDebug } from '@/components/debug/FileProcessingDebug';
 
 interface UploadedFilesListProps {
   files: UploadedFile[];
@@ -83,9 +84,10 @@ export function UploadedFilesList({
           {files.map((file) => {
             const FileIcon = getFileIcon(file.type);
             return (
-              <div key={file.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                <FileIcon className="h-8 w-8 text-primary" />
-                <div className="flex-1 min-w-0">
+              <div key={file.id} className="p-3 border rounded-lg">
+                <div className="flex items-center gap-3">
+                  <FileIcon className="h-8 w-8 text-primary" />
+                  <div className="flex-1 min-w-0">
                   <p className="font-medium truncate">{file.name}</p>
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>{formatFileSize(file.size)}</span>
@@ -120,6 +122,14 @@ export function UploadedFilesList({
                     </Button>
                   )}
                 </div>
+                {/* Debug component for pending/error files */}
+                {(file.status === 'pending' || file.status === 'error' || file.status === 'processing') && (
+                  <FileProcessingDebug 
+                    fileId={file.id}
+                    fileName={file.name}
+                    currentStatus={file.status}
+                  />
+                )}
               </div>
             );
           })}
