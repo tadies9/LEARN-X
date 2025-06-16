@@ -23,6 +23,10 @@ export default function DashboardPage() {
   const { stats, recentCourses, loading: dashboardLoading, error, refetch } = useDashboardData();
   const statsData = useDashboardStats({ stats });
 
+  // Move this hook call before any conditional returns to comply with Rules of Hooks
+  const userName = user?.email?.split('@')[0] || 'Learner';
+  const personalizedGreeting = usePersonalizedGreeting(userName);
+
   useEffect(() => {
     if (!authLoading && !user) {
       router.push('/login');
@@ -33,13 +37,10 @@ export default function DashboardPage() {
     return <div>Loading...</div>;
   }
 
-  const userName = user?.email?.split('@')[0] || 'Learner';
-  const personalizedGreeting = usePersonalizedGreeting(userName);
-
   return (
     <div className="container mx-auto p-6">
       <DashboardWelcome greeting={personalizedGreeting} />
-      
+
       <DashboardStats
         statsData={statsData}
         loading={dashboardLoading}
@@ -51,10 +52,10 @@ export default function DashboardPage() {
         <div className="md:col-span-1">
           <CoursesSection courses={recentCourses} />
         </div>
-        
+
         <div className="md:col-span-1 space-y-6">
           <AIRecommendation />
-          
+
           <FadeIn delay={0.6}>
             <ActivityTimeline activities={MOCK_ACTIVITIES} />
           </FadeIn>

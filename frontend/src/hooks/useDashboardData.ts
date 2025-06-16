@@ -9,13 +9,7 @@ import { useState, useEffect } from 'react';
 import { courseApi } from '@/lib/api/course';
 import { notificationApi } from '@/lib/api/notification';
 import type { Course } from '@/lib/types/course';
-
-interface DashboardStats {
-  activeCourses: number;
-  totalCourses: number;
-  completedCourses: number;
-  archivedCourses: number;
-}
+import type { DashboardStats } from '@/lib/types/dashboard';
 
 interface DashboardData {
   stats: DashboardStats | null;
@@ -42,20 +36,60 @@ export function useDashboardData(): DashboardData {
         limit: 100, // Get enough to calculate stats
       });
 
-      const courses = allCoursesResponse.data;
+      let courses: Course[] = [];
+
+      // Handle different response formats safely
+      if (Array.isArray(allCoursesResponse)) {
+        courses = allCoursesResponse;
+      } else if (allCoursesResponse && typeof allCoursesResponse === 'object') {
+        // Handle BaseApiService PaginatedResponse format
+        if ('data' in allCoursesResponse && Array.isArray((allCoursesResponse as any).data)) {
+          courses = (allCoursesResponse as any).data;
+        }
+        // Handle other potential formats
+        else if (
+          'items' in allCoursesResponse &&
+          Array.isArray((allCoursesResponse as any).items)
+        ) {
+          courses = (allCoursesResponse as any).items;
+        }
+        // Handle nested data structure
+        else if (
+          'data' in allCoursesResponse &&
+          typeof (allCoursesResponse as any).data === 'object' &&
+          (allCoursesResponse as any).data &&
+          'items' in (allCoursesResponse as any).data &&
+          Array.isArray((allCoursesResponse as any).data.items)
+        ) {
+          courses = (allCoursesResponse as any).data.items;
+        }
+      }
+
+      // Ensure courses is always an array
+      if (!Array.isArray(courses)) {
+        console.warn('Unexpected courses response format:', allCoursesResponse);
+        courses = [];
+      }
 
       // Calculate statistics
       const dashboardStats: DashboardStats = {
-        activeCourses: courses.filter(course => !course.isArchived).length,
+        activeCourses: courses.filter((course: Course) => !course.isArchived).length,
         totalCourses: courses.length,
         completedCourses: 0, // TODO: Add completion tracking
-        archivedCourses: courses.filter(course => course.isArchived).length,
+        archivedCourses: courses.filter((course: Course) => course.isArchived).length,
+        totalStudyTime: 0, // TODO: Add study time tracking
+        weeklyStudyTime: 0, // TODO: Add weekly study time tracking
+        learningStreak: 0, // TODO: Add learning streak tracking
+        lastActiveDate: new Date().toISOString(), // TODO: Track actual last active date
       };
 
       // Get recent courses (non-archived, sorted by updated date)
       const recent = courses
-        .filter(course => !course.isArchived)
-        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+        .filter((course: Course) => !course.isArchived)
+        .sort(
+          (a: Course, b: Course) =>
+            new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+        )
         .slice(0, 3);
 
       setStats(dashboardStats);
