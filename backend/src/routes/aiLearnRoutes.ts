@@ -213,45 +213,51 @@ router.post(
         return;
       }
 
-      // Get user persona
-      const { data: profile } = await supabase
-        .from('profiles')
+      // Get user persona from the proper personas table
+      const { data: persona } = await supabase
+        .from('personas')
         .select('*')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single();
 
-      const persona = profile?.persona as any;
-
-      logger.info('[AI Learn] User profile:', {
+      logger.info('[AI Learn] User persona:', {
         userId,
-        hasProfile: !!profile,
         hasPersona: !!persona,
       });
-      if (persona) {
-        logger.info('[AI Learn] Persona details:', {
-          interests: persona.interests,
-          learningStyle: persona.learningStyle,
-          professionalBackground: persona.professionalBackground,
-        });
-      }
 
       // Build personalized prompt based on mode
       let systemPrompt = `You are an expert tutor creating personalized learning content. 
 Return ONLY the inner HTML content - do NOT include <html>, <head>, <body> or any wrapper tags.
 Use semantic HTML tags like <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <div>, etc.
-Start directly with the content (e.g., <h2>Topic Title</h2>).`;
+Start directly with the content (e.g., <h2>Topic Title</h2>).
+
+PERSONALIZATION APPROACH:
+- Weave analogies and examples NATURALLY throughout the content
+- Choose the most relevant interest/context for each concept
+- NEVER announce "Here's an analogy" or use special styling boxes
+- Make personalization feel discovered, not forced`;
 
       if (persona) {
-        systemPrompt += `\n\nStudent Profile:
-- Interests: ${persona.interests?.join(', ') || 'general'}
-- Learning Style: ${persona.learningStyle || 'visual'}
-- Professional Background: ${persona.professionalBackground || 'student'}
-- Field: ${persona.field || 'general'}
-- Communication Preference: ${persona.communicationStyle || 'friendly'}
+        const interests = [
+          ...(persona.personal_interests?.primary || []),
+          ...(persona.personal_interests?.secondary || []),
+        ];
 
-IMPORTANT: Create analogies using their interests (especially ${persona.interests?.[0] || 'everyday examples'}).
-Match their ${persona.communicationStyle || 'friendly'} communication style.
-Adapt explanations to their ${persona.professionalBackground || 'student'} level.`;
+        systemPrompt += `\n\nStudent Profile:
+- Primary Interests: ${persona.personal_interests?.primary?.join(', ') || 'general'}
+- Secondary Interests: ${persona.personal_interests?.secondary?.join(', ') || 'none'}
+- Learning Topics: ${persona.personal_interests?.learningTopics?.join(', ') || 'general'}
+- Professional Role: ${persona.professional_context?.role || 'student'}
+- Industry: ${persona.professional_context?.industry || 'general'}
+- Technical Level: ${persona.professional_context?.technicalLevel || 'beginner'}
+- Learning Style: ${persona.learning_style?.primary || 'visual'}
+- Communication Style: ${persona.communication_tone?.style || 'friendly'}
+
+SMART PERSONALIZATION:
+You have access to ALL their interests: ${interests.join(', ')}
+For each concept, intelligently choose which interest/context works best for analogies.
+Integrate examples naturally using their professional context (${persona.professional_context?.industry || 'general'}).
+Adapt complexity to their ${persona.professional_context?.technicalLevel || 'beginner'} level.`;
       }
 
       const relevantChunks =
@@ -271,34 +277,38 @@ ${relevantChunks.substring(0, 3000)}
 
 Requirements:
 1. Return ONLY content HTML - no <html>, <head>, <body> tags
-2. Include a personalized analogy box using the student's interests
+2. Naturally weave analogies and examples throughout using their interests
 3. Break down complex concepts into simple terms
-4. Use the student's preferred communication style
+4. Use their preferred communication style
 5. Include emoji sparingly for engagement
 
 Structure:
 - Start directly with <h2> for the topic title
-- Include a highlighted analogy box: <div style="background: #f0f7ff; padding: 16px; border-radius: 8px; margin: 16px 0;">
+- Naturally integrate analogies within explanations (NO special boxes)
 - Explain key concepts clearly with <h3> subheadings
-- Provide relevant examples in <ul> or <ol> lists
-- End with a brief summary in a <div>`;
+- Provide relevant examples in <ul> or <ol> lists using their interests/context
+- End with a brief summary connecting to their goals
+
+REMEMBER: Choose the most relevant interest for each concept. Make personalization feel natural and discovered.`;
           break;
 
         case 'summary':
-          userPrompt = `Create a concise summary of "${topicId}".
+          userPrompt = `Create a concise summary of "${topicId}" that connects to their interests and goals.
 
 Use this document content as reference:
 ${relevantChunks.substring(0, 2000)}
 
 Format as HTML fragments (no wrapper tags):
 - Start with <h2>Summary</h2>
-- 5-7 key bullet points in <ul>
+- 5-7 key bullet points in <ul> with natural examples from their context
 - Important terms in <strong>
-- A takeaway message in a styled <div>`;
+- A takeaway message connecting to their professional goals
+
+PERSONALIZATION: Naturally reference their interests/industry when explaining key points.`;
           break;
 
         case 'flashcards':
-          userPrompt = `Generate 5-7 flashcards for "${topicId}".
+          userPrompt = `Generate 5-7 flashcards for "${topicId}" using examples from their interests and context.
 
 Use this document content as reference:
 ${relevantChunks.substring(0, 2000)}
@@ -306,9 +316,11 @@ ${relevantChunks.substring(0, 2000)}
 Format each flashcard as HTML fragments (no wrapper tags):
 - Start with <h2>Flashcards</h2>
 - Each card in a <div style="border: 1px solid #ddd; padding: 16px; margin: 8px 0; border-radius: 8px;">
-- Question in <h4>
+- Question in <h4> using scenarios from their interests/industry
 - Answer in <details><summary>Click to reveal</summary>answer here</details>
-- Focus on key concepts`;
+- Focus on key concepts with natural examples from their context
+
+PERSONALIZATION: Frame questions using familiar scenarios from their interests/professional context.`;
           break;
 
         case 'quiz':
