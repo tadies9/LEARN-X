@@ -115,7 +115,7 @@ export function FileGrid({ files, onUpdate }: FileGridProps) {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'processed':
+      case 'completed':
         return 'success';
       case 'processing':
         return 'default';
