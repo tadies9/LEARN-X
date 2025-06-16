@@ -4,7 +4,9 @@ import { authenticateSSE } from '../middleware/sseAuth';
 import { supabase } from '../config/supabase';
 import { OpenAI } from 'openai';
 import { logger } from '../utils/logger';
-import { DeepContentGenerationService } from '../services/content/DeepContentGenerationService';
+import { StreamingExplanationService } from '../services/content/core/StreamingExplanationService';
+import { AICache } from '../services/cache/AICache';
+import { CostTracker } from '../services/ai/CostTracker';
 import { redisClient } from '../config/redis';
 
 const router = Router();
@@ -12,8 +14,10 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
 
-// Initialize our new orchestrator system
-const deepContentService = new DeepContentGenerationService(redisClient);
+// Initialize the StreamingExplanationService with proper dependencies
+const aiCache = new AICache(redisClient);
+const costTracker = new CostTracker();
+const streamingExplanationService = new StreamingExplanationService(aiCache, costTracker);
 
 // SSE helper to send events
 const sendSSE = (res: Response, event: string, data: any) => {
@@ -277,12 +281,12 @@ router.post(
           score: 1.0,
         })) || [];
 
-      logger.info(`[AI Learn] Using new orchestrator system for ${mode} mode...`);
+      logger.info(`[AI Learn] Using StreamingExplanationService for ${mode} mode...`);
 
-      // Use our new orchestrator system based on mode
+      // Use our StreamingExplanationService based on mode
       if (mode === 'explain' || !mode) {
         // Use deep explanation streaming
-        const generator = deepContentService.generateDeepExplanation({
+        const generator = streamingExplanationService.generateDeepExplanation({
           chunks,
           topic: topicId,
           subtopic,
@@ -296,79 +300,53 @@ router.post(
           sendSSE(res, 'message', { type: 'content', data: chunk });
         }
       } else if (mode === 'summary') {
-        // Use deep summary generation
+        // Use progressive explanation for summary mode
         const content = chunks.map((c: any) => c.content).join('\n\n');
-        const result = await deepContentService.generateDeepSummary({
+        const result = await streamingExplanationService.generateProgressiveExplanation(
+          topicId || 'Summary',
           content,
-          format: 'comprehensive',
-          persona: transformedPersona,
-          model: 'gpt-4o',
-        });
+          transformedPersona,
+          'foundation'
+        );
 
         sendSSE(res, 'message', { type: 'content', data: result.content });
       } else if (mode === 'flashcards') {
-        // Use deep flashcard generation
+        // Use progressive explanation for flashcards mode
         const content = chunks.map((c: any) => c.content).join('\n\n');
-        const result = await deepContentService.generateDeepFlashcards({
+        const result = await streamingExplanationService.generateProgressiveExplanation(
+          topicId || 'Flashcards',
           content,
-          persona: transformedPersona,
-          contextualExamples: true,
-          model: 'gpt-4o',
-        });
+          transformedPersona,
+          'intermediate'
+        );
 
-        // Format flashcards as HTML
+        // Format as flashcards HTML
         let flashcardHtml = '<h2>Flashcards</h2>';
-        result.flashcards.forEach((card: any, index: number) => {
-          flashcardHtml += `
-            <div style="border: 1px solid #ddd; padding: 16px; margin: 8px 0; border-radius: 8px;">
-              <h4>Question ${index + 1}</h4>
-              <p><strong>${card.front}</strong></p>
-              <details>
-                <summary>Click to reveal answer</summary>
-                <p>${card.back}</p>
-                <small>Difficulty: ${card.difficulty}</small>
-              </details>
-            </div>
-          `;
-        });
+        flashcardHtml += `<div style="border: 1px solid #ddd; padding: 16px; margin: 8px 0; border-radius: 8px;">`;
+        flashcardHtml += result.content;
+        flashcardHtml += `</div>`;
 
         sendSSE(res, 'message', { type: 'content', data: flashcardHtml });
       } else if (mode === 'quiz') {
-        // Use deep quiz generation
+        // Use progressive explanation for quiz mode
         const content = chunks.map((c: any) => c.content).join('\n\n');
-        const result = await deepContentService.generateDeepQuiz({
+        const result = await streamingExplanationService.generateProgressiveExplanation(
+          topicId || 'Quiz',
           content,
-          persona: transformedPersona,
-          type: 'multiple_choice',
-          model: 'gpt-4o',
-        });
+          transformedPersona,
+          'advanced'
+        );
 
-        // Format quiz as HTML
+        // Format as quiz HTML
         let quizHtml = '<h2>Quiz Questions</h2>';
-        result.questions.forEach((question: any, index: number) => {
-          quizHtml += `
-            <div style="margin-bottom: 24px;">
-              <h4>Question ${index + 1}</h4>
-              <p>${question.question}</p>
-              ${
-                question.options
-                  ? `
-                <ol type="A">
-                  ${question.options.map((option: string) => `<li>${option}</li>`).join('')}
-                </ol>
-              `
-                  : ''
-              }
-              <p><strong>Answer:</strong> ${question.answer}</p>
-              <p><em>Explanation:</em> ${question.explanation}</p>
-            </div>
-          `;
-        });
+        quizHtml += `<div style="margin-bottom: 24px;">`;
+        quizHtml += result.content;
+        quizHtml += `</div>`;
 
         sendSSE(res, 'message', { type: 'content', data: quizHtml });
       } else {
         // Fallback to basic explanation
-        const generator = deepContentService.generateDeepExplanation({
+        const generator = streamingExplanationService.generateDeepExplanation({
           chunks,
           topic: topicId,
           subtopic,
