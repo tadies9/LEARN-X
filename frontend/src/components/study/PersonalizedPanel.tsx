@@ -80,7 +80,7 @@ export function PersonalizedPanel({
     
     // Send feedback to backend
     try {
-      await fetch('/api/ai/feedback', {
+      await fetch('/api/v1/learn/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -7,7 +7,7 @@ import moduleRoutes from './module.routes';
 import { fileRoutes } from './fileRoutes';
 import notificationRoutes from './notification.routes';
 // import userRoutes from './user.routes';
-import aiRoutes from './ai.routes';
+// Removed old AI routes - use aiLearnRoutes instead
 import sessionRoutes from './session.routes';
 import aiLearnRoutes from './aiLearnRoutes';
 import searchRoutes from './searchRoutes';
@@ -57,7 +57,6 @@ router.use('/courses', courseRoutes);
 router.use('/modules', moduleRoutes);
 router.use('/notifications', notificationRoutes);
 // router.use('/users', userRoutes);
-// router.use('/ai', aiRoutes); // DEPRECATED: Use /learn routes instead
 router.use('/learn', aiLearnRoutes); // AI learning routes with advanced personalization
 router.use('/sessions', sessionRoutes);
 router.use('/search', searchRoutes); // Vector search routes
@@ -77,7 +76,7 @@ router.get('/', (_, res) => {
       modules: '/modules',
       users: '/users',
       files: '/files',
-      ai: '/ai',
+      learn: '/learn',
       health: '/health',
     },
   });
