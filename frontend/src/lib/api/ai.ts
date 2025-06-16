@@ -62,7 +62,7 @@ export class AIApiService {
    */
   static async search(options: SearchOptions): Promise<SearchResponse> {
     const response = await API_CLIENT.get('/ai/search', {
-      params: options
+      params: options,
     });
     return response.data.data;
   }
@@ -70,9 +70,26 @@ export class AIApiService {
   /**
    * Generate outline for a file
    */
-  static async generateOutline(fileId: string): Promise<{ sections: OutlineSection[] }> {
-    const response = await API_CLIENT.get(`/learn/outline/${fileId}`);
-    return response.data.data;
+  static async generateOutline(
+    fileId: string,
+    token?: string
+  ): Promise<{ sections: OutlineSection[] }> {
+    const config = token
+      ? {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      : {};
+
+    const response = await API_CLIENT.get(`/learn/outline/${fileId}`, config);
+
+    // Some endpoints wrap data under { data: { … } }, others return directly.
+    const payload = response.data?.data ?? response.data;
+
+    return {
+      sections: payload.sections ?? [],
+    };
   }
 
   /**
@@ -88,15 +105,15 @@ export class AIApiService {
     // Use the same base URL as API_CLIENT
     const baseUrl = API_CLIENT.defaults.baseURL;
     const fullUrl = `${baseUrl}/learn/explain/stream`;
-    
+
     // Streaming to endpoint
-    
+
     const response = await fetch(fullUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${params.token}`,
-        'Accept': 'text/event-stream',
+        Authorization: `Bearer ${params.token}`,
+        Accept: 'text/event-stream',
         'Cache-Control': 'no-cache',
       },
       credentials: 'include', // Required for CORS with credentials
@@ -118,11 +135,14 @@ export class AIApiService {
   /**
    * Generate summary for a file
    */
-  static async generateSummary(fileId: string, format: 'key-points' | 'comprehensive' | 'visual-map'): Promise<{ summary: string; format: string }> {
+  static async generateSummary(
+    fileId: string,
+    format: 'key-points' | 'comprehensive' | 'visual-map'
+  ): Promise<{ summary: string; format: string }> {
     const response = await API_CLIENT.post('/learn/explain/stream', {
       fileId,
       mode: 'summary',
-      format
+      format,
     });
     return response.data.data;
   }
@@ -130,7 +150,10 @@ export class AIApiService {
   /**
    * Generate flashcards from content
    */
-  static async generateFlashcards(fileId: string, chunkIds?: string[]): Promise<{
+  static async generateFlashcards(
+    fileId: string,
+    chunkIds?: string[]
+  ): Promise<{
     flashcards: Array<{
       front: string;
       back: string;
@@ -140,7 +163,7 @@ export class AIApiService {
   }> {
     const response = await API_CLIENT.post('/ai/flashcards', {
       fileId,
-      ...(chunkIds && { chunkIds })
+      ...(chunkIds && { chunkIds }),
     });
     return response.data.data;
   }
@@ -149,7 +172,7 @@ export class AIApiService {
    * Generate quiz questions
    */
   static async generateQuiz(
-    fileId: string, 
+    fileId: string,
     type: 'multiple_choice' | 'true_false' | 'short_answer',
     chunkIds?: string[]
   ): Promise<{
@@ -165,7 +188,7 @@ export class AIApiService {
     const response = await API_CLIENT.post('/ai/quiz', {
       fileId,
       type,
-      ...(chunkIds && { chunkIds })
+      ...(chunkIds && { chunkIds }),
     });
     return response.data.data;
   }

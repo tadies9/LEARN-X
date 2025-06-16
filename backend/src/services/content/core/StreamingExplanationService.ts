@@ -25,8 +25,11 @@ export class StreamingExplanationService {
    */
   async *generateDeepExplanation(params: DeepExplanationParams): AsyncGenerator<string> {
     try {
+      // Reduce context length to ~1500 tokens (~8000 characters) to keep prompt focused
+      const rawContent = params.chunks.map((c) => c.content).join('\n\n');
+      const content = rawContent.length > 8000 ? rawContent.slice(0, 8000) : rawContent;
+
       // Use the deep personalization engine to create sophisticated prompts
-      const content = params.chunks.map(c => c.content).join('\n\n');
       const personalizedPrompt = deepPersonalizationEngine.buildDeepPersonalizedPrompt(
         params.persona,
         content,
@@ -40,9 +43,19 @@ export class StreamingExplanationService {
           {
             role: 'system',
             content: `You are an expert tutor creating personalized learning content. 
-Return ONLY the inner HTML content - do NOT include <html>, <head>, <body> or any wrapper tags.
+Return ONLY the inner HTML content – do NOT include <html>, <head>, <body> or any wrapper tags.
+STRUCTURE RULES (Phase-2):
+  • <h2> for the main topic title (one per chunk)
+  • <h3> for each key idea/sub-idea
+  • No paragraph (>4 sentences). Break long ideas into multiple <p> blocks
+  • Use <ul>/<li> whenever listing 3 or more items
+  • Leave a blank line between block-level elements (helps readability)
 Use semantic HTML tags like <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <div>, etc.
+Begin with a short, vivid hook from the learner's world (max 20 words) before you explain any concept.
 Start directly with the content (e.g., <h2>Topic Title</h2>).
+
+QUALITY CHECK:
+After you finish drafting, silently think for ONE sentence (do NOT output it) whether the personalization feels forced; if so, internally regenerate until seamless.
 
 PERSONALIZATION APPROACH:
 - Weave analogies and examples NATURALLY throughout the content
@@ -50,9 +63,9 @@ PERSONALIZATION APPROACH:
 - NEVER announce "Here's an analogy" or use special styling boxes
 - Make personalization feel discovered, not forced
 - Integrate examples naturally using their professional context
-- Adapt complexity to their technical level`
+- Adapt complexity to their technical level`,
           },
-          { role: 'user', content: personalizedPrompt }
+          { role: 'user', content: personalizedPrompt },
         ],
         stream: true,
         temperature: 0.7,
@@ -117,4 +130,4 @@ PERSONALIZATION APPROACH:
       throw error;
     }
   }
-} 
+}

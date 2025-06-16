@@ -34,19 +34,5 @@
       }
     ]
   },
-  "overrides": [
-    {
-      "files": ["**/*.test.js", "**/*.test.ts", "**/tests/**/*.js", "**/tests/**/*.ts"],
-      "env": {
-        "jest": true,
-        "node": true
-      },
-      "rules": {
-        "no-console": "off",
-        "@typescript-eslint/no-var-requires": "off",
-        "@typescript-eslint/no-explicit-any": "off"
-      }
-    }
-  ],
   "ignorePatterns": ["dist", "build", ".next", "node_modules", "frontend/public/pdf.worker.min.js"]
 }

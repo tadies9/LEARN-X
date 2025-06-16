@@ -181,138 +181,8 @@ Return a JSON object with a "topics" array containing objects with this structur
   }
 );
 
-// Generate outline for a file (JSON response for frontend compatibility)
-router.get(
-  '/outline/:fileId',
-  authenticateUser,
-  async (req: Request, res: Response): Promise<void> => {
-    const { fileId } = req.params;
-    const userId = (req as any).user.id;
-
-    logger.info('[AI Learn] Generate outline request (JSON):', { fileId, userId });
-
-    if (!fileId) {
-      res.status(400).json({ error: 'File ID is required' });
-      return;
-    }
-
-    try {
-
-      // Get file and its chunks
-      const { data: file, error: fileError } = await supabase
-        .from('course_files')
-        .select('*, chunks:file_chunks(*)')
-        .eq('id', fileId)
-        .order('chunk_index', { foreignTable: 'file_chunks', ascending: true })
-        .single();
-
-      if (fileError || !file) {
-        console.error('[AI Learn] File not found:', fileError);
-        sendSSE(res, 'message', { type: 'error', data: { message: 'File not found' } });
-        res.end();
-        return;
-      }
-
-      logger.info('[AI Learn] File found:', {
-        id: file.id,
-        filename: file.filename,
-        chunksCount: file.chunks?.length || 0,
-      });
-
-      // Extract topics from chunks using GPT-4o
-      if (!file.chunks || file.chunks.length === 0) {
-        console.error('[AI Learn] No chunks found for file:', fileId);
-        sendSSE(res, 'message', {
-          type: 'error',
-          data: {
-            message:
-              'File has not been processed yet. Please wait for file processing to complete.',
-          },
-        });
-        res.end();
-        return;
-      }
-
-      const chunks = file.chunks.map((c: any) => c.content).join('\n\n');
-
-      const topicPrompt = `Analyze this document and create a learning outline with 4-6 main topics.
-
-Document content:
-${chunks.substring(0, 8000)} // Limit for context window
-
-For each topic, provide:
-1. A clear, descriptive title
-2. 5 subtopics: intro, concepts, examples, practice, summary
-
-Return a JSON object with a "topics" array containing objects with this structure:
-{
-  "topics": [{
-    "id": "topic-1",
-    "title": "Topic Title Here",
-    "subtopics": [
-      {"id": "intro-1", "title": "Introduction", "type": "intro", "completed": false},
-      {"id": "concepts-1", "title": "Core Concepts", "type": "concepts", "completed": false},
-      {"id": "examples-1", "title": "Examples", "type": "examples", "completed": false},
-      {"id": "practice-1", "title": "Practice", "type": "practice", "completed": false},
-      {"id": "summary-1", "title": "Summary", "type": "summary", "completed": false}
-    ],
-    "progress": 0
-  }]
-}`;
-
-      logger.info('[AI Learn] Generating outline with GPT-4o...');
-
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: topicPrompt }],
-        response_format: { type: 'json_object' },
-        temperature: 0.7,
-      });
-
-      const responseContent = completion.choices[0].message.content || '{}';
-      logger.info('[AI Learn] GPT response received, length:', responseContent.length);
-
-      const outlineData = JSON.parse(responseContent);
-      const topics = Array.isArray(outlineData) ? outlineData : outlineData.topics || [];
-
-      if (!topics.length) {
-        console.error('[AI Learn] No topics generated');
-        sendSSE(res, 'message', { type: 'error', data: { message: 'Failed to generate topics' } });
-        res.end();
-        return;
-      }
-
-      logger.info('[AI Learn] Generated topics:', topics.length);
-
-      // Stream topics one by one
-      for (let i = 0; i < topics.length; i++) {
-        const topic = topics[i];
-        // Ensure proper ID format
-        topic.id = topic.id || `topic-${i + 1}`;
-
-        // Ensure subtopics have proper IDs
-        if (topic.subtopics) {
-          topic.subtopics = topic.subtopics.map((st: any) => ({
-            ...st,
-            id: st.id || `${st.type}-${i + 1}`,
-          }));
-        }
-
-        sendSSE(res, 'message', { type: 'topic', data: topic });
-        // Small delay to simulate progressive loading
-        await new Promise((resolve) => setTimeout(resolve, 300));
-      }
-
-      // Send completion event
-      sendSSE(res, 'message', { type: 'complete' });
-      res.end();
-    } catch (error) {
-      console.error('[AI Learn] Error generating outline:', error);
-      sendSSE(res, 'message', { type: 'error', data: { message: 'Failed to generate outline' } });
-      res.end();
-    }
-  }
-);
+// Note: Outline generation is now handled by the dedicated learnOutlineRoute
+// This removes the conflicting /outline/:fileId endpoint
 
 // Stream personalized content for a topic/subtopic
 router.post(
@@ -364,7 +234,10 @@ router.post(
       });
 
       if (!persona) {
-        sendSSE(res, 'message', { type: 'error', data: { message: 'User persona not found. Please complete onboarding.' } });
+        sendSSE(res, 'message', {
+          type: 'error',
+          data: { message: 'User persona not found. Please complete onboarding.' },
+        });
         res.end();
         return;
       }
@@ -392,16 +265,17 @@ router.post(
       });
 
       // Convert chunks to the format expected by our orchestrator
-      const chunks = file.chunks?.slice(0, 10).map((c: any) => ({
-        id: c.id,
-        content: c.content,
-        metadata: {
-          chunkIndex: c.chunk_index,
-          contentType: c.content_type || 'text',
-          importance: c.importance || 'medium',
-        },
-        score: 1.0,
-      })) || [];
+      const chunks =
+        file.chunks?.slice(0, 10).map((c: any) => ({
+          id: c.id,
+          content: c.content,
+          metadata: {
+            chunkIndex: c.chunk_index,
+            contentType: c.content_type || 'text',
+            importance: c.importance || 'medium',
+          },
+          score: 1.0,
+        })) || [];
 
       logger.info(`[AI Learn] Using new orchestrator system for ${mode} mode...`);
 
@@ -421,30 +295,30 @@ router.post(
         for await (const chunk of generator) {
           sendSSE(res, 'message', { type: 'content', data: chunk });
         }
-             } else if (mode === 'summary') {
-         // Use deep summary generation
-         const content = chunks.map((c: any) => c.content).join('\n\n');
+      } else if (mode === 'summary') {
+        // Use deep summary generation
+        const content = chunks.map((c: any) => c.content).join('\n\n');
         const result = await deepContentService.generateDeepSummary({
           content,
           format: 'comprehensive',
           persona: transformedPersona,
           model: 'gpt-4o',
         });
-        
+
         sendSSE(res, 'message', { type: 'content', data: result.content });
-             } else if (mode === 'flashcards') {
-         // Use deep flashcard generation
-         const content = chunks.map((c: any) => c.content).join('\n\n');
+      } else if (mode === 'flashcards') {
+        // Use deep flashcard generation
+        const content = chunks.map((c: any) => c.content).join('\n\n');
         const result = await deepContentService.generateDeepFlashcards({
           content,
           persona: transformedPersona,
           contextualExamples: true,
           model: 'gpt-4o',
         });
-        
+
         // Format flashcards as HTML
         let flashcardHtml = '<h2>Flashcards</h2>';
-                 result.flashcards.forEach((card: any, index: number) => {
+        result.flashcards.forEach((card: any, index: number) => {
           flashcardHtml += `
             <div style="border: 1px solid #ddd; padding: 16px; margin: 8px 0; border-radius: 8px;">
               <h4>Question ${index + 1}</h4>
@@ -457,18 +331,18 @@ router.post(
             </div>
           `;
         });
-        
+
         sendSSE(res, 'message', { type: 'content', data: flashcardHtml });
-             } else if (mode === 'quiz') {
-         // Use deep quiz generation
-         const content = chunks.map((c: any) => c.content).join('\n\n');
+      } else if (mode === 'quiz') {
+        // Use deep quiz generation
+        const content = chunks.map((c: any) => c.content).join('\n\n');
         const result = await deepContentService.generateDeepQuiz({
           content,
           persona: transformedPersona,
           type: 'multiple_choice',
           model: 'gpt-4o',
         });
-        
+
         // Format quiz as HTML
         let quizHtml = '<h2>Quiz Questions</h2>';
         result.questions.forEach((question: any, index: number) => {
@@ -476,17 +350,21 @@ router.post(
             <div style="margin-bottom: 24px;">
               <h4>Question ${index + 1}</h4>
               <p>${question.question}</p>
-              ${question.options ? `
+              ${
+                question.options
+                  ? `
                 <ol type="A">
                   ${question.options.map((option: string) => `<li>${option}</li>`).join('')}
                 </ol>
-              ` : ''}
+              `
+                  : ''
+              }
               <p><strong>Answer:</strong> ${question.answer}</p>
               <p><em>Explanation:</em> ${question.explanation}</p>
             </div>
           `;
         });
-        
+
         sendSSE(res, 'message', { type: 'content', data: quizHtml });
       } else {
         // Fallback to basic explanation
