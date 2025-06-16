@@ -1,0 +1,688 @@
+'use client';
+
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import {
+  ArrowLeft,
+  BookOpen,
+  MessageSquare,
+  Brain,
+  HelpCircle,
+  FileText,
+  Lightbulb,
+  ThumbsUp,
+  ThumbsDown,
+  Meh,
+  Download,
+  RefreshCw,
+  Settings,
+  ChevronRight,
+  ChevronDown,
+  Save,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/hooks/useAuth';
+import { AIApiService } from '@/lib/api/ai';
+import { createClient } from '@/lib/supabase/client';
+import { contentCache, CacheOptions } from '@/lib/cache/ContentCache';
+import { useProgressivePreload } from '@/lib/hooks/useProgressivePreload';
+import { SavedContentApiService } from '@/lib/api/saved';
+import React from 'react';
+
+interface Topic {
+  id: string;
+  title: string;
+  summary: string;
+  chunkIds: string[];
+  chunkCount: number;
+  startPage: number;
+  endPage: number;
+  topics: string[];
+  subtopics: Subtopic[];
+  progress: number;
+}
+
+interface Subtopic {
+  id: string;
+  title: string;
+  type: 'intro' | 'concepts' | 'examples' | 'practice' | 'summary';
+  completed: boolean;
+}
+
+export default function LearnPage({ params }: { params: { id: string } }) {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const fileId = searchParams.get('fileId');
+  const fileName = searchParams.get('fileName');
+  const _courseId = params.id;
+
+  // Auth & Profile
+  const { user: _user } = useAuth();
+  const [session, setSession] = useState<any>(null);
+  const [profile, setProfile] = useState<{ persona?: any } | null>(null);
+  const [fileVersion, setFileVersion] = useState<string>('');
+
+  // v2: outline permanently removed – focusing on content stream only
+  const OUTLINE_ENABLED = false;
+
+  // UI State
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(
+    OUTLINE_ENABLED ? null : 'default'
+  );
+  const [selectedSubtopic, setSelectedSubtopic] = useState<string | null>(
+    OUTLINE_ENABLED ? null : 'intro'
+  );
+  const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
+  const [activeMode, setActiveMode] = useState<
+    'explain' | 'summary' | 'flashcards' | 'quiz' | 'chat'
+  >('explain');
+  const [_outlinePanelWidth, _setOutlinePanelWidth] = useState(25); // percentage
+
+  // Content State
+  const [outline, setOutline] = useState<Topic[]>([]);
+  const [streamingContent, setStreamingContent] = useState<string>('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [quickNote, setQuickNote] = useState('');
+  const [reaction, setReaction] = useState<'positive' | 'neutral' | 'negative' | null>(null);
+
+  // Loading & Error State
+  const [isLoadingOutline, setIsLoadingOutline] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Refs
+  const eventSourceRef = useRef<EventSource | null>(null);
+
+  // Progressive Preloading Hook
+  const {
+    preloadContent: _preloadContent,
+    getCacheStats,
+    isPreloading: _isPreloading,
+  } = useProgressivePreload({
+    fileId: fileId || '',
+    currentTopic: selectedTopic || '',
+    currentSubtopic: selectedSubtopic || undefined,
+    topics: outline,
+    fileVersion,
+    persona: profile?.persona,
+    mode: activeMode,
+  });
+
+  // Get session and file version
+  useEffect(() => {
+    const getSession = async () => {
+      const supabase = createClient();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setSession(session);
+
+      // Load user profile for persona via backend API
+      if (session?.user?.id) {
+        try {
+          // Use backend API instead of direct Supabase call
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/persona`, {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          });
+
+          if (response.ok) {
+            const profileData = await response.json();
+            setProfile(profileData);
+          }
+        } catch (error) {
+          console.warn('Failed to load user profile:', error);
+        }
+      }
+    };
+    getSession();
+  }, []);
+
+  // Get file version for cache invalidation via backend API
+  useEffect(() => {
+    const getFileVersion = async () => {
+      if (!fileId || !session?.access_token) return;
+
+      try {
+        // Use backend API instead of direct Supabase call
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/files/${fileId}`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const fileData = await response.json();
+          setFileVersion(fileData.updatedAt || fileData.updated_at);
+        }
+      } catch (error) {
+        console.warn('Failed to get file version:', error);
+      }
+    };
+    getFileVersion();
+  }, [fileId, session]);
+
+  // Initialize when component mounts – skip outline if disabled
+  useEffect(() => {
+    if (!OUTLINE_ENABLED) {
+      setIsLoadingOutline(false);
+      return;
+    }
+
+    if (!fileId) {
+      setError('File ID is required. Please select a file to personalize.');
+      setIsLoadingOutline(false);
+      return;
+    }
+
+    if (!session?.access_token) {
+      return;
+    }
+
+    generateOutline();
+
+    return () => {
+      if (eventSourceRef.current) eventSourceRef.current.close();
+    };
+  }, [fileId, session]);
+
+  // Generate outline (only if OUTLINE_ENABLED)
+  const generateOutline = async () => {
+    if (!OUTLINE_ENABLED) return;
+    try {
+      setIsLoadingOutline(true);
+      setError(null);
+
+      if (!fileId || !session?.access_token) {
+        setError('Missing file information or authentication.');
+        setIsLoadingOutline(false);
+        return;
+      }
+
+      // Fetch outline from backend
+      const outlineResponse = await AIApiService.generateOutline(fileId, session.access_token);
+
+      const sections = outlineResponse.sections || [];
+
+      if (!sections.length) {
+        throw new Error('No outline sections returned');
+      }
+
+      // Map to Topic[] expected by UI
+      const mappedTopics: Topic[] = sections.map((section: any) => {
+        const baseId = section.id || `section-${Math.random().toString(36).slice(2, 8)}`;
+
+        const subtopics: Subtopic[] = [
+          { id: `${baseId}-intro`, title: 'Introduction', type: 'intro', completed: false },
+          { id: `${baseId}-concepts`, title: 'Key Concepts', type: 'concepts', completed: false },
+          { id: `${baseId}-examples`, title: 'Examples', type: 'examples', completed: false },
+          { id: `${baseId}-practice`, title: 'Practice', type: 'practice', completed: false },
+          { id: `${baseId}-summary`, title: 'Summary', type: 'summary', completed: false },
+        ];
+
+        return {
+          id: baseId,
+          title: section.title || 'Untitled Section',
+          summary: section.summary || '',
+          chunkIds: section.chunkIds || [],
+          chunkCount: section.chunkCount || 0,
+          startPage: section.startPage || 1,
+          endPage: section.endPage || 1,
+          topics: section.topics || [],
+          subtopics,
+          progress: 0,
+        } as Topic;
+      });
+
+      setOutline(mappedTopics);
+
+      // Auto-select first topic and intro subtopic
+      if (mappedTopics.length > 0) {
+        setSelectedTopic(mappedTopics[0].id);
+        setExpandedTopics(new Set([mappedTopics[0].id]));
+        setSelectedSubtopic(mappedTopics[0].subtopics[0].id);
+      }
+
+      setIsLoadingOutline(false);
+    } catch (err) {
+      console.error('[LearnPage] Error generating outline:', err);
+      setError('Failed to load outline');
+      setIsLoadingOutline(false);
+    }
+  };
+
+  // Stream content for selected topic/subtopic
+  const streamContent = useCallback(async () => {
+    if (!selectedTopic || !selectedSubtopic || !session?.access_token || !session?.user?.id) return;
+
+    try {
+      // Check cache first
+      const cacheOptions: CacheOptions = {
+        userId: session.user.id,
+        fileId: fileId || '',
+        topicId: selectedTopic,
+        subtopic: selectedSubtopic,
+        mode: activeMode,
+        version: fileVersion,
+        persona: profile?.persona,
+      };
+
+      const cachedContent = await contentCache.get(cacheOptions);
+
+      if (cachedContent) {
+        // Use cached content - set it immediately without streaming
+        setStreamingContent(cachedContent);
+        setIsStreaming(false);
+        return;
+      }
+
+      setIsStreaming(true);
+      setStreamingContent('');
+      setError(null);
+
+      // Cancel any existing stream
+      if (eventSourceRef.current) {
+        eventSourceRef.current.close();
+      }
+
+      const eventSource = new EventSource(`${process.env.NEXT_PUBLIC_API_URL}/stream`);
+      eventSourceRef.current = eventSource;
+
+      // Handle different content modes
+      if (activeMode === 'explain') {
+        // Use explanation streaming with fetch
+        try {
+          const response = await AIApiService.streamExplanation({
+            fileId: fileId || undefined,
+            topicId: selectedTopic,
+            subtopic: selectedSubtopic,
+            mode: activeMode,
+            token: session.access_token,
+          });
+
+          if (!response.body) {
+            throw new Error('No response body');
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let fullContent = '';
+
+          // Stream opened
+
+          // eslint-disable-next-line no-constant-condition
+          while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+              setIsStreaming(false);
+              break;
+            }
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+
+                if (data === '[DONE]') {
+                  setIsStreaming(false);
+                  break;
+                }
+
+                try {
+                  const parsed = JSON.parse(data);
+                  // Handle proper SSE format: {type: 'content', data: 'text'}
+                  if (parsed.type === 'content' && parsed.data) {
+                    fullContent += parsed.data;
+                    // Update content gradually for better UX
+                    setStreamingContent(fullContent);
+                    // No auto-scrolling - let user control their reading position
+                  }
+                  // Handle completion
+                  else if (parsed.type === 'complete') {
+                    setIsStreaming(false);
+                    break;
+                  }
+                  // Handle errors
+                  else if (parsed.type === 'error') {
+                    setError(parsed.data?.message || 'Streaming error occurred');
+                    setIsStreaming(false);
+                    break;
+                  }
+                  // Fallback for old format
+                  else if (parsed.content) {
+                    fullContent += parsed.content;
+                    setStreamingContent(fullContent);
+                    // No auto-scrolling - let user control their reading position
+                  }
+                } catch (parseError) {
+                  console.warn('[LearnPage] Failed to parse SSE data:', data);
+                }
+              }
+            }
+          }
+
+          // Cache the content after successful streaming
+          if (fullContent && session?.user?.id) {
+            await contentCache.set(cacheOptions, fullContent);
+          }
+        } catch (streamError) {
+          if (!eventSourceRef.current) {
+            console.error('[LearnPage] Explanation streaming error:', streamError);
+            setError('Failed to load explanation. Please try again.');
+          }
+          setIsStreaming(false);
+        }
+      } else {
+        // Handle other modes (summary, flashcards, quiz) with direct API calls
+        await handleNonStreamingContent();
+      }
+    } catch (err) {
+      console.error('[LearnPage] Error streaming content:', err);
+      setError('Failed to load content');
+      setIsStreaming(false);
+    }
+  }, [selectedTopic, selectedSubtopic, fileId, activeMode, session, fileVersion, profile?.persona]);
+
+  // Handle non-streaming content modes
+  const handleNonStreamingContent = async () => {
+    try {
+      const currentTopic = outline.find((t) => t.id === selectedTopic);
+      if (!currentTopic) return;
+
+      switch (activeMode) {
+        case 'summary': {
+          const summaryResult = await AIApiService.generateSummary(fileId!, 'key-points');
+          setStreamingContent(
+            `<div class="summary"><h3>Summary</h3><p>${summaryResult.summary}</p></div>`
+          );
+          break;
+        }
+
+        case 'flashcards': {
+          const flashcardsResult = await AIApiService.generateFlashcards(
+            fileId!,
+            currentTopic.chunkIds
+          );
+          const flashcardsHtml = flashcardsResult.flashcards
+            .map(
+              (card, index) => `
+            <div class="flashcard mb-4 p-4 border rounded-lg">
+              <div class="flashcard-front mb-2">
+                <strong>Card ${index + 1}:</strong> ${card.front}
+              </div>
+              <div class="flashcard-back">
+                <strong>Answer:</strong> ${card.back}
+              </div>
+              <div class="flashcard-difficulty text-sm text-gray-600 mt-2">
+                Difficulty: ${card.difficulty}
+              </div>
+            </div>
+          `
+            )
+            .join('');
+          setStreamingContent(
+            `<div class="flashcards"><h3>Flashcards (${flashcardsResult.count})</h3>${flashcardsHtml}</div>`
+          );
+          break;
+        }
+
+        case 'quiz': {
+          const quizResult = await AIApiService.generateQuiz(
+            fileId!,
+            'multiple_choice',
+            currentTopic.chunkIds
+          );
+          const quizHtml = quizResult.questions
+            .map(
+              (q, index) => `
+            <div class="quiz-question mb-6 p-4 border rounded-lg">
+              <div class="question mb-3">
+                <strong>Question ${index + 1}:</strong> ${q.question}
+              </div>
+              ${
+                q.options
+                  ? `
+                <div class="options mb-3">
+                  ${q.options.map((opt, i) => `<div>${String.fromCharCode(65 + i)}) ${opt}</div>`).join('')}
+                </div>
+              `
+                  : ''
+              }
+              <div class="answer mb-2">
+                <strong>Answer:</strong> ${q.answer}
+              </div>
+              <div class="explanation text-sm text-gray-600">
+                <strong>Explanation:</strong> ${q.explanation}
+              </div>
+            </div>
+          `
+            )
+            .join('');
+          setStreamingContent(
+            `<div class="quiz"><h3>Quiz (${quizResult.count} questions)</h3>${quizHtml}</div>`
+          );
+          break;
+        }
+
+        default:
+          setStreamingContent('<p>Select a mode to generate content.</p>');
+      }
+
+      setIsStreaming(false);
+    } catch (error) {
+      console.error('[LearnPage] Error generating content:', error);
+      setError('Failed to generate content. Please try again.');
+      setIsStreaming(false);
+    }
+  };
+
+  // Stream content when selection changes (or on mount if outline disabled)
+  useEffect(() => {
+    if (selectedTopic && selectedSubtopic) {
+      streamContent();
+    }
+  }, [selectedTopic, selectedSubtopic, streamContent]);
+
+  // Toggle topic expansion
+  const toggleTopic = (topicId: string) => {
+    setExpandedTopics((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(topicId)) {
+        newSet.delete(topicId);
+      } else {
+        newSet.add(topicId);
+      }
+      return newSet;
+    });
+  };
+
+  // Handle subtopic selection
+  const selectSubtopic = (topicId: string, subtopicId: string) => {
+    setSelectedTopic(topicId);
+    setSelectedSubtopic(subtopicId);
+    setReaction(null); // Reset reaction for new content
+    setQuickNote(''); // Reset note
+  };
+
+  // Trigger content loading when selection changes
+  useEffect(() => {
+    if (selectedTopic && selectedSubtopic && session?.access_token) {
+      streamContent();
+    }
+  }, [selectedTopic, selectedSubtopic, activeMode, streamContent, session?.access_token]);
+
+  // Handle reaction
+  const handleReaction = async (reactionType: 'positive' | 'neutral' | 'negative') => {
+    setReaction(reactionType);
+
+    // Send feedback to backend using new API
+    try {
+      await AIApiService.submitFeedback({
+        contentId: `${selectedTopic}-${selectedSubtopic}`,
+        helpful: reactionType === 'positive',
+        rating: reactionType === 'positive' ? 5 : reactionType === 'neutral' ? 3 : 1,
+        comments: quickNote || undefined,
+      });
+    } catch (err) {
+      console.error('[LearnPage] Error sending feedback:', err);
+    }
+  };
+
+  // Handle save content
+  const handleSaveContent = async () => {
+    if (!streamingContent || !selectedTopic || !selectedSubtopic || !session?.user?.id || !fileId)
+      return;
+
+    try {
+      const topic = outline.find((t) => t.id === selectedTopic);
+      const _subtopic = topic?.subtopics.find((st) => st.id === selectedSubtopic);
+
+      await SavedContentApiService.save({
+        fileId,
+        topicId: selectedTopic,
+        subtopic: selectedSubtopic,
+        content: streamingContent,
+        mode: activeMode,
+        tags: topic?.topics || [],
+        notes: quickNote || undefined,
+      });
+
+      alert('Content saved successfully! You can access it from your saved content library.');
+    } catch (err) {
+      console.error('[LearnPage] Error saving content:', err);
+      alert('Failed to save content. Please try again.');
+    }
+  };
+
+  // Handle regenerate with cache clear
+  const handleRegenerate = async () => {
+    if (!selectedTopic || !selectedSubtopic || !session?.user?.id) return;
+
+    // Clear cache for this specific content
+    const cacheOptions: CacheOptions = {
+      userId: session.user.id,
+      fileId: fileId || '',
+      topicId: selectedTopic,
+      subtopic: selectedSubtopic,
+      mode: activeMode,
+      version: fileVersion,
+      persona: profile?.persona,
+    };
+
+    // Clear from cache
+    await contentCache.clear(cacheOptions);
+
+    // Regenerate content
+    await streamContent();
+  };
+
+  // Calculate overall progress
+  const overallProgress =
+    outline.reduce((acc, topic) => acc + topic.progress, 0) / (outline.length || 1);
+
+  // Render loading state
+  if (isLoadingOutline && outline.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <h2 className="text-lg font-semibold mb-2">Analyzing Document</h2>
+          <p className="text-muted-foreground">Creating your personalized learning path...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Render error state
+  if (error && !outline.length) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center max-w-md">
+          <div className="text-destructive mb-4">
+            <HelpCircle className="h-12 w-12 mx-auto" />
+          </div>
+          <h2 className="text-lg font-semibold mb-2">Unable to Load Content</h2>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={() => router.back()}>Go Back</Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full w-full overflow-hidden">
+      {/* Main Content Column (100%) */}
+      <div className="flex-1 flex flex-col">
+        {/* Header */}
+        <div className="border-b px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" size="icon" onClick={() => router.back()}>
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+            <div>
+              <h1 className="text-lg font-semibold">{fileName || 'Learning Session'}</h1>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>Progress: {Math.round(overallProgress)}%</span>
+                <div className="w-24 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all duration-300"
+                    style={{ width: `${overallProgress}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Mode Selector */}
+          <div className="flex items-center gap-2">
+            <Tabs value={activeMode} onValueChange={(v) => setActiveMode(v as any)}>
+              <TabsList>
+                <TabsTrigger value="explain" className="gap-2">
+                  <BookOpen className="h-4 w-4" />
+                  Explain
+                </TabsTrigger>
+                <TabsTrigger value="summary" className="gap-2">
+                  <FileText className="h-4 w-4" />
+                  Summary
+                </TabsTrigger>
+                <TabsTrigger value="flashcards" className="gap-2">
+                  <Brain className="h-4 w-4" />
+                  Flashcards
+                </TabsTrigger>
+                <TabsTrigger value="quiz" className="gap-2">
+                  <HelpCircle className="h-4 w-4" />
+                  Quiz
+                </TabsTrigger>
+                <TabsTrigger value="chat" className="gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Chat
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
+          </div>
+        </div>
+
+        {/* Streaming Content */}
+        <div className="flex-1 overflow-auto p-6 bg-background/60">
+          {isStreaming && !streamingContent && (
+            <p className="text-sm text-muted-foreground">Generating personalized explanation…</p>
+          )}
+          {error && (
+            <p className="text-sm text-destructive mb-4">{error}</p>
+          )}
+          <article
+            className="prose lg:prose-lg dark:prose-invert max-w-screen-lg mx-auto"
+            dangerouslySetInnerHTML={{ __html: streamingContent }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

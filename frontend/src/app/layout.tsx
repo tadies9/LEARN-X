@@ -4,6 +4,7 @@ import { QueryClientProvider } from '@/components/providers/QueryClientProvider'
 import { ThemeScript } from '@/components/ThemeScript';
 import { AppLayout } from '@/components/layouts/AppLayout';
 import { Toaster } from 'sonner';
+import MermaidProvider from '@/components/providers/MermaidProvider';
 import { cn } from '@/lib/utils';
 import './globals.css';
 
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             storageKey="learn-x-theme"
             enableTransitions={true}
           >
+            <MermaidProvider />
             <AppLayout>{children}</AppLayout>
             <Toaster
               position="bottom-right"

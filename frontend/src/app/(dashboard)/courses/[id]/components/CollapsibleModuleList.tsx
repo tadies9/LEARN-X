@@ -219,7 +219,7 @@ export function CollapsibleModuleList({
     // Navigate to the learn page with file context
     // Since the study/[fileId] page might have issues, use the learn page with query params
     router.push(
-      `/courses/${courseId}/learn?fileId=${file.id}&fileName=${encodeURIComponent(file.name)}`
+      `/courses/${courseId}/learn-v2?fileId=${file.id}&fileName=${encodeURIComponent(file.name)}`
     );
   };
 
