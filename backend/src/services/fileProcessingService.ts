@@ -3,11 +3,9 @@ import mammoth from 'mammoth';
 import { supabase } from '../config/supabase';
 import { logger } from '../utils/logger';
 import { 
-  cleanExtractedText, 
   cleanChunkContent, 
   sanitizeForDatabase,
   extractSafeText,
-  isTextSafe 
 } from '../utils/unicode-safe-text-processing';
 
 interface ChunkMetadata {

@@ -4,7 +4,7 @@
  */
 
 import { supabase } from '../../config/supabase';
-import { getQueueConfig, QueueName, QueueSettings } from '../../config/supabase-queue.config';
+import { getQueueConfig, QueueName } from '../../config/supabase-queue.config';
 import { logger } from '../../utils/logger';
 
 export interface QueueJob<T = any> {

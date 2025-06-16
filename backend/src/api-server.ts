@@ -52,7 +52,7 @@ app.get('/health', (_, res) => {
 });
 
 // Enhanced health check for queue monitoring
-app.get('/health/detailed', async (req, res) => {
+app.get('/health/detailed', async (_req, res) => {
   try {
     const { enhancedPGMQClient } = await import('./services/queue/EnhancedPGMQClient');
     
@@ -80,13 +80,15 @@ app.use('/api/v1', routes);
 // Error handling
 app.use(errorHandler);
 
+// Start server
+const server = app.listen(PORT, () => {
+  logger.info(`[API Server] Server running on port ${PORT} (workers: external)`);
+  logger.info('[API Server] Background workers are running in separate processes');
+});
+
 // Graceful shutdown
 const shutdown = (signal: string) => {
   logger.info(`[API Server] Received ${signal}, shutting down gracefully...`);
-  
-  const server = app.listen(PORT, () => {
-    logger.info(`[API Server] Server running on port ${PORT} (workers: external)`);
-  });
 
   // Close server gracefully
   server.close(() => {
@@ -103,11 +105,5 @@ const shutdown = (signal: string) => {
 
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
-
-// Start server
-const server = app.listen(PORT, () => {
-  logger.info(`[API Server] Server running on port ${PORT} (workers: external)`);
-  logger.info('[API Server] Background workers are running in separate processes');
-});
 
 export default app;

@@ -15,7 +15,7 @@ const router = Router();
 /**
  * Basic health check - fast response for load balancers
  */
-router.get('/health', (req, res) => {
+router.get('/health', (_req, res) => {
   res.status(200).json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -28,7 +28,7 @@ router.get('/health', (req, res) => {
 /**
  * Detailed health check with queue status
  */
-router.get('/health/detailed', async (req, res) => {
+router.get('/health/detailed', async (_req, res) => {
   try {
     const startTime = Date.now();
     
@@ -67,7 +67,7 @@ router.get('/health/detailed', async (req, res) => {
 /**
  * Queue-specific health endpoints
  */
-router.get('/health/queues', async (req, res) => {
+router.get('/health/queues', async (_req, res) => {
   try {
     const queueMetrics = await enhancedPGMQClient.getAllQueueMetrics();
     
@@ -108,19 +108,21 @@ router.get('/health/queues/:queueName', async (req, res) => {
     
     // Validate queue name
     if (!Object.values(ENHANCED_QUEUE_NAMES).includes(queueName as any)) {
-      return res.status(404).json({
+      res.status(404).json({
         error: 'Queue not found',
         available_queues: Object.values(ENHANCED_QUEUE_NAMES)
       });
+      return;
     }
 
     const metrics = await enhancedPGMQClient.getQueueMetrics(queueName as any);
     
     if (!metrics) {
-      return res.status(404).json({
+      res.status(404).json({
         error: 'Queue metrics not available',
         queue_name: queueName
       });
+      return;
     }
 
     res.json({
@@ -141,7 +143,7 @@ router.get('/health/queues/:queueName', async (req, res) => {
 /**
  * System performance metrics
  */
-router.get('/health/performance', async (req, res) => {
+router.get('/health/performance', async (_req, res) => {
   try {
     const memoryUsage = process.memoryUsage();
     const uptime = process.uptime();
@@ -182,7 +184,7 @@ if (process.env.NODE_ENV === 'development') {
   /**
    * Emergency purge all queues (development only)
    */
-  router.post('/health/queues/purge', async (req, res) => {
+  router.post('/health/queues/purge', async (_req, res) => {
     try {
       logger.warn('[Health] Emergency queue purge requested');
       
@@ -205,7 +207,7 @@ if (process.env.NODE_ENV === 'development') {
   /**
    * Test queue functionality
    */
-  router.post('/health/queues/test', async (req, res) => {
+  router.post('/health/queues/test', async (_req, res) => {
     try {
       const testFileId = 'test-' + Date.now();
       const testUserId = 'test-user';

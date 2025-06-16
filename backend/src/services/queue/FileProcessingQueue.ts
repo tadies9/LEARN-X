@@ -156,7 +156,7 @@ export class FileProcessingQueue {
         const jobs = await this.client.readWithPoll(this.queueName, 30);
         
         if (jobs.length > 0) {
-          await this.processBatch(jobs);
+          await this.processBatch(jobs as QueueJob<FileProcessingPayload>[]);
         }
         
         // Small delay between poll cycles to prevent overwhelming

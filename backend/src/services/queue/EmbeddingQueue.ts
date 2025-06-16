@@ -183,7 +183,7 @@ export class EmbeddingQueue {
         } else {
           // Reset backoff on activity
           backoffMultiplier = 1;
-          await this.processBatch(jobs);
+          await this.processBatch(jobs as QueueJob<EmbeddingPayload>[]);
           await this.sleep(baseInterval);
         }
         
@@ -248,8 +248,12 @@ export class EmbeddingQueue {
       const { VectorEmbeddingService } = await import('../embeddings/VectorEmbeddingService');
       const embeddingService = new VectorEmbeddingService();
       
-      // Process embeddings for the chunks
-      await embeddingService.processBatch(chunks, job.message.userId);
+      // Process embeddings for the chunks - add fileId to each chunk
+      const chunksWithFileId = chunks.map(chunk => ({
+        ...chunk,
+        fileId
+      }));
+      await embeddingService.processBatch(chunksWithFileId, job.message.userId);
       
       // Delete message on success
       await this.client.delete(this.queueName, job.msg_id);

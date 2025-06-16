@@ -111,7 +111,7 @@ export class NotificationQueue {
         const jobs = await this.client.read(this.queueName);
         
         if (jobs.length > 0) {
-          await this.processBatch(jobs);
+          await this.processBatch(jobs as QueueJob<NotificationPayload>[]);
         }
         
         await this.sleep(pollInterval);

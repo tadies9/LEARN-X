@@ -121,7 +121,7 @@ export class WorkerHealth {
    */
   private calculateHealthStatus(
     memoryUsage: NodeJS.MemoryUsage,
-    uptime: number
+    _uptime: number
   ): 'healthy' | 'degraded' | 'unhealthy' {
     const memoryUsedMB = memoryUsage.heapUsed / 1024 / 1024;
     const memoryLimitMB = 1024; // 1GB limit
