@@ -24,12 +24,6 @@ export class StreamingExplanationService {
    * Generate deeply personalized explanation with streaming
    */
   async *generateDeepExplanation(params: DeepExplanationParams): AsyncGenerator<string> {
-    console.log('🚀 NEW ORCHESTRATOR SYSTEM ACTIVE! StreamingExplanationService.generateDeepExplanation');
-    console.log('📊 Topic:', params.topic, 'Subtopic:', params.subtopic);
-    console.log('👤 Persona primary interests:', params.persona?.primaryInterests);
-    console.log('👤 Persona role:', params.persona?.currentRole);
-    console.log('📝 Chunks count:', params.chunks?.length);
-    
     try {
       // Use the deep personalization engine to create sophisticated prompts
       const content = params.chunks.map(c => c.content).join('\n\n');
@@ -39,9 +33,6 @@ export class StreamingExplanationService {
         'explanation',
         params.topic
       );
-      
-      console.log('✨ Personalized prompt created, length:', personalizedPrompt.length);
-      console.log('🎯 Prompt preview:', personalizedPrompt.substring(0, 200) + '...');
 
       const stream = await openAIService.getClient().chat.completions.create({
         model: params.model || 'gpt-4o',

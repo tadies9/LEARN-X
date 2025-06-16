@@ -71,7 +71,7 @@ export class AIApiService {
    * Generate outline for a file
    */
   static async generateOutline(fileId: string): Promise<{ sections: OutlineSection[] }> {
-    const response = await API_CLIENT.get(`/ai/outline/${fileId}`);
+    const response = await API_CLIENT.get(`/learn/outline/${fileId}`);
     return response.data.data;
   }
 

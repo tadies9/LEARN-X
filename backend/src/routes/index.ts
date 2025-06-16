@@ -10,6 +10,7 @@ import notificationRoutes from './notification.routes';
 // Removed old AI routes - use aiLearnRoutes instead
 import sessionRoutes from './session.routes';
 import aiLearnRoutes from './aiLearnRoutes';
+import learnOutlineRoute from './learnOutlineRoute';
 import searchRoutes from './searchRoutes';
 import savedContentRoutes from './savedContentRoutes';
 import { healthRoutes } from './healthRoutes';
@@ -57,6 +58,7 @@ router.use('/courses', courseRoutes);
 router.use('/modules', moduleRoutes);
 router.use('/notifications', notificationRoutes);
 // router.use('/users', userRoutes);
+router.use('/learn/outline', learnOutlineRoute); // Outline generation route
 router.use('/learn', aiLearnRoutes); // AI learning routes with advanced personalization
 router.use('/sessions', sessionRoutes);
 router.use('/search', searchRoutes); // Vector search routes

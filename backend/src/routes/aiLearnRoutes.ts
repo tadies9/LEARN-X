@@ -181,6 +181,139 @@ Return a JSON object with a "topics" array containing objects with this structur
   }
 );
 
+// Generate outline for a file (JSON response for frontend compatibility)
+router.get(
+  '/outline/:fileId',
+  authenticateUser,
+  async (req: Request, res: Response): Promise<void> => {
+    const { fileId } = req.params;
+    const userId = (req as any).user.id;
+
+    logger.info('[AI Learn] Generate outline request (JSON):', { fileId, userId });
+
+    if (!fileId) {
+      res.status(400).json({ error: 'File ID is required' });
+      return;
+    }
+
+    try {
+
+      // Get file and its chunks
+      const { data: file, error: fileError } = await supabase
+        .from('course_files')
+        .select('*, chunks:file_chunks(*)')
+        .eq('id', fileId)
+        .order('chunk_index', { foreignTable: 'file_chunks', ascending: true })
+        .single();
+
+      if (fileError || !file) {
+        console.error('[AI Learn] File not found:', fileError);
+        sendSSE(res, 'message', { type: 'error', data: { message: 'File not found' } });
+        res.end();
+        return;
+      }
+
+      logger.info('[AI Learn] File found:', {
+        id: file.id,
+        filename: file.filename,
+        chunksCount: file.chunks?.length || 0,
+      });
+
+      // Extract topics from chunks using GPT-4o
+      if (!file.chunks || file.chunks.length === 0) {
+        console.error('[AI Learn] No chunks found for file:', fileId);
+        sendSSE(res, 'message', {
+          type: 'error',
+          data: {
+            message:
+              'File has not been processed yet. Please wait for file processing to complete.',
+          },
+        });
+        res.end();
+        return;
+      }
+
+      const chunks = file.chunks.map((c: any) => c.content).join('\n\n');
+
+      const topicPrompt = `Analyze this document and create a learning outline with 4-6 main topics.
+
+Document content:
+${chunks.substring(0, 8000)} // Limit for context window
+
+For each topic, provide:
+1. A clear, descriptive title
+2. 5 subtopics: intro, concepts, examples, practice, summary
+
+Return a JSON object with a "topics" array containing objects with this structure:
+{
+  "topics": [{
+    "id": "topic-1",
+    "title": "Topic Title Here",
+    "subtopics": [
+      {"id": "intro-1", "title": "Introduction", "type": "intro", "completed": false},
+      {"id": "concepts-1", "title": "Core Concepts", "type": "concepts", "completed": false},
+      {"id": "examples-1", "title": "Examples", "type": "examples", "completed": false},
+      {"id": "practice-1", "title": "Practice", "type": "practice", "completed": false},
+      {"id": "summary-1", "title": "Summary", "type": "summary", "completed": false}
+    ],
+    "progress": 0
+  }]
+}`;
+
+      logger.info('[AI Learn] Generating outline with GPT-4o...');
+
+      const completion = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        messages: [{ role: 'user', content: topicPrompt }],
+        response_format: { type: 'json_object' },
+        temperature: 0.7,
+      });
+
+      const responseContent = completion.choices[0].message.content || '{}';
+      logger.info('[AI Learn] GPT response received, length:', responseContent.length);
+
+      const outlineData = JSON.parse(responseContent);
+      const topics = Array.isArray(outlineData) ? outlineData : outlineData.topics || [];
+
+      if (!topics.length) {
+        console.error('[AI Learn] No topics generated');
+        sendSSE(res, 'message', { type: 'error', data: { message: 'Failed to generate topics' } });
+        res.end();
+        return;
+      }
+
+      logger.info('[AI Learn] Generated topics:', topics.length);
+
+      // Stream topics one by one
+      for (let i = 0; i < topics.length; i++) {
+        const topic = topics[i];
+        // Ensure proper ID format
+        topic.id = topic.id || `topic-${i + 1}`;
+
+        // Ensure subtopics have proper IDs
+        if (topic.subtopics) {
+          topic.subtopics = topic.subtopics.map((st: any) => ({
+            ...st,
+            id: st.id || `${st.type}-${i + 1}`,
+          }));
+        }
+
+        sendSSE(res, 'message', { type: 'topic', data: topic });
+        // Small delay to simulate progressive loading
+        await new Promise((resolve) => setTimeout(resolve, 300));
+      }
+
+      // Send completion event
+      sendSSE(res, 'message', { type: 'complete' });
+      res.end();
+    } catch (error) {
+      console.error('[AI Learn] Error generating outline:', error);
+      sendSSE(res, 'message', { type: 'error', data: { message: 'Failed to generate outline' } });
+      res.end();
+    }
+  }
+);
+
 // Stream personalized content for a topic/subtopic
 router.post(
   '/explain/stream',
@@ -338,14 +471,14 @@ router.post(
         
         // Format quiz as HTML
         let quizHtml = '<h2>Quiz Questions</h2>';
-        result.questions.forEach((question, index) => {
+        result.questions.forEach((question: any, index: number) => {
           quizHtml += `
             <div style="margin-bottom: 24px;">
               <h4>Question ${index + 1}</h4>
               <p>${question.question}</p>
               ${question.options ? `
                 <ol type="A">
-                  ${question.options.map(option => `<li>${option}</li>`).join('')}
+                  ${question.options.map((option: string) => `<li>${option}</li>`).join('')}
                 </ol>
               ` : ''}
               <p><strong>Answer:</strong> ${question.answer}</p>
@@ -415,100 +548,7 @@ router.post('/feedback', authenticateUser, async (req: Request, res: Response) =
   }
 });
 
-// Chat endpoint using deep personalization
-router.post('/chat/stream', authenticateUser, async (req: AuthenticatedRequest, res: Response) => {
-  try {
-    const { fileId, message, context } = req.body;
-    const userId = req.user!.id;
-    
-    // Get user persona
-    const { data: personaData, error: personaError } = await supabase
-      .from('personas')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-      
-    if (personaError || !personaData) {
-      return res.status(404).json({ error: 'User persona not found' });
-    }
-    
-    const persona = personaData.persona as UserPersona;
-    
-    // Get relevant chunks for context
-    const { data: chunks } = await supabase
-      .from('chunks')
-      .select('id, content, metadata')
-      .eq('file_id', fileId)
-      .limit(5);
-      
-    if (!chunks || chunks.length === 0) {
-      return res.status(404).json({ error: 'No content found for this file' });
-    }
-    
-    // Set up SSE
-    res.setHeader('Content-Type', 'text/event-stream');
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Connection', 'keep-alive');
-    
-    // Build personalized chat prompt
-    const interests = [
-      ...(persona.personal_interests?.primary || []),
-      ...(persona.personal_interests?.secondary || []),
-    ];
-    
-    const systemPrompt = `You are a helpful AI tutor having a conversation about the provided content.
-    
-User Context:
-- Interests: ${interests.join(', ')}
-- Professional: ${persona.professional_context?.role || 'Student'} in ${persona.professional_context?.industry || 'General'}
-- Technical Level: ${persona.professional_context?.technicalLevel || 'intermediate'}
-- Learning Style: ${persona.learning_style?.primary || 'mixed'}
-
-Instructions:
-- Answer questions naturally and conversationally
-- When relevant, use examples from their interests/professional context
-- NEVER explicitly announce that you're personalizing ("Since you like X...")
-- Make connections feel discovered, not forced
-- Adjust complexity to their technical level
-- Be encouraging and supportive`;
-
-    const userPrompt = `Context from the document:
-${chunks.map(c => c.content).join('\n\n---\n\n')}
-
-User's question: ${message}
-
-${context?.selectedText ? `They highlighted this text: "${context.selectedText}"` : ''}
-
-Provide a helpful, personalized response.`;
-
-    // Stream response using OpenAI
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userPrompt }
-      ],
-      stream: true,
-      temperature: 0.7,
-    });
-    
-    // Stream the response
-    for await (const chunk of completion) {
-      const content = chunk.choices[0]?.delta?.content;
-      if (content) {
-        res.write(`data: ${JSON.stringify({ type: 'content', data: content })}\n\n`);
-      }
-    }
-    
-    res.write(`data: ${JSON.stringify({ type: 'complete' })}\n\n`);
-    res.end();
-    
-  } catch (error) {
-    console.error('[AI Learn] Chat error:', error);
-    res.write(`data: ${JSON.stringify({ type: 'error', data: { message: 'Failed to process chat' } })}\n\n`);
-    res.end();
-  }
-});
+// Chat endpoint removed - use the new orchestrator system via /explain/stream instead
 
 // Regenerate content with feedback
 router.post('/regenerate', authenticateUser, async (_req: Request, res: Response) => {
