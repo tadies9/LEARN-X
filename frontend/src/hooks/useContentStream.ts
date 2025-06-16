@@ -22,10 +22,14 @@ export function useContentStream() {
     setContent('');
 
     try {
-      const response = await fetch('/api/ai/explain', {
+      // Get auth token from localStorage
+      const token = localStorage.getItem('auth_token');
+      
+      const response = await fetch('/api/v1/learn/explain/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
         body: JSON.stringify({
           fileId: params.fileId,
@@ -48,11 +52,15 @@ export function useContentStream() {
       const decoder = new TextDecoder();
       let buffer = '';
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      let done = false;
+      while (!done) {
+        const result = await reader.read();
+        done = result.done || false;
+        const value = result.value;
 
-        buffer += decoder.decode(value, { stream: true });
+        if (value) {
+          buffer += decoder.decode(value, { stream: true });
+        }
         
         // Process SSE data
         const lines = buffer.split('\n');
