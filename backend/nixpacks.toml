@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["nodejs_18", "npm", "postgresql"]
+nixPkgs = ["nodejs_22", "npm-9", "postgresql"]
 
 [phases.install]
 cmds = ["npm ci"]
@@ -8,7 +8,7 @@ cmds = ["npm ci"]
 cmds = ["npm run build"]
 
 [start]
-cmd = "npm run start"
+cmd = "npm start"
 
 [variables]
 NODE_ENV = "production"
