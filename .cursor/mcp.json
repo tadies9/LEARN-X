@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "taskmaster-ai": {
+      "command": "npx",
+      "args": ["-y", "--package=task-master-ai", "task-master-ai"],
+      "env": {
+        "ANTHROPIC_API_KEY": "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",
+        "PERPLEXITY_API_KEY": "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",
+        "OPENAI_API_KEY": "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",
+        "GOOGLE_API_KEY": "YOUR_GOOGLE_KEY_HERE",
+        "MISTRAL_API_KEY": "YOUR_MISTRAL_KEY_HERE",
+        "OPENROUTER_API_KEY": "YOUR_OPENROUTER_KEY_HERE",
+        "XAI_API_KEY": "YOUR_XAI_KEY_HERE",
+        "AZURE_OPENAI_API_KEY": "YOUR_AZURE_KEY_HERE"
+      }
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp@latest"]
+    },
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token",
+        "sbp_63acd536123d6d5ae4c30b3b93c068ae3fe15ee7"
+      ]
+    }
+  }
+}

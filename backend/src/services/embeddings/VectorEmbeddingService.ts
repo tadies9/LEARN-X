@@ -130,7 +130,7 @@ export class VectorEmbeddingService {
       // Prepare data for insertion into file_embeddings table
       const embeddingRecords = chunks.map((chunk, index) => ({
         chunk_id: chunk.id,
-        embedding: `[${embeddings[index].join(',')}]`, // Format as PostgreSQL array
+        embedding: embeddings[index], // Pass as array, not string
         model_version: this.model,
       }));
 
@@ -138,9 +138,7 @@ export class VectorEmbeddingService {
       // Note: file_embeddings table doesn't have file_id column
       const { error: insertError } = await supabase
         .from('file_embeddings')
-        .upsert(embeddingRecords, {
-          onConflict: 'chunk_id',  // Changed from 'chunk_id,model_version' based on unique constraint
-        });
+        .insert(embeddingRecords);
 
       if (insertError) {
         throw insertError;

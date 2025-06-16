@@ -1,0 +1,37 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Commit Verification Rule
+
+## Always Verify Before Commit
+
+**CRITICAL**: Never use `--no-verify` or `--skip-hooks` when committing unless the user explicitly requests it.
+
+### Required Process:
+1. **Always run standard git commit** without bypass flags
+2. **Let pre-commit hooks execute** (type checking, linting, etc.)
+3. **Fix any errors** that the hooks identify before proceeding
+4. **Only bypass verification** if user explicitly says "commit without verify" or similar
+
+### Examples of When NOT to Bypass:
+- TypeScript errors in codebase
+- Linting failures
+- Test failures
+- Build errors
+- Any pre-commit hook failures
+
+### Only Bypass When User Says:
+- "commit without verification"
+- "skip pre-commit hooks"
+- "commit with --no-verify"
+- "bypass verification this time"
+
+### Error Handling:
+- If commit fails due to hooks, **fix the errors first**
+- Don't automatically retry with `--no-verify`
+- Inform user about the specific errors found
+- Ask user if they want to fix errors or bypass verification
+
+This ensures code quality and prevents introducing broken code to the repository.

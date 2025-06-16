@@ -30,7 +30,12 @@ interface FileWithPreview extends File {
   preview?: string;
 }
 
-export function UploadFileDialog({ moduleId, open, onOpenChange, onSuccess }: UploadFileDialogProps) {
+export function UploadFileDialog({
+  moduleId,
+  open,
+  onOpenChange,
+  onSuccess,
+}: UploadFileDialogProps) {
   const { toast } = useToast();
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -39,24 +44,24 @@ export function UploadFileDialog({ moduleId, open, onOpenChange, onSuccess }: Up
   const [fileDescriptions, setFileDescriptions] = useState<Record<string, string>>({});
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newFiles = acceptedFiles.map(file => {
+    const newFiles = acceptedFiles.map((file) => {
       return Object.assign(file, {
-        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
+        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
       });
     });
-    
+
     // Initialize default names for all new files at once
     const newFileNames: Record<string, string> = {};
     const newFileDescriptions: Record<string, string> = {};
-    
-    acceptedFiles.forEach(file => {
+
+    acceptedFiles.forEach((file) => {
       newFileNames[file.name] = file.name;
       newFileDescriptions[file.name] = '';
     });
-    
-    setFileNames(prev => ({ ...prev, ...newFileNames }));
-    setFileDescriptions(prev => ({ ...prev, ...newFileDescriptions }));
-    setFiles(prev => [...prev, ...newFiles]);
+
+    setFileNames((prev) => ({ ...prev, ...newFileNames }));
+    setFileDescriptions((prev) => ({ ...prev, ...newFileDescriptions }));
+    setFiles((prev) => [...prev, ...newFiles]);
   }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -75,13 +80,13 @@ export function UploadFileDialog({ moduleId, open, onOpenChange, onSuccess }: Up
   });
 
   const removeFile = (fileName: string) => {
-    setFiles(prev => prev.filter(file => file.name !== fileName));
-    setFileNames(prev => {
+    setFiles((prev) => prev.filter((file) => file.name !== fileName));
+    setFileNames((prev) => {
       const newNames = { ...prev };
       delete newNames[fileName];
       return newNames;
     });
-    setFileDescriptions(prev => {
+    setFileDescriptions((prev) => {
       const newDescriptions = { ...prev };
       delete newDescriptions[fileName];
       return newDescriptions;
@@ -89,11 +94,11 @@ export function UploadFileDialog({ moduleId, open, onOpenChange, onSuccess }: Up
   };
 
   const updateFileName = (originalName: string, newName: string) => {
-    setFileNames(prev => ({ ...prev, [originalName]: newName }));
+    setFileNames((prev) => ({ ...prev, [originalName]: newName }));
   };
 
   const updateFileDescription = (fileName: string, description: string) => {
-    setFileDescriptions(prev => ({ ...prev, [fileName]: description }));
+    setFileDescriptions((prev) => ({ ...prev, [fileName]: description }));
   };
 
   const formatFileSize = (bytes: number) => {
@@ -130,9 +135,9 @@ export function UploadFileDialog({ moduleId, open, onOpenChange, onSuccess }: Up
           name: fileName,
           description,
           processingOptions: {
-            generateSummary: true,
-            extractKeypoints: true,
-            generateQuestions: false,
+            extractText: true,
+            generateThumbnail: true,
+            transcribe: false,
           },
         });
 
@@ -150,7 +155,7 @@ export function UploadFileDialog({ moduleId, open, onOpenChange, onSuccess }: Up
       setFileNames({});
       setFileDescriptions({});
       setUploadProgress(0);
-      
+
       onSuccess();
       onOpenChange(false);
     } catch (error) {
@@ -213,7 +218,7 @@ export function UploadFileDialog({ moduleId, open, onOpenChange, onSuccess }: Up
           {files.length > 0 && (
             <div className="space-y-4">
               <h4 className="font-medium">Files to upload ({files.length})</h4>
-              
+
               <div className="space-y-3 max-h-60 overflow-y-auto">
                 {files.map((file, index) => (
                   <div key={`${file.name}-${index}`} className="border rounded-lg p-4">
@@ -231,7 +236,7 @@ export function UploadFileDialog({ moduleId, open, onOpenChange, onSuccess }: Up
                           </div>
                         )}
                       </div>
-                      
+
                       <div className="flex-1 space-y-3">
                         <div className="flex items-start justify-between">
                           <div>
@@ -249,7 +254,7 @@ export function UploadFileDialog({ moduleId, open, onOpenChange, onSuccess }: Up
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
-                        
+
                         <div className="space-y-2">
                           <div>
                             <Label htmlFor={`name-${index}`} className="text-xs">
@@ -263,7 +268,7 @@ export function UploadFileDialog({ moduleId, open, onOpenChange, onSuccess }: Up
                               className="h-8"
                             />
                           </div>
-                          
+
                           <div>
                             <Label htmlFor={`description-${index}`} className="text-xs">
                               Description (optional)
@@ -302,7 +307,8 @@ export function UploadFileDialog({ moduleId, open, onOpenChange, onSuccess }: Up
             <div className="text-sm">
               <p className="font-medium text-blue-900">AI Processing</p>
               <p className="text-blue-700">
-                Uploaded files will be automatically processed to generate summaries and extract key points.
+                Uploaded files will be automatically processed to generate summaries and extract key
+                points.
               </p>
             </div>
           </div>

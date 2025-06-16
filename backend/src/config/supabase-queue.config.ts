@@ -3,201 +3,210 @@
  * Follows coding standards: Single responsibility, under 200 lines
  */
 
-export interface SupabaseQueueConfig {
-  queues: {
-    [key: string]: QueueSettings;
-  };
-  database: DatabaseConfig;
-  workers: WorkerConfig;
-  monitoring: MonitoringConfig;
-}
+export type QueueName = 'file_processing' | 'embedding_generation' | 'notification' | 'cleanup';
 
 export interface QueueSettings {
   type: 'standard' | 'unlogged' | 'partitioned';
+  visibilityTimeout: number; // seconds
   batchSize: number;
-  visibilityTimeout: number;
-  pollInterval: number;
-  longPolling: boolean;
   maxRetries: number;
-  partitionInterval?: string;
-  retentionInterval?: string;
-  priority: number;
+  retryDelaySeconds: number;
+  longPolling: boolean;
+  partitionInterval?: string; // for partitioned queues
+  retentionInterval?: string; // for partitioned queues
+  priority: number; // 1 (highest) to 10 (lowest)
 }
 
-export interface DatabaseConfig {
-  connectionPoolSize: number;
-  statementTimeout: number;
-  idleTimeout: number;
-}
-
-export interface WorkerConfig {
-  fileProcessing: WorkerSettings;
-  embeddings: WorkerSettings;
-  notifications: WorkerSettings;
-  cleanup: WorkerSettings;
-}
-
-export interface WorkerSettings {
-  concurrency: number;
-  maxMemory: string;
-  restartPolicy: 'always' | 'on-failure' | 'unless-stopped';
-  healthCheckInterval: number;
-}
-
-export interface MonitoringConfig {
-  metricsInterval: number;
-  alertThresholds: AlertThresholds;
-  retentionDays: number;
-}
-
-export interface AlertThresholds {
-  queueDepth: number;
-  failureRate: number;
-  processingTime: number;
-  memoryUsage: number;
+export interface QueueConfig {
+  queues: Record<QueueName, QueueSettings>;
+  global: {
+    maxConcurrentJobs: number;
+    healthCheckInterval: number; // seconds
+    deadLetterQueueEnabled: boolean;
+    metricsCollectionInterval: number; // seconds
+  };
 }
 
 /**
- * Production-ready Supabase PGMQ configuration
- * Optimized for cost-efficiency and reliability
+ * Production-optimized queue configuration
  */
-export const supabaseQueueConfig: SupabaseQueueConfig = {
+const ENHANCED_QUEUE_CONFIG: QueueConfig = {
   queues: {
-    // High-throughput file processing with unlogged tables for performance
+    // File processing queue - high throughput, unlogged for performance
     file_processing: {
       type: 'unlogged',
-      batchSize: 1, // Process one file at a time for resource control
-      visibilityTimeout: 600, // 10 minutes for complex file processing
-      pollInterval: 2000, // 2 seconds
-      longPolling: true, // Reduce database load
+      visibilityTimeout: 300, // 5 minutes - enough time for file processing
+      batchSize: 5, // Process multiple files concurrently
       maxRetries: 3,
-      priority: 8 // High priority
+      retryDelaySeconds: 30,
+      longPolling: true,
+      priority: 2, // High priority
     },
 
-    // High-volume embedding generation with partitioning
+    // Embedding generation queue - partitioned for scalability
     embedding_generation: {
       type: 'partitioned',
-      batchSize: 10, // Process multiple embeddings together
-      visibilityTimeout: 300, // 5 minutes for API calls
-      pollInterval: 1000, // 1 second
+      visibilityTimeout: 600, // 10 minutes - embedding generation can be slow
+      batchSize: 10, // Process multiple chunks together
+      maxRetries: 2,
+      retryDelaySeconds: 60,
       longPolling: true,
-      maxRetries: 5, // More retries for API failures
       partitionInterval: 'daily',
       retentionInterval: '7 days',
-      priority: 7 // High priority
+      priority: 3, // Medium-high priority
     },
 
-    // Standard notifications with high throughput
+    // Notification queue - standard, reliable delivery
     notification: {
       type: 'standard',
-      batchSize: 50, // Batch notifications for efficiency
-      visibilityTimeout: 60, // 1 minute for simple operations
-      pollInterval: 5000, // 5 seconds
-      longPolling: false, // Not critical for notifications
-      maxRetries: 2,
-      priority: 5 // Medium priority
+      visibilityTimeout: 60, // 1 minute - notifications should be fast
+      batchSize: 20, // High batch size for notifications
+      maxRetries: 5, // More retries for notifications
+      retryDelaySeconds: 15,
+      longPolling: true,
+      priority: 4, // Medium priority
     },
 
-    // Cleanup operations with low priority
+    // Cleanup queue - low priority background tasks
     cleanup: {
       type: 'standard',
-      batchSize: 100, // Large batches for cleanup
-      visibilityTimeout: 1800, // 30 minutes for complex cleanup
-      pollInterval: 60000, // 1 minute
-      longPolling: false,
+      visibilityTimeout: 120, // 2 minutes
+      batchSize: 1, // Single cleanup tasks
       maxRetries: 2,
-      priority: 3 // Low priority
-    }
+      retryDelaySeconds: 300, // 5 minute delay between retries
+      longPolling: false, // No rush for cleanup
+      priority: 8, // Low priority
+    },
   },
 
-  database: {
-    connectionPoolSize: 10,
-    statementTimeout: 30000, // 30 seconds
-    idleTimeout: 600000 // 10 minutes
+  global: {
+    maxConcurrentJobs: 50, // Total concurrent jobs across all queues
+    healthCheckInterval: 30, // Check health every 30 seconds
+    deadLetterQueueEnabled: true, // Enable dead letter queue for failed jobs
+    metricsCollectionInterval: 60, // Collect metrics every minute
   },
-
-  workers: {
-    fileProcessing: {
-      concurrency: 2, // Limit concurrent file processing
-      maxMemory: '1GB',
-      restartPolicy: 'always',
-      healthCheckInterval: 30000 // 30 seconds
-    },
-    embeddings: {
-      concurrency: 5, // Higher concurrency for API calls
-      maxMemory: '512MB',
-      restartPolicy: 'always',
-      healthCheckInterval: 30000
-    },
-    notifications: {
-      concurrency: 10, // High concurrency for simple operations
-      maxMemory: '256MB',
-      restartPolicy: 'always',
-      healthCheckInterval: 60000 // 1 minute
-    },
-    cleanup: {
-      concurrency: 1, // Single cleanup process
-      maxMemory: '256MB',
-      restartPolicy: 'on-failure',
-      healthCheckInterval: 300000 // 5 minutes
-    }
-  },
-
-  monitoring: {
-    metricsInterval: 60000, // 1 minute
-    alertThresholds: {
-      queueDepth: 100, // Alert if queue has >100 pending jobs
-      failureRate: 0.05, // Alert if >5% failure rate
-      processingTime: 600, // Alert if processing takes >10 minutes
-      memoryUsage: 0.8 // Alert if >80% memory usage
-    },
-    retentionDays: 30
-  }
 };
 
 /**
- * Environment-specific queue configuration overrides
+ * Get queue configuration for a specific queue
  */
-export const getQueueConfig = (): SupabaseQueueConfig => {
+export function getQueueConfig(): QueueConfig {
+  return ENHANCED_QUEUE_CONFIG;
+}
+
+/**
+ * Get settings for a specific queue
+ */
+export function getQueueSettings(queueName: QueueName): QueueSettings {
+  const config = getQueueConfig();
+  const settings = config.queues[queueName];
+
+  if (!settings) {
+    throw new Error(`Queue configuration not found for: ${queueName}`);
+  }
+
+  return settings;
+}
+
+/**
+ * Validate queue configuration
+ */
+export function validateQueueConfig(): boolean {
+  const config = getQueueConfig();
+
+  for (const [queueName, settings] of Object.entries(config.queues)) {
+    // Validate required fields
+    if (!settings.type || !settings.visibilityTimeout || !settings.batchSize) {
+      throw new Error(`Invalid configuration for queue: ${queueName}`);
+    }
+
+    // Validate ranges
+    if (settings.visibilityTimeout < 1 || settings.visibilityTimeout > 3600) {
+      throw new Error(`Invalid visibilityTimeout for queue ${queueName}: must be 1-3600 seconds`);
+    }
+
+    if (settings.batchSize < 1 || settings.batchSize > 100) {
+      throw new Error(`Invalid batchSize for queue ${queueName}: must be 1-100`);
+    }
+
+    if (settings.maxRetries < 0 || settings.maxRetries > 10) {
+      throw new Error(`Invalid maxRetries for queue ${queueName}: must be 0-10`);
+    }
+
+    // Validate partitioned queue settings
+    if (settings.type === 'partitioned') {
+      if (!settings.partitionInterval || !settings.retentionInterval) {
+        throw new Error(
+          `Partitioned queue ${queueName} requires partitionInterval and retentionInterval`
+        );
+      }
+    }
+  }
+
+  return true;
+}
+
+/**
+ * Environment-specific overrides
+ */
+export function getEnvironmentConfig(): Partial<QueueConfig> {
   const env = process.env.NODE_ENV || 'development';
-  
-  if (env === 'development') {
-    return {
-      ...supabaseQueueConfig,
-      queues: {
-        ...supabaseQueueConfig.queues,
-        // Smaller batch sizes for development
-        file_processing: {
-          ...supabaseQueueConfig.queues.file_processing,
-          batchSize: 1,
-          pollInterval: 5000 // Slower polling in development
+
+  switch (env) {
+    case 'production':
+      return {
+        global: {
+          maxConcurrentJobs: 100, // Higher concurrency in production
+          healthCheckInterval: 15, // More frequent health checks
+          deadLetterQueueEnabled: true,
+          metricsCollectionInterval: 30, // More frequent metrics
         },
-        embedding_generation: {
-          ...supabaseQueueConfig.queues.embedding_generation,
-          batchSize: 2,
-          type: 'standard' // Simpler queue type for development
-        }
-      }
-    };
-  }
+      };
 
-  if (env === 'test') {
-    return {
-      ...supabaseQueueConfig,
-      queues: {
-        ...supabaseQueueConfig.queues,
-        // Fast processing for tests
-        file_processing: {
-          ...supabaseQueueConfig.queues.file_processing,
-          visibilityTimeout: 30,
-          pollInterval: 100
-        }
-      }
-    };
-  }
+    case 'development':
+      return {
+        global: {
+          maxConcurrentJobs: 10, // Lower concurrency in development
+          healthCheckInterval: 60, // Less frequent health checks
+          deadLetterQueueEnabled: false, // Simpler setup for dev
+          metricsCollectionInterval: 120, // Less frequent metrics
+        },
+      };
 
-  return supabaseQueueConfig;
-};
+    case 'test':
+      return {
+        global: {
+          maxConcurrentJobs: 5,
+          healthCheckInterval: 120,
+          deadLetterQueueEnabled: false,
+          metricsCollectionInterval: 300,
+        },
+      };
+
+    default:
+      return {};
+  }
+}
+
+/**
+ * Merge environment-specific config with base config
+ */
+export function getConfigForEnvironment(): QueueConfig {
+  const baseConfig = getQueueConfig();
+  const envConfig = getEnvironmentConfig();
+
+  return {
+    ...baseConfig,
+    global: {
+      ...baseConfig.global,
+      ...envConfig.global,
+    },
+    queues: {
+      ...baseConfig.queues,
+      ...envConfig.queues,
+    },
+  };
+}
 
 /**
  * Queue priority mapping for task routing
@@ -207,7 +216,7 @@ export const QUEUE_PRIORITIES = {
   HIGH: 7,
   MEDIUM: 5,
   LOW: 3,
-  BACKGROUND: 1
+  BACKGROUND: 1,
 } as const;
 
 /**
@@ -217,7 +226,5 @@ export const ENHANCED_QUEUE_NAMES = {
   FILE_PROCESSING: 'file_processing',
   EMBEDDING_GENERATION: 'embedding_generation',
   NOTIFICATION: 'notification',
-  CLEANUP: 'cleanup'
+  CLEANUP: 'cleanup',
 } as const;
-
-export type QueueName = typeof ENHANCED_QUEUE_NAMES[keyof typeof ENHANCED_QUEUE_NAMES];

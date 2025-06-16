@@ -44,7 +44,7 @@ export function FileUploadDialog({
       let completedFiles = 0;
 
       for (const file of selectedFiles) {
-        await fileApi.uploadFile(moduleId, file, {});
+        await fileApi.uploadFile(file, { moduleId });
         completedFiles++;
         setUploadProgress((completedFiles / totalFiles) * 100);
       }

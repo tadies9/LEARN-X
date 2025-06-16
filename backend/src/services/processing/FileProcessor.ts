@@ -91,9 +91,9 @@ export class FileProcessor {
 
       // Update file status to completed
       await this.updateFileStatus(fileId, 'completed', {
-        processed_at: new Date().toISOString(),
-        chunk_count: savedChunks.length,
-        processing_metadata: {
+        metadata: {
+          processed_at: new Date().toISOString(),
+          chunk_count: savedChunks.length,
           contentLength: extractedContent.length,
           chunkingComplete: true,
           embeddingsQueued: true

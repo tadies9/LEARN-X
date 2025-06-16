@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { EnhancedThemeProvider } from '@/components/providers/EnhancedThemeProvider';
+import { QueryClientProvider } from '@/components/providers/QueryClientProvider';
 import { ThemeScript } from '@/components/ThemeScript';
 import { AppLayout } from '@/components/layouts/AppLayout';
 import { Toaster } from 'sonner';
@@ -36,20 +37,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preload" as="image" href="/demo-thumbnail.svg" />
       </head>
       <body className={cn('min-h-screen bg-background font-sans antialiased')}>
-        <EnhancedThemeProvider
-          defaultTheme="system"
-          storageKey="learn-x-theme"
-          enableTransitions={true}
-        >
-          <AppLayout>{children}</AppLayout>
-          <Toaster
-            position="bottom-right"
-            visibleToasts={process.env.NODE_ENV === 'production' ? 3 : 1}
-            style={{
-              display: process.env.NODE_ENV === 'production' ? 'block' : 'none',
-            }}
-          />
-        </EnhancedThemeProvider>
+        <QueryClientProvider>
+          <EnhancedThemeProvider
+            defaultTheme="system"
+            storageKey="learn-x-theme"
+            enableTransitions={true}
+          >
+            <AppLayout>{children}</AppLayout>
+            <Toaster
+              position="bottom-right"
+              visibleToasts={process.env.NODE_ENV === 'production' ? 3 : 1}
+              style={{
+                display: process.env.NODE_ENV === 'production' ? 'block' : 'none',
+              }}
+            />
+          </EnhancedThemeProvider>
+        </QueryClientProvider>
       </body>
     </html>
   );

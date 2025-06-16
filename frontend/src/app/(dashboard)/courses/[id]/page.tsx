@@ -55,11 +55,11 @@ export default function CoursePage() {
         processedModules = modulesData;
       } else if (modulesData && Array.isArray(modulesData.data)) {
         processedModules = modulesData.data;
-      } else if (modulesData && Array.isArray(modulesData.modules)) {
-        processedModules = modulesData.modules;
+      } else if (modulesData && Array.isArray((modulesData as any).modules)) {
+        processedModules = (modulesData as any).modules;
       }
       setModules(processedModules);
-      setStats(statsData);
+      setStats(statsData as CourseStats | null);
     } catch (error) {
       console.error('Error loading course:', error);
       router.push('/courses');

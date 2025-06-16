@@ -3,7 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { personaApi } from '@/lib/api/persona';
 import { useAuth } from '@/hooks/useAuth';
-import type { UserPersona } from '@/lib/types/persona';
+import type { Persona } from '@/lib/types/persona';
 
 export function usePersona() {
   const { user } = useAuth();
@@ -14,13 +14,13 @@ export function usePersona() {
     isLoading,
     error,
     refetch,
-  } = useQuery<UserPersona | null>({
+  } = useQuery<Persona | null>({
     queryKey: ['persona', user?.id],
     queryFn: async () => {
       if (!user?.id) return null;
       try {
         const response = await personaApi.getPersona();
-        return response.data;
+        return response;
       } catch (error) {
         // If persona doesn't exist, return null instead of throwing
         console.log('No persona found for user');
@@ -29,11 +29,11 @@ export function usePersona() {
     },
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
-    cacheTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes (formerly cacheTime)
   });
 
   const updatePersona = useMutation({
-    mutationFn: (data: Partial<UserPersona>) => personaApi.updatePersona(data),
+    mutationFn: (data: Partial<Persona>) => personaApi.upsertPersona(data as any),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['persona', user?.id] });
     },
@@ -41,7 +41,7 @@ export function usePersona() {
 
   const updatePersonaSection = useMutation({
     mutationFn: ({ section, data }: { section: string; data: any }) =>
-      personaApi.updatePersonaSection(section, data),
+      personaApi.updateSection(section, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['persona', user?.id] });
     },
@@ -54,45 +54,45 @@ export function usePersona() {
     refetch,
     updatePersona: updatePersona.mutate,
     updatePersonaSection: updatePersonaSection.mutate,
-    isUpdating: updatePersona.isLoading || updatePersonaSection.isLoading,
+    isUpdating: updatePersona.isPending || updatePersonaSection.isPending,
   };
 }
 
 // Helper function to get persona interests as an array
 export function usePersonaInterests() {
   const { persona } = usePersona();
-  
-  if (!persona?.personal_interests) return [];
-  
+
+  if (!persona?.interests) return [];
+
   const interests = [
-    ...(persona.personal_interests.primary || []),
-    ...(persona.personal_interests.secondary || []),
-    ...(persona.personal_interests.learningTopics || []),
+    ...(persona.interests.primary || []),
+    ...(persona.interests.secondary || []),
+    ...(persona.interests.learningTopics || []),
   ];
-  
+
   return [...new Set(interests)]; // Remove duplicates
 }
 
 // Helper function to get personalized greeting based on communication style
 export function usePersonalizedGreeting(userName: string) {
   const { persona } = usePersona();
-  
-  if (!persona?.communication_tone?.style) {
+
+  if (!persona?.communication?.style) {
     return `Welcome back, ${userName}`;
   }
 
   const hour = new Date().getHours();
   const timeOfDay = hour < 12 ? 'morning' : hour < 17 ? 'afternoon' : 'evening';
 
-  switch (persona.communication_tone.style) {
+  switch (persona.communication.style) {
     case 'casual':
       return `Hey ${userName}! Ready to learn something cool?`;
-    case 'professional':
+    case 'professional_friendly':
       return `Good ${timeOfDay}, ${userName}. Let's continue your learning journey.`;
-    case 'enthusiastic':
+    case 'conversational':
       return `🚀 Welcome back, ${userName}! Excited to dive into today's learning?`;
-    case 'zen':
-      return `Welcome, ${userName}. Take a moment to settle in.`;
+    case 'formal':
+      return `Good ${timeOfDay}, ${userName}. I trust you are ready to proceed with your studies.`;
     default:
       return `Welcome back, ${userName}`;
   }

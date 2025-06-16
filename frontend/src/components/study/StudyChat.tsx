@@ -8,19 +8,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
 import { UserPersona } from '@/lib/types/persona';
 import { useChat } from '@/hooks/useChat';
-import {
-  Send,
-  Bot,
-  User,
-  Sparkles,
-  Copy,
-  ThumbsUp,
-  ThumbsDown,
-} from 'lucide-react';
+import { Send, Bot, User, Sparkles, Copy, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 
 interface StudyChatProps {
   fileId: string;
@@ -41,17 +33,12 @@ interface Message {
   }>;
 }
 
-export function StudyChat({
-  fileId,
-  currentPage,
-  selectedText,
-  userPersona,
-}: StudyChatProps) {
+export function StudyChat({ fileId, currentPage, selectedText, userPersona }: StudyChatProps) {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  
+
   const { sendMessage, isLoading } = useChat({
     fileId,
     onMessage: (message) => {
@@ -115,10 +102,7 @@ export function StudyChat({
     const isUser = message.role === 'user';
 
     return (
-      <div
-        key={message.id}
-        className={cn('flex gap-3', isUser ? 'justify-end' : 'justify-start')}
-      >
+      <div key={message.id} className={cn('flex gap-3', isUser ? 'justify-end' : 'justify-start')}>
         {!isUser && (
           <Avatar className="h-8 w-8">
             <AvatarFallback>
@@ -132,12 +116,13 @@ export function StudyChat({
             <div className="prose prose-sm max-w-none">
               <ReactMarkdown
                 components={{
-                  code({ node, inline, className, children, ...props }) {
+                  code({ node, className, children, ...props }: any) {
+                    const inline = node?.position === undefined;
                     const match = /language-(\w+)/.exec(className || '');
                     return !inline && match ? (
                       <div className="relative">
                         <SyntaxHighlighter
-                          style={oneDark}
+                          style={oneDark as any}
                           language={match[1]}
                           PreTag="div"
                           {...props}
@@ -222,9 +207,7 @@ export function StudyChat({
           <Sparkles className="h-4 w-4" />
           AI Study Assistant
         </h3>
-        <p className="text-sm text-muted-foreground">
-          Ask questions about the content
-        </p>
+        <p className="text-sm text-muted-foreground">Ask questions about the content</p>
       </div>
 
       {/* Messages */}
@@ -236,7 +219,7 @@ export function StudyChat({
               <p className="mt-2 text-sm text-muted-foreground">
                 Start a conversation or try a suggested question
               </p>
-              
+
               {/* Suggested questions */}
               <div className="mt-4 space-y-2">
                 {suggestedQuestions.slice(0, 3).map((question, idx) => (
@@ -258,7 +241,7 @@ export function StudyChat({
           ) : (
             messages.map(renderMessage)
           )}
-          
+
           {isLoading && (
             <div className="flex gap-3">
               <Avatar className="h-8 w-8">
@@ -289,11 +272,7 @@ export function StudyChat({
             placeholder="Ask a question..."
             disabled={isLoading}
           />
-          <Button
-            onClick={handleSend}
-            disabled={!input.trim() || isLoading}
-            size="icon"
-          >
+          <Button onClick={handleSend} disabled={!input.trim() || isLoading} size="icon">
             <Send className="h-4 w-4" />
           </Button>
         </div>

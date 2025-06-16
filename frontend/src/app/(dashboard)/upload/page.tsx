@@ -12,23 +12,23 @@ import { FileApiService, type UploadedFile, type FileProcessingStatus } from '@/
 
 export default function UploadPage() {
   const searchParams = useSearchParams();
-  const { session } = useAuth();
-  
+  const { user } = useAuth();
+
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingProgress, setProcessingProgress] = useState(0);
   const [activeProcessingFiles, setActiveProcessingFiles] = useState<Set<string>>(new Set());
-  
+
   const courseId = searchParams.get('courseId') || 'default';
   const moduleId = searchParams.get('moduleId') || undefined;
   const eventSourcesRef = useRef<Map<string, EventSource>>(new Map());
 
   // Load existing files on mount
   useEffect(() => {
-    if (session && courseId) {
+    if (user && courseId) {
       loadExistingFiles();
     }
-  }, [session, courseId]);
+  }, [user, courseId]);
 
   const loadExistingFiles = async () => {
     try {
@@ -61,15 +61,14 @@ export default function UploadPage() {
         );
 
         // Add file to state
-        setUploadedFiles(prev => [...prev, uploadedFile]);
-        setActiveProcessingFiles(prev => new Set([...prev, uploadedFile.id]));
+        setUploadedFiles((prev) => [...prev, uploadedFile]);
+        setActiveProcessingFiles((prev) => new Set([...prev, uploadedFile.id]));
 
         // Start listening to processing updates
         startProcessingUpdates(uploadedFile.id, session.access_token);
-
       } catch (error) {
         console.error('Failed to upload file:', file.name, error);
-        
+
         // Add failed file to state
         const failedFile: UploadedFile = {
           id: `failed-${Date.now()}`,
@@ -79,10 +78,10 @@ export default function UploadPage() {
           status: 'error',
           progress: 0,
           error: 'Upload failed',
-          uploadedAt: new Date().toISOString()
+          uploadedAt: new Date().toISOString(),
         };
-        
-        setUploadedFiles(prev => [...prev, failedFile]);
+
+        setUploadedFiles((prev) => [...prev, failedFile]);
       }
     }
 
@@ -90,18 +89,18 @@ export default function UploadPage() {
     setProcessingProgress(100);
   };
 
-  const startProcessingUpdates = (fileId: string, token: string) => {
-    const url = FileApiService.getProcessingUpdatesUrl(fileId, token);
+  const startProcessingUpdates = (fileId: string) => {
+    const url = FileApiService.getProcessingUpdatesUrl(fileId);
     const eventSource = new EventSource(url);
-    
+
     eventSourcesRef.current.set(fileId, eventSource);
 
     eventSource.onmessage = (event) => {
       const update: FileProcessingStatus = JSON.parse(event.data);
-      
-      setUploadedFiles(prev => 
-        prev.map(file => 
-          file.id === fileId 
+
+      setUploadedFiles((prev) =>
+        prev.map((file) =>
+          file.id === fileId
             ? {
                 ...file,
                 status: update.status as any,
@@ -109,7 +108,7 @@ export default function UploadPage() {
                 processingStage: update.stage as any,
                 chunkCount: update.chunksGenerated,
                 embeddingCount: update.embeddingsGenerated,
-                error: update.error
+                error: update.error,
               }
             : file
         )
@@ -119,7 +118,7 @@ export default function UploadPage() {
       if (update.status === 'completed' || update.status === 'error') {
         eventSource.close();
         eventSourcesRef.current.delete(fileId);
-        setActiveProcessingFiles(prev => {
+        setActiveProcessingFiles((prev) => {
           const newSet = new Set(prev);
           newSet.delete(fileId);
           return newSet;
@@ -131,7 +130,7 @@ export default function UploadPage() {
       console.error('Processing updates error for file:', fileId, error);
       eventSource.close();
       eventSourcesRef.current.delete(fileId);
-      setActiveProcessingFiles(prev => {
+      setActiveProcessingFiles((prev) => {
         const newSet = new Set(prev);
         newSet.delete(fileId);
         return newSet;
@@ -142,7 +141,7 @@ export default function UploadPage() {
   // Cleanup event sources on unmount
   useEffect(() => {
     return () => {
-      eventSourcesRef.current.forEach(eventSource => {
+      eventSourcesRef.current.forEach((eventSource) => {
         eventSource.close();
       });
       eventSourcesRef.current.clear();
@@ -152,11 +151,11 @@ export default function UploadPage() {
   const retryProcessing = async (fileId: string) => {
     try {
       await FileApiService.retryProcessing(fileId);
-      
+
       // Start listening to updates again
-      if (session?.access_token) {
-        startProcessingUpdates(fileId, session.access_token);
-        setActiveProcessingFiles(prev => new Set([...prev, fileId]));
+      if (user) {
+        startProcessingUpdates(fileId);
+        setActiveProcessingFiles((prev) => new Set([...prev, fileId]));
       }
     } catch (error) {
       console.error('Failed to retry processing:', error);
@@ -166,18 +165,18 @@ export default function UploadPage() {
   const deleteFile = async (fileId: string) => {
     try {
       await FileApiService.deleteFile(fileId);
-      
+
       // Remove from state
-      setUploadedFiles(prev => prev.filter(f => f.id !== fileId));
-      
+      setUploadedFiles((prev) => prev.filter((f) => f.id !== fileId));
+
       // Close any active event source
       const eventSource = eventSourcesRef.current.get(fileId);
       if (eventSource) {
         eventSource.close();
         eventSourcesRef.current.delete(fileId);
       }
-      
-      setActiveProcessingFiles(prev => {
+
+      setActiveProcessingFiles((prev) => {
         const newSet = new Set(prev);
         newSet.delete(fileId);
         return newSet;
@@ -196,12 +195,10 @@ export default function UploadPage() {
         <div className="lg:col-span-2 space-y-6">
           <FileDropzone onDrop={handleFileDrop} />
 
-          {isProcessing && (
-            <ProcessingIndicator progress={processingProgress} />
-          )}
+          {isProcessing && <ProcessingIndicator progress={processingProgress} />}
 
-          <UploadedFilesList 
-            files={uploadedFiles} 
+          <UploadedFilesList
+            files={uploadedFiles}
             onRetry={retryProcessing}
             onDelete={deleteFile}
             activeProcessingFiles={activeProcessingFiles}
@@ -210,11 +207,11 @@ export default function UploadPage() {
 
         {/* Sidebar */}
         <div className="lg:col-span-1">
-          <UploadSidebar 
+          <UploadSidebar
             totalFiles={uploadedFiles.length}
             processingFiles={activeProcessingFiles.size}
-            completedFiles={uploadedFiles.filter(f => f.status === 'completed').length}
-            errorFiles={uploadedFiles.filter(f => f.status === 'error').length}
+            completedFiles={uploadedFiles.filter((f) => f.status === 'completed').length}
+            errorFiles={uploadedFiles.filter((f) => f.status === 'error').length}
           />
         </div>
       </div>

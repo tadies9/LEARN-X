@@ -78,12 +78,16 @@ export function FileGrid({ files, onUpdate }: FileGridProps) {
 
   const handleStudyMode = (file: CourseFile) => {
     // Navigate to study mode for this file
-    router.push(`/courses/${file.courseId}/study/${file.id}`);
+    // Get courseId from the URL params
+    const pathSegments = window.location.pathname.split('/');
+    const courseIdIndex = pathSegments.indexOf('courses') + 1;
+    const courseId = pathSegments[courseIdIndex];
+    router.push(`/courses/${courseId}/study/${file.id}`);
   };
 
   const getFileIcon = (mimeType: string) => {
-    const iconClass = "h-12 w-12";
-    
+    const iconClass = 'h-12 w-12';
+
     if (mimeType.includes('pdf')) {
       return <FileText className={`${iconClass} text-red-500`} />;
     } else if (mimeType.includes('image')) {
@@ -145,9 +149,7 @@ export function FileGrid({ files, onUpdate }: FileGridProps) {
             <CardContent className="p-6">
               {/* File Icon and Type Badge */}
               <div className="flex items-start justify-between mb-4">
-                <div className="p-3 bg-muted rounded-lg">
-                  {getFileIcon(file.mimeType)}
-                </div>
+                <div className="p-3 bg-muted rounded-lg">{getFileIcon(file.mimeType)}</div>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button
@@ -191,9 +193,7 @@ export function FileGrid({ files, onUpdate }: FileGridProps) {
 
               {/* File Name and Description */}
               <div className="space-y-2">
-                <h3 className="font-semibold text-lg line-clamp-2 min-h-[3.5rem]">
-                  {file.name}
-                </h3>
+                <h3 className="font-semibold text-lg line-clamp-2 min-h-[3.5rem]">{file.name}</h3>
                 {file.description && (
                   <p className="text-sm text-muted-foreground line-clamp-2 min-h-[2.5rem]">
                     {file.description}

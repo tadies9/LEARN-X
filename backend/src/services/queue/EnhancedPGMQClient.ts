@@ -33,7 +33,7 @@ export class EnhancedPGMQClient {
   private initialized = new Set<string>();
 
   /**
-   * Creates a queue with the specified configuration
+   * Creates a queue with the specified configuration using enhanced wrapper functions
    */
   async createQueue(queueName: QueueName): Promise<void> {
     if (this.initialized.has(queueName)) {
@@ -46,23 +46,11 @@ export class EnhancedPGMQClient {
     }
 
     try {
-      let rpcFunction: string;
-      let params: any = { queue_name: queueName };
-
-      switch (queueConfig.type) {
-        case 'unlogged':
-          rpcFunction = 'pgmq.create_unlogged';
-          break;
-        case 'partitioned':
-          rpcFunction = 'pgmq.create_partitioned';
-          params.partition_interval = queueConfig.partitionInterval;
-          params.retention_interval = queueConfig.retentionInterval;
-          break;
-        default:
-          rpcFunction = 'pgmq.create';
-      }
-
-      const { error } = await supabase.rpc(rpcFunction, params);
+      // Use the enhanced wrapper function with correct signature
+      const { error } = await supabase.rpc('pgmq_create_enhanced', {
+        queue_name: queueName,
+        queue_type: queueConfig.type,
+      });
 
       if (error && !error.message.includes('already exists')) {
         throw error;
@@ -79,18 +67,14 @@ export class EnhancedPGMQClient {
   /**
    * Sends a single message to the queue
    */
-  async send<T>(
-    queueName: QueueName,
-    message: T,
-    delay = 0
-  ): Promise<bigint> {
+  async send<T>(queueName: QueueName, message: T, delay = 0): Promise<bigint> {
     await this.ensureQueueExists(queueName);
 
     try {
-      const { data, error } = await supabase.rpc('pgmq.send', {
-        queue_name: queueName,
-        msg: message,
-        delay: delay
+      const { data, error } = await supabase.rpc('pgmq_send', {
+        p_queue_name: queueName,
+        p_message: message,
+        p_delay_seconds: delay,
       });
 
       if (error) throw error;
@@ -118,16 +102,15 @@ export class EnhancedPGMQClient {
     }
 
     try {
-      const { data, error } = await supabase.rpc('pgmq.send_batch', {
-        queue_name: queueName,
-        msgs: messages,
-        delay: options.delay || 0
-      });
-
-      if (error) throw error;
+      // Send messages individually since we don't have a batch wrapper function
+      const results: bigint[] = [];
+      for (const message of messages) {
+        const msgId = await this.send(queueName, message, options.delay);
+        results.push(msgId);
+      }
 
       logger.info(`[EnhancedPGMQ] Batch sent to ${queueName}: ${messages.length} messages`);
-      return data;
+      return results;
     } catch (error) {
       logger.error(`[EnhancedPGMQ] Failed to send batch to ${queueName}:`, error);
       throw error;
@@ -137,37 +120,30 @@ export class EnhancedPGMQClient {
   /**
    * Reads messages from the queue with long polling support
    */
-  async readWithPoll<T>(
-    queueName: QueueName,
-    maxPollSeconds = 30
-  ): Promise<QueueJob<T>[]> {
+  async readWithPoll<T>(queueName: QueueName, maxPollSeconds = 30): Promise<QueueJob<T>[]> {
     await this.ensureQueueExists(queueName);
 
     const queueConfig = this.config.queues[queueName];
+
     if (!queueConfig?.longPolling) {
       return this.read(queueName);
     }
 
-    try {
-      const { data, error } = await supabase.rpc('pgmq.read_with_poll', {
-        queue_name: queueName,
-        vt: queueConfig.visibilityTimeout,
-        qty: queueConfig.batchSize,
-        max_poll_seconds: maxPollSeconds
-      });
+    // For long polling, we'll implement a simple polling loop
+    const startTime = Date.now();
+    const pollIntervalMs = 1000; // 1 second intervals
 
-      if (error) throw error;
-
-      const jobs = data || [];
+    while (Date.now() - startTime < maxPollSeconds * 1000) {
+      const jobs = await this.read<T>(queueName);
       if (jobs.length > 0) {
-        logger.debug(`[EnhancedPGMQ] Read ${jobs.length} messages from ${queueName} (long-poll)`);
+        return jobs;
       }
 
-      return jobs;
-    } catch (error) {
-      logger.error(`[EnhancedPGMQ] Failed to read with poll from ${queueName}:`, error);
-      return [];
+      // Wait before next poll
+      await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
     }
+
+    return [];
   }
 
   /**
@@ -179,10 +155,10 @@ export class EnhancedPGMQClient {
     const queueConfig = this.config.queues[queueName];
 
     try {
-      const { data, error } = await supabase.rpc('pgmq.read', {
+      const { data, error } = await supabase.rpc('pgmq_read', {
         queue_name: queueName,
         vt: queueConfig.visibilityTimeout,
-        qty: queueConfig.batchSize
+        qty: queueConfig.batchSize,
       });
 
       if (error) throw error;
@@ -204,9 +180,9 @@ export class EnhancedPGMQClient {
    */
   async delete(queueName: QueueName, msgId: bigint): Promise<boolean> {
     try {
-      const { data, error } = await supabase.rpc('pgmq.delete', {
+      const { data, error } = await supabase.rpc('pgmq_delete', {
         queue_name: queueName,
-        msg_id: msgId
+        msg_id: msgId,
       });
 
       if (error) throw error;
@@ -226,15 +202,17 @@ export class EnhancedPGMQClient {
     if (msgIds.length === 0) return [];
 
     try {
-      const { data, error } = await supabase.rpc('pgmq.delete', {
-        queue_name: queueName,
-        msg_ids: msgIds
-      });
+      // Delete messages individually since we don't have a batch wrapper function
+      const deleted: bigint[] = [];
+      for (const msgId of msgIds) {
+        const success = await this.delete(queueName, msgId);
+        if (success) {
+          deleted.push(msgId);
+        }
+      }
 
-      if (error) throw error;
-
-      logger.info(`[EnhancedPGMQ] Deleted ${data.length} messages from ${queueName}`);
-      return data;
+      logger.info(`[EnhancedPGMQ] Deleted ${deleted.length} messages from ${queueName}`);
+      return deleted;
     } catch (error) {
       logger.error(`[EnhancedPGMQ] Failed to delete batch from ${queueName}:`, error);
       return [];
@@ -242,13 +220,13 @@ export class EnhancedPGMQClient {
   }
 
   /**
-   * Archives a message (moves to archive table instead of deleting)
+   * Archives a single message
    */
   async archive(queueName: QueueName, msgId: bigint): Promise<boolean> {
     try {
-      const { data, error } = await supabase.rpc('pgmq.archive', {
+      const { data, error } = await supabase.rpc('pgmq_archive', {
         queue_name: queueName,
-        msg_id: msgId
+        msg_id: msgId,
       });
 
       if (error) throw error;
@@ -268,15 +246,17 @@ export class EnhancedPGMQClient {
     if (msgIds.length === 0) return [];
 
     try {
-      const { data, error } = await supabase.rpc('pgmq.archive', {
-        queue_name: queueName,
-        msg_ids: msgIds
-      });
+      // Archive messages individually since we don't have a batch wrapper function
+      const archived: bigint[] = [];
+      for (const msgId of msgIds) {
+        const success = await this.archive(queueName, msgId);
+        if (success) {
+          archived.push(msgId);
+        }
+      }
 
-      if (error) throw error;
-
-      logger.info(`[EnhancedPGMQ] Archived ${data.length} messages from ${queueName}`);
-      return data;
+      logger.info(`[EnhancedPGMQ] Archived ${archived.length} messages from ${queueName}`);
+      return archived;
     } catch (error) {
       logger.error(`[EnhancedPGMQ] Failed to archive batch from ${queueName}:`, error);
       return [];
@@ -284,16 +264,17 @@ export class EnhancedPGMQClient {
   }
 
   /**
-   * Gets queue metrics and statistics
+   * Gets metrics for a specific queue
    */
   async getQueueMetrics(queueName: QueueName): Promise<QueueMetrics | null> {
     try {
-      const { data, error } = await supabase.rpc('pgmq.metrics', {
-        queue_name: queueName
+      const { data, error } = await supabase.rpc('metrics', {
+        queue_name: queueName,
       });
 
       if (error) throw error;
-      return data;
+
+      return data?.[0] || null;
     } catch (error) {
       logger.error(`[EnhancedPGMQ] Failed to get metrics for ${queueName}:`, error);
       return null;
@@ -305,9 +286,10 @@ export class EnhancedPGMQClient {
    */
   async getAllQueueMetrics(): Promise<QueueMetrics[]> {
     try {
-      const { data, error } = await supabase.rpc('pgmq.metrics_all');
+      const { data, error } = await supabase.rpc('metrics_all');
 
       if (error) throw error;
+
       return data || [];
     } catch (error) {
       logger.error('[EnhancedPGMQ] Failed to get all queue metrics:', error);
@@ -320,8 +302,8 @@ export class EnhancedPGMQClient {
    */
   async purge(queueName: QueueName): Promise<number> {
     try {
-      const { data, error } = await supabase.rpc('pgmq.purge_queue', {
-        queue_name: queueName
+      const { data, error } = await supabase.rpc('purge_queue', {
+        queue_name: queueName,
       });
 
       if (error) throw error;
@@ -329,13 +311,13 @@ export class EnhancedPGMQClient {
       logger.warn(`[EnhancedPGMQ] Purged ${data} messages from ${queueName}`);
       return data;
     } catch (error) {
-      logger.error(`[EnhancedPGMQ] Failed to purge ${queueName}:`, error);
+      logger.error(`[EnhancedPGMQ] Failed to purge queue ${queueName}:`, error);
       return 0;
     }
   }
 
   /**
-   * Ensures queue exists before operations
+   * Ensures a queue exists before operations
    */
   private async ensureQueueExists(queueName: QueueName): Promise<void> {
     if (!this.initialized.has(queueName)) {

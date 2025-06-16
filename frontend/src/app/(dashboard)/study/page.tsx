@@ -7,18 +7,18 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  BookOpen, 
-  Clock, 
-  Brain, 
-  Target, 
+import {
+  BookOpen,
+  Clock,
+  Brain,
+  Target,
   Sparkles,
   Play,
   Pause,
   RotateCcw,
   CheckCircle,
   Star,
-  Zap
+  Zap,
 } from 'lucide-react';
 
 export default function StudyPage() {
@@ -26,30 +26,37 @@ export default function StudyPage() {
   const [sessionTime, setSessionTime] = useState(0);
   const { materials, loading, error, refetch } = useStudyMaterials();
 
-
   const currentStudyStreak = 7;
   const todayStudyTime = 45; // minutes
   const weeklyGoal = 300; // minutes
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'Beginner': return 'bg-green-100 text-green-800';
-      case 'Intermediate': return 'bg-blue-100 text-blue-800';
-      case 'Advanced': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'Beginner':
+        return 'bg-green-100 text-green-800';
+      case 'Intermediate':
+        return 'bg-blue-100 text-blue-800';
+      case 'Advanced':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'ready': return 'bg-purple-100 text-purple-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'completed':
+        return 'bg-green-100 text-green-800';
+      case 'in-progress':
+        return 'bg-blue-100 text-blue-800';
+      case 'ready':
+        return 'bg-purple-100 text-purple-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const startStudySession = (materialId: number) => {
+  const startStudySession = (materialId: string | number) => {
     setActiveSession(materialId.toString());
     setSessionTime(0);
     // In real app, this would start the AI-powered study session
@@ -105,10 +112,7 @@ export default function StudyPage() {
                 <p className="text-2xl font-bold text-green-600">
                   {Math.round((todayStudyTime / weeklyGoal) * 100)}%
                 </p>
-                <Progress 
-                  value={(todayStudyTime / weeklyGoal) * 100} 
-                  className="h-1 mt-2" 
-                />
+                <Progress value={(todayStudyTime / weeklyGoal) * 100} className="h-1 mt-2" />
               </div>
               <Target className="h-8 w-8 text-green-600" />
             </div>
@@ -130,103 +134,103 @@ export default function StudyPage() {
           ) : error ? (
             <div className="text-center py-8">
               <p className="text-red-500 mb-4">Error: {error}</p>
-              <Button onClick={refetch} variant="outline">Retry</Button>
+              <Button onClick={refetch} variant="outline">
+                Retry
+              </Button>
             </div>
           ) : materials.length === 0 ? (
             <div className="text-center py-8">
               <p className="text-muted-foreground mb-4">No study materials found.</p>
-              <Button onClick={() => window.location.href = '/courses'} variant="outline">
+              <Button onClick={() => (window.location.href = '/courses')} variant="outline">
                 Upload Course Materials
               </Button>
             </div>
           ) : (
             <div className="grid gap-6 lg:grid-cols-2">
               {materials.map((material) => (
-              <Card key={material.id} className="hover:shadow-md transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        {material.title}
-                        <Sparkles className="h-4 w-4 text-primary" />
-                      </CardTitle>
-                      <CardDescription className="mt-1">
-                        Personalized from: {material.originalSource}
-                      </CardDescription>
-                    </div>
-                    <Badge className={getStatusColor(material.status)}>
-                      {material.status === 'in-progress' ? 'In Progress' : 
-                       material.status === 'completed' ? 'Completed' : 'Ready'}
-                    </Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {/* Progress Bar */}
-                    {material.progress > 0 && (
+                <Card key={material.id} className="hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
                       <div>
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Progress</span>
-                          <span>{material.progress}%</span>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          {material.title}
+                          <Sparkles className="h-4 w-4 text-primary" />
+                        </CardTitle>
+                        <CardDescription className="mt-1">
+                          Personalized from: {material.originalSource}
+                        </CardDescription>
+                      </div>
+                      <Badge className={getStatusColor(material.status)}>
+                        {material.status === 'in-progress'
+                          ? 'In Progress'
+                          : material.status === 'completed'
+                            ? 'Completed'
+                            : 'Ready'}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      {/* Progress Bar */}
+                      {material.progress > 0 && (
+                        <div>
+                          <div className="flex justify-between text-sm mb-1">
+                            <span>Progress</span>
+                            <span>{material.progress}%</span>
+                          </div>
+                          <Progress value={material.progress} className="h-2" />
                         </div>
-                        <Progress value={material.progress} className="h-2" />
-                      </div>
-                    )}
+                      )}
 
-                    {/* Personalization Info */}
-                    <div className="bg-blue-50 p-3 rounded-lg">
-                      <p className="text-sm font-medium text-blue-800 mb-2">
-                        🎯 Personalized for: {material.personalizedFor}
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {material.aiFeatures.map((feature, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {feature}
+                      {/* Personalization Info */}
+                      <div className="bg-blue-50 p-3 rounded-lg">
+                        <p className="text-sm font-medium text-blue-800 mb-2">
+                          🎯 Personalized for: {material.personalizedFor}
+                        </p>
+                        <div className="flex flex-wrap gap-1">
+                          {material.aiFeatures.map((feature, index) => (
+                            <Badge key={index} variant="outline" className="text-xs">
+                              {feature}
+                            </Badge>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Study Info */}
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
+                        <div className="flex items-center gap-4">
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-4 w-4" />
+                            {material.estimatedTime}
+                          </span>
+                          <Badge className={getDifficultyColor(material.difficulty)}>
+                            {material.difficulty}
                           </Badge>
-                        ))}
+                        </div>
+                        {material.lastStudied && <span>Last studied: {material.lastStudied}</span>}
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex gap-2">
+                        {material.status === 'completed' ? (
+                          <Button variant="outline" className="flex-1">
+                            <RotateCcw className="h-4 w-4 mr-2" />
+                            Review
+                          </Button>
+                        ) : (
+                          <Button className="flex-1" onClick={() => startStudySession(material.id)}>
+                            <Play className="h-4 w-4 mr-2" />
+                            {material.status === 'in-progress' ? 'Continue' : 'Start'} Study
+                          </Button>
+                        )}
+                        <Button variant="outline" size="icon">
+                          <Brain className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-
-                    {/* Study Info */}
-                    <div className="flex items-center justify-between text-sm text-muted-foreground">
-                      <div className="flex items-center gap-4">
-                        <span className="flex items-center gap-1">
-                          <Clock className="h-4 w-4" />
-                          {material.estimatedTime}
-                        </span>
-                        <Badge className={getDifficultyColor(material.difficulty)}>
-                          {material.difficulty}
-                        </Badge>
-                      </div>
-                      {material.lastStudied && (
-                        <span>Last studied: {material.lastStudied}</span>
-                      )}
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex gap-2">
-                      {material.status === 'completed' ? (
-                        <Button variant="outline" className="flex-1">
-                          <RotateCcw className="h-4 w-4 mr-2" />
-                          Review
-                        </Button>
-                      ) : (
-                        <Button 
-                          className="flex-1"
-                          onClick={() => startStudySession(material.id)}
-                        >
-                          <Play className="h-4 w-4 mr-2" />
-                          {material.status === 'in-progress' ? 'Continue' : 'Start'} Study
-                        </Button>
-                      )}
-                      <Button variant="outline" size="icon">
-                        <Brain className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))}
             </div>
           )}
         </TabsContent>
@@ -234,7 +238,7 @@ export default function StudyPage() {
         <TabsContent value="ready">
           <div className="grid gap-6 lg:grid-cols-2">
             {materials
-              .filter(m => m.status === 'ready')
+              .filter((m) => m.status === 'ready')
               .map((material) => (
                 <Card key={material.id}>
                   <CardContent className="pt-6">
@@ -255,7 +259,7 @@ export default function StudyPage() {
         <TabsContent value="in-progress">
           <div className="grid gap-6 lg:grid-cols-2">
             {materials
-              .filter(m => m.status === 'in-progress')
+              .filter((m) => m.status === 'in-progress')
               .map((material) => (
                 <Card key={material.id}>
                   <CardContent className="pt-6">
@@ -277,7 +281,7 @@ export default function StudyPage() {
         <TabsContent value="completed">
           <div className="grid gap-6 lg:grid-cols-2">
             {materials
-              .filter(m => m.status === 'completed')
+              .filter((m) => m.status === 'completed')
               .map((material) => (
                 <Card key={material.id}>
                   <CardContent className="pt-6">

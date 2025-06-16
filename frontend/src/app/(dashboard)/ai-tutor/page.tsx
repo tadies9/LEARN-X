@@ -7,28 +7,46 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/ScrollArea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Brain, 
-  Send, 
-  Sparkles, 
-  BookOpen, 
+import {
+  Brain,
+  Send,
+  Sparkles,
+  BookOpen,
   Target,
   MessageSquare,
   Lightbulb,
   Zap,
   User,
-  Bot
+  Bot,
 } from 'lucide-react';
+
+interface AiMessage {
+  id: number;
+  type: 'ai';
+  content: string;
+  timestamp: Date;
+  personalization: string;
+}
+
+interface UserMessage {
+  id: number;
+  type: 'user';
+  content: string;
+  timestamp: Date;
+}
+
+type Message = AiMessage | UserMessage;
 
 export default function AITutorPage() {
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([
+  const [messages, setMessages] = useState<Message[]>([
     {
       id: 1,
       type: 'ai',
-      content: "Hi! I'm your personal AI tutor, tailored specifically for you as a basketball fan and visual learner. I can help explain concepts using sports analogies, create visual study guides, and answer questions about your uploaded materials. What would you like to explore today?",
+      content:
+        "Hi! I'm your personal AI tutor, tailored specifically for you as a basketball fan and visual learner. I can help explain concepts using sports analogies, create visual study guides, and answer questions about your uploaded materials. What would you like to explore today?",
       timestamp: new Date(),
-      personalization: 'Basketball analogies, Visual explanations'
+      personalization: 'Basketball analogies, Visual explanations',
     },
   ]);
 
@@ -41,49 +59,49 @@ export default function AITutorPage() {
       title: 'Machine Learning Fundamentals',
       type: 'Study Material',
       progress: 60,
-      lastTopic: 'Neural Networks'
+      lastTopic: 'Neural Networks',
     },
     {
       id: 'react-hooks',
       title: 'React Hooks Deep Dive',
-      type: 'Study Material', 
+      type: 'Study Material',
       progress: 85,
-      lastTopic: 'useEffect patterns'
+      lastTopic: 'useEffect patterns',
     },
     {
       id: 'database-design',
       title: 'Database Design Principles',
       type: 'Study Material',
       progress: 100,
-      lastTopic: 'Normalization'
-    }
+      lastTopic: 'Normalization',
+    },
   ];
 
   const quickActions = [
     {
       icon: Lightbulb,
-      title: "Explain with Basketball",
-      description: "Use basketball analogies to explain complex concepts",
-      prompt: "Can you explain this concept using basketball analogies?"
+      title: 'Explain with Basketball',
+      description: 'Use basketball analogies to explain complex concepts',
+      prompt: 'Can you explain this concept using basketball analogies?',
     },
     {
       icon: Target,
-      title: "Create Visual Summary",
-      description: "Generate a visual diagram or flowchart",
-      prompt: "Create a visual summary of this topic with diagrams"
+      title: 'Create Visual Summary',
+      description: 'Generate a visual diagram or flowchart',
+      prompt: 'Create a visual summary of this topic with diagrams',
     },
     {
       icon: Zap,
-      title: "Quick Quiz",
-      description: "Test your understanding with personalized questions",
-      prompt: "Quiz me on this topic with questions tailored to my learning style"
+      title: 'Quick Quiz',
+      description: 'Test your understanding with personalized questions',
+      prompt: 'Quiz me on this topic with questions tailored to my learning style',
     },
     {
       icon: BookOpen,
-      title: "Study Plan",
-      description: "Get a personalized study plan for this material",
-      prompt: "Create a personalized study plan for mastering this topic"
-    }
+      title: 'Study Plan',
+      description: 'Get a personalized study plan for this material',
+      prompt: 'Create a personalized study plan for mastering this topic',
+    },
   ];
 
   const handleSendMessage = () => {
@@ -101,16 +119,17 @@ export default function AITutorPage() {
 
     // Simulate AI response based on personalization
     setTimeout(() => {
-      let aiResponse = "I understand your question. ";
-      
+      let aiResponse = 'I understand your question. ';
+
       if (message.toLowerCase().includes('basketball')) {
-        aiResponse += "Since you love basketball, let me explain this like a game strategy...";
+        aiResponse += 'Since you love basketball, let me explain this like a game strategy...';
       } else if (message.toLowerCase().includes('visual')) {
         aiResponse += "As a visual learner, I'll create a diagram to help you understand...";
       } else {
-        aiResponse += "Based on your learning profile (basketball fan, visual learner), here's how I'd explain this...";
+        aiResponse +=
+          "Based on your learning profile (basketball fan, visual learner), here's how I'd explain this...";
       }
-      
+
       const aiMessage = {
         id: messages.length + 2,
         type: 'ai' as const,
@@ -118,8 +137,8 @@ export default function AITutorPage() {
         timestamp: new Date(),
         personalization: 'Tailored for basketball fan, visual learner',
       };
-      
-      setMessages(prev => [...prev, aiMessage]);
+
+      setMessages((prev) => [...prev, aiMessage]);
     }, 1000);
   };
 
@@ -156,7 +175,7 @@ export default function AITutorPage() {
                 </div>
                 {selectedContext && (
                   <Badge variant="outline">
-                    Context: {studyContexts.find(c => c.id === selectedContext)?.title}
+                    Context: {studyContexts.find((c) => c.id === selectedContext)?.title}
                   </Badge>
                 )}
               </div>
@@ -171,9 +190,7 @@ export default function AITutorPage() {
                     >
                       <div
                         className={`max-w-[80%] p-4 rounded-lg ${
-                          msg.type === 'user'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
+                          msg.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                         }`}
                       >
                         <div className="flex items-start gap-2 mb-2">
@@ -184,7 +201,7 @@ export default function AITutorPage() {
                           )}
                           <div className="flex-1">
                             <p className="text-sm">{msg.content}</p>
-                            {msg.type === 'ai' && msg.personalization && (
+                            {msg.type === 'ai' && 'personalization' in msg && (
                               <div className="mt-2">
                                 <Badge variant="secondary" className="text-xs">
                                   🎯 {msg.personalization}
@@ -193,15 +210,13 @@ export default function AITutorPage() {
                             )}
                           </div>
                         </div>
-                        <p className="text-xs opacity-70">
-                          {msg.timestamp.toLocaleTimeString()}
-                        </p>
+                        <p className="text-xs opacity-70">{msg.timestamp.toLocaleTimeString()}</p>
                       </div>
                     </div>
                   ))}
                 </div>
               </ScrollArea>
-              
+
               {/* Message Input */}
               <div className="flex gap-2">
                 <Input
@@ -224,13 +239,11 @@ export default function AITutorPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Study Context</CardTitle>
-              <CardDescription>
-                Select material for focused discussion
-              </CardDescription>
+              <CardDescription>Select material for focused discussion</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <Button
-                variant={selectedContext === null ? "default" : "outline"}
+                variant={selectedContext === null ? 'default' : 'outline'}
                 className="w-full justify-start"
                 onClick={() => setSelectedContext(null)}
               >
@@ -240,7 +253,7 @@ export default function AITutorPage() {
               {studyContexts.map((context) => (
                 <Button
                   key={context.id}
-                  variant={selectedContext === context.id ? "default" : "outline"}
+                  variant={selectedContext === context.id ? 'default' : 'outline'}
                   className="w-full justify-start text-left h-auto p-3"
                   onClick={() => setSelectedContext(context.id)}
                 >
@@ -259,9 +272,7 @@ export default function AITutorPage() {
           <Card>
             <CardHeader>
               <CardTitle className="text-lg">Quick Actions</CardTitle>
-              <CardDescription>
-                Common requests for your learning style
-              </CardDescription>
+              <CardDescription>Common requests for your learning style</CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               {quickActions.map((action, index) => (
@@ -274,9 +285,7 @@ export default function AITutorPage() {
                   <action.icon className="h-4 w-4 mr-2 shrink-0" />
                   <div>
                     <p className="text-sm font-medium">{action.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {action.description}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{action.description}</p>
                   </div>
                 </Button>
               ))}

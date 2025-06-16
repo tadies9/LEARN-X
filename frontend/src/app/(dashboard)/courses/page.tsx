@@ -17,6 +17,7 @@ import { EmptyState } from './components/EmptyState';
 import { CourseFilters } from './components/CourseFilters';
 
 import type { Course, CourseFilters as CourseFilterType } from '@/lib/types/course';
+import { isPaginatedResponse, extractItems } from '@/lib/types/api';
 
 export default function CoursesPage() {
   const router = useRouter();
@@ -49,8 +50,19 @@ export default function CoursesPage() {
         limit: pagination.limit,
       });
 
-      setCourses(response.data);
-      setPagination(response.pagination);
+      const items = extractItems(response);
+      setCourses(items);
+
+      if (isPaginatedResponse(response)) {
+        setPagination(response.data.pagination);
+      } else {
+        setPagination({
+          page: 1,
+          limit: pagination.limit,
+          total: items.length,
+          totalPages: 1,
+        });
+      }
     } catch (error) {
       console.error('Error loading courses:', error);
     } finally {
