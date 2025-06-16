@@ -57,8 +57,8 @@ router.use('/courses', courseRoutes);
 router.use('/modules', moduleRoutes);
 router.use('/notifications', notificationRoutes);
 // router.use('/users', userRoutes);
-router.use('/ai', aiRoutes);
-router.use('/learn', aiLearnRoutes); // AI learning routes - mount before fileRoutes
+// router.use('/ai', aiRoutes); // DEPRECATED: Use /learn routes instead
+router.use('/learn', aiLearnRoutes); // AI learning routes with advanced personalization
 router.use('/sessions', sessionRoutes);
 router.use('/search', searchRoutes); // Vector search routes
 router.use('/saved', savedContentRoutes); // Saved content routes

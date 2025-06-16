@@ -119,8 +119,9 @@ export class AIApiService {
    * Generate summary for a file
    */
   static async generateSummary(fileId: string, format: 'key-points' | 'comprehensive' | 'visual-map'): Promise<{ summary: string; format: string }> {
-    const response = await API_CLIENT.post('/ai/summarize', {
+    const response = await API_CLIENT.post('/learn/explain/stream', {
       fileId,
+      mode: 'summary',
       format
     });
     return response.data.data;
