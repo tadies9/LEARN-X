@@ -4,11 +4,20 @@ import { authenticateSSE } from '../middleware/sseAuth';
 import { supabase } from '../config/supabase';
 import { OpenAI } from 'openai';
 import { logger } from '../utils/logger';
+import { StreamingExplanationService } from '../services/content/core/StreamingExplanationService';
+import { AICache } from '../services/cache/AICache';
+import { CostTracker } from '../services/ai/CostTracker';
+import { redisClient } from '../config/redis';
 
 const router = Router();
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
 });
+
+// Initialize the StreamingExplanationService with proper dependencies
+const aiCache = new AICache(redisClient);
+const costTracker = new CostTracker();
+const streamingExplanationService = new StreamingExplanationService(aiCache, costTracker);
 
 // SSE helper to send events
 const sendSSE = (res: Response, event: string, data: any) => {
@@ -176,6 +185,9 @@ Return a JSON object with a "topics" array containing objects with this structur
   }
 );
 
+// Note: Outline generation is now handled by the dedicated learnOutlineRoute
+// This removes the conflicting /outline/:fileId endpoint
+
 // Stream personalized content for a topic/subtopic
 router.post(
   '/explain/stream',
@@ -213,148 +225,138 @@ router.post(
         return;
       }
 
-      // Get user persona
-      const { data: profile } = await supabase
-        .from('profiles')
+      // Get user persona from the proper personas table
+      const { data: persona } = await supabase
+        .from('personas')
         .select('*')
-        .eq('id', userId)
+        .eq('user_id', userId)
         .single();
 
-      const persona = profile?.persona as any;
-
-      logger.info('[AI Learn] User profile:', {
+      logger.info('[AI Learn] User persona:', {
         userId,
-        hasProfile: !!profile,
         hasPersona: !!persona,
       });
-      if (persona) {
-        logger.info('[AI Learn] Persona details:', {
-          interests: persona.interests,
-          learningStyle: persona.learningStyle,
-          professionalBackground: persona.professionalBackground,
+
+      if (!persona) {
+        sendSSE(res, 'message', {
+          type: 'error',
+          data: { message: 'User persona not found. Please complete onboarding.' },
         });
+        res.end();
+        return;
       }
 
-      // Build personalized prompt based on mode
-      let systemPrompt = `You are an expert tutor creating personalized learning content. 
-Return ONLY the inner HTML content - do NOT include <html>, <head>, <body> or any wrapper tags.
-Use semantic HTML tags like <h2>, <h3>, <p>, <ul>, <li>, <strong>, <em>, <div>, etc.
-Start directly with the content (e.g., <h2>Topic Title</h2>).`;
+      // Transform database persona to UserPersona format
+      const transformedPersona = {
+        id: persona.id,
+        userId: persona.user_id,
+        currentRole: persona.professional_context?.role,
+        industry: persona.professional_context?.industry,
+        technicalLevel: persona.professional_context?.technicalLevel,
+        primaryInterests: persona.personal_interests?.primary || [],
+        secondaryInterests: persona.personal_interests?.secondary || [],
+        learningStyle: persona.learning_style?.primary,
+        communicationTone: persona.communication_tone?.style,
+        createdAt: new Date(persona.created_at),
+        updatedAt: new Date(persona.updated_at),
+      };
 
-      if (persona) {
-        systemPrompt += `\n\nStudent Profile:
-- Interests: ${persona.interests?.join(', ') || 'general'}
-- Learning Style: ${persona.learningStyle || 'visual'}
-- Professional Background: ${persona.professionalBackground || 'student'}
-- Field: ${persona.field || 'general'}
-- Communication Preference: ${persona.communicationStyle || 'friendly'}
-
-IMPORTANT: Create analogies using their interests (especially ${persona.interests?.[0] || 'everyday examples'}).
-Match their ${persona.communicationStyle || 'friendly'} communication style.
-Adapt explanations to their ${persona.professionalBackground || 'student'} level.`;
-      }
-
-      const relevantChunks =
-        file.chunks
-          ?.slice(0, 5)
-          .map((c: any) => c.content)
-          .join('\n\n') || '';
-
-      let userPrompt = '';
-
-      switch (mode) {
-        case 'explain':
-          userPrompt = `Explain the ${subtopic ? `"${subtopic}" section of` : ''} the topic "${topicId}" in a personalized way.
-
-Use this document content as reference:
-${relevantChunks.substring(0, 3000)}
-
-Requirements:
-1. Return ONLY content HTML - no <html>, <head>, <body> tags
-2. Include a personalized analogy box using the student's interests
-3. Break down complex concepts into simple terms
-4. Use the student's preferred communication style
-5. Include emoji sparingly for engagement
-
-Structure:
-- Start directly with <h2> for the topic title
-- Include a highlighted analogy box: <div style="background: #f0f7ff; padding: 16px; border-radius: 8px; margin: 16px 0;">
-- Explain key concepts clearly with <h3> subheadings
-- Provide relevant examples in <ul> or <ol> lists
-- End with a brief summary in a <div>`;
-          break;
-
-        case 'summary':
-          userPrompt = `Create a concise summary of "${topicId}".
-
-Use this document content as reference:
-${relevantChunks.substring(0, 2000)}
-
-Format as HTML fragments (no wrapper tags):
-- Start with <h2>Summary</h2>
-- 5-7 key bullet points in <ul>
-- Important terms in <strong>
-- A takeaway message in a styled <div>`;
-          break;
-
-        case 'flashcards':
-          userPrompt = `Generate 5-7 flashcards for "${topicId}".
-
-Use this document content as reference:
-${relevantChunks.substring(0, 2000)}
-
-Format each flashcard as HTML fragments (no wrapper tags):
-- Start with <h2>Flashcards</h2>
-- Each card in a <div style="border: 1px solid #ddd; padding: 16px; margin: 8px 0; border-radius: 8px;">
-- Question in <h4>
-- Answer in <details><summary>Click to reveal</summary>answer here</details>
-- Focus on key concepts`;
-          break;
-
-        case 'quiz':
-          userPrompt = `Create 3 quiz questions about "${topicId}".
-
-Use this document content as reference:
-${relevantChunks.substring(0, 2000)}
-
-Format as HTML fragments (no wrapper tags):
-- Start with <h2>Quiz Questions</h2>
-- Each question in a <div style="margin-bottom: 24px;">
-- Question text in <h4>
-- Options in <ol type="A">
-- Show correct answer clearly marked
-- Include brief explanation`;
-          break;
-
-        case 'chat':
-          userPrompt = `You are ready to answer questions about "${topicId}".
-Briefly introduce the topic and invite questions.
-Keep it conversational and encouraging.`;
-          break;
-
-        default:
-          userPrompt = `Explain "${topicId}" - ${subtopic} based on the document content.`;
-      }
-
-      logger.info(`[AI Learn] Streaming ${mode} content with GPT-4o...`);
-
-      // Stream response from GPT-4o
-      const stream = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt },
-        ],
-        stream: true,
-        temperature: 0.8,
-        max_tokens: 2000,
+      logger.info('[AI Learn] Transformed persona:', {
+        primaryInterests: transformedPersona.primaryInterests,
+        secondaryInterests: transformedPersona.secondaryInterests,
+        currentRole: transformedPersona.currentRole,
+        industry: transformedPersona.industry,
       });
 
-      // Stream chunks to client using proper SSE format
-      for await (const chunk of stream) {
-        const content = chunk.choices[0]?.delta?.content || '';
-        if (content) {
-          sendSSE(res, 'message', { type: 'content', data: content });
+      // Convert chunks to the format expected by our orchestrator
+      const chunks =
+        file.chunks?.slice(0, 10).map((c: any) => ({
+          id: c.id,
+          content: c.content,
+          metadata: {
+            chunkIndex: c.chunk_index,
+            contentType: c.content_type || 'text',
+            importance: c.importance || 'medium',
+          },
+          score: 1.0,
+        })) || [];
+
+      logger.info(`[AI Learn] Using StreamingExplanationService for ${mode} mode...`);
+
+      // Use our StreamingExplanationService based on mode
+      if (mode === 'explain' || !mode) {
+        // Use deep explanation streaming
+        const generator = streamingExplanationService.generateDeepExplanation({
+          chunks,
+          topic: topicId,
+          subtopic,
+          persona: transformedPersona,
+          stream: true,
+          model: 'gpt-4o',
+        });
+
+        // Stream chunks to client using proper SSE format
+        for await (const chunk of generator) {
+          sendSSE(res, 'message', { type: 'content', data: chunk });
+        }
+      } else if (mode === 'summary') {
+        // Use progressive explanation for summary mode
+        const content = chunks.map((c: any) => c.content).join('\n\n');
+        const result = await streamingExplanationService.generateProgressiveExplanation(
+          topicId || 'Summary',
+          content,
+          transformedPersona,
+          'foundation'
+        );
+
+        sendSSE(res, 'message', { type: 'content', data: result.content });
+      } else if (mode === 'flashcards') {
+        // Use progressive explanation for flashcards mode
+        const content = chunks.map((c: any) => c.content).join('\n\n');
+        const result = await streamingExplanationService.generateProgressiveExplanation(
+          topicId || 'Flashcards',
+          content,
+          transformedPersona,
+          'intermediate'
+        );
+
+        // Format as flashcards HTML
+        let flashcardHtml = '<h2>Flashcards</h2>';
+        flashcardHtml += `<div style="border: 1px solid #ddd; padding: 16px; margin: 8px 0; border-radius: 8px;">`;
+        flashcardHtml += result.content;
+        flashcardHtml += `</div>`;
+
+        sendSSE(res, 'message', { type: 'content', data: flashcardHtml });
+      } else if (mode === 'quiz') {
+        // Use progressive explanation for quiz mode
+        const content = chunks.map((c: any) => c.content).join('\n\n');
+        const result = await streamingExplanationService.generateProgressiveExplanation(
+          topicId || 'Quiz',
+          content,
+          transformedPersona,
+          'advanced'
+        );
+
+        // Format as quiz HTML
+        let quizHtml = '<h2>Quiz Questions</h2>';
+        quizHtml += `<div style="margin-bottom: 24px;">`;
+        quizHtml += result.content;
+        quizHtml += `</div>`;
+
+        sendSSE(res, 'message', { type: 'content', data: quizHtml });
+      } else {
+        // Fallback to basic explanation
+        const generator = streamingExplanationService.generateDeepExplanation({
+          chunks,
+          topic: topicId,
+          subtopic,
+          persona: transformedPersona,
+          stream: true,
+          model: 'gpt-4o',
+        });
+
+        for await (const chunk of generator) {
+          sendSSE(res, 'message', { type: 'content', data: chunk });
         }
       }
 
@@ -401,6 +403,8 @@ router.post('/feedback', authenticateUser, async (req: Request, res: Response) =
     res.status(500).json({ error: 'Failed to save feedback' });
   }
 });
+
+// Chat endpoint removed - use the new orchestrator system via /explain/stream instead
 
 // Regenerate content with feedback
 router.post('/regenerate', authenticateUser, async (_req: Request, res: Response) => {

@@ -7,9 +7,10 @@ import moduleRoutes from './module.routes';
 import { fileRoutes } from './fileRoutes';
 import notificationRoutes from './notification.routes';
 // import userRoutes from './user.routes';
-import aiRoutes from './ai.routes';
+// Removed old AI routes - use aiLearnRoutes instead
 import sessionRoutes from './session.routes';
 import aiLearnRoutes from './aiLearnRoutes';
+import learnOutlineRoute from './learnOutlineRoute';
 import searchRoutes from './searchRoutes';
 import savedContentRoutes from './savedContentRoutes';
 import { healthRoutes } from './healthRoutes';
@@ -57,8 +58,8 @@ router.use('/courses', courseRoutes);
 router.use('/modules', moduleRoutes);
 router.use('/notifications', notificationRoutes);
 // router.use('/users', userRoutes);
-router.use('/ai', aiRoutes);
-router.use('/learn', aiLearnRoutes); // AI learning routes - mount before fileRoutes
+router.use('/learn/outline', learnOutlineRoute); // Outline generation route
+router.use('/learn', aiLearnRoutes); // AI learning routes with advanced personalization
 router.use('/sessions', sessionRoutes);
 router.use('/search', searchRoutes); // Vector search routes
 router.use('/saved', savedContentRoutes); // Saved content routes
@@ -77,7 +78,7 @@ router.get('/', (_, res) => {
       modules: '/modules',
       users: '/users',
       files: '/files',
-      ai: '/ai',
+      learn: '/learn',
       health: '/health',
     },
   });

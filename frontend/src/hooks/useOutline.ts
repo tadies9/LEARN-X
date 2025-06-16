@@ -24,7 +24,12 @@ export function useOutline(fileId: string) {
   const { data: outline, isLoading, error } = useQuery<Outline>({
     queryKey: ['outline', fileId],
     queryFn: async () => {
-      const response = await fetch(`/api/ai/outline/${fileId}`);
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`/api/v1/learn/outline/${fileId}`, {
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        }
+      });
       if (!response.ok) {
         throw new Error('Failed to fetch outline');
       }

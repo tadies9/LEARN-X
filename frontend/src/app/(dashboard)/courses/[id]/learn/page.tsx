@@ -63,9 +63,16 @@ export default function LearnPage({ params }: { params: { id: string } }) {
   const [profile, setProfile] = useState<{ persona?: any } | null>(null);
   const [fileVersion, setFileVersion] = useState<string>('');
 
+  // Feature flag – outline disabled for now
+  const OUTLINE_ENABLED = false;
+
   // UI State
-  const [selectedTopic, setSelectedTopic] = useState<string | null>(null);
-  const [selectedSubtopic, setSelectedSubtopic] = useState<string | null>(null);
+  const [selectedTopic, setSelectedTopic] = useState<string | null>(
+    OUTLINE_ENABLED ? null : 'default'
+  );
+  const [selectedSubtopic, setSelectedSubtopic] = useState<string | null>(
+    OUTLINE_ENABLED ? null : 'intro'
+  );
   const [expandedTopics, setExpandedTopics] = useState<Set<string>>(new Set());
   const [activeMode, setActiveMode] = useState<
     'explain' | 'summary' | 'flashcards' | 'quiz' | 'chat'
@@ -112,139 +119,140 @@ export default function LearnPage({ params }: { params: { id: string } }) {
       } = await supabase.auth.getSession();
       setSession(session);
 
-      // Load user profile for persona
+      // Load user profile for persona via backend API
       if (session?.user?.id) {
-        const supabase = createClient();
-        const { data: profileData } = await supabase
-          .from('users')
-          .select('*, persona:personas(*)')
-          .eq('id', session.user.id)
-          .single();
+        try {
+          // Use backend API instead of direct Supabase call
+          const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/persona`, {
+            headers: {
+              Authorization: `Bearer ${session.access_token}`,
+              'Content-Type': 'application/json',
+            },
+          });
 
-        if (profileData) {
-          setProfile(profileData);
+          if (response.ok) {
+            const profileData = await response.json();
+            setProfile(profileData);
+          }
+        } catch (error) {
+          console.warn('Failed to load user profile:', error);
         }
       }
     };
     getSession();
   }, []);
 
-  // Get file version for cache invalidation
+  // Get file version for cache invalidation via backend API
   useEffect(() => {
     const getFileVersion = async () => {
-      if (!fileId) return;
+      if (!fileId || !session?.access_token) return;
 
-      const supabase = createClient();
-      const { data } = await supabase
-        .from('course_files')
-        .select('updated_at')
-        .eq('id', fileId)
-        .single();
+      try {
+        // Use backend API instead of direct Supabase call
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/files/${fileId}`, {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+        });
 
-      if (data) {
-        setFileVersion(data.updated_at);
+        if (response.ok) {
+          const fileData = await response.json();
+          setFileVersion(fileData.updatedAt || fileData.updated_at);
+        }
+      } catch (error) {
+        console.warn('Failed to get file version:', error);
       }
     };
     getFileVersion();
-  }, [fileId]);
+  }, [fileId, session]);
 
-  // Initialize outline generation when component mounts
+  // Initialize when component mounts – skip outline if disabled
   useEffect(() => {
-    // Log only in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[LearnPage] Initializing with fileId:', fileId);
+    if (!OUTLINE_ENABLED) {
+      setIsLoadingOutline(false);
+      return;
     }
 
     if (!fileId) {
-      // Missing fileId is expected on first load
       setError('File ID is required. Please select a file to personalize.');
       setIsLoadingOutline(false);
       return;
     }
 
     if (!session?.access_token) {
-      // Waiting for authentication
-      return; // Don't set loading to false, wait for session
+      return;
     }
 
     generateOutline();
 
     return () => {
-      if (eventSourceRef.current) {
-        eventSourceRef.current.close();
-      }
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      if (eventSourceRef.current) eventSourceRef.current.close();
+      if (abortControllerRef.current) abortControllerRef.current.abort();
     };
   }, [fileId, session]);
 
-  // Generate outline using new API
+  // Generate outline (only if OUTLINE_ENABLED)
   const generateOutline = async () => {
+    if (!OUTLINE_ENABLED) return;
     try {
       setIsLoadingOutline(true);
       setError(null);
 
-      // Starting outline generation
-
-      // Use the new AI API to generate outline
-      const response = await AIApiService.generateOutline(fileId!);
-
-      // Outline response received
-
-      if (!response || !response.sections || response.sections.length === 0) {
-        console.warn('[LearnPage] No sections in outline response');
-        setError('No content sections found. The file may not be processed yet.');
+      if (!fileId || !session?.access_token) {
+        setError('Missing file information or authentication.');
         setIsLoadingOutline(false);
         return;
       }
 
-      // Transform outline sections into topics with subtopics
-      const topics: Topic[] = response.sections.map((section, index) => ({
-        id: section.id,
-        title: section.title,
-        summary: section.summary,
-        chunkIds: section.chunkIds,
-        chunkCount: section.chunkCount,
-        startPage: section.startPage,
-        endPage: section.endPage,
-        topics: section.topics,
-        subtopics: [
-          { id: `${section.id}-intro`, title: 'Introduction', type: 'intro', completed: false },
-          {
-            id: `${section.id}-concepts`,
-            title: 'Key Concepts',
-            type: 'concepts',
-            completed: false,
-          },
-          { id: `${section.id}-examples`, title: 'Examples', type: 'examples', completed: false },
-          { id: `${section.id}-practice`, title: 'Practice', type: 'practice', completed: false },
-          { id: `${section.id}-summary`, title: 'Summary', type: 'summary', completed: false },
-        ],
-        progress: 0,
-      }));
+      // Fetch outline from backend
+      const outlineResponse = await AIApiService.generateOutline(fileId, session.access_token);
 
-      setOutline(topics);
+      const sections = outlineResponse.sections || [];
+
+      if (!sections.length) {
+        throw new Error('No outline sections returned');
+      }
+
+      // Map to Topic[] expected by UI
+      const mappedTopics: Topic[] = sections.map((section: any) => {
+        const baseId = section.id || `section-${Math.random().toString(36).slice(2, 8)}`;
+
+        const subtopics: Subtopic[] = [
+          { id: `${baseId}-intro`, title: 'Introduction', type: 'intro', completed: false },
+          { id: `${baseId}-concepts`, title: 'Key Concepts', type: 'concepts', completed: false },
+          { id: `${baseId}-examples`, title: 'Examples', type: 'examples', completed: false },
+          { id: `${baseId}-practice`, title: 'Practice', type: 'practice', completed: false },
+          { id: `${baseId}-summary`, title: 'Summary', type: 'summary', completed: false },
+        ];
+
+        return {
+          id: baseId,
+          title: section.title || 'Untitled Section',
+          summary: section.summary || '',
+          chunkIds: section.chunkIds || [],
+          chunkCount: section.chunkCount || 0,
+          startPage: section.startPage || 1,
+          endPage: section.endPage || 1,
+          topics: section.topics || [],
+          subtopics,
+          progress: 0,
+        } as Topic;
+      });
+
+      setOutline(mappedTopics);
 
       // Auto-select first topic and intro subtopic
-      if (topics.length > 0) {
-        setSelectedTopic(topics[0].id);
-        setExpandedTopics(new Set([topics[0].id]));
-        setSelectedSubtopic(topics[0].subtopics[0].id);
-        // Auto-selected first topic
+      if (mappedTopics.length > 0) {
+        setSelectedTopic(mappedTopics[0].id);
+        setExpandedTopics(new Set([mappedTopics[0].id]));
+        setSelectedSubtopic(mappedTopics[0].subtopics[0].id);
       }
 
       setIsLoadingOutline(false);
     } catch (err) {
       console.error('[LearnPage] Error generating outline:', err);
-      console.error('[LearnPage] Error details:', {
-        message: err instanceof Error ? err.message : 'Unknown error',
-        stack: err instanceof Error ? err.stack : undefined,
-        response: (err as any)?.response?.data,
-      });
-      setError(
-        `Failed to generate outline: ${err instanceof Error ? err.message : 'Unknown error'}`
-      );
+      setError('Failed to load outline');
       setIsLoadingOutline(false);
     }
   };
@@ -482,7 +490,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
     }
   };
 
-  // Stream content when selection changes
+  // Stream content when selection changes (or on mount if outline disabled)
   useEffect(() => {
     if (selectedTopic && selectedSubtopic) {
       streamContent();
@@ -668,63 +676,65 @@ export default function LearnPage({ params }: { params: { id: string } }) {
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Outline Panel */}
-        <div
-          className="border-r bg-gray-50 overflow-y-auto"
-          style={{ width: `${_outlinePanelWidth}%` }}
-        >
-          <div className="p-4">
-            <h2 className="font-semibold mb-4">Outline</h2>
+        {/* Outline Panel (disabled) */}
+        {OUTLINE_ENABLED && (
+          <div
+            className="border-r bg-gray-50 overflow-y-auto"
+            style={{ width: `${_outlinePanelWidth}%`, display: OUTLINE_ENABLED ? 'block' : 'none' }}
+          >
+            <div className="p-4">
+              <h2 className="font-semibold mb-4">Outline</h2>
 
-            {/* Topics */}
-            <div className="space-y-2">
-              {outline.map((topic) => (
-                <div key={topic.id} className="rounded-lg bg-white border">
-                  <button
-                    onClick={() => toggleTopic(topic.id)}
-                    className="w-full px-3 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors"
-                  >
-                    <span className="font-medium text-sm">{topic.title}</span>
-                    {expandedTopics.has(topic.id) ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
+              {/* Topics */}
+              <div className="space-y-2">
+                {outline.map((topic) => (
+                  <div key={topic.id} className="rounded-lg bg-white border">
+                    <button
+                      onClick={() => toggleTopic(topic.id)}
+                      className="w-full px-3 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    >
+                      <span className="font-medium text-sm">{topic.title}</span>
+                      {expandedTopics.has(topic.id) ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </button>
+
+                    {/* Subtopics */}
+                    {expandedTopics.has(topic.id) && (
+                      <div className="border-t">
+                        {topic.subtopics.map((subtopic) => (
+                          <button
+                            key={subtopic.id}
+                            onClick={() => selectSubtopic(topic.id, subtopic.id)}
+                            className={cn(
+                              'w-full px-6 py-2 text-left text-sm hover:bg-gray-50 transition-colors flex items-center justify-between',
+                              selectedTopic === topic.id &&
+                                selectedSubtopic === subtopic.id &&
+                                'bg-primary/10 text-primary'
+                            )}
+                          >
+                            <span className="capitalize">{subtopic.title}</span>
+                            {subtopic.completed && <span className="text-green-600">✓</span>}
+                          </button>
+                        ))}
+                      </div>
                     )}
-                  </button>
-
-                  {/* Subtopics */}
-                  {expandedTopics.has(topic.id) && (
-                    <div className="border-t">
-                      {topic.subtopics.map((subtopic) => (
-                        <button
-                          key={subtopic.id}
-                          onClick={() => selectSubtopic(topic.id, subtopic.id)}
-                          className={cn(
-                            'w-full px-6 py-2 text-left text-sm hover:bg-gray-50 transition-colors flex items-center justify-between',
-                            selectedTopic === topic.id &&
-                              selectedSubtopic === subtopic.id &&
-                              'bg-primary/10 text-primary'
-                          )}
-                        >
-                          <span className="capitalize">{subtopic.title}</span>
-                          {subtopic.completed && <span className="text-green-600">✓</span>}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            {/* Loading more topics indicator */}
-            {isLoadingOutline && (
-              <div className="mt-4 text-center">
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary mx-auto"></div>
-                <p className="text-xs text-muted-foreground mt-2">Loading more topics...</p>
+                  </div>
+                ))}
               </div>
-            )}
+
+              {/* Loading more topics indicator */}
+              {isLoadingOutline && (
+                <div className="mt-4 text-center">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary mx-auto"></div>
+                  <p className="text-xs text-muted-foreground mt-2">Loading more topics...</p>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Content Area */}
         <div className="flex-1 flex flex-col">
@@ -775,10 +785,11 @@ export default function LearnPage({ params }: { params: { id: string } }) {
           )}
 
           {/* Content Body */}
-          <div 
-            ref={contentRef} 
+          <div
+            ref={contentRef}
             className="flex-1 overflow-y-auto p-6"
-            key={`${selectedTopic}-${selectedSubtopic}`}>
+            key={`${selectedTopic}-${selectedSubtopic}`}
+          >
             {!selectedTopic || !selectedSubtopic ? (
               <div className="flex items-center justify-center h-full text-muted-foreground">
                 <div className="text-center">

@@ -11,11 +11,11 @@
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    
+
     /* Primary colors (LEARN-X brand) */
     --primary: 217 91% 60%;
     --primary-foreground: 0 0% 100%;
-    
+
     /* UI Structure colors */
     --secondary: 210 40% 96%;
     --secondary-foreground: 222.2 84% 4.9%;
@@ -23,7 +23,7 @@
     --muted-foreground: 215.4 16.3% 46.9%;
     --accent: 210 40% 96%;
     --accent-foreground: 222.2 84% 4.9%;
-    
+
     /* Semantic colors */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
@@ -35,26 +35,26 @@
     --error-foreground: 0 0% 100%;
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
-    
+
     /* AI-specific colors */
     --ai-primary: 147 51% 47%;
     --ai-secondary: 271 81% 56%;
     --ai-personalization: 24 95% 53%;
     --ai-background: 147 51% 97%;
     --ai-foreground: 147 51% 20%;
-    
+
     /* Learning status colors */
     --status-not-started: 220 13% 91%;
     --status-in-progress: 43 96% 56%;
     --status-completed: 142 71% 45%;
     --status-mastered: 271 81% 56%;
-    
+
     /* Gamification colors */
     --gamification-bronze: 30 70% 50%;
     --gamification-silver: 220 9% 46%;
     --gamification-gold: 45 93% 47%;
     --gamification-diamond: 271 81% 56%;
-    
+
     /* Utility colors */
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
@@ -70,11 +70,11 @@
     --card-foreground: 0 0% 100%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 0 0% 100%;
-    
+
     /* Primary colors (consistent across themes) */
     --primary: 217 91% 60%;
     --primary-foreground: 222.2 84% 4.9%;
-    
+
     /* UI Structure colors */
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 0 0% 100%;
@@ -82,7 +82,7 @@
     --muted-foreground: 215 20.2% 65.1%;
     --accent: 217.2 32.6% 17.5%;
     --accent-foreground: 0 0% 100%;
-    
+
     /* Semantic colors (adjusted for dark mode) */
     --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 100%;
@@ -94,26 +94,26 @@
     --error-foreground: 0 0% 100%;
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
-    
+
     /* AI-specific colors (work well in both modes) */
     --ai-primary: 147 51% 47%;
     --ai-secondary: 271 81% 56%;
     --ai-personalization: 24 95% 53%;
     --ai-background: 147 51% 8%;
     --ai-foreground: 147 51% 80%;
-    
+
     /* Learning status colors (adjusted for dark mode) */
     --status-not-started: 220 13% 20%;
     --status-in-progress: 43 96% 56%;
     --status-completed: 142 71% 45%;
     --status-mastered: 271 81% 56%;
-    
+
     /* Gamification colors (adjusted for dark mode) */
     --gamification-bronze: 30 70% 55%;
     --gamification-silver: 220 9% 60%;
     --gamification-gold: 45 93% 55%;
     --gamification-diamond: 271 81% 65%;
-    
+
     /* Utility colors */
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
@@ -183,7 +183,7 @@
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
     transition-duration: var(--theme-transition-duration, 200ms);
   }
-  
+
   .theme-transition-slow {
     transition-property: background-color, border-color, color, fill, stroke;
     transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
@@ -317,4 +317,18 @@
       transform: translateY(10px);
     }
   }
+}
+
+/* Prose refinements for generated content */
+.prose h2 {
+  @apply mt-8 text-2xl font-semibold;
+}
+.prose h3 {
+  @apply mt-6 text-xl font-semibold;
+}
+.prose ul {
+  @apply list-disc pl-5 space-y-1;
+}
+.prose p {
+  @apply leading-relaxed;
 }

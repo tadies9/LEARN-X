@@ -2,7 +2,7 @@ import axios from 'axios';
 
 import { createClient } from '@/lib/supabase/client';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080/api/v1';
 
 export const API_CLIENT = axios.create({
   baseURL: API_URL,
@@ -17,7 +17,7 @@ API_CLIENT.interceptors.request.use(async (config) => {
     const supabase = createClient();
     const {
       data: { session },
-      error
+      error,
     } = await supabase.auth.getSession();
 
     if (error) {
@@ -42,7 +42,7 @@ API_CLIENT.interceptors.response.use(
       status: error.response?.status,
       url: error.config?.url,
       method: error.config?.method,
-      message: error.response?.data?.message || error.message
+      message: error.response?.data?.message || error.message,
     });
 
     if (error.response?.status === 401) {
@@ -53,7 +53,9 @@ API_CLIENT.interceptors.response.use(
       }
     } else if (error.code === 'ERR_NETWORK') {
       // Network error - backend might be down
-      console.warn('Backend API is not available. Please ensure the backend server is running on the correct port.');
+      console.warn(
+        'Backend API is not available. Please ensure the backend server is running on the correct port.'
+      );
     } else if (error.response?.status === 500) {
       console.error('Internal server error:', error.response?.data);
     }

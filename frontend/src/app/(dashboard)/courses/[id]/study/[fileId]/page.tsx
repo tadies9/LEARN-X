@@ -96,13 +96,24 @@ export default async function StudyPage({ params }: StudyPageProps) {
   }
 
   // Fetch user persona for personalization
-  const { data: persona } = await supabase
-    .from('user_personas')
+  const { data: personaData } = await supabase
+    .from('personas')
     .select('*')
     .eq('user_id', user.id)
-    .order('version', { ascending: false })
-    .limit(1)
     .single();
+    
+  // Transform to UserPersona format if exists
+  const persona = personaData ? {
+    id: personaData.id,
+    userId: personaData.user_id,
+    primaryInterests: personaData.personal_interests?.primary || [],
+    secondaryInterests: personaData.personal_interests?.secondary || [],
+    currentRole: personaData.professional_context?.role,
+    industry: personaData.professional_context?.industry,
+    technicalLevel: personaData.professional_context?.technicalLevel,
+    learningStyle: personaData.learning_style?.primary,
+    communicationTone: personaData.communication_tone?.style,
+  } : null;
 
   // Generate signed URL for the file using backend API
   let fileUrl = '';

@@ -39,10 +39,14 @@ export function useChat({ fileId, onMessage }: UseChatOptions) {
       setError(null);
 
       try {
-        const response = await fetch('/api/ai/chat', {
+        // Get auth token
+        const token = localStorage.getItem('auth_token');
+        
+        const response = await fetch('/api/v1/learn/chat/stream', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(token && { 'Authorization': `Bearer ${token}` }),
           },
           body: JSON.stringify({
             fileId,
