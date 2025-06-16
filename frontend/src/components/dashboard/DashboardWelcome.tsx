@@ -1,17 +1,38 @@
 import { FadeIn } from '@/components/animations/FadeIn';
+import { usePersona } from '@/hooks/usePersona';
 
 interface DashboardWelcomeProps {
-  userName: string;
+  greeting: string;
 }
 
-export function DashboardWelcome({ userName }: DashboardWelcomeProps) {
+export function DashboardWelcome({ greeting }: DashboardWelcomeProps) {
+  const { persona } = usePersona();
+  
+  // Generate streak message based on persona's encouragement level
+  const getStreakMessage = () => {
+    if (!persona?.communication_tone?.encouragementLevel) {
+      return "You're making great progress!";
+    }
+    
+    switch (persona.communication_tone.encouragementLevel) {
+      case 'minimal':
+        return 'Consistent progress.';
+      case 'balanced':
+        return "You're on a 7-day learning streak. Keep it up!";
+      case 'high':
+        return "🔥 Amazing! 7-day streak! You're crushing it!";
+      default:
+        return "You're making steady progress!";
+    }
+  };
+
   return (
     <FadeIn>
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">
-          Welcome back, {userName}! 👋
+          {greeting}
         </h1>
-        <p className="text-muted-foreground">You're on a 7-day learning streak. Keep it up!</p>
+        <p className="text-muted-foreground">{getStreakMessage()}</p>
       </div>
     </FadeIn>
   );

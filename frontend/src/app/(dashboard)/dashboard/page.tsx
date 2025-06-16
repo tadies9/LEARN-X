@@ -14,6 +14,7 @@ import { FadeIn } from '@/components/animations/FadeIn';
 import { useAuth } from '@/hooks/useAuth';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useDashboardStats } from '@/hooks/useDashboardStats';
+import { usePersonalizedGreeting } from '@/hooks/usePersona';
 import { MOCK_ACTIVITIES } from '@/data/mockActivities';
 
 export default function DashboardPage() {
@@ -33,10 +34,11 @@ export default function DashboardPage() {
   }
 
   const userName = user?.email?.split('@')[0] || 'Learner';
+  const personalizedGreeting = usePersonalizedGreeting(userName);
 
   return (
     <div className="container mx-auto p-6">
-      <DashboardWelcome userName={userName} />
+      <DashboardWelcome greeting={personalizedGreeting} />
       
       <DashboardStats
         statsData={statsData}
