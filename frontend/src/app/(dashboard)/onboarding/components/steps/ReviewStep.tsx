@@ -51,7 +51,7 @@ export function ReviewStep() {
     if (!prof) return null;
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-1">
         <p>
           <span className="font-medium">Role:</span> {prof.role}
         </p>
@@ -77,12 +77,12 @@ export function ReviewStep() {
     if (!interests) return null;
 
     return (
-      <div className="space-y-3">
+      <div className="space-y-2">
         <div>
-          <p className="font-medium mb-1">Primary Interests:</p>
+          <p className="font-medium text-xs mb-1">Primary Interests:</p>
           <div className="flex flex-wrap gap-1">
             {interests.primary.map((interest) => (
-              <Badge key={interest} variant="default" className="text-xs">
+              <Badge key={interest} variant="default" className="text-[10px] h-5 px-2">
                 {interest}
               </Badge>
             ))}
@@ -90,10 +90,10 @@ export function ReviewStep() {
         </div>
         {interests.secondary.length > 0 && (
           <div>
-            <p className="font-medium mb-1">Secondary Interests:</p>
+            <p className="font-medium text-xs mb-1">Secondary Interests:</p>
             <div className="flex flex-wrap gap-1">
               {interests.secondary.map((interest) => (
-                <Badge key={interest} variant="secondary" className="text-xs">
+                <Badge key={interest} variant="secondary" className="text-[10px] h-5 px-2">
                   {interest}
                 </Badge>
               ))}
@@ -101,10 +101,10 @@ export function ReviewStep() {
           </div>
         )}
         <div>
-          <p className="font-medium mb-1">Learning Topics:</p>
+          <p className="font-medium text-xs mb-1">Learning Topics:</p>
           <div className="flex flex-wrap gap-1">
             {interests.learningTopics.map((topic) => (
-              <Badge key={topic} variant="outline" className="text-xs">
+              <Badge key={topic} variant="outline" className="text-[10px] h-5 px-2">
                 {topic}
               </Badge>
             ))}
@@ -119,7 +119,7 @@ export function ReviewStep() {
     if (!learning) return null;
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-1">
         <p>
           <span className="font-medium">Primary:</span> {learning.primary}
         </p>
@@ -141,7 +141,7 @@ export function ReviewStep() {
     if (!content) return null;
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-1">
         <p>
           <span className="font-medium">Density:</span> {content.density}
         </p>
@@ -160,7 +160,7 @@ export function ReviewStep() {
     if (!comm) return null;
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-1">
         <p>
           <span className="font-medium">Style:</span> {comm.style.replace('_', ' ')}
         </p>
@@ -197,39 +197,40 @@ export function ReviewStep() {
             <div
               key={key}
               className={cn(
-                'rounded-lg border p-4 space-y-2',
-                'hover:bg-muted/50 transition-colors'
+                'rounded-lg border-2 border-gray-200 dark:border-gray-800 p-3 space-y-1',
+                'bg-white dark:bg-gray-900 hover:shadow-md transition-all duration-200'
               )}
             >
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="font-semibold">{STEP_LABELS[key as keyof typeof STEP_LABELS]}</h3>
+              <div className="flex items-center justify-between mb-1">
+                <h3 className="font-semibold text-sm">{STEP_LABELS[key as keyof typeof STEP_LABELS]}</h3>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={() => goToStep(key as OnboardingStep)}
                   disabled={isLoading}
+                  className="h-7 w-7 p-0"
                 >
-                  <Edit2 className="h-4 w-4" />
+                  <Edit2 className="h-3 w-3" />
                 </Button>
               </div>
-              <div className="text-sm text-muted-foreground">{render()}</div>
+              <div className="text-xs text-muted-foreground">{render()}</div>
             </div>
           ))}
 
-          <div className="bg-muted/50 rounded-lg p-4 mt-6">
-            <p className="text-sm text-center">
+          <div className="bg-primary/5 rounded-lg p-3 mt-6 border border-primary/20">
+            <p className="text-xs text-center">
               <span className="font-medium">Remember:</span> You can always update these preferences
               later in your account settings. Your learning profile will continue to adapt as we get
               to know you better!
             </p>
           </div>
 
-          <div className="flex justify-between pt-4">
-            <Button type="button" variant="outline" onClick={previousStep} disabled={isLoading}>
+          <div className="flex justify-between pt-6 border-t">
+            <Button type="button" variant="outline" size="lg" onClick={previousStep} disabled={isLoading} className="min-w-[120px]">
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <Button onClick={handleComplete} disabled={isLoading} size="lg">
+            <Button onClick={handleComplete} disabled={isLoading} size="lg" className="min-w-[140px]">
               <ButtonLoader loading={isLoading} loadingText="Creating Profile...">
                 Complete Setup
               </ButtonLoader>
