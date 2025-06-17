@@ -190,11 +190,15 @@ export class PersonaController {
   };
 
   private validatePersonaData(data: any): string | null {
+    console.log('🔍 DEBUG VALIDATION - Input data type:', typeof data);
+    console.log('🔍 DEBUG VALIDATION - Input data keys:', Object.keys(data || {}));
     console.log('🔍 DEBUG VALIDATION - Input data:', JSON.stringify(data, null, 2));
     
     // Handle both new and legacy structure
     const academicCareerData = data.academicCareer || data.professional;
     
+    console.log('🔍 DEBUG VALIDATION - data.academicCareer:', data.academicCareer);
+    console.log('🔍 DEBUG VALIDATION - data.professional:', data.professional);
     console.log('🔍 DEBUG VALIDATION - academicCareerData:', !!academicCareerData);
     console.log('🔍 DEBUG VALIDATION - interests:', !!data.interests);
     console.log('🔍 DEBUG VALIDATION - learningStyle:', !!data.learningStyle);
