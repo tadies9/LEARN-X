@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, BookOpen, Info } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { OnboardingCard } from '../OnboardingCard';
 import { Badge } from '@/components/ui/badge';
 import { INTEREST_CATEGORIES, LEARNING_TOPICS } from '@/lib/types/persona';
 import { cn } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function InterestsStep() {
   const { nextStep, previousStep, updateFormData, formData } = useOnboarding();
@@ -25,27 +26,27 @@ export function InterestsStep() {
   );
   const [error, setError] = useState<string | null>(null);
 
-  const toggleInterest = (interest: string, isPrimary: boolean) => {
-    if (isPrimary) {
-      setPrimaryInterests((prev) =>
-        prev.includes(interest)
-          ? prev.filter((i) => i !== interest)
-          : prev.length < 5
-            ? [...prev, interest]
-            : prev
-      );
-      // Remove from secondary if adding to primary
-      setSecondaryInterests((prev) => prev.filter((i) => i !== interest));
-    } else {
-      setSecondaryInterests((prev) =>
-        prev.includes(interest)
-          ? prev.filter((i) => i !== interest)
-          : prev.length < 5
-            ? [...prev, interest]
-            : prev
-      );
-      // Remove from primary if adding to secondary
+  const toggleInterest = (interest: string) => {
+    // Check if it's already selected
+    const isInPrimary = primaryInterests.includes(interest);
+    const isInSecondary = secondaryInterests.includes(interest);
+    
+    if (isInPrimary) {
+      // Remove from primary
       setPrimaryInterests((prev) => prev.filter((i) => i !== interest));
+    } else if (isInSecondary) {
+      // Move from secondary to primary if there's space
+      if (primaryInterests.length < 5) {
+        setSecondaryInterests((prev) => prev.filter((i) => i !== interest));
+        setPrimaryInterests((prev) => [...prev, interest]);
+      }
+    } else {
+      // Add new interest
+      if (primaryInterests.length < 5) {
+        setPrimaryInterests((prev) => [...prev, interest]);
+      } else if (secondaryInterests.length < 5) {
+        setSecondaryInterests((prev) => [...prev, interest]);
+      }
     }
   };
 
@@ -81,136 +82,171 @@ export function InterestsStep() {
 
   return (
     <OnboardingCard>
-      <CardHeader>
-        <CardTitle>Personal Interests & Learning Goals</CardTitle>
-        <CardDescription>
-          Help us create relevant examples and analogies based on your interests
+      <CardHeader className="text-center pb-8">
+        <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <Heart className="h-8 w-8 text-primary" />
+        </div>
+        <CardTitle className="text-3xl">Your Interests & Learning Goals</CardTitle>
+        <CardDescription className="text-lg mt-2">
+          Select topics you're passionate about - we'll use these to make your learning more engaging
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent>
         {error && (
-          <div className="bg-destructive/10 text-destructive px-4 py-2 rounded-md text-sm">
+          <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-lg text-sm mb-6 flex items-center gap-2">
+            <Info className="h-4 w-4" />
             {error}
           </div>
         )}
 
-        {/* Primary Interests */}
-        <div className="space-y-3">
-          <div>
-            <h3 className="font-medium mb-1">Primary Interests (up to 5)</h3>
-            <p className="text-sm text-muted-foreground">
-              These will be your main sources for examples and analogies
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 min-h-[32px] p-3 border rounded-md bg-muted/20">
-            {primaryInterests.length > 0 ? (
-              primaryInterests.map((interest) => (
-                <Badge key={interest} variant="default" className="gap-1">
-                  {interest}
-                  <X
-                    className="h-3 w-3 cursor-pointer"
-                    onClick={() => toggleInterest(interest, true)}
-                  />
-                </Badge>
-              ))
-            ) : (
-              <span className="text-sm text-muted-foreground">Click interests below to add</span>
-            )}
-          </div>
-        </div>
+        <Tabs defaultValue="interests" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="interests" className="gap-2">
+              <Heart className="h-4 w-4" />
+              Personal Interests
+            </TabsTrigger>
+            <TabsTrigger value="learning" className="gap-2">
+              <BookOpen className="h-4 w-4" />
+              Learning Topics
+            </TabsTrigger>
+          </TabsList>
 
-        {/* Secondary Interests */}
-        <div className="space-y-3">
-          <div>
-            <h3 className="font-medium mb-1">Secondary Interests (optional, up to 5)</h3>
-            <p className="text-sm text-muted-foreground">Additional interests for variety</p>
-          </div>
-          <div className="flex flex-wrap gap-2 min-h-[32px] p-3 border rounded-md bg-muted/20">
-            {secondaryInterests.length > 0 ? (
-              secondaryInterests.map((interest) => (
-                <Badge key={interest} variant="secondary" className="gap-1">
-                  {interest}
-                  <X
-                    className="h-3 w-3 cursor-pointer"
-                    onClick={() => toggleInterest(interest, false)}
-                  />
-                </Badge>
-              ))
-            ) : (
-              <span className="text-sm text-muted-foreground">Click interests below to add</span>
+          <TabsContent value="interests" className="space-y-6">
+            {/* Selected Interests Summary */}
+            {(primaryInterests.length > 0 || secondaryInterests.length > 0) && (
+              <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <h4 className="font-medium text-sm mb-3">Your Selected Interests:</h4>
+                <div className="space-y-2">
+                  {primaryInterests.length > 0 && (
+                    <div>
+                      <span className="text-xs text-muted-foreground">Primary ({primaryInterests.length}/5):</span>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {primaryInterests.map((interest) => (
+                          <Badge key={interest} variant="default" className="text-xs">
+                            {interest}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {secondaryInterests.length > 0 && (
+                    <div>
+                      <span className="text-xs text-muted-foreground">Secondary ({secondaryInterests.length}/5):</span>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {secondaryInterests.map((interest) => (
+                          <Badge key={interest} variant="secondary" className="text-xs">
+                            {interest}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             )}
-          </div>
-        </div>
 
-        {/* Interest Categories */}
-        <div className="space-y-4">
-          <h3 className="font-medium">Choose Your Interests</h3>
-          {Object.entries(INTEREST_CATEGORIES).map(([category, interests]) => (
-            <div key={category} className="space-y-2">
-              <h4 className="text-sm font-medium capitalize text-muted-foreground">{category}</h4>
-              <div className="flex flex-wrap gap-2">
-                {interests.map((interest) => {
-                  const isPrimary = primaryInterests.includes(interest);
-                  const isSecondary = secondaryInterests.includes(interest);
+            <div className="space-y-4">
+              <div className="text-center pb-2">
+                <p className="text-sm text-muted-foreground">
+                  Click interests to select them. We'll use your top 5 as primary examples.
+                </p>
+              </div>
+              
+              {Object.entries(INTEREST_CATEGORIES).map(([category, interests]) => (
+                <div key={category} className="space-y-3">
+                  <h4 className="text-base font-semibold capitalize flex items-center gap-2">
+                    {category}
+                  </h4>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                    {interests.map((interest) => {
+                      const isPrimary = primaryInterests.includes(interest);
+                      const isSecondary = secondaryInterests.includes(interest);
+                      const isDisabled = !isPrimary && !isSecondary && 
+                        primaryInterests.length >= 5 && secondaryInterests.length >= 5;
+                      
+                      return (
+                        <Button
+                          key={interest}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          disabled={isDisabled}
+                          className={cn(
+                            'transition-all duration-200 text-sm',
+                            isPrimary && 'bg-primary text-primary-foreground hover:bg-primary/90 border-primary',
+                            isSecondary && 'bg-secondary text-secondary-foreground hover:bg-secondary/90 border-secondary',
+                            isDisabled && 'opacity-50 cursor-not-allowed'
+                          )}
+                          onClick={() => toggleInterest(interest)}
+                        >
+                          {interest}
+                        </Button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="learning" className="space-y-6">
+            {/* Selected Topics Summary */}
+            {learningTopics.length > 0 && (
+              <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+                <h4 className="font-medium text-sm mb-2">
+                  Selected Topics ({learningTopics.length}/10):
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {learningTopics.map((topic) => (
+                    <Badge key={topic} variant="default" className="text-xs">
+                      {topic}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className="space-y-4">
+              <div className="text-center pb-2">
+                <p className="text-sm text-muted-foreground">
+                  Select the subjects and skills you want to learn about
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {LEARNING_TOPICS.map((topic) => {
+                  const isSelected = learningTopics.includes(topic);
+                  const isDisabled = !isSelected && learningTopics.length >= 10;
+                  
                   return (
                     <Button
-                      key={interest}
+                      key={topic}
                       type="button"
                       variant="outline"
                       size="sm"
+                      disabled={isDisabled}
                       className={cn(
-                        'transition-colors',
-                        isPrimary && 'bg-primary text-primary-foreground hover:bg-primary/90',
-                        isSecondary &&
-                          'bg-secondary text-secondary-foreground hover:bg-secondary/90'
+                        'transition-all duration-200 text-sm',
+                        isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90 border-primary',
+                        isDisabled && 'opacity-50 cursor-not-allowed'
                       )}
-                      onClick={() => toggleInterest(interest, !isSecondary)}
+                      onClick={() => toggleLearningTopic(topic)}
                     >
-                      {interest}
+                      {topic}
                     </Button>
                   );
                 })}
               </div>
             </div>
-          ))}
-        </div>
+          </TabsContent>
+        </Tabs>
 
-        {/* Learning Topics */}
-        <div className="space-y-3">
-          <div>
-            <h3 className="font-medium mb-1">What do you want to learn? (up to 10)</h3>
-            <p className="text-sm text-muted-foreground">
-              Select the topics you're interested in studying
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {LEARNING_TOPICS.map((topic) => {
-              const isSelected = learningTopics.includes(topic);
-              return (
-                <Button
-                  key={topic}
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className={cn(
-                    'transition-colors',
-                    isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90'
-                  )}
-                  onClick={() => toggleLearningTopic(topic)}
-                >
-                  {topic}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="flex justify-between pt-4">
-          <Button type="button" variant="outline" onClick={previousStep}>
+        <div className="flex justify-between pt-6 border-t">
+          <Button type="button" variant="outline" size="lg" onClick={previousStep} className="min-w-[120px]">
             <ChevronLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-          <Button onClick={handleNext}>
+          <Button onClick={handleNext} size="lg" className="min-w-[120px]">
             Next
             <ChevronRight className="ml-2 h-4 w-4" />
           </Button>

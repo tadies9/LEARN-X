@@ -17,7 +17,7 @@ export function OnboardingCard({ children, className }: OnboardingCardProps) {
         className
       )}
     >
-      <div className="absolute inset-0 bg-primary/[0.2] dark:bg-transparent pointer-events-none" />
+      <div className="absolute inset-0 bg-primary/[0.3] dark:bg-transparent pointer-events-none" />
       <div className="relative">
         {children}
       </div>
