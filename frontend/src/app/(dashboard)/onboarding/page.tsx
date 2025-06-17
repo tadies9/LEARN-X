@@ -8,9 +8,9 @@ import { OnboardingWizard } from './components/OnboardingWizard';
 export default function OnboardingPage() {
   return (
     <OnboardingProvider>
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex flex-col">
         {/* Simple header with logo */}
-        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="border-b-2 border-gray-900 dark:border-gray-100 bg-white dark:bg-gray-900 shadow-md">
           <div className="container flex h-16 items-center">
             <Image
               src="/images/logoo.svg"

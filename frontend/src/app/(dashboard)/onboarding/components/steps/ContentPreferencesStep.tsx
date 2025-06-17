@@ -6,7 +6,8 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { OnboardingCard } from '../OnboardingCard';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -87,7 +88,7 @@ export function ContentPreferencesStep() {
   };
 
   return (
-    <Card className="border-0 shadow-none">
+    <OnboardingCard>
       <CardHeader>
         <CardTitle>Content Preferences</CardTitle>
         <CardDescription>
@@ -225,6 +226,6 @@ export function ContentPreferencesStep() {
           </Button>
         </div>
       </CardContent>
-    </Card>
+    </OnboardingCard>
   );
 }

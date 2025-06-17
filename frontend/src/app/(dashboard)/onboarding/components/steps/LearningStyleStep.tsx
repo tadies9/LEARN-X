@@ -6,7 +6,8 @@ import { ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Hand } from 'luci
 
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { OnboardingCard } from '../OnboardingCard';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
@@ -65,7 +66,7 @@ export function LearningStyleStep() {
   };
 
   return (
-    <Card className="border-0 shadow-none">
+    <OnboardingCard>
       <CardHeader>
         <CardTitle>Learning Style Assessment</CardTitle>
         <CardDescription>
@@ -169,6 +170,6 @@ export function LearningStyleStep() {
           </Button>
         </div>
       </CardContent>
-    </Card>
+    </OnboardingCard>
   );
 }

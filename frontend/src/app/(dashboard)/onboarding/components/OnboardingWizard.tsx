@@ -38,24 +38,24 @@ export function OnboardingWizard() {
         : (currentProgressStep / progressSteps) * 100;
 
   return (
-    <div className="container max-w-3xl mx-auto py-8">
+    <div className="container max-w-3xl mx-auto py-8 px-4">
       {/* Progress Bar - hidden on welcome step */}
       {currentStep !== 'welcome' && (
-        <div className="mb-8">
+        <div className="mb-8 p-4 bg-white dark:bg-gray-900 rounded-lg border-2 border-gray-900 dark:border-gray-100 shadow-lg">
           <div className="flex justify-between items-center">
             <div className="flex-1">
-              <div className="flex justify-between text-sm text-muted-foreground mb-2">
+              <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300 mb-2 font-medium">
                 <span>
                   Step {currentProgressStep + 1} of {progressSteps}
                 </span>
                 <span>{Math.round(progress)}% Complete</span>
               </div>
-              <Progress value={progress} className="h-2" />
+              <Progress value={progress} className="h-3 border border-gray-900 dark:border-gray-100" />
             </div>
             {canSkipCurrent() && (
               <button
                 onClick={skipToReview}
-                className="ml-4 text-sm text-muted-foreground hover:text-foreground underline"
+                className="ml-4 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 underline font-medium"
               >
                 Skip to review
               </button>
@@ -65,7 +65,7 @@ export function OnboardingWizard() {
       )}
 
       {/* Step Content */}
-      <div className="bg-card rounded-lg shadow-sm">
+      <div>
         <StepComponent />
       </div>
     </div>

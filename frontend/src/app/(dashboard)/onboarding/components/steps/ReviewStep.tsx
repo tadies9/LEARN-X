@@ -6,7 +6,8 @@ import { ChevronLeft, Edit2, CheckCircle } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { OnboardingCard } from '../OnboardingCard';
 import { Badge } from '@/components/ui/badge';
 import { ButtonLoader } from '@/components/ui/ButtonLoader';
 import { Confetti } from '@/components/ui/confetti';
@@ -195,7 +196,7 @@ export function ReviewStep() {
 
   return (
     <>
-      <Card className="border-0 shadow-none">
+      <OnboardingCard>
         <CardHeader className="text-center">
           <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
             <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
@@ -247,7 +248,7 @@ export function ReviewStep() {
             </Button>
           </div>
         </CardContent>
-      </Card>
+      </OnboardingCard>
       <Confetti active={showConfetti} />
     </>
   );

@@ -5,7 +5,8 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { OnboardingCard } from '../OnboardingCard';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -43,7 +44,7 @@ export function ProfessionalStep() {
   };
 
   return (
-    <Card className="border-0 shadow-none">
+    <OnboardingCard>
       <CardHeader>
         <CardTitle>Professional Context</CardTitle>
         <CardDescription>
@@ -148,6 +149,6 @@ export function ProfessionalStep() {
           </div>
         </form>
       </CardContent>
-    </Card>
+    </OnboardingCard>
   );
 }

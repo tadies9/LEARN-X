@@ -4,13 +4,14 @@ import { Sparkles, Clock, Brain, Target } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { OnboardingCard } from '../OnboardingCard';
 
 export function WelcomeStep() {
   const { nextStep } = useOnboarding();
 
   return (
-    <Card className="border-0 shadow-none">
+    <OnboardingCard>
       <CardHeader className="text-center pb-8">
         <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
           <Sparkles className="h-8 w-8 text-primary" />
@@ -63,6 +64,6 @@ export function WelcomeStep() {
           </Button>
         </div>
       </CardContent>
-    </Card>
+    </OnboardingCard>
   );
 }

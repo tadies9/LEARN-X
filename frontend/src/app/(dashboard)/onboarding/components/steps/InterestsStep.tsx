@@ -6,7 +6,8 @@ import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { OnboardingCard } from '../OnboardingCard';
 import { Badge } from '@/components/ui/badge';
 import { INTEREST_CATEGORIES, LEARNING_TOPICS } from '@/lib/types/persona';
 import { cn } from '@/lib/utils';
@@ -79,7 +80,7 @@ export function InterestsStep() {
   };
 
   return (
-    <Card className="border-0 shadow-none">
+    <OnboardingCard>
       <CardHeader>
         <CardTitle>Personal Interests & Learning Goals</CardTitle>
         <CardDescription>
@@ -215,6 +216,6 @@ export function InterestsStep() {
           </Button>
         </div>
       </CardContent>
-    </Card>
+    </OnboardingCard>
   );
 }
