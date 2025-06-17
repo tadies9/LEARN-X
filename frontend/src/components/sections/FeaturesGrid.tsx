@@ -4,7 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export function FeaturesGrid() {
   return (
-    <section className="w-full py-12 md:py-24 bg-gray-50">
+    <section className="w-full py-12 md:py-24 bg-gray-100 dark:bg-[#0A1628]">
       <div className="container px-4 md:px-6">
         <FeaturesHeader />
         <div className="grid gap-6 mt-12 md:grid-cols-2 lg:grid-cols-3">
@@ -20,14 +20,14 @@ export function FeaturesGrid() {
 function FeaturesHeader() {
   return (
     <div className="flex flex-col items-center justify-center space-y-4 text-center">
-      <div className="inline-block rounded-lg bg-blue-100 px-3 py-1 text-sm text-blue-600">
+      <div className="inline-block rounded-lg bg-primary/15 dark:bg-primary/10 px-3 py-1 text-sm font-medium text-primary">
         FEATURES
       </div>
-      <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
-        Revolutionize Your Students' Learning
+      <h2 className="text-3xl font-bold tracking-tighter md:text-4xl text-gray-900 dark:text-white">
+        Everything You Need to Learn Better
       </h2>
       <p className="max-w-[700px] text-muted-foreground md:text-lg">
-        Our comprehensive suite of tools transforms how your students learn,
+        Our comprehensive suite of tools transforms how you learn,
         making complex concepts accessible and engaging.
       </p>
     </div>
@@ -42,13 +42,13 @@ interface FeatureCardProps {
 
 function FeatureCard({ icon, title, description }: FeatureCardProps) {
   return (
-    <Card className="border border-gray-200 shadow-sm">
+    <Card className="border-2 border-gray-300 dark:border-gray-800 bg-white dark:bg-card/50 shadow-lg transition-all hover:shadow-xl hover:border-gray-400 dark:hover:border-gray-700">
       <CardContent className="p-6">
         <div className="flex flex-col items-start space-y-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15 dark:bg-primary/20">
             {icon}
           </div>
-          <h3 className="text-xl font-bold">{title}</h3>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h3>
           <p className="text-muted-foreground">{description}</p>
         </div>
       </CardContent>
@@ -58,39 +58,39 @@ function FeatureCard({ icon, title, description }: FeatureCardProps) {
 
 const features = [
   {
-    icon: <Book className="h-5 w-5 text-blue-600" />,
-    title: "Canvas One-Click Upload",
+    icon: <Book className="h-5 w-5 text-primary" />,
+    title: "Instant Course Import",
     description:
-      "Import your existing Canvas materials in seconds. No reformatting or rebuilding required.",
+      "Upload your Canvas materials in seconds. Start learning immediately with AI-powered explanations.",
   },
   {
-    icon: <Zap className="h-5 w-5 text-blue-600" />,
-    title: "Adaptive Assessments",
+    icon: <Zap className="h-5 w-5 text-primary" />,
+    title: "Adaptive Learning",
     description:
-      "Quizzes that automatically adjust difficulty based on student performance, focusing on areas needing improvement.",
+      "Quizzes that adjust to your level, focusing on areas where you need the most help.",
   },
   {
-    icon: <Shield className="h-5 w-5 text-blue-600" />,
-    title: "Integrity Guard",
+    icon: <Shield className="h-5 w-5 text-primary" />,
+    title: "Learn, Don't Cheat",
     description:
-      "Advanced AI that blocks answer-dump prompts while still providing helpful guidance and learning support.",
+      "Get genuine understanding with AI that guides you to answers instead of just giving them away.",
   },
   {
-    icon: <BarChart3 className="h-5 w-5 text-blue-600" />,
-    title: "Actionable Analytics",
+    icon: <BarChart3 className="h-5 w-5 text-primary" />,
+    title: "Track Your Progress",
     description:
-      "Identify knowledge gaps and struggling students with real-time insights and customizable reports.",
+      "See your improvement over time with detailed insights into your learning journey.",
   },
   {
-    icon: <Users className="h-5 w-5 text-blue-600" />,
-    title: "AI-Powered Personalization",
+    icon: <Users className="h-5 w-5 text-primary" />,
+    title: "Personalized for You",
     description:
-      "Automatically creates customized learning paths based on each student's strengths, weaknesses, and pace.",
+      "AI adapts to your learning style, pace, and interests to create the perfect study experience.",
   },
   {
-    icon: <Database className="h-5 w-5 text-blue-600" />,
-    title: "Cloud-Based Access",
+    icon: <Database className="h-5 w-5 text-primary" />,
+    title: "Study Anywhere",
     description:
-      "Secure, FERPA-compliant cloud storage ensures materials are accessible from any device, anywhere.",
+      "Access your materials from any device, anytime. Your learning follows you everywhere.",
   },
 ];

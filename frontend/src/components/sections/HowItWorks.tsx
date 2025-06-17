@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 
 export function HowItWorks() {
   return (
-    <section className="w-full py-12 md:py-24 bg-white">
+    <section className="w-full py-12 md:py-24 bg-background dark:bg-[#0A1628]">
       <div className="container px-4 md:px-6">
         <div className="grid gap-6 lg:grid-cols-2 lg:gap-12">
           <HowItWorksContent />
@@ -20,7 +20,7 @@ export function HowItWorks() {
 function HowItWorksContent() {
   return (
     <div className="flex flex-col justify-center space-y-4">
-      <div className="inline-block rounded-lg bg-blue-100 px-3 py-1 text-sm text-blue-600 w-fit">
+      <div className="inline-block rounded-lg bg-primary/10 px-3 py-1 text-sm font-medium text-primary w-fit">
         HOW IT WORKS
       </div>
       <h2 className="text-3xl font-bold tracking-tighter md:text-4xl">
@@ -33,13 +33,13 @@ function HowItWorksContent() {
       <ul className="space-y-4 mt-6">
         {steps.map((step) => (
           <li key={step} className="flex items-start gap-2">
-            <CheckCircle className="h-6 w-6 text-blue-600 mt-0.5" />
+            <CheckCircle className="h-6 w-6 text-primary mt-0.5" />
             <span>{step}</span>
           </li>
         ))}
       </ul>
       <div className="mt-4">
-        <Button className="bg-blue-600 hover:bg-blue-700">Learn More</Button>
+        <Button>Learn More</Button>
       </div>
     </div>
   );
@@ -48,7 +48,7 @@ function HowItWorksContent() {
 function HowItWorksImage() {
   return (
     <div className="flex items-center justify-center">
-      <div className="relative w-full max-w-md overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+      <div className="relative w-full max-w-md overflow-hidden rounded-xl border bg-card shadow-lg">
         <Image
           src="/images/dashboard-screenshot.png"
           alt="Learn-X Dashboard"

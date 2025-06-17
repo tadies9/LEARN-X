@@ -64,12 +64,12 @@
 
   .dark {
     /* Base colors - Dark Mode */
-    --background: 222.2 84% 4.9%;
-    --foreground: 0 0% 100%;
-    --card: 222.2 84% 7%;
-    --card-foreground: 0 0% 100%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 0 0% 100%;
+    --background: 223 47% 11%; /* Dark navy #0A1628 */
+    --foreground: 0 0% 95%;
+    --card: 220 41% 14%; /* Slightly lighter than background */
+    --card-foreground: 0 0% 95%;
+    --popover: 223 47% 11%;
+    --popover-foreground: 0 0% 95%;
 
     /* Primary colors (consistent across themes) */
     --primary: 217 91% 60%;

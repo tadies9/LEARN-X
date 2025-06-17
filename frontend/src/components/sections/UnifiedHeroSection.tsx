@@ -19,7 +19,7 @@ export type HeroVariant =
   | 'minimal' 
   | 'cinematic';
 
-interface HeroContent {
+export interface HeroContent {
   badge?: string;
   headline: string;
   subheading: string;
@@ -55,32 +55,32 @@ interface UnifiedHeroSectionProps {
 
 const variantStyles = {
   main: {
-    section: 'relative w-full py-12 md:py-16 lg:py-20 bg-gradient-to-b from-white to-blue-50',
+    section: 'relative w-full py-12 md:py-16 lg:py-20 bg-gradient-to-b from-white to-gray-50 dark:from-[#0A1628] dark:to-[#0A1628]',
     container: 'container px-4 md:px-6',
     layout: 'grid gap-6 lg:grid-cols-2 lg:gap-12 items-center',
   },
   tesla: {
-    section: 'relative min-h-screen flex items-center justify-center bg-white',
+    section: 'relative min-h-screen flex items-center justify-center bg-white dark:bg-[#0A1628]',
     container: 'text-center max-w-4xl px-4',
     layout: 'space-y-8',
   },
   standard: {
-    section: 'relative overflow-hidden',
+    section: 'relative overflow-hidden bg-white dark:bg-[#0A1628]',
     container: 'container mx-auto px-4 py-24 text-center relative',
     layout: 'space-y-8',
   },
   premium: {
-    section: 'relative isolate overflow-hidden bg-white pt-40 pb-28 px-4',
+    section: 'relative isolate overflow-hidden bg-gradient-to-b from-gray-50 to-white dark:bg-[#0A1628] pt-40 pb-28 px-4',
     container: 'mx-auto max-w-5xl',
     layout: 'space-y-8 text-center',
   },
   minimal: {
-    section: 'relative min-h-screen flex flex-col items-center justify-center px-4',
+    section: 'relative min-h-screen flex flex-col items-center justify-center px-4 bg-white dark:bg-[#0A1628]',
     container: 'text-center max-w-5xl mx-auto',
     layout: 'space-y-8',
   },
   cinematic: {
-    section: 'relative flex items-center justify-center py-32 bg-white',
+    section: 'relative flex items-center justify-center py-32 bg-gradient-to-br from-gray-50 to-gray-100 dark:bg-[#0A1628]',
     container: 'relative z-10 text-center max-w-3xl px-4',
     layout: 'space-y-8',
   },
@@ -116,7 +116,7 @@ export function UnifiedHeroSection({ variant, content }: UnifiedHeroSectionProps
       {content.badge && (
         <FadeIn>
           <motion.div
-            className="inline-flex items-center rounded-full px-4 py-1.5 mb-8 text-sm bg-primary/10 text-primary border border-primary/20"
+            className="inline-flex items-center rounded-full px-4 py-1.5 mb-8 text-sm bg-primary/15 dark:bg-primary/10 text-primary border border-primary/30 dark:border-primary/20"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
@@ -183,7 +183,7 @@ export function UnifiedHeroSection({ variant, content }: UnifiedHeroSectionProps
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.6 }}
-            className="text-sm text-muted-foreground mt-4"
+            className="text-sm text-gray-500 dark:text-gray-500 mt-4"
           >
             {content.notice}
           </motion.p>
@@ -192,7 +192,7 @@ export function UnifiedHeroSection({ variant, content }: UnifiedHeroSectionProps
 
       {content.trustBadges && (
         <FadeIn delay={0.4}>
-          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 text-xs md:text-sm text-muted-foreground mt-6">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8 text-xs md:text-sm text-gray-600 dark:text-gray-400 mt-6">
             {content.trustBadges.map((badge, index) => (
               <motion.div
                 key={badge.label}
@@ -260,7 +260,7 @@ export function UnifiedHeroSection({ variant, content }: UnifiedHeroSectionProps
     if (content.image) {
       return (
         <div className="flex items-center justify-center lg:justify-end">
-          <div className="relative w-full max-w-lg overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-xl border-2 border-gray-200 dark:border-gray-800 bg-card shadow-2xl">
             <Image
               src={content.image.src}
               alt={content.image.alt}
@@ -353,7 +353,7 @@ function renderBackgroundEffects(variant: HeroVariant) {
   if (variant === 'standard') {
     return (
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-blue-50 dark:from-primary/10 dark:to-blue-950/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-blue-100 dark:from-primary/10 dark:to-blue-950/20" />
         <motion.div
           className="absolute -top-40 -right-40 h-80 w-80 rounded-full bg-primary/10 blur-3xl"
           animate={{
@@ -390,15 +390,15 @@ function getHeadlineClass(variant: HeroVariant): string {
   
   switch (variant) {
     case 'main':
-      return `text-4xl ${baseClasses} tracking-tighter sm:text-5xl md:text-6xl text-blue-600`;
+      return `text-4xl ${baseClasses} tracking-tighter sm:text-5xl md:text-6xl text-primary dark:text-primary`;
     case 'tesla':
-      return `text-5xl md:text-7xl ${baseClasses} font-semibold leading-tight text-[#1d1d1f]`;
+      return `text-5xl md:text-7xl ${baseClasses} font-semibold leading-tight text-gray-900 dark:text-white`;
     case 'standard':
       return `font-display text-5xl md:text-7xl ${baseClasses} bg-gradient-to-r from-gray-900 to-gray-700 dark:from-white dark:to-gray-300 bg-clip-text text-transparent`;
     case 'premium':
-      return `text-6xl md:text-7xl ${baseClasses} font-semibold tracking-tight text-[#0A0A0A]`;
+      return `text-6xl md:text-7xl ${baseClasses} font-semibold tracking-tight text-gray-900 dark:text-white`;
     case 'minimal':
-      return `text-5xl md:text-7xl lg:text-8xl ${baseClasses} font-normal tracking-tight text-foreground`;
+      return `text-5xl md:text-7xl lg:text-8xl ${baseClasses} font-normal tracking-tight text-gray-900 dark:text-white`;
     case 'cinematic':
       return `text-6xl ${baseClasses} font-semibold leading-tight`;
     default:
@@ -409,17 +409,17 @@ function getHeadlineClass(variant: HeroVariant): string {
 function getSubheadingClass(variant: HeroVariant): string {
   switch (variant) {
     case 'main':
-      return "text-lg text-muted-foreground md:text-xl max-w-[600px] mb-6";
+      return "text-lg text-gray-600 dark:text-gray-400 md:text-xl max-w-[600px] mb-6";
     case 'tesla':
-      return "text-xl text-[#86868b] mb-10 max-w-2xl mx-auto";
+      return "text-xl text-gray-600 dark:text-[#86868b] mb-10 max-w-2xl mx-auto";
     case 'standard':
-      return "text-xl md:text-2xl text-muted-foreground mb-8 max-w-3xl mx-auto";
+      return "text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto";
     case 'premium':
-      return "mt-6 text-xl text-neutral-600 font-normal";
+      return "mt-6 text-xl text-gray-600 dark:text-gray-400 font-normal";
     case 'minimal':
-      return "text-lg md:text-xl text-muted-foreground mb-12 font-light";
+      return "text-lg md:text-xl text-gray-600 dark:text-gray-400 mb-12 font-light";
     case 'cinematic':
-      return "mt-6 text-xl text-neutral-600";
+      return "mt-6 text-xl text-gray-600 dark:text-gray-400";
     default:
       return "text-lg text-muted-foreground";
   }
@@ -430,7 +430,7 @@ function getPrimaryCTAClass(variant: HeroVariant): string {
   
   switch (variant) {
     case 'main':
-      return `${baseClasses} bg-blue-600 hover:bg-blue-700 text-base`;
+      return `${baseClasses} text-base`;
     case 'tesla':
       return `${baseClasses} rounded-xl bg-[#007aff] hover:bg-[#0056b3] px-8 py-4 text-lg font-medium shadow-md hover:shadow-lg`;
     case 'standard':
@@ -440,7 +440,7 @@ function getPrimaryCTAClass(variant: HeroVariant): string {
     case 'minimal':
       return `${baseClasses} text-base px-8 py-6 rounded-full`;
     case 'cinematic':
-      return `${baseClasses} rounded-xl bg-blue-600 hover:bg-blue-700 hover:scale-[1.04] px-8 py-4 text-lg font-medium shadow-md`;
+      return `${baseClasses} rounded-xl hover:scale-[1.04] px-8 py-4 text-lg font-medium shadow-md`;
     default:
       return baseClasses;
   }

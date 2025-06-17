@@ -5,8 +5,8 @@ import type { HeroContent } from '@/components/sections/UnifiedHeroSection';
 export const heroConfigs: Record<string, HeroContent> = {
   main: {
     badge: 'AI-POWERED EDUCATION PLATFORM',
-    headline: 'Give every student a personal AI tutor in &lt;60 sec',
-    subheading: 'Transform your Canvas materials into personalized learning pathways. Educators report 32% higher engagement and 28% improved test scores.',
+    headline: 'A personal tutor that adapts to you!',
+    subheading: 'Upload your class materials once—our AI turns them into bite-sized lessons, examples, and quizzes built around your interests, pace, and goals.',
     primaryCTA: {
       text: 'Book a 15-min Demo',
       href: '/demo',

@@ -2,56 +2,32 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/navigation/ThemeToggle";
 
 export function MainHeader() {
   return (
-    <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 w-full border-b bg-black dark:bg-slate-900 backdrop-blur">
       <div className="container flex h-16 items-center justify-between">
         <Link href="/" className="flex items-center">
           <Image
-            src="/images/learn-x-logo.png"
-            alt="Learn-X Logo"
-            width={130}
-            height={50}
-            className="h-auto"
+            src="/images/logoo.svg"
+            alt="LEARN-X Logo"
+            width={120}
+            height={40}
+            className="h-auto w-auto"
+            priority
           />
         </Link>
-        <nav className="hidden md:flex items-center gap-6">
-          <Link
-            href="/features"
-            className="text-sm font-medium transition-colors hover:text-primary"
-          >
-            Features
-          </Link>
-          <Link
-            href="/how-it-works"
-            className="text-sm font-medium transition-colors hover:text-primary"
-          >
-            How It Works
-          </Link>
-          <Link
-            href="/for-educators"
-            className="text-sm font-medium transition-colors hover:text-primary"
-          >
-            For Educators
-          </Link>
-          <Link
-            href="/pricing"
-            className="text-sm font-medium transition-colors hover:text-primary"
-          >
-            Pricing
-          </Link>
-        </nav>
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           <Link
             href="/login"
-            className="text-sm font-medium transition-colors hover:text-primary hidden sm:block"
+            className="text-sm font-medium text-white transition-colors hover:text-blue-400 hidden sm:block"
           >
             Log In
           </Link>
           <Button
-            variant="outline"
-            className="border-blue-200 text-blue-600 hover:bg-blue-50"
+            variant="default"
           >
             Book a Demo
           </Button>
