@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { ChevronLeft, Edit2, CheckCircle } from 'lucide-react';
+import { ChevronLeft, Edit2, CheckCircle, Sparkles } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
@@ -56,14 +56,13 @@ export function ReviewStep() {
           <span className="font-medium">Role:</span> {prof.role}
         </p>
         <p>
-          <span className="font-medium">Industry:</span> {prof.industry}
+          <span className="font-medium">Aspired Industry:</span> {prof.industry}
         </p>
-        <p>
-          <span className="font-medium">Experience:</span> {prof.experienceYears} years
-        </p>
-        <p>
-          <span className="font-medium">Technical Level:</span> {prof.technicalLevel}
-        </p>
+        {prof.domainExpertise && prof.domainExpertise[0] && (
+          <p>
+            <span className="font-medium">Field of Study:</span> {prof.domainExpertise[0]}
+          </p>
+        )}
         {prof.careerAspirations && (
           <p>
             <span className="font-medium">Aspirations:</span> {prof.careerAspirations}
@@ -147,13 +146,6 @@ export function ReviewStep() {
           <span className="font-medium">Density:</span> {content.density}
         </p>
         <p>
-          <span className="font-medium">Examples per concept:</span> {content.examplesPerConcept}
-        </p>
-        <p>
-          <span className="font-medium">Summary style:</span>{' '}
-          {content.summaryStyle.replace('_', ' ')}
-        </p>
-        <p>
           <span className="font-medium">Detail level:</span> {content.detailTolerance}
         </p>
         <p>
@@ -171,10 +163,6 @@ export function ReviewStep() {
       <div className="space-y-2">
         <p>
           <span className="font-medium">Style:</span> {comm.style.replace('_', ' ')}
-        </p>
-        <p>
-          <span className="font-medium">Technical comfort:</span>{' '}
-          {Math.round(comm.technicalComfort * 100)}%
         </p>
         <p>
           <span className="font-medium">Encouragement:</span> {comm.encouragementLevel}
@@ -197,12 +185,12 @@ export function ReviewStep() {
   return (
     <>
       <OnboardingCard>
-        <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
-            <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+        <CardHeader className="text-center pb-8">
+          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <Sparkles className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Review Your Learning Profile</CardTitle>
-          <CardDescription>Let's make sure we've captured everything correctly</CardDescription>
+          <CardTitle className="text-3xl">Review Your Learning Profile</CardTitle>
+          <CardDescription className="text-lg mt-2">Let's make sure we've captured everything correctly</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {sections.map(({ key, render }) => (
