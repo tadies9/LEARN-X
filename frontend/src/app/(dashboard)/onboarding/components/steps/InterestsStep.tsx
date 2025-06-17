@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { ChevronLeft, ChevronRight, Heart, BookOpen, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Heart, BookOpen, Info, Plus, X } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { INTEREST_CATEGORIES, LEARNING_TOPICS } from '@/lib/types/persona';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 
 export function InterestsStep() {
   const { nextStep, previousStep, updateFormData, formData } = useOnboarding();
@@ -24,6 +26,8 @@ export function InterestsStep() {
   const [learningTopics, setLearningTopics] = useState<string[]>(
     formData.interests?.learningTopics || []
   );
+  const [customInterest, setCustomInterest] = useState('');
+  const [customTopic, setCustomTopic] = useState('');
   const [error, setError] = useState<string | null>(null);
 
   const toggleInterest = (interest: string) => {
@@ -48,6 +52,35 @@ export function InterestsStep() {
         setSecondaryInterests((prev) => [...prev, interest]);
       }
     }
+  };
+
+  const addCustomInterest = () => {
+    const trimmed = customInterest.trim();
+    if (trimmed && !primaryInterests.includes(trimmed) && !secondaryInterests.includes(trimmed)) {
+      if (primaryInterests.length < 5) {
+        setPrimaryInterests((prev) => [...prev, trimmed]);
+      } else if (secondaryInterests.length < 5) {
+        setSecondaryInterests((prev) => [...prev, trimmed]);
+      }
+      setCustomInterest('');
+    }
+  };
+
+  const addCustomTopic = () => {
+    const trimmed = customTopic.trim();
+    if (trimmed && !learningTopics.includes(trimmed) && learningTopics.length < 10) {
+      setLearningTopics((prev) => [...prev, trimmed]);
+      setCustomTopic('');
+    }
+  };
+
+  const removeInterest = (interest: string) => {
+    setPrimaryInterests((prev) => prev.filter((i) => i !== interest));
+    setSecondaryInterests((prev) => prev.filter((i) => i !== interest));
+  };
+
+  const removeTopic = (topic: string) => {
+    setLearningTopics((prev) => prev.filter((t) => t !== topic));
   };
 
   const toggleLearningTopic = (topic: string) => {
@@ -122,8 +155,12 @@ export function InterestsStep() {
                       <span className="text-xs text-muted-foreground">Primary ({primaryInterests.length}/5):</span>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {primaryInterests.map((interest) => (
-                          <Badge key={interest} variant="default" className="text-xs">
+                          <Badge key={interest} variant="default" className="text-xs gap-1">
                             {interest}
+                            <X 
+                              className="h-3 w-3 cursor-pointer hover:text-primary-foreground/80" 
+                              onClick={() => removeInterest(interest)}
+                            />
                           </Badge>
                         ))}
                       </div>
@@ -134,8 +171,12 @@ export function InterestsStep() {
                       <span className="text-xs text-muted-foreground">Secondary ({secondaryInterests.length}/5):</span>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {secondaryInterests.map((interest) => (
-                          <Badge key={interest} variant="secondary" className="text-xs">
+                          <Badge key={interest} variant="secondary" className="text-xs gap-1">
                             {interest}
+                            <X 
+                              className="h-3 w-3 cursor-pointer hover:text-secondary-foreground/80" 
+                              onClick={() => removeInterest(interest)}
+                            />
                           </Badge>
                         ))}
                       </div>
@@ -186,6 +227,34 @@ export function InterestsStep() {
                   </div>
                 </div>
               ))}
+              
+              <Separator className="my-6" />
+              
+              {/* Custom Interest Input */}
+              <div className="space-y-3">
+                <h4 className="text-base font-semibold">Add Your Own Interest</h4>
+                <p className="text-sm text-muted-foreground">
+                  Don't see your interest listed? Add it here!
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter a custom interest"
+                    value={customInterest}
+                    onChange={(e) => setCustomInterest(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomInterest())}
+                    className="flex-1"
+                    disabled={primaryInterests.length >= 5 && secondaryInterests.length >= 5}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={addCustomInterest}
+                    disabled={!customInterest.trim() || (primaryInterests.length >= 5 && secondaryInterests.length >= 5)}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
             </div>
           </TabsContent>
 
@@ -198,8 +267,12 @@ export function InterestsStep() {
                 </h4>
                 <div className="flex flex-wrap gap-2">
                   {learningTopics.map((topic) => (
-                    <Badge key={topic} variant="default" className="text-xs">
+                    <Badge key={topic} variant="default" className="text-xs gap-1">
                       {topic}
+                      <X 
+                        className="h-3 w-3 cursor-pointer hover:text-primary-foreground/80" 
+                        onClick={() => removeTopic(topic)}
+                      />
                     </Badge>
                   ))}
                 </div>
@@ -236,6 +309,34 @@ export function InterestsStep() {
                     </Button>
                   );
                 })}
+              </div>
+              
+              <Separator className="my-6" />
+              
+              {/* Custom Topic Input */}
+              <div className="space-y-3">
+                <h4 className="text-base font-semibold">Add Your Own Topic</h4>
+                <p className="text-sm text-muted-foreground">
+                  Want to learn something specific? Add it here!
+                </p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Enter a custom learning topic"
+                    value={customTopic}
+                    onChange={(e) => setCustomTopic(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomTopic())}
+                    className="flex-1"
+                    disabled={learningTopics.length >= 10}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={addCustomTopic}
+                    disabled={!customTopic.trim() || learningTopics.length >= 10}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
               </div>
             </div>
           </TabsContent>
