@@ -4,7 +4,6 @@ import { logger } from '../../utils/logger';
 import { TokenCounter } from '../ai/TokenCounter';
 import { CostTracker } from '../ai/CostTracker';
 import { AIRequestType } from '../../types/ai';
-import pLimit from 'p-limit';
 
 export interface Chunk {
   id: string;
@@ -24,7 +23,8 @@ export class VectorEmbeddingService {
   private model: string = 'text-embedding-3-small';
   private dimensions: number = 1536;
   private batchSize: number = 50;
-  private concurrencyLimit = pLimit(3); // Limit concurrent API calls
+  private maxConcurrent: number = 3;
+  private currentConcurrent: number = 0;
   private costTracker: CostTracker;
 
   constructor() {
@@ -102,24 +102,32 @@ export class VectorEmbeddingService {
     logger.info(`Processing ${chunks.length} chunks for embeddings`);
 
     // Process in batches to avoid API limits
+    const batches: Chunk[][] = [];
     for (let i = 0; i < chunks.length; i += this.batchSize) {
-      const batch = chunks.slice(i, i + this.batchSize);
+      batches.push(chunks.slice(i, i + this.batchSize));
+    }
 
-      await this.concurrencyLimit(async () => {
+    // Process batches with simple concurrency control
+    const results = [];
+    for (let i = 0; i < batches.length; i += this.maxConcurrent) {
+      const concurrentBatches = batches.slice(i, i + this.maxConcurrent);
+      
+      const promises = concurrentBatches.map(async (batch, idx) => {
         try {
           const texts = batch.map((chunk) => chunk.content);
           const embeddings = await this.generateEmbeddings(texts, userId);
-
           await this.storeEmbeddings(batch, embeddings);
 
           logger.info(
-            `Processed batch ${Math.floor(i / this.batchSize) + 1}/${Math.ceil(chunks.length / this.batchSize)}`
+            `Processed batch ${i + idx + 1}/${batches.length}`
           );
         } catch (error) {
-          logger.error(`Failed to process batch starting at index ${i}:`, error);
+          logger.error(`Failed to process batch ${i + idx + 1}:`, error);
           throw error;
         }
       });
+
+      await Promise.all(promises);
     }
 
     logger.info('Completed embedding generation for all chunks');
