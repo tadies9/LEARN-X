@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Hand } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Eye, Headphones, BookOpen, Hand, Brain } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
@@ -67,42 +67,66 @@ export function LearningStyleStep() {
 
   return (
     <OnboardingCard>
-      <CardHeader>
-        <CardTitle>Learning Style Assessment</CardTitle>
-        <CardDescription>
-          Understanding how you learn best helps us present information in the most effective way
-          for you
+      <CardHeader className="text-center pb-8">
+        <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <Brain className="h-8 w-8 text-primary" />
+        </div>
+        <CardTitle className="text-3xl">Learning Style Assessment</CardTitle>
+        <CardDescription className="text-lg mt-2">
+          Understanding how you learn best helps us present information in the most effective way for you
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Primary Learning Style */}
-        <div className="space-y-3">
-          <h3 className="font-medium">Primary Learning Style</h3>
+        <div className="space-y-4">
+          <div className="text-center">
+            <h3 className="font-semibold text-lg mb-1">Select Your Primary Learning Style</h3>
+            <p className="text-sm text-muted-foreground">Choose the way you learn most effectively</p>
+          </div>
           <RadioGroup value={primary} onValueChange={setPrimary}>
-            <div className="grid gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {LEARNING_STYLES.map((style) => {
                 const Icon = style.icon;
+                const isSelected = primary === style.id;
                 return (
                   <div
                     key={style.id}
                     className={cn(
-                      'relative rounded-lg border p-4 cursor-pointer transition-colors hover:bg-muted/50',
-                      primary === style.id && 'border-primary bg-primary/5'
+                      'relative rounded-xl border-2 p-6 cursor-pointer transition-all duration-200',
+                      'hover:shadow-lg hover:border-primary/50',
+                      isSelected ? 'border-primary shadow-lg' : 'border-gray-200 dark:border-gray-800',
+                      'bg-white dark:bg-gray-900'
                     )}
                     onClick={() => setPrimary(style.id)}
                   >
-                    <div className="flex gap-3">
-                      <RadioGroupItem value={style.id} id={style.id} className="mt-1" />
-                      <div className="flex-1 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Icon className="h-5 w-5 text-muted-foreground" />
-                          <Label htmlFor={style.id} className="font-medium cursor-pointer">
-                            {style.label}
-                          </Label>
-                        </div>
-                        <p className="text-sm text-muted-foreground">{style.description}</p>
-                        <p className="text-xs text-muted-foreground">Examples: {style.examples}</p>
+                    <div className="flex flex-col items-center text-center space-y-3">
+                      <div className={cn(
+                        "w-16 h-16 rounded-full flex items-center justify-center transition-colors",
+                        isSelected ? "bg-primary/20" : "bg-gray-100 dark:bg-gray-800"
+                      )}>
+                        <Icon className={cn(
+                          "h-8 w-8 transition-colors",
+                          isSelected ? "text-primary" : "text-gray-600 dark:text-gray-400"
+                        )} />
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor={style.id} className="font-semibold text-base cursor-pointer">
+                          {style.label}
+                        </Label>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {style.description}
+                        </p>
+                      </div>
+                      <div className="pt-2 border-t border-gray-100 dark:border-gray-800 w-full">
+                        <p className="text-xs text-muted-foreground">
+                          <span className="font-medium">Examples:</span> {style.examples}
+                        </p>
+                      </div>
+                      <RadioGroupItem 
+                        value={style.id} 
+                        id={style.id} 
+                        className="absolute top-4 right-4" 
+                      />
                     </div>
                   </div>
                 );
@@ -159,12 +183,12 @@ export function LearningStyleStep() {
           </div>
         </div>
 
-        <div className="flex justify-between pt-4">
-          <Button type="button" variant="outline" onClick={previousStep}>
+        <div className="flex justify-between pt-6 border-t">
+          <Button type="button" variant="outline" size="lg" onClick={previousStep} className="min-w-[120px]">
             <ChevronLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-          <Button onClick={handleNext}>
+          <Button onClick={handleNext} size="lg" className="min-w-[120px]">
             Next
             <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
