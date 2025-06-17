@@ -41,25 +41,27 @@ export function OnboardingWizard() {
     <div className="container max-w-3xl mx-auto py-8 px-4">
       {/* Progress Bar - hidden on welcome step */}
       {currentStep !== 'welcome' && (
-        <div className="mb-8 p-4 bg-white dark:bg-gray-900 rounded-lg border-2 border-gray-900 dark:border-gray-100 shadow-lg">
-          <div className="flex justify-between items-center">
-            <div className="flex-1">
-              <div className="flex justify-between text-sm text-gray-700 dark:text-gray-300 mb-2 font-medium">
-                <span>
-                  Step {currentProgressStep + 1} of {progressSteps}
-                </span>
-                <span>{Math.round(progress)}% Complete</span>
+        <div className="mb-8">
+          <div className="bg-white dark:bg-gray-900 rounded-xl p-6 shadow-md border border-gray-200 dark:border-gray-800">
+            <div className="flex justify-between items-center">
+              <div className="flex-1">
+                <div className="flex justify-between text-sm mb-3">
+                  <span className="text-gray-600 dark:text-gray-400 font-medium">
+                    Step {currentProgressStep + 1} of {progressSteps}
+                  </span>
+                  <span className="text-primary font-semibold">{Math.round(progress)}% Complete</span>
+                </div>
+                <Progress value={progress} className="h-2" />
               </div>
-              <Progress value={progress} className="h-3 border border-gray-900 dark:border-gray-100" />
+              {canSkipCurrent() && (
+                <button
+                  onClick={skipToReview}
+                  className="ml-6 text-sm text-primary hover:text-primary/80 underline underline-offset-4 font-medium transition-colors"
+                >
+                  Skip to review
+                </button>
+              )}
             </div>
-            {canSkipCurrent() && (
-              <button
-                onClick={skipToReview}
-                className="ml-4 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 underline font-medium"
-              >
-                Skip to review
-              </button>
-            )}
           </div>
         </div>
       )}
