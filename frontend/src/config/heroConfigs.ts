@@ -9,9 +9,9 @@ export const heroConfigs: Record<string, HeroContent> = {
     subheading: 'Upload your class materials once—our AI turns them into bite-sized lessons, examples, and quizzes built around your interests, pace, and goals.',
     primaryCTA: {
       text: 'Book a 15-min Demo',
-      href: '/demo',
+      href: 'mailto:tadiwa@learn-x.co?subject=Demo Request - LEARN-X&body=Hi,%0A%0AI\'d like to schedule a 15-minute demo of LEARN-X.%0A%0AMy availability:%0A-%20%0A-%20%0A%0AThanks!',
     },
-    notice: 'FERPA-compliant. No credit card required for trial.',
+    notice: '',
     image: {
       src: '/images/dashboard-screenshot.png',
       alt: 'Learn-X Dashboard showing Canvas material being transformed into personalized learning content',
@@ -29,7 +29,7 @@ export const heroConfigs: Record<string, HeroContent> = {
       text: 'Watch Demo',
       onClick: () => {}, // Will be handled by component
     },
-    notice: 'Free during beta • No credit card required',
+    notice: 'Free during beta',
     video: {
       thumbnail: '/demo-thumbnail.svg',
       source: '/learn-x-demo.mp4',
@@ -43,10 +43,10 @@ export const heroConfigs: Record<string, HeroContent> = {
     subheading: 'Upload any syllabus or lecture deck—students get chat-style help, professors get insight dashboards.',
     primaryCTA: {
       text: 'Try the live demo',
-      href: '/demo',
+      href: 'mailto:tadiwa@learn-x.co?subject=Demo Request - LEARN-X&body=Hi,%0A%0AI\'d like to schedule a 15-minute demo of LEARN-X.%0A%0AMy availability:%0A-%20%0A-%20%0A%0AThanks!',
     },
     trustBadges: [
-      { icon: Shield, label: 'FERPA Compliant' },
+      { icon: Shield, label: 'Secure & Private' },
       { icon: Clock, label: 'Deploy in <5 min' },
       { icon: School, label: 'Canvas, Moodle, Blackboard' },
     ],
@@ -61,7 +61,7 @@ export const heroConfigs: Record<string, HeroContent> = {
     },
     secondaryCTA: {
       text: 'Book founder demo →',
-      href: '/demo',
+      href: 'mailto:tadiwa@learn-x.co?subject=Demo Request - LEARN-X&body=Hi,%0A%0AI\'d like to schedule a 15-minute demo of LEARN-X.%0A%0AMy availability:%0A-%20%0A-%20%0A%0AThanks!',
     },
     notice: 'Loved by 527 early testers • Rated 4.9/5 so far',
   },
@@ -71,9 +71,9 @@ export const heroConfigs: Record<string, HeroContent> = {
     subheading: 'Upload any PDF. Students chat with it. You get insights.',
     primaryCTA: {
       text: 'Try it now',
-      href: '/demo',
+      href: 'mailto:tadiwa@learn-x.co?subject=Demo Request - LEARN-X&body=Hi,%0A%0AI\'d like to schedule a 15-minute demo of LEARN-X.%0A%0AMy availability:%0A-%20%0A-%20%0A%0AThanks!',
     },
-    notice: 'Free during beta • No credit card required',
+    notice: 'Free during beta',
   },
 
   cinematic: {
@@ -81,7 +81,7 @@ export const heroConfigs: Record<string, HeroContent> = {
     subheading: 'Upload a syllabus, get an on-demand chat TA—free while in beta.',
     primaryCTA: {
       text: 'Try the live demo',
-      href: '/demo',
+      href: 'mailto:tadiwa@learn-x.co?subject=Demo Request - LEARN-X&body=Hi,%0A%0AI\'d like to schedule a 15-minute demo of LEARN-X.%0A%0AMy availability:%0A-%20%0A-%20%0A%0AThanks!',
     },
     image: {
       src: '/macbook-placeholder.svg',

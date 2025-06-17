@@ -1,3 +1,5 @@
+'use client';
+
 import Link from "next/link";
 import Image from "next/image";
 
@@ -28,8 +30,9 @@ export function MainHeader() {
           </Link>
           <Button
             variant="default"
+            onClick={() => window.location.href = '/register'}
           >
-            Book a Demo
+            Get Started
           </Button>
         </div>
       </div>

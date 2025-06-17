@@ -16,6 +16,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { SocialAuthDivider } from '@/components/auth/SocialAuthDivider';
 import { PasswordRequirements } from '@/components/auth/PasswordRequirements';
+import { FormField } from '@/components/ui/form-field';
 import { getBaseUrl } from '@/lib/utils/url';
 import { registerSchema, type RegisterFormData } from '@/lib/validations/auth';
 
@@ -100,7 +101,7 @@ export default function RegisterPage() {
       }}
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div className="space-y-2">
+        <FormField>
           <Label htmlFor="name">Full Name</Label>
           <Input
             id="name"
@@ -110,8 +111,8 @@ export default function RegisterPage() {
             disabled={loading}
           />
           {errors.name && <p className="text-sm text-destructive">{errors.name.message}</p>}
-        </div>
-        <div className="space-y-2">
+        </FormField>
+        <FormField>
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
@@ -121,14 +122,14 @@ export default function RegisterPage() {
             disabled={loading}
           />
           {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-        </div>
-        <div className="space-y-2">
+        </FormField>
+        <FormField>
           <Label htmlFor="password">Password</Label>
           <Input id="password" type="password" {...register('password')} disabled={loading} />
           {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
           <PasswordRequirements password={password} />
-        </div>
-        <div className="space-y-2">
+        </FormField>
+        <FormField>
           <Label htmlFor="confirmPassword">Confirm Password</Label>
           <Input
             id="confirmPassword"
@@ -139,7 +140,7 @@ export default function RegisterPage() {
           {errors.confirmPassword && (
             <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
           )}
-        </div>
+        </FormField>
         <div className="flex items-center space-x-2">
           <Checkbox
             id="terms"

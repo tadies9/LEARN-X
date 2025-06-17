@@ -38,7 +38,7 @@ export function GoogleAuthButton({ mode, redirectTo }: GoogleAuthButtonProps) {
 
   return (
     <>
-      <Button variant="outline" className="w-full" onClick={handleGoogleAuth} disabled={loading}>
+      <Button variant="outline" className="w-full bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 border-2 border-gray-200 dark:border-gray-600 shadow-md hover:shadow-lg transition-all" onClick={handleGoogleAuth} disabled={loading}>
         <GoogleIcon className="mr-2 h-4 w-4" />
         Continue with Google
       </Button>

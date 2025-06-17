@@ -38,19 +38,20 @@ export function AuthCard({
   footerLink,
 }: AuthCardProps) {
   return (
-    <Card>
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-2xl font-bold">{title}</CardTitle>
-        {description && <CardDescription>{description}</CardDescription>}
+    <Card className="border-2 border-gray-200 dark:border-gray-700 shadow-2xl bg-white dark:bg-gray-900 relative overflow-hidden">
+      <div className="absolute inset-0 bg-primary/[0.2] dark:bg-transparent pointer-events-none" />
+      <CardHeader className="space-y-1 relative">
+        <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">{title}</CardTitle>
+        {description && <CardDescription className="text-gray-600 dark:text-gray-400">{description}</CardDescription>}
       </CardHeader>
-      <CardContent>{children}</CardContent>
+      <CardContent className="relative">{children}</CardContent>
       {(footerContent || footerLink) && (
-        <CardFooter className="flex flex-col space-y-2">
+        <CardFooter className="flex flex-col space-y-2 relative">
           {footerContent}
           {footerLink && (
-            <div className="text-sm text-muted-foreground text-center w-full">
+            <div className="text-sm text-gray-600 dark:text-gray-400 text-center w-full">
               {footerLink.text}{' '}
-              <Link href={footerLink.href} className="text-primary hover:underline">
+              <Link href={footerLink.href} className="text-primary hover:underline font-medium">
                 {footerLink.linkText}
               </Link>
             </div>

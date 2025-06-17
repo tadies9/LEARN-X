@@ -260,7 +260,7 @@ export function UnifiedHeroSection({ variant, content }: UnifiedHeroSectionProps
     if (content.image) {
       return (
         <div className="flex items-center justify-center lg:justify-end">
-          <div className="relative w-full max-w-lg overflow-hidden rounded-xl border-2 border-gray-200 dark:border-gray-800 bg-card shadow-2xl">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-xl border-2 border-gray-200 dark:border-gray-800 bg-card shadow-[0_20px_50px_rgba(0,0,0,0.3)] transform perspective-1000 hover:scale-[1.02] transition-transform duration-300">
             <Image
               src={content.image.src}
               alt={content.image.alt}

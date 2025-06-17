@@ -1,6 +1,7 @@
 import { MainHeader } from '@/components/navigation/MainHeader';
 import { MainFooter } from '@/components/navigation/MainFooter';
 import { HeroMain } from '@/components/sections/HeroMain';
+import { GetStartedBanner } from '@/components/sections/GetStartedBanner';
 import { FeaturesGrid } from '@/components/sections/FeaturesGrid';
 import { VideoDemo } from '@/components/sections/VideoDemo';
 import { CTAFinal } from '@/components/sections/CtaFinal';
@@ -12,6 +13,7 @@ export default function HomePage() {
 
       <main>
         <HeroMain />
+        <GetStartedBanner />
         <FeaturesGrid />
         <VideoDemo />
         <CTAFinal />

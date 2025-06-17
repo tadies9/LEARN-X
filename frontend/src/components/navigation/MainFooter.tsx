@@ -1,14 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
 
-import { Twitter, Linkedin, ThumbsDown, Mail } from "lucide-react";
+import { Linkedin, Mail, Instagram } from "lucide-react";
 
 export function MainFooter() {
   return (
-    <footer className="w-full border-t bg-black dark:bg-slate-900 py-12">
-      <div className="container grid gap-8 md:grid-cols-4">
-        <div className="space-y-4">
-          <Link href="/" className="inline-block">
+    <footer className="w-full border-t bg-black dark:bg-slate-900 py-8">
+      <div className="container">
+        {/* Top row: Logo and primary actions */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+          <Link href="/" className="inline-block mb-4 md:mb-0">
             <Image
               src="/images/logoo.svg"
               alt="LEARN-X Logo"
@@ -17,115 +18,82 @@ export function MainFooter() {
               className="h-auto w-auto"
             />
           </Link>
-          <p className="text-sm text-slate-400">
-            Transforming education with AI-powered personalized learning experiences.
-          </p>
-          <div className="flex space-x-4">
+          
+          <div className="flex items-center gap-4">
             <Link
-              href="#"
-              className="text-slate-400 hover:text-slate-200"
-              aria-label="Twitter"
+              href="/login"
+              className="text-sm text-slate-400 hover:text-slate-200"
             >
-              <Twitter className="h-5 w-5" />
-              <span className="sr-only">Twitter</span>
+              Login
             </Link>
+            <span className="text-slate-600">|</span>
             <Link
-              href="#"
-              className="text-slate-400 hover:text-slate-200"
-              aria-label="LinkedIn"
+              href="/register"
+              className="text-sm text-slate-400 hover:text-slate-200"
             >
-              <Linkedin className="h-5 w-5" />
-              <span className="sr-only">LinkedIn</span>
-            </Link>
-            <Link
-              href="#"
-              className="text-slate-400 hover:text-slate-200"
-              aria-label="Discord"
-            >
-              <ThumbsDown className="h-5 w-5" />
-              <span className="sr-only">Discord</span>
-            </Link>
-            <Link
-              href="#"
-              className="text-slate-400 hover:text-slate-200"
-              aria-label="Email"
-            >
-              <Mail className="h-5 w-5" />
-              <span className="sr-only">Email</span>
+              Get Started
             </Link>
           </div>
         </div>
-        <FooterSection
-          title="PLATFORM"
-          links={[
-            { href: "/features", label: "Features" },
-            { href: "/how-it-works", label: "How It Works" },
-            { href: "/for-students", label: "For Students" },
-            { href: "/for-educators", label: "For Educators" },
-            { href: "/resources", label: "Resources" },
-          ]}
-        />
-        <FooterSection
-          title="COMPANY"
-          links={[
-            { href: "/about", label: "About" },
-            { href: "/blog", label: "Blog" },
-            { href: "/careers", label: "Careers" },
-            { href: "/press", label: "Press" },
-            { href: "/contact", label: "Contact" },
-          ]}
-        />
-        <FooterSection
-          title="LEGAL"
-          links={[
-            { href: "/terms", label: "Terms" },
-            { href: "/privacy", label: "Privacy" },
-            { href: "/cookies", label: "Cookies" },
-            { href: "/licenses", label: "Licenses" },
-            { href: "/accessibility", label: "Accessibility" },
-          ]}
-        />
-      </div>
-      <div className="container mt-8 border-t border-gray-200 dark:border-gray-800 pt-8">
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <p className="text-xs text-slate-400">
-            © 2025 Learn-X Learning, Inc. All rights reserved.
-          </p>
-          <div className="mt-4 md:mt-0 text-xs text-slate-400">
-            <p>
-              FERPA-compliant. GDPR-ready.{" "}
-              <Link href="/security" className="underline hover:text-slate-200">
-                Security details
-              </Link>
-            </p>
+        
+        {/* Bottom row: Copyright, legal links, and social */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 mb-4 md:mb-0">
+            <span>© 2025 Learn-X</span>
+            <span className="text-slate-600">·</span>
+            <Link href="/terms" className="hover:text-slate-200">Terms</Link>
+            <span className="text-slate-600">·</span>
+            <Link href="/privacy" className="hover:text-slate-200">Privacy</Link>
+            <span className="text-slate-600">·</span>
+            <Link href="/contact" className="hover:text-slate-200">Contact</Link>
+          </div>
+          
+          {/* Social icons */}
+          <div className="flex items-center gap-3">
+            <Link
+              href="https://x.com/LEARN__X"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-slate-200 transition-colors"
+              aria-label="X (formerly Twitter)"
+            >
+              <svg
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+            </Link>
+            <Link
+              href="https://www.linkedin.com/company/learn-x1/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-slate-200 transition-colors"
+              aria-label="LinkedIn"
+            >
+              <Linkedin className="h-4 w-4" />
+            </Link>
+            <Link
+              href="https://www.instagram.com/learn___x"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-slate-400 hover:text-slate-200 transition-colors"
+              aria-label="Instagram"
+            >
+              <Instagram className="h-4 w-4" />
+            </Link>
+            <Link
+              href="mailto:tadiwa@learn-x.co"
+              className="text-slate-400 hover:text-slate-200 transition-colors"
+              aria-label="Email"
+            >
+              <Mail className="h-4 w-4" />
+            </Link>
           </div>
         </div>
       </div>
     </footer>
-  );
-}
-
-interface FooterSectionProps {
-  title: string;
-  links: Array<{ href: string; label: string }>;
-}
-
-function FooterSection({ title, links }: FooterSectionProps) {
-  return (
-    <div className="space-y-4">
-      <h3 className="text-sm font-medium uppercase tracking-wider text-slate-200">{title}</h3>
-      <ul className="space-y-2">
-        {links.map((link) => (
-          <li key={link.href}>
-            <Link
-              href={link.href}
-              className="text-sm text-slate-400 hover:text-slate-200"
-            >
-              {link.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </div>
   );
 }
