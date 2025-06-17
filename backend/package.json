@@ -9,6 +9,7 @@
     "dev:worker": "nodemon src/workers/enhanced-pgmq-worker.ts",
     "build": "tsc -p tsconfig.build.json",
     "start": "node dist/index.js",
+    "start:debug": "node dist/debug-start.js",
     "start:api": "node dist/api-server.js",
     "start:worker": "node dist/workers/enhanced-pgmq-worker.js",
     "lint": "eslint . --ext .ts",
