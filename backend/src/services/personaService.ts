@@ -30,10 +30,6 @@ export class PersonaService {
       // Handle both new and legacy field names
       const professionalContext = personaData.academicCareer || personaData.professional;
       
-      console.log('🔍 DEBUG SERVICE - Processing persona data for user:', userId);
-      console.log('🔍 DEBUG SERVICE - Using academicCareer:', !!personaData.academicCareer);
-      console.log('🔍 DEBUG SERVICE - Using professional:', !!personaData.professional);
-      console.log('🔍 DEBUG SERVICE - Professional context:', JSON.stringify(professionalContext, null, 2));
 
       const dataToSave = {
         user_id: userId,
@@ -46,7 +42,6 @@ export class PersonaService {
         updated_at: new Date().toISOString(),
       };
 
-      console.log('🔍 DEBUG SERVICE - Data to save:', JSON.stringify(dataToSave, null, 2));
 
       // If exists, create history entry first
       if (existing) {
@@ -62,11 +57,9 @@ export class PersonaService {
         .single();
 
       if (error) {
-        console.log('❌ DEBUG SERVICE - Supabase error:', error);
         throw error;
       }
 
-      console.log('✅ DEBUG SERVICE - Persona saved successfully');
       return data;
     } catch (error) {
       logger.error('Error upserting persona:', error);

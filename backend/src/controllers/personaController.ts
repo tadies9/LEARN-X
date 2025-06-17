@@ -37,27 +37,18 @@ export class PersonaController {
       const userId = req.user!.id;
       const personaData = req.body;
 
-      console.log('🔍 DEBUG - Raw request body:', JSON.stringify(req.body, null, 2));
-      console.log('🔍 DEBUG - Received persona data:', JSON.stringify(personaData, null, 2));
-      console.log('🔍 DEBUG - Using academicCareer:', !!personaData.academicCareer);
-      console.log('🔍 DEBUG - Using professional:', !!personaData.professional);
 
       // Validate persona data
       const validationError = this.validatePersonaData(personaData);
       if (validationError) {
-        console.log('❌ DEBUG - Validation error:', validationError);
         return res.status(400).json({
           success: false,
           message: validationError,
         });
       }
 
-      console.log('✅ DEBUG - Validation passed, saving to database');
-      
       // Save persona
       const persona = await this.personaService.upsertPersona(userId, personaData);
-
-      console.log('✅ DEBUG - Persona saved successfully:', JSON.stringify(persona, null, 2));
 
       return res.status(200).json({
         success: true,
@@ -190,20 +181,8 @@ export class PersonaController {
   };
 
   private validatePersonaData(data: any): string | null {
-    console.log('🔍 DEBUG VALIDATION - Input data type:', typeof data);
-    console.log('🔍 DEBUG VALIDATION - Input data keys:', Object.keys(data || {}));
-    console.log('🔍 DEBUG VALIDATION - Input data:', JSON.stringify(data, null, 2));
-    
     // Handle both new and legacy structure
     const academicCareerData = data.academicCareer || data.professional;
-    
-    console.log('🔍 DEBUG VALIDATION - data.academicCareer:', data.academicCareer);
-    console.log('🔍 DEBUG VALIDATION - data.professional:', data.professional);
-    console.log('🔍 DEBUG VALIDATION - academicCareerData:', !!academicCareerData);
-    console.log('🔍 DEBUG VALIDATION - interests:', !!data.interests);
-    console.log('🔍 DEBUG VALIDATION - learningStyle:', !!data.learningStyle);
-    console.log('🔍 DEBUG VALIDATION - contentPreferences:', !!data.contentPreferences);
-    console.log('🔍 DEBUG VALIDATION - communication:', !!data.communication);
     
     if (
       !academicCareerData ||

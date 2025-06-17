@@ -13,9 +13,6 @@ import { useRouter } from 'next/navigation';
 import type { OnboardingStep, Persona } from '@/lib/types/persona';
 import { analyticsApi } from '@/lib/api/analytics';
 
-// Temporary debug imports
-import '@/lib/api/test-persona-debug';
-import '@/lib/api/test-backend';
 
 interface OnboardingContextType {
   currentStep: OnboardingStep;
@@ -119,8 +116,6 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const completeOnboarding = useCallback(async () => {
     setIsLoading(true);
     try {
-      console.log('🔍 Starting onboarding completion...');
-      
       const { personaApi } = await import('@/lib/api/persona');
       
       // Use the new field names, with fallback to legacy names for backward compatibility
@@ -145,23 +140,17 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         },
       };
 
-      console.log('🔍 Saving persona data...');
       // Save persona data to backend
-      const result = await personaApi.upsertPersona(personaWithDefaults);
-      console.log('✅ Persona saved successfully:', result);
+      await personaApi.upsertPersona(personaWithDefaults);
 
-      console.log('🔍 Tracking completion analytics...');
       // Track completion
       const totalTime = Date.now() - startTimeRef.current;
-      await analyticsApi.trackOnboardingEvent('completed', 'review', totalTime, {
+      analyticsApi.trackOnboardingEvent('completed', 'review', totalTime, {
         skippedSteps: !formData.contentPreferences || !formData.communication,
       });
-      console.log('✅ Analytics tracked successfully');
 
-      console.log('🔍 Redirecting to dashboard...');
       // Redirect to dashboard
       router.push('/dashboard');
-      console.log('✅ Redirect initiated');
     } catch (error) {
       console.error('❌ Error completing onboarding:', error);
       // Throw error to be handled by the component using this context

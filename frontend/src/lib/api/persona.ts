@@ -13,7 +13,6 @@ export const personaApi = {
   upsertPersona: async (
     personaData: Omit<Persona, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'version'>
   ) => {
-    console.log('📤 Sending persona data to API:', JSON.stringify(personaData, null, 2));
     const response = await API_CLIENT.post<{ success: boolean; data: Persona }>(
       '/persona',
       personaData
