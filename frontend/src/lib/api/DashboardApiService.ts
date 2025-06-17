@@ -1,4 +1,5 @@
 import { BaseApiService } from './BaseApiService';
+import { API_CLIENT } from './client';
 
 export interface DashboardStats {
   studyTime: {
@@ -48,58 +49,62 @@ export interface CourseRecommendation {
   difficulty: 'beginner' | 'intermediate' | 'advanced';
 }
 
-export class DashboardApiService extends BaseApiService {
+class DashboardApiService extends BaseApiService {
+  constructor() {
+    super(API_CLIENT, '/dashboard');
+  }
+
   /**
    * Get comprehensive dashboard statistics
    */
   async getStats(): Promise<DashboardStats> {
-    const response = await this.get<{ data: DashboardStats }>('/dashboard/stats');
-    return response.data;
+    const response = await this.client.get<{ status: string; data: DashboardStats }>(`${this.baseEndpoint}/stats`);
+    return response.data.data;
   }
 
   /**
    * Get recent user activity
    */
   async getActivity(limit: number = 10): Promise<UserActivity[]> {
-    const response = await this.get<{ data: UserActivity[] }>('/dashboard/activity', {
+    const response = await this.client.get<{ status: string; data: UserActivity[] }>(`${this.baseEndpoint}/activity`, {
       params: { limit },
     });
-    return response.data;
+    return response.data.data;
   }
 
   /**
    * Get learning streak information
    */
   async getStreak(): Promise<StreakInfo> {
-    const response = await this.get<{ data: StreakInfo }>('/dashboard/streak');
-    return response.data;
+    const response = await this.client.get<{ status: string; data: StreakInfo }>(`${this.baseEndpoint}/streak`);
+    return response.data.data;
   }
 
   /**
    * Get personalized course recommendations
    */
   async getRecommendations(): Promise<CourseRecommendation[]> {
-    const response = await this.get<{ data: CourseRecommendation[] }>('/dashboard/recommendations');
-    return response.data;
+    const response = await this.client.get<{ status: string; data: CourseRecommendation[] }>(`${this.baseEndpoint}/recommendations`);
+    return response.data.data;
   }
 
   /**
    * Log a user activity
    */
   async logActivity(type: UserActivity['type'], metadata?: Record<string, any>): Promise<UserActivity> {
-    const response = await this.post<{ data: UserActivity }>('/dashboard/activity', {
+    const response = await this.client.post<{ status: string; data: UserActivity }>(`${this.baseEndpoint}/activity`, {
       type,
       metadata,
     });
-    return response.data;
+    return response.data.data;
   }
 
   /**
    * Update user's learning streak
    */
   async updateStreak(): Promise<StreakInfo> {
-    const response = await this.post<{ data: StreakInfo }>('/dashboard/streak');
-    return response.data;
+    const response = await this.client.post<{ status: string; data: StreakInfo }>(`${this.baseEndpoint}/streak`);
+    return response.data.data;
   }
 
   /**
