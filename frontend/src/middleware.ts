@@ -68,7 +68,7 @@ export async function middleware(request: NextRequest) {
   if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
     // Check if user has completed onboarding by looking for persona
     const { data: persona } = await supabase
-      .from('user_personas')
+      .from('personas')
       .select('id')
       .eq('user_id', user.id)
       .single();

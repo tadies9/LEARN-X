@@ -15,7 +15,7 @@ import type { OnboardingStep } from '@/lib/types/persona';
 
 const STEP_COMPONENTS: Record<OnboardingStep, React.ComponentType> = {
   welcome: WelcomeStep,
-  professional: ProfessionalStep,
+  'academic-career': ProfessionalStep,
   interests: InterestsStep,
   'learning-style': LearningStyleStep,
   'content-preferences': ContentPreferencesStep,

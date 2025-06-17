@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { professionalContextSchema, type ProfessionalContextData } from '@/lib/validations/persona';
+import { academicCareerSchema, type AcademicCareerData } from '@/lib/validations/persona';
 import { INDUSTRIES } from '@/lib/types/persona';
 import { ChevronLeft, ChevronRight, GraduationCap, Target, Briefcase, BookOpen } from 'lucide-react';
 
@@ -30,13 +30,13 @@ export function ProfessionalStep() {
     formState: { errors },
     setValue,
     watch,
-  } = useForm<ProfessionalContextData>({
-    resolver: zodResolver(professionalContextSchema),
-    defaultValues: formData.professional || {},
+  } = useForm<AcademicCareerData>({
+    resolver: zodResolver(academicCareerSchema),
+    defaultValues: formData.academicCareer || {},
   });
 
-  const onSubmit = (data: ProfessionalContextData) => {
-    updateFormData({ professional: data });
+  const onSubmit = (data: AcademicCareerData) => {
+    updateFormData({ academicCareer: data });
     nextStep();
   };
 
@@ -57,15 +57,15 @@ export function ProfessionalStep() {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <BookOpen className="h-5 w-5 text-primary" />
-                <Label htmlFor="role" className="text-base font-semibold">Current Status *</Label>
+                <Label htmlFor="currentStatus" className="text-base font-semibold">Current Status *</Label>
               </div>
               <Input
-                id="role"
+                id="currentStatus"
                 placeholder="e.g., Computer Science Student, High School Senior, Recent Graduate"
                 className="h-12 text-base"
-                {...register('role')}
+                {...register('currentStatus')}
               />
-              {errors.role && <p className="text-sm text-destructive mt-1">{errors.role.message}</p>}
+              {errors.currentStatus && <p className="text-sm text-destructive mt-1">{errors.currentStatus.message}</p>}
             </div>
 
             <div className="space-y-3">
@@ -77,7 +77,7 @@ export function ProfessionalStep() {
                 id="fieldOfStudy"
                 placeholder="e.g., Computer Science, Business Administration, Data Science"
                 className="h-12 text-base"
-                {...register('domainExpertise.0')}
+                {...register('fieldOfStudy')}
               />
               <p className="text-sm text-muted-foreground ml-7">Your major or primary area of study</p>
             </div>
@@ -85,13 +85,13 @@ export function ProfessionalStep() {
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Briefcase className="h-5 w-5 text-primary" />
-                <Label htmlFor="industry" className="text-base font-semibold">Aspired Industry *</Label>
+                <Label htmlFor="aspiredIndustry" className="text-base font-semibold">Aspired Industry *</Label>
               </div>
               <Select
-                onValueChange={(value) => setValue('industry', value)}
-                defaultValue={formData.professional?.industry}
+                onValueChange={(value) => setValue('aspiredIndustry', value)}
+                defaultValue={formData.academicCareer?.aspiredIndustry}
               >
-                <SelectTrigger id="industry" className="h-12 text-base">
+                <SelectTrigger id="aspiredIndustry" className="h-12 text-base">
                   <SelectValue placeholder="Select your desired industry" />
                 </SelectTrigger>
                 <SelectContent>
@@ -102,29 +102,28 @@ export function ProfessionalStep() {
                   ))}
                 </SelectContent>
               </Select>
-              {errors.industry && (
-                <p className="text-sm text-destructive mt-1">{errors.industry.message}</p>
+              {errors.aspiredIndustry && (
+                <p className="text-sm text-destructive mt-1">{errors.aspiredIndustry.message}</p>
               )}
             </div>
-
 
             <div className="space-y-3">
               <div className="flex items-start gap-2">
                 <Target className="h-5 w-5 text-primary mt-0.5" />
                 <div className="flex-1">
-                  <Label htmlFor="careerAspirations" className="text-base font-semibold">Career Goals & Learning Objectives</Label>
+                  <Label htmlFor="careerGoalsLearningObjectives" className="text-base font-semibold">Career Goals & Learning Objectives</Label>
                   <p className="text-sm text-muted-foreground mt-1">Share your aspirations to help us tailor your learning experience</p>
                 </div>
               </div>
               <Textarea
-                id="careerAspirations"
+                id="careerGoalsLearningObjectives"
                 placeholder="What are your career goals? What skills do you want to learn? What subjects interest you most?"
                 rows={5}
                 className="text-base resize-none"
-                {...register('careerAspirations')}
+                {...register('careerGoalsLearningObjectives')}
               />
-              {errors.careerAspirations && (
-                <p className="text-sm text-destructive mt-1">{errors.careerAspirations.message}</p>
+              {errors.careerGoalsLearningObjectives && (
+                <p className="text-sm text-destructive mt-1">{errors.careerGoalsLearningObjectives.message}</p>
               )}
             </div>
           </div>

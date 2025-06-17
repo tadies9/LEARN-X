@@ -27,9 +27,17 @@ export class PersonaService {
       // Check if persona exists
       const existing = await this.getPersona(userId);
 
+      // Handle both new and legacy field names
+      const professionalContext = personaData.academicCareer || personaData.professional;
+      
+      console.log('🔍 DEBUG SERVICE - Processing persona data for user:', userId);
+      console.log('🔍 DEBUG SERVICE - Using academicCareer:', !!personaData.academicCareer);
+      console.log('🔍 DEBUG SERVICE - Using professional:', !!personaData.professional);
+      console.log('🔍 DEBUG SERVICE - Professional context:', JSON.stringify(professionalContext, null, 2));
+
       const dataToSave = {
         user_id: userId,
-        professional_context: personaData.professional,
+        professional_context: professionalContext,
         personal_interests: personaData.interests,
         learning_style: personaData.learningStyle,
         content_preferences: personaData.contentPreferences,
@@ -37,6 +45,8 @@ export class PersonaService {
         version: existing ? (existing.version || 0) + 1 : 1,
         updated_at: new Date().toISOString(),
       };
+
+      console.log('🔍 DEBUG SERVICE - Data to save:', JSON.stringify(dataToSave, null, 2));
 
       // If exists, create history entry first
       if (existing) {
@@ -51,8 +61,12 @@ export class PersonaService {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.log('❌ DEBUG SERVICE - Supabase error:', error);
+        throw error;
+      }
 
+      console.log('✅ DEBUG SERVICE - Persona saved successfully');
       return data;
     } catch (error) {
       logger.error('Error upserting persona:', error);
@@ -74,6 +88,7 @@ export class PersonaService {
       // Map section names to database columns
       const sectionMap: Record<string, string> = {
         professional: 'professional_context',
+        academicCareer: 'professional_context',
         interests: 'personal_interests',
         learningStyle: 'learning_style',
         contentPreferences: 'content_preferences',
@@ -81,6 +96,10 @@ export class PersonaService {
       };
 
       const columnName = sectionMap[section];
+      if (!columnName) {
+        throw new Error(`Invalid section name: ${section}`);
+      }
+      
       const updateData = {
         [columnName]: sectionData,
         version: (existing.version || 0) + 1,

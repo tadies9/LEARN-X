@@ -30,7 +30,7 @@ interface OnboardingContextType {
 
 const STEP_ORDER: OnboardingStep[] = [
   'welcome',
-  'professional',
+  'academic-career',
   'interests',
   'learning-style',
   'content-preferences',
@@ -86,8 +86,8 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const skipToReview = useCallback(() => {
-    // Ensure minimum required data is present
-    if (!formData.professional || !formData.interests || !formData.learningStyle) {
+    // Ensure minimum required data is present - check both new and legacy field names
+    if ((!formData.academicCareer && !formData.professional) || !formData.interests || !formData.learningStyle) {
       return;
     }
 
@@ -99,9 +99,9 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   }, [formData, currentStep]);
 
   const canSkipCurrent = useCallback(() => {
-    // Can skip if we have the minimum required data
+    // Can skip if we have the minimum required data - check both new and legacy field names
     const hasMinimumData = !!(
-      formData.professional &&
+      (formData.academicCareer || formData.professional) &&
       formData.interests &&
       formData.learningStyle
     );
@@ -115,11 +115,16 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
   const completeOnboarding = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Import at the top of the file
+      console.log('🔍 Starting onboarding completion...');
+      
       const { personaApi } = await import('@/lib/api/persona');
+      
+      // Use the new field names, with fallback to legacy names for backward compatibility
+      const academicCareerData = formData.academicCareer || formData.professional;
+      
       // Apply defaults for skipped sections
       const personaWithDefaults = {
-        professional: formData.professional!,
+        academicCareer: academicCareerData!,
         interests: formData.interests!,
         learningStyle: formData.learningStyle!,
         contentPreferences: formData.contentPreferences || {
@@ -131,25 +136,30 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
         },
         communication: formData.communication || {
           style: 'professional_friendly',
-          technicalComfort: 0.5,
           encouragementLevel: 'moderate',
           humorAppropriate: false,
         },
       };
 
+      console.log('🔍 Saving persona data...');
       // Save persona data to backend
-      await personaApi.upsertPersona(personaWithDefaults);
+      const result = await personaApi.upsertPersona(personaWithDefaults);
+      console.log('✅ Persona saved successfully:', result);
 
+      console.log('🔍 Tracking completion analytics...');
       // Track completion
       const totalTime = Date.now() - startTimeRef.current;
-      analyticsApi.trackOnboardingEvent('completed', 'review', totalTime, {
+      await analyticsApi.trackOnboardingEvent('completed', 'review', totalTime, {
         skippedSteps: !formData.contentPreferences || !formData.communication,
       });
+      console.log('✅ Analytics tracked successfully');
 
+      console.log('🔍 Redirecting to dashboard...');
       // Redirect to dashboard
       router.push('/dashboard');
+      console.log('✅ Redirect initiated');
     } catch (error) {
-      console.error('Error completing onboarding:', error);
+      console.error('❌ Error completing onboarding:', error);
       // Throw error to be handled by the component using this context
       throw error;
     } finally {

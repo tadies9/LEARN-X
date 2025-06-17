@@ -40,9 +40,14 @@ export interface UserPersona {
 }
 
 export interface ProfessionalContext {
-  role: string;
+  currentStatus: string;
+  fieldOfStudy?: string;
+  aspiredIndustry: string;
+  careerGoalsLearningObjectives?: string;
+  // Legacy fields for backward compatibility
+  role?: string;
   experienceYears?: number;
-  industry: string;
+  industry?: string;
   technicalLevel?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
   careerAspirations?: string;
   domainExpertise?: string[];
@@ -70,15 +75,16 @@ export interface ContentPreferences {
 
 export interface CommunicationTone {
   style: 'formal' | 'professional_friendly' | 'conversational' | 'casual';
-  technicalComfort: number; // 0.0 to 1.0
   encouragementLevel: 'minimal' | 'moderate' | 'high';
   humorAppropriate: boolean;
+  // Legacy field for backward compatibility
+  technicalComfort?: number;
 }
 
 export interface Persona {
   id?: string;
   userId: string;
-  professional: ProfessionalContext;
+  academicCareer: ProfessionalContext;
   interests: PersonalInterests;
   learningStyle: LearningStyle;
   contentPreferences: ContentPreferences;
@@ -86,12 +92,14 @@ export interface Persona {
   createdAt?: string;
   updatedAt?: string;
   version?: number;
+  // Legacy field for backward compatibility
+  professional?: ProfessionalContext;
 }
 
 // Onboarding step types
 export type OnboardingStep =
   | 'welcome'
-  | 'professional'
+  | 'academic-career'
   | 'interests'
   | 'learning-style'
   | 'content-preferences'

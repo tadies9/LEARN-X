@@ -17,7 +17,7 @@ import { cn } from '@/lib/utils';
 import type { OnboardingStep } from '@/lib/types/persona';
 
 const STEP_LABELS = {
-  professional: 'Professional Context',
+  'academic-career': 'Academic & Career Goals',
   interests: 'Interests & Goals',
   'learning-style': 'Learning Style',
   'content-preferences': 'Content Preferences',
@@ -47,25 +47,25 @@ export function ReviewStep() {
   };
 
   const renderProfessionalSummary = () => {
-    const prof = formData.professional;
+    const prof = formData.academicCareer || formData.professional;
     if (!prof) return null;
 
     return (
       <div className="space-y-1">
         <p>
-          <span className="font-medium">Role:</span> {prof.role}
+          <span className="font-medium">Current Status:</span> {prof.currentStatus || prof.role}
         </p>
         <p>
-          <span className="font-medium">Aspired Industry:</span> {prof.industry}
+          <span className="font-medium">Aspired Industry:</span> {prof.aspiredIndustry || prof.industry}
         </p>
-        {prof.domainExpertise && prof.domainExpertise[0] && (
+        {(prof.fieldOfStudy || (prof.domainExpertise?.[0])) && (
           <p>
-            <span className="font-medium">Field of Study:</span> {prof.domainExpertise[0]}
+            <span className="font-medium">Field of Study:</span> {prof.fieldOfStudy || prof.domainExpertise?.[0]}
           </p>
         )}
-        {prof.careerAspirations && (
+        {(prof.careerGoalsLearningObjectives || prof.careerAspirations) && (
           <p>
-            <span className="font-medium">Aspirations:</span> {prof.careerAspirations}
+            <span className="font-medium">Career Goals & Learning Objectives:</span> {prof.careerGoalsLearningObjectives || prof.careerAspirations}
           </p>
         )}
       </div>
@@ -175,7 +175,7 @@ export function ReviewStep() {
   };
 
   const sections = [
-    { key: 'professional', render: renderProfessionalSummary },
+    { key: 'academic-career', render: renderProfessionalSummary },
     { key: 'interests', render: renderInterestsSummary },
     { key: 'learning-style', render: renderLearningSummary },
     { key: 'content-preferences', render: renderContentSummary },

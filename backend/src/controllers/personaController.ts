@@ -37,25 +37,38 @@ export class PersonaController {
       const userId = req.user!.id;
       const personaData = req.body;
 
+      console.log('🔍 DEBUG - Received persona data:', JSON.stringify(personaData, null, 2));
+      console.log('🔍 DEBUG - Using academicCareer:', !!personaData.academicCareer);
+      console.log('🔍 DEBUG - Using professional:', !!personaData.professional);
+
       // Validate persona data
       const validationError = this.validatePersonaData(personaData);
       if (validationError) {
+        console.log('❌ DEBUG - Validation error:', validationError);
         return res.status(400).json({
           success: false,
           message: validationError,
         });
       }
 
+      console.log('✅ DEBUG - Validation passed, saving to database');
+      
+      // Save persona
       const persona = await this.personaService.upsertPersona(userId, personaData);
 
-      res.json({
+      console.log('✅ DEBUG - Persona saved successfully:', JSON.stringify(persona, null, 2));
+
+      return res.status(200).json({
         success: true,
-        data: persona,
         message: 'Persona saved successfully',
+        data: persona,
       });
     } catch (error) {
-      logger.error('Error saving persona:', error);
-      throw new AppError('Failed to save persona', 500);
+      console.error('Error in upsertPersona:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
     }
   };
 
@@ -67,6 +80,7 @@ export class PersonaController {
 
       const validSections = [
         'professional',
+        'academicCareer',
         'interests',
         'learningStyle',
         'contentPreferences',
@@ -175,8 +189,11 @@ export class PersonaController {
   };
 
   private validatePersonaData(data: any): string | null {
+    // Handle both new and legacy structure
+    const academicCareerData = data.academicCareer || data.professional;
+    
     if (
-      !data.professional ||
+      !academicCareerData ||
       !data.interests ||
       !data.learningStyle ||
       !data.contentPreferences ||
@@ -185,13 +202,11 @@ export class PersonaController {
       return 'All persona sections are required';
     }
 
-    // Validate professional context
-    if (
-      !data.professional.role ||
-      !data.professional.industry ||
-      !data.professional.technicalLevel ||
-      typeof data.professional.experienceYears !== 'number'
-    ) {
+    // Validate academic/career context - handle both new and legacy field names
+    const hasCurrentStatus = academicCareerData.currentStatus || academicCareerData.role;
+    const hasIndustry = academicCareerData.aspiredIndustry || academicCareerData.industry;
+    
+    if (!hasCurrentStatus || !hasIndustry) {
       return 'Invalid professional context data';
     }
 
@@ -206,21 +221,29 @@ export class PersonaController {
     }
 
     // Validate learning style
-    const validLearningStyles = ['visual', 'auditory', 'reading', 'kinesthetic'];
-    if (!validLearningStyles.includes(data.learningStyle.primary)) {
-      return 'Invalid learning style';
+    if (
+      !data.learningStyle.primary ||
+      typeof data.learningStyle.preferenceStrength !== 'number'
+    ) {
+      return 'Invalid learning style data';
     }
 
     // Validate content preferences
-    const validDensities = ['concise', 'balanced', 'comprehensive'];
-    if (!validDensities.includes(data.contentPreferences.density)) {
-      return 'Invalid content density preference';
+    if (
+      !data.contentPreferences.density ||
+      !data.contentPreferences.detailTolerance ||
+      !data.contentPreferences.repetitionPreference
+    ) {
+      return 'Invalid content preferences data';
     }
 
-    // Validate communication tone
-    const validStyles = ['formal', 'professional_friendly', 'conversational', 'casual'];
-    if (!validStyles.includes(data.communication.style)) {
-      return 'Invalid communication style';
+    // Validate communication
+    if (
+      !data.communication.style ||
+      !data.communication.encouragementLevel ||
+      typeof data.communication.humorAppropriate !== 'boolean'
+    ) {
+      return 'Invalid communication data';
     }
 
     return null;
