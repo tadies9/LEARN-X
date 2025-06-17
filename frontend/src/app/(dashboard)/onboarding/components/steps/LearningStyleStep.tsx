@@ -20,29 +20,29 @@ const LEARNING_STYLES = [
     id: 'visual',
     label: 'Visual',
     icon: Eye,
-    description: 'I learn best through diagrams, charts, and visual representations',
-    examples: 'Flowcharts, mind maps, color-coded notes, infographics',
+    description: 'Diagrams, charts & visuals',
+    examples: 'Mind maps, infographics',
   },
   {
     id: 'auditory',
     label: 'Auditory',
     icon: Headphones,
-    description: 'I learn best through listening and verbal explanations',
-    examples: 'Lectures, discussions, verbal repetition, audio recordings',
+    description: 'Listening & discussions',
+    examples: 'Lectures, podcasts',
   },
   {
     id: 'reading',
     label: 'Reading/Writing',
     icon: BookOpen,
-    description: 'I learn best through reading text and taking notes',
-    examples: 'Textbooks, written notes, lists, written assignments',
+    description: 'Reading & note-taking',
+    examples: 'Books, written guides',
   },
   {
     id: 'kinesthetic',
     label: 'Kinesthetic',
     icon: Hand,
-    description: 'I learn best through hands-on experience and practice',
-    examples: 'Experiments, simulations, role-play, practical exercises',
+    description: 'Hands-on practice',
+    examples: 'Labs, experiments',
   },
 ] as const;
 
@@ -92,40 +92,40 @@ export function LearningStyleStep() {
                   <div
                     key={style.id}
                     className={cn(
-                      'relative rounded-xl border-2 p-6 cursor-pointer transition-all duration-200',
-                      'hover:shadow-lg hover:border-primary/50',
-                      isSelected ? 'border-primary shadow-lg' : 'border-gray-200 dark:border-gray-800',
+                      'relative rounded-lg border-2 p-4 cursor-pointer transition-all duration-200',
+                      'hover:shadow-md hover:border-primary/50',
+                      isSelected ? 'border-primary shadow-md' : 'border-gray-200 dark:border-gray-800',
                       'bg-white dark:bg-gray-900'
                     )}
                     onClick={() => setPrimary(style.id)}
                   >
                     <div className="flex flex-col items-center text-center space-y-3">
                       <div className={cn(
-                        "w-16 h-16 rounded-full flex items-center justify-center transition-colors",
+                        "w-12 h-12 rounded-full flex items-center justify-center transition-colors",
                         isSelected ? "bg-primary/20" : "bg-gray-100 dark:bg-gray-800"
                       )}>
                         <Icon className={cn(
-                          "h-8 w-8 transition-colors",
+                          "h-6 w-6 transition-colors",
                           isSelected ? "text-primary" : "text-gray-600 dark:text-gray-400"
                         )} />
                       </div>
-                      <div className="space-y-2">
-                        <Label htmlFor={style.id} className="font-semibold text-base cursor-pointer">
+                      <div className="space-y-1">
+                        <Label htmlFor={style.id} className="font-semibold text-sm cursor-pointer">
                           {style.label}
                         </Label>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
+                        <p className="text-xs text-muted-foreground leading-relaxed">
                           {style.description}
                         </p>
                       </div>
-                      <div className="pt-2 border-t border-gray-100 dark:border-gray-800 w-full">
-                        <p className="text-xs text-muted-foreground">
-                          <span className="font-medium">Examples:</span> {style.examples}
+                      <div className="pt-1 border-t border-gray-100 dark:border-gray-800 w-full">
+                        <p className="text-[10px] text-muted-foreground">
+                          <span className="font-medium">e.g.</span> {style.examples}
                         </p>
                       </div>
                       <RadioGroupItem 
                         value={style.id} 
                         id={style.id} 
-                        className="absolute top-4 right-4" 
+                        className="absolute top-3 right-3 scale-90" 
                       />
                     </div>
                   </div>
