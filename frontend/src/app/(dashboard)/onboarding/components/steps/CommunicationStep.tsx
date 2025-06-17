@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MessageSquare } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
@@ -20,29 +20,22 @@ const COMMUNICATION_STYLES = [
   {
     value: 'formal',
     label: 'Formal',
-    description: 'Professional and academic tone',
-    example:
-      'The algorithm exhibits O(n log n) time complexity, making it suitable for large-scale data processing applications.',
+    description: 'Professional and academic',
   },
   {
     value: 'professional_friendly',
-    label: 'Professional Friendly',
+    label: 'Friendly',
     description: 'Clear and approachable',
-    example:
-      'This algorithm is efficient - it can handle large datasets without slowing down significantly.',
   },
   {
     value: 'conversational',
     label: 'Conversational',
     description: 'Like a helpful colleague',
-    example:
-      'This algorithm is pretty efficient—it can handle big datasets without breaking a sweat!',
   },
   {
     value: 'casual',
     label: 'Casual',
     description: 'Relaxed and informal',
-    example: "This algorithm rocks! It chews through huge datasets like it's nothing.",
   },
 ];
 
@@ -69,9 +62,6 @@ export function CommunicationStep() {
   const [style, setStyle] = useState<string>(
     formData.communication?.style || 'professional_friendly'
   );
-  const [technicalComfort, setTechnicalComfort] = useState<number>(
-    (formData.communication?.technicalComfort || 0.5) * 100
-  );
   const [encouragementLevel, setEncouragementLevel] = useState<string>(
     formData.communication?.encouragementLevel || 'moderate'
   );
@@ -83,7 +73,7 @@ export function CommunicationStep() {
     updateFormData({
       communication: {
         style: style as CommunicationTone['style'],
-        technicalComfort: technicalComfort / 100,
+        technicalComfort: 0.5,
         encouragementLevel: encouragementLevel as CommunicationTone['encouragementLevel'],
         humorAppropriate,
       },
@@ -93,71 +83,54 @@ export function CommunicationStep() {
 
   return (
     <OnboardingCard>
-      <CardHeader>
-        <CardTitle>Communication Style</CardTitle>
-        <CardDescription>How would you like LEARN-X to communicate with you?</CardDescription>
+      <CardHeader className="text-center pb-8">
+        <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <MessageSquare className="h-8 w-8 text-primary" />
+        </div>
+        <CardTitle className="text-3xl">Communication Style</CardTitle>
+        <CardDescription className="text-lg mt-2">How would you like LEARN-X to communicate with you?</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Communication Style */}
-        <div className="space-y-3">
-          <h3 className="font-medium">Tone and Style</h3>
+        <div className="space-y-4">
+          <div className="text-center">
+            <h3 className="font-semibold text-lg mb-1">Tone and Style</h3>
+            <p className="text-sm text-muted-foreground">Choose how you'd like us to communicate</p>
+          </div>
           <RadioGroup value={style} onValueChange={setStyle}>
-            <div className="grid gap-3">
-              {COMMUNICATION_STYLES.map((option) => (
-                <div
-                  key={option.value}
-                  className={cn(
-                    'relative rounded-lg border p-4 cursor-pointer transition-colors hover:bg-muted/50',
-                    style === option.value && 'border-primary bg-primary/5'
-                  )}
-                  onClick={() => setStyle(option.value)}
-                >
-                  <div className="flex gap-3">
-                    <RadioGroupItem
-                      value={option.value}
-                      id={`style-${option.value}`}
-                      className="mt-1"
-                    />
-                    <div className="flex-1 space-y-2">
+            <div className="grid grid-cols-2 gap-3">
+              {COMMUNICATION_STYLES.map((option) => {
+                const isSelected = style === option.value;
+                return (
+                  <div
+                    key={option.value}
+                    className={cn(
+                      'relative rounded-lg border-2 p-4 cursor-pointer transition-all duration-200',
+                      'hover:shadow-md hover:border-primary/50',
+                      isSelected ? 'border-primary shadow-md' : 'border-gray-200 dark:border-gray-800',
+                      'bg-white dark:bg-gray-900'
+                    )}
+                    onClick={() => setStyle(option.value)}
+                  >
+                    <div className="flex flex-col items-center text-center space-y-2">
                       <Label
                         htmlFor={`style-${option.value}`}
-                        className="font-medium cursor-pointer"
+                        className="font-semibold text-sm cursor-pointer"
                       >
                         {option.label}
                       </Label>
-                      <p className="text-sm text-muted-foreground">{option.description}</p>
-                      <div className="bg-muted/50 p-2 rounded text-xs italic">
-                        "{option.example}"
-                      </div>
+                      <p className="text-xs text-muted-foreground">{option.description}</p>
+                      <RadioGroupItem
+                        value={option.value}
+                        id={`style-${option.value}`}
+                        className="absolute top-2 right-2 scale-90"
+                      />
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </RadioGroup>
-        </div>
-
-        {/* Technical Comfort */}
-        <div className="space-y-3">
-          <h3 className="font-medium">Technical Language Comfort</h3>
-          <p className="text-sm text-muted-foreground">
-            How comfortable are you with technical jargon and terminology?
-          </p>
-          <div className="space-y-2">
-            <Slider
-              value={[technicalComfort]}
-              onValueChange={(value) => setTechnicalComfort(value[0])}
-              min={0}
-              max={100}
-              step={10}
-              className="w-full"
-            />
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>Avoid jargon</span>
-              <span className="font-medium text-foreground">{technicalComfort}%</span>
-              <span>Technical terms OK</span>
-            </div>
-          </div>
         </div>
 
         {/* Encouragement Level */}
@@ -197,12 +170,12 @@ export function CommunicationStep() {
           <Switch id="humor" checked={humorAppropriate} onCheckedChange={setHumorAppropriate} />
         </div>
 
-        <div className="flex justify-between pt-4">
-          <Button type="button" variant="outline" onClick={previousStep}>
+        <div className="flex justify-between pt-6 border-t">
+          <Button type="button" variant="outline" size="lg" onClick={previousStep} className="min-w-[120px]">
             <ChevronLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-          <Button onClick={handleNext}>
+          <Button onClick={handleNext} size="lg" className="min-w-[120px]">
             Next
             <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
