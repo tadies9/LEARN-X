@@ -24,7 +24,6 @@ export class VectorEmbeddingService {
   private dimensions: number = 1536;
   private batchSize: number = 50;
   private maxConcurrent: number = 3;
-  private currentConcurrent: number = 0;
   private costTracker: CostTracker;
 
   constructor() {
@@ -108,7 +107,6 @@ export class VectorEmbeddingService {
     }
 
     // Process batches with simple concurrency control
-    const results = [];
     for (let i = 0; i < batches.length; i += this.maxConcurrent) {
       const concurrentBatches = batches.slice(i, i + this.maxConcurrent);
       
