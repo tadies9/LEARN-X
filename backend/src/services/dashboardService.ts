@@ -303,21 +303,102 @@ class DashboardService {
     const recommendations = [];
     const recentTopics = recentCourses.map(c => c.title.toLowerCase());
 
-    // Example recommendation logic
-    if (persona?.interests?.primary?.includes('Web Development')) {
-      if (!recentTopics.some(t => t.includes('react'))) {
+    // Get user's interests and academic career
+    const primaryInterests = persona?.interests?.primary || [];
+    const secondaryInterests = persona?.interests?.secondary || [];
+    const learningTopics = persona?.interests?.learningTopics || [];
+    const academicCareer = persona?.academic_career || persona?.professional;
+    const currentStatus = academicCareer?.currentStatus || academicCareer?.role || 'Student';
+    
+    // Recommendation topics based on interests
+    const topicRecommendations: Record<string, any[]> = {
+      'Web Development': [
+        { title: 'React Fundamentals', description: 'Build interactive UIs with React', difficulty: 'beginner' },
+        { title: 'Next.js Full Stack', description: 'Create production-ready web applications', difficulty: 'intermediate' },
+        { title: 'TypeScript Mastery', description: 'Type-safe JavaScript development', difficulty: 'intermediate' },
+      ],
+      'Data Science': [
+        { title: 'Python for Data Analysis', description: 'Master pandas, numpy, and data visualization', difficulty: 'beginner' },
+        { title: 'Machine Learning Basics', description: 'Understand ML algorithms and implementation', difficulty: 'intermediate' },
+        { title: 'Deep Learning with PyTorch', description: 'Build neural networks from scratch', difficulty: 'advanced' },
+      ],
+      'Mobile Development': [
+        { title: 'React Native Basics', description: 'Build cross-platform mobile apps', difficulty: 'intermediate' },
+        { title: 'Flutter Development', description: 'Create beautiful native apps', difficulty: 'beginner' },
+        { title: 'iOS with SwiftUI', description: 'Modern iOS app development', difficulty: 'intermediate' },
+      ],
+      'Cloud Computing': [
+        { title: 'AWS Fundamentals', description: 'Core AWS services and architecture', difficulty: 'beginner' },
+        { title: 'Docker & Kubernetes', description: 'Container orchestration at scale', difficulty: 'intermediate' },
+        { title: 'Serverless Architecture', description: 'Build scalable serverless applications', difficulty: 'advanced' },
+      ],
+      'Artificial Intelligence': [
+        { title: 'Introduction to AI', description: 'Core concepts and applications of AI', difficulty: 'beginner' },
+        { title: 'Natural Language Processing', description: 'Text analysis and language models', difficulty: 'intermediate' },
+        { title: 'Computer Vision', description: 'Image recognition and processing', difficulty: 'advanced' },
+      ],
+      'Cybersecurity': [
+        { title: 'Network Security Basics', description: 'Protect networks from threats', difficulty: 'beginner' },
+        { title: 'Ethical Hacking', description: 'Penetration testing techniques', difficulty: 'intermediate' },
+        { title: 'Cryptography', description: 'Encryption and secure communication', difficulty: 'advanced' },
+      ],
+    };
+
+    // Generate recommendations based on primary interests
+    primaryInterests.forEach((interest: string) => {
+      const topics = topicRecommendations[interest] || [];
+      topics.forEach(topic => {
+        if (!recentTopics.some(t => t.includes(topic.title.toLowerCase()))) {
+          recommendations.push({
+            ...topic,
+            reason: `Perfect for your interest in ${interest} as a ${currentStatus}`,
+          });
+        }
+      });
+    });
+
+    // Add recommendations based on learning topics
+    learningTopics.forEach((topic: string) => {
+      // Find related recommendations
+      Object.entries(topicRecommendations).forEach(([category, topics]) => {
+        if (topic.toLowerCase().includes(category.toLowerCase()) || 
+            category.toLowerCase().includes(topic.toLowerCase())) {
+          const relevantTopic = topics[0]; // Get the beginner topic
+          if (relevantTopic && !recentTopics.some(t => t.includes(relevantTopic.title.toLowerCase()))) {
+            recommendations.push({
+              ...relevantTopic,
+              reason: `Aligned with your goal to learn ${topic}`,
+            });
+          }
+        }
+      });
+    });
+
+    // If no recommendations yet, add general recommendations based on status
+    if (recommendations.length === 0) {
+      if (currentStatus.toLowerCase().includes('student')) {
         recommendations.push({
-          title: 'React Fundamentals',
-          description: 'Master modern React development with hooks and best practices',
-          reason: 'Based on your interest in Web Development',
+          title: 'Programming Fundamentals',
+          description: 'Build a strong foundation in coding',
+          reason: 'Essential skills for every student',
+          difficulty: 'beginner',
+        });
+      } else {
+        recommendations.push({
+          title: 'Professional Development',
+          description: 'Advance your career with new skills',
+          reason: 'Stay competitive in your field',
           difficulty: 'intermediate',
         });
       }
     }
 
-    // Add more recommendation logic based on persona data
-
-    return recommendations;
+    // Sort by difficulty and return top 5
+    const difficultyOrder = { beginner: 1, intermediate: 2, advanced: 3 };
+    return recommendations
+      .sort((a, b) => (difficultyOrder[a.difficulty as keyof typeof difficultyOrder] || 2) - 
+                      (difficultyOrder[b.difficulty as keyof typeof difficultyOrder] || 2))
+      .slice(0, 5);
   }
 
   async logActivity(data: {
