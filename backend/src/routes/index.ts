@@ -14,6 +14,7 @@ import learnOutlineRoute from './learnOutlineRoute';
 import searchRoutes from './searchRoutes';
 import savedContentRoutes from './savedContentRoutes';
 import { healthRoutes } from './healthRoutes';
+import dashboardRoutes from './dashboard';
 
 const router = Router();
 
@@ -63,6 +64,7 @@ router.use('/learn', aiLearnRoutes); // AI learning routes with advanced persona
 router.use('/sessions', sessionRoutes);
 router.use('/search', searchRoutes); // Vector search routes
 router.use('/saved', savedContentRoutes); // Saved content routes
+router.use('/dashboard', dashboardRoutes); // Dashboard statistics and activity routes
 router.use('/', healthRoutes); // Health and monitoring routes
 router.use('/', fileRoutes); // File routes are mixed between /files and /modules - mount last
 

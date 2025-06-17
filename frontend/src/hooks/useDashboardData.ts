@@ -7,9 +7,10 @@
 
 import { useState, useEffect } from 'react';
 import { courseApi } from '@/lib/api/course';
-import { notificationApi } from '@/lib/api/notification';
+import { dashboardApi } from '@/lib/api/DashboardApiService';
 import type { Course } from '@/lib/types/course';
 import type { DashboardStats } from '@/lib/types/dashboard';
+import type { DashboardStats as ApiDashboardStats } from '@/lib/api/DashboardApiService';
 
 interface DashboardData {
   stats: DashboardStats | null;
@@ -30,10 +31,13 @@ export function useDashboardData(): DashboardData {
       setLoading(true);
       setError(null);
 
-      // Fetch all courses to calculate stats
+      // Fetch dashboard stats from the new API
+      const apiStats = await dashboardApi.getStats();
+
+      // Fetch recent courses
       const allCoursesResponse = await courseApi.getCourses({
         page: 1,
-        limit: 100, // Get enough to calculate stats
+        limit: 10,
       });
 
       let courses: Course[] = [];
@@ -71,16 +75,16 @@ export function useDashboardData(): DashboardData {
         courses = [];
       }
 
-      // Calculate statistics
+      // Transform API stats to match the dashboard format
       const dashboardStats: DashboardStats = {
-        activeCourses: courses.filter((course: Course) => !course.isArchived).length,
-        totalCourses: courses.length,
-        completedCourses: 0, // TODO: Add completion tracking
-        archivedCourses: courses.filter((course: Course) => course.isArchived).length,
-        totalStudyTime: 0, // TODO: Add study time tracking
-        weeklyStudyTime: 0, // TODO: Add weekly study time tracking
-        learningStreak: 0, // TODO: Add learning streak tracking
-        lastActiveDate: new Date().toISOString(), // TODO: Track actual last active date
+        activeCourses: apiStats.courses.active,
+        totalCourses: apiStats.courses.active + apiStats.courses.completed + apiStats.courses.archived,
+        completedCourses: apiStats.courses.completed,
+        archivedCourses: apiStats.courses.archived,
+        totalStudyTime: apiStats.studyTime.total,
+        weeklyStudyTime: apiStats.studyTime.thisWeek,
+        learningStreak: apiStats.streak.current,
+        lastActiveDate: apiStats.streak.lastActiveDate || new Date().toISOString(),
       };
 
       // Get recent courses (non-archived, sorted by updated date)
