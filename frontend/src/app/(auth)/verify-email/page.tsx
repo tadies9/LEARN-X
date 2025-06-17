@@ -55,7 +55,7 @@ export default function VerifyEmailPage() {
           <ol className="list-decimal list-inside space-y-1 text-sm text-muted-foreground">
             <li>Check your email inbox (and spam folder)</li>
             <li>Click the verification link in the email</li>
-            <li>You'll be redirected to complete your profile</li>
+            <li>You'll be redirected to set up your personalized learning experience</li>
           </ol>
         </div>
 

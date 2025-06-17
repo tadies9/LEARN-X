@@ -10,14 +10,14 @@ export function DashboardWelcome({ greeting }: DashboardWelcomeProps) {
   
   // Generate streak message based on persona's encouragement level
   const getStreakMessage = () => {
-    if (!persona?.communication_tone?.encouragementLevel) {
+    if (!persona?.communication?.encouragementLevel) {
       return "You're making great progress!";
     }
     
-    switch (persona.communication_tone.encouragementLevel) {
+    switch (persona.communication.encouragementLevel) {
       case 'minimal':
         return 'Consistent progress.';
-      case 'balanced':
+      case 'moderate':
         return "You're on a 7-day learning streak. Keep it up!";
       case 'high':
         return "🔥 Amazing! 7-day streak! You're crushing it!";

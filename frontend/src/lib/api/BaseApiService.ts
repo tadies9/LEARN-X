@@ -14,7 +14,7 @@ interface PaginatedResponse<T> extends ApiResponse<T[]> {
   };
 }
 
-interface ApiFilters {
+export interface ApiFilters {
   page?: number;
   limit?: number;
   sortBy?: string;
@@ -50,8 +50,8 @@ export abstract class BaseApiService {
     const queryString = params.toString();
     const fullUrl = queryString ? `${url}?${queryString}` : url;
     
-    const response = await this.client.get<PaginatedResponse<T> | ApiResponse<T[]>>(fullUrl);
-    return response.data;
+    const response = await this.client.get<ApiResponse<PaginatedResponse<T> | T[]>>(fullUrl);
+    return response.data.data;
   }
 
   protected async getById<T>(id: string, endpoint?: string): Promise<T> {

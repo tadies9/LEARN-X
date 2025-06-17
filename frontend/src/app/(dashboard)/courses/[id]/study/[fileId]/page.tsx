@@ -113,6 +113,8 @@ export default async function StudyPage({ params }: StudyPageProps) {
     technicalLevel: personaData.professional_context?.technicalLevel,
     learningStyle: personaData.learning_style?.primary,
     communicationTone: personaData.communication_tone?.style,
+    createdAt: new Date(personaData.created_at),
+    updatedAt: new Date(personaData.updated_at),
   } : null;
 
   // Generate signed URL for the file using backend API

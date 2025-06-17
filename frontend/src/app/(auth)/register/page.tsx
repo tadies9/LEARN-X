@@ -59,7 +59,7 @@ export default function RegisterPage() {
           data: {
             full_name: data.name,
           },
-          emailRedirectTo: `${getBaseUrl()}/auth/callback`,
+          emailRedirectTo: `${getBaseUrl()}/auth/callback?next=/onboarding`,
         },
       });
 

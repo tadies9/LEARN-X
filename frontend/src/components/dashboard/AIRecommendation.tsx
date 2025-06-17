@@ -51,7 +51,7 @@ export function AIRecommendation() {
     const recommendedTopic = availableTopics[0] || relevantTopics[0] || 'Advanced JavaScript';
     
     // Generate reason based on experience level
-    const experienceLevel = persona.professional_context?.experienceYears || 0;
+    const experienceLevel = persona.professional?.experienceYears || 0;
     let reason = '';
     
     if (experienceLevel < 2) {

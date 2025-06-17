@@ -64,9 +64,47 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
+  // Check if user needs onboarding (for authenticated users accessing dashboard)
+  if (user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    // Check if user has completed onboarding by looking for persona
+    const { data: persona } = await supabase
+      .from('user_personas')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    // If no persona found, redirect to onboarding
+    if (!persona) {
+      return NextResponse.redirect(new URL('/onboarding', request.url));
+    }
+  }
+
   // Redirect authenticated users away from auth pages
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register')) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+    // Check if user has completed onboarding
+    const { data: persona } = await supabase
+      .from('user_personas')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    // Redirect to onboarding if not completed, otherwise to dashboard
+    const redirectTo = persona ? '/dashboard' : '/onboarding';
+    return NextResponse.redirect(new URL(redirectTo, request.url));
+  }
+
+  // Prevent skipping onboarding - if user is on onboarding page and has already completed it
+  if (user && request.nextUrl.pathname === '/onboarding') {
+    const { data: persona } = await supabase
+      .from('user_personas')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    // If persona already exists, redirect to dashboard
+    if (persona) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
   }
 
   return response;

@@ -53,10 +53,18 @@ export function useStudyMaterials(): UseStudyMaterialsReturn {
 
       const allMaterials: StudyMaterial[] = [];
 
+      // Handle both paginated and array responses
+      const courses = Array.isArray(coursesResponse) 
+        ? coursesResponse 
+        : coursesResponse.data;
+
       // For each course, get modules and files
-      for (const course of coursesResponse.data) {
+      for (const course of courses) {
         try {
-          const modules = await moduleApi.getModules(course.id);
+          const modulesResponse = await moduleApi.getModules(course.id);
+          const modules = Array.isArray(modulesResponse) 
+            ? modulesResponse 
+            : modulesResponse.data;
           
           for (const module of modules) {
             try {
@@ -74,7 +82,7 @@ export function useStudyMaterials(): UseStudyMaterialsReturn {
                 progress: 0, // TODO: Add progress tracking
                 lastStudied: null, // TODO: Add study session tracking
                 aiFeatures: getAiFeatures(file.mimeType),
-                status: file.status === 'processed' ? 'ready' as const : 'in-progress' as const,
+                status: file.status === 'completed' ? 'ready' as const : 'in-progress' as const,
                 courseTitle: course.title,
                 moduleTitle: module.title,
               }));

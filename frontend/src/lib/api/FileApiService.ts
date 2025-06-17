@@ -19,9 +19,9 @@ class FileApiService extends BaseApiService {
     return this.getById<CourseFile>(fileId);
   }
 
-  // Upload file
-  async uploadFile(file: File, data: { moduleId: string } & Partial<CreateFileData>) {
-    return super.uploadFile<CourseFile>(file, data);
+  // Upload file to module
+  async uploadFileToModule(file: File, data: { moduleId: string } & Partial<CreateFileData>) {
+    return super.uploadFile<CourseFile>(file, data as Record<string, unknown>);
   }
 
   // Update file
@@ -57,7 +57,7 @@ export const fileApiService = new FileApiService();
 export const fileApi = {
   getModuleFiles: fileApiService.getModuleFiles.bind(fileApiService),
   getFile: fileApiService.getFile.bind(fileApiService),
-  uploadFile: fileApiService.uploadFile.bind(fileApiService),
+  uploadFile: fileApiService.uploadFileToModule.bind(fileApiService),
   updateFile: fileApiService.updateFile.bind(fileApiService),
   deleteFile: fileApiService.deleteFile.bind(fileApiService),
   reorderFiles: fileApiService.reorderFiles.bind(fileApiService),

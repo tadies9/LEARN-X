@@ -1,4 +1,4 @@
-import { BaseApiService } from './BaseApiService';
+import { BaseApiService, ApiFilters } from './BaseApiService';
 import { API_CLIENT } from './client';
 
 import type {
@@ -38,7 +38,15 @@ class CourseApiService extends BaseApiService {
       sortOrder?: CourseSortOptions['order'];
     }
   ) {
-    return this.getList<Course>(undefined, filters);
+    // Convert to ApiFilters format
+    const apiFilters: ApiFilters | undefined = filters ? {
+      ...filters,
+      page: filters.page,
+      limit: filters.limit,
+      sortBy: filters.sortBy,
+      sortOrder: filters.sortOrder,
+    } : undefined;
+    return this.getList<Course>(undefined, apiFilters);
   }
 
   // Get single course

@@ -40,7 +40,7 @@ export default function UploadPage() {
   };
 
   const handleFileDrop = async (acceptedFiles: File[]) => {
-    if (!session?.access_token) {
+    if (!user) {
       console.error('No authentication token available');
       return;
     }
@@ -65,7 +65,7 @@ export default function UploadPage() {
         setActiveProcessingFiles((prev) => new Set([...prev, uploadedFile.id]));
 
         // Start listening to processing updates
-        startProcessingUpdates(uploadedFile.id, session.access_token);
+        startProcessingUpdates(uploadedFile.id);
       } catch (error) {
         console.error('Failed to upload file:', file.name, error);
 
