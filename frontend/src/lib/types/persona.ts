@@ -41,9 +41,9 @@ export interface UserPersona {
 
 export interface ProfessionalContext {
   role: string;
-  experienceYears: number;
+  experienceYears?: number;
   industry: string;
-  technicalLevel: 'beginner' | 'intermediate' | 'advanced' | 'expert';
+  technicalLevel?: 'beginner' | 'intermediate' | 'advanced' | 'expert';
   careerAspirations?: string;
   domainExpertise?: string[];
 }

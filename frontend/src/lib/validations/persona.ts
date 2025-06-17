@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 // Professional Context Schema
 export const professionalContextSchema = z.object({
-  role: z.string().min(1, 'Current role is required').max(100),
-  experienceYears: z.number().min(0).max(50),
-  industry: z.string().min(1, 'Industry is required'),
-  technicalLevel: z.enum(['beginner', 'intermediate', 'advanced', 'expert']),
+  role: z.string().min(1, 'Current status is required').max(100),
+  experienceYears: z.number().min(0).max(50).optional(),
+  industry: z.string().min(1, 'Aspired industry is required'),
+  technicalLevel: z.enum(['beginner', 'intermediate', 'advanced', 'expert']).optional(),
   careerAspirations: z.string().max(500).optional(),
   domainExpertise: z.array(z.string()).max(10).optional(),
 });

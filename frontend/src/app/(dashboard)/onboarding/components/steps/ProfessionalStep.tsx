@@ -32,10 +32,7 @@ export function ProfessionalStep() {
     watch,
   } = useForm<ProfessionalContextData>({
     resolver: zodResolver(professionalContextSchema),
-    defaultValues: formData.professional || {
-      experienceYears: 0,
-      technicalLevel: 'beginner',
-    },
+    defaultValues: formData.professional || {},
   });
 
   const onSubmit = (data: ProfessionalContextData) => {
@@ -46,32 +43,42 @@ export function ProfessionalStep() {
   return (
     <OnboardingCard>
       <CardHeader>
-        <CardTitle>Professional Context</CardTitle>
+        <CardTitle>Academic & Career Goals</CardTitle>
         <CardDescription>
-          Tell us about your professional background to help us tailor examples to your experience
+          Tell us about your current studies and future aspirations to personalize your learning journey
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid gap-4">
             <div className="grid gap-2">
-              <Label htmlFor="role">Current Role/Occupation *</Label>
+              <Label htmlFor="role">Current Status *</Label>
               <Input
                 id="role"
-                placeholder="e.g., Software Engineer, Financial Analyst, Student"
+                placeholder="e.g., Computer Science Student, High School Senior, Recent Graduate"
                 {...register('role')}
               />
               {errors.role && <p className="text-sm text-destructive">{errors.role.message}</p>}
             </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="industry">Industry *</Label>
+              <Label htmlFor="fieldOfStudy">Field of Study</Label>
+              <Input
+                id="fieldOfStudy"
+                placeholder="e.g., Computer Science, Business Administration, Data Science"
+                {...register('domainExpertise.0')}
+              />
+              <p className="text-xs text-muted-foreground">Your major or primary area of study</p>
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="industry">Aspired Industry *</Label>
               <Select
                 onValueChange={(value) => setValue('industry', value)}
                 defaultValue={formData.professional?.industry}
               >
                 <SelectTrigger id="industry">
-                  <SelectValue placeholder="Select your industry" />
+                  <SelectValue placeholder="Select your desired industry" />
                 </SelectTrigger>
                 <SelectContent>
                   {INDUSTRIES.map((industry) => (
@@ -86,49 +93,13 @@ export function ProfessionalStep() {
               )}
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="grid gap-2">
-                <Label htmlFor="experienceYears">Years of Experience</Label>
-                <Input
-                  id="experienceYears"
-                  type="number"
-                  min="0"
-                  max="50"
-                  {...register('experienceYears', { valueAsNumber: true })}
-                />
-                {errors.experienceYears && (
-                  <p className="text-sm text-destructive">{errors.experienceYears.message}</p>
-                )}
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="technicalLevel">Technical Level *</Label>
-                <Select
-                  onValueChange={(value) => setValue('technicalLevel', value as 'beginner' | 'intermediate' | 'advanced' | 'expert')}
-                  defaultValue={formData.professional?.technicalLevel || 'beginner'}
-                >
-                  <SelectTrigger id="technicalLevel">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="beginner">Beginner</SelectItem>
-                    <SelectItem value="intermediate">Intermediate</SelectItem>
-                    <SelectItem value="advanced">Advanced</SelectItem>
-                    <SelectItem value="expert">Expert</SelectItem>
-                  </SelectContent>
-                </Select>
-                {errors.technicalLevel && (
-                  <p className="text-sm text-destructive">{errors.technicalLevel.message}</p>
-                )}
-              </div>
-            </div>
 
             <div className="grid gap-2">
-              <Label htmlFor="careerAspirations">Career Aspirations (Optional)</Label>
+              <Label htmlFor="careerAspirations">Career Goals & Learning Objectives</Label>
               <Textarea
                 id="careerAspirations"
-                placeholder="Where do you see your career heading? What skills do you want to develop?"
-                rows={3}
+                placeholder="What are your career goals? What skills do you want to learn? What subjects interest you most?"
+                rows={4}
                 {...register('careerAspirations')}
               />
               {errors.careerAspirations && (
