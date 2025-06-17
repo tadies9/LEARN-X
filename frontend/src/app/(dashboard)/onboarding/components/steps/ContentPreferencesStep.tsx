@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';
@@ -20,52 +20,24 @@ const CONTENT_DENSITY_OPTIONS = [
     value: 'concise',
     label: 'Concise',
     description: 'Get to the point quickly',
-    example: 'APIs are messengers between apps. They define communication rules.',
   },
   {
     value: 'balanced',
     label: 'Balanced',
     description: 'Mix of brevity and detail',
-    example:
-      'APIs (Application Programming Interfaces) enable different software applications to communicate. They establish protocols for requesting and exchanging data.',
   },
   {
     value: 'comprehensive',
     label: 'Comprehensive',
     description: 'Detailed explanations',
-    example:
-      'APIs serve as standardized communication protocols between software applications. They specify request formats, authentication methods, and response structures, enabling seamless integration...',
   },
 ];
 
-const SUMMARY_STYLES = [
-  {
-    value: 'bullet_points',
-    label: 'Bullet Points',
-    example: '• Key concept 1\n• Key concept 2\n• Key concept 3',
-  },
-  {
-    value: 'paragraphs',
-    label: 'Paragraphs',
-    example: 'This section covers three main concepts. First, we explore...',
-  },
-  {
-    value: 'visual',
-    label: 'Visual Diagrams',
-    example: '[Flowchart] → [Mind Map] → [Infographic]',
-  },
-];
 
 export function ContentPreferencesStep() {
   const { nextStep, previousStep, updateFormData, formData } = useOnboarding();
   const [density, setDensity] = useState<string>(
     formData.contentPreferences?.density || 'balanced'
-  );
-  const [examplesPerConcept, setExamplesPerConcept] = useState<number>(
-    formData.contentPreferences?.examplesPerConcept || 2
-  );
-  const [summaryStyle, setSummaryStyle] = useState<string>(
-    formData.contentPreferences?.summaryStyle || 'bullet_points'
   );
   const [detailTolerance, setDetailTolerance] = useState<string>(
     formData.contentPreferences?.detailTolerance || 'medium'
@@ -78,8 +50,8 @@ export function ContentPreferencesStep() {
     updateFormData({
       contentPreferences: {
         density: density as ContentPreferences['density'],
-        examplesPerConcept,
-        summaryStyle: summaryStyle as ContentPreferences['summaryStyle'],
+        examplesPerConcept: 2,
+        summaryStyle: 'bullet_points' as ContentPreferences['summaryStyle'],
         detailTolerance: detailTolerance as ContentPreferences['detailTolerance'],
         repetitionPreference: repetitionPreference as ContentPreferences['repetitionPreference'],
       },
@@ -89,95 +61,58 @@ export function ContentPreferencesStep() {
 
   return (
     <OnboardingCard>
-      <CardHeader>
-        <CardTitle>Content Preferences</CardTitle>
-        <CardDescription>
+      <CardHeader className="text-center pb-8">
+        <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+          <FileText className="h-8 w-8 text-primary" />
+        </div>
+        <CardTitle className="text-3xl">Content Preferences</CardTitle>
+        <CardDescription className="text-lg mt-2">
           Customize how information is presented to match your learning preferences
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Content Density */}
-        <div className="space-y-3">
-          <h3 className="font-medium">Content Density</h3>
+        <div className="space-y-4">
+          <div className="text-center">
+            <h3 className="font-semibold text-lg mb-1">Content Density</h3>
+            <p className="text-sm text-muted-foreground">How much detail do you prefer in explanations?</p>
+          </div>
           <RadioGroup value={density} onValueChange={setDensity}>
-            <div className="grid gap-3">
-              {CONTENT_DENSITY_OPTIONS.map((option) => (
-                <div
-                  key={option.value}
-                  className={cn(
-                    'relative rounded-lg border p-4 cursor-pointer transition-colors hover:bg-muted/50',
-                    density === option.value && 'border-primary bg-primary/5'
-                  )}
-                  onClick={() => setDensity(option.value)}
-                >
-                  <div className="flex gap-3">
-                    <RadioGroupItem
-                      value={option.value}
-                      id={`density-${option.value}`}
-                      className="mt-1"
-                    />
-                    <div className="flex-1 space-y-2">
+            <div className="grid grid-cols-3 gap-3">
+              {CONTENT_DENSITY_OPTIONS.map((option) => {
+                const isSelected = density === option.value;
+                return (
+                  <div
+                    key={option.value}
+                    className={cn(
+                      'relative rounded-lg border-2 p-4 cursor-pointer transition-all duration-200',
+                      'hover:shadow-md hover:border-primary/50',
+                      isSelected ? 'border-primary shadow-md' : 'border-gray-200 dark:border-gray-800',
+                      'bg-white dark:bg-gray-900'
+                    )}
+                    onClick={() => setDensity(option.value)}
+                  >
+                    <div className="flex flex-col items-center text-center space-y-2">
                       <Label
                         htmlFor={`density-${option.value}`}
-                        className="font-medium cursor-pointer"
+                        className="font-semibold text-sm cursor-pointer"
                       >
                         {option.label}
                       </Label>
-                      <p className="text-sm text-muted-foreground">{option.description}</p>
-                      <div className="bg-muted/50 p-2 rounded text-xs">{option.example}</div>
+                      <p className="text-xs text-muted-foreground">{option.description}</p>
+                      <RadioGroupItem
+                        value={option.value}
+                        id={`density-${option.value}`}
+                        className="absolute top-2 right-2 scale-90"
+                      />
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </RadioGroup>
         </div>
 
-        {/* Examples per Concept */}
-        <div className="space-y-3">
-          <h3 className="font-medium">Examples per Concept</h3>
-          <p className="text-sm text-muted-foreground">
-            How many examples do you need to understand new concepts?
-          </p>
-          <div className="space-y-2">
-            <Slider
-              value={[examplesPerConcept]}
-              onValueChange={(value) => setExamplesPerConcept(value[0])}
-              min={1}
-              max={5}
-              step={1}
-              className="w-full"
-            />
-            <div className="flex justify-between text-sm text-muted-foreground">
-              <span>1 example</span>
-              <span className="font-medium text-foreground">{examplesPerConcept} examples</span>
-              <span>5 examples</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Summary Style */}
-        <div className="space-y-3">
-          <h3 className="font-medium">Summary Style</h3>
-          <div className="grid gap-2">
-            {SUMMARY_STYLES.map((style) => (
-              <Button
-                key={style.value}
-                type="button"
-                variant={summaryStyle === style.value ? 'default' : 'outline'}
-                className="justify-start h-auto py-3"
-                onClick={() => setSummaryStyle(style.value)}
-              >
-                <div className="text-left">
-                  <div className="font-medium">{style.label}</div>
-                  <div className="text-xs mt-1 font-normal whitespace-pre-line">
-                    {style.example}
-                  </div>
-                </div>
-              </Button>
-            ))}
-          </div>
-        </div>
 
         {/* Detail Tolerance */}
         <div className="space-y-3">
@@ -215,12 +150,12 @@ export function ContentPreferencesStep() {
           </div>
         </div>
 
-        <div className="flex justify-between pt-4">
-          <Button type="button" variant="outline" onClick={previousStep}>
+        <div className="flex justify-between pt-6 border-t">
+          <Button type="button" variant="outline" size="lg" onClick={previousStep} className="min-w-[120px]">
             <ChevronLeft className="mr-2 h-4 w-4" />
             Back
           </Button>
-          <Button onClick={handleNext}>
+          <Button onClick={handleNext} size="lg" className="min-w-[120px]">
             Next
             <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
