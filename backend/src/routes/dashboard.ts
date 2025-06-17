@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import { dashboardController } from '../controllers/dashboardController';
-import { authenticate } from '../middleware/auth';
+import { authenticateUser } from '../middleware/auth';
 import { asyncHandler } from '../middleware/asyncHandler';
-import { validateRequest } from '../middleware/validation';
+import { validateRequest } from '../middleware/validateRequest';
 import { z } from 'zod';
 
 const router = Router();
 
 // All dashboard routes require authentication
-router.use(authenticate);
+router.use(authenticateUser);
 
 // Validation schemas
 const logActivitySchema = z.object({

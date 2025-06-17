@@ -1,5 +1,5 @@
-import { supabase } from '../config/database';
-import { AppError } from '../middleware/errorHandler';
+import { supabase } from '../config/supabase';
+// AppError import removed as it's not used in this file
 import { logger } from '../utils/logger';
 import { differenceInDays, startOfDay, subDays, format } from 'date-fns';
 
@@ -178,9 +178,9 @@ class DashboardService {
       longestStreak = Math.max(longestStreak, tempStreak);
 
       // Calculate days this week
-      const weekStart = subDays(today, 6);
+      const weekStart = format(subDays(new Date(), 6), 'yyyy-MM-dd');
       const daysThisWeek = Array.from(activityDates).filter(date => {
-        return date >= weekStart && date <= today;
+        return date >= weekStart && date <= format(new Date(), 'yyyy-MM-dd');
       }).length;
 
       const lastActiveDate = sortedDates[sortedDates.length - 1] || null;
@@ -244,7 +244,7 @@ class DashboardService {
     const overallCompletion = progressData?.length ? Math.round(totalProgress / progressData.length) : 0;
 
     // Weekly goal progress (assuming 10 hours per week goal)
-    const { studyTime } = await this.getStudyTimeStats(userId);
+    const studyTime = await this.getStudyTimeStats(userId);
     const weeklyGoalProgress = Math.min(100, Math.round((studyTime.thisWeek / 10) * 100));
 
     // Mastered concepts (files with >80% completion)
@@ -305,7 +305,7 @@ class DashboardService {
 
     // Get user's interests and academic career
     const primaryInterests = persona?.interests?.primary || [];
-    const secondaryInterests = persona?.interests?.secondary || [];
+    // const secondaryInterests = persona?.interests?.secondary || [];
     const learningTopics = persona?.interests?.learningTopics || [];
     const academicCareer = persona?.academic_career || persona?.professional;
     const currentStatus = academicCareer?.currentStatus || academicCareer?.role || 'Student';
