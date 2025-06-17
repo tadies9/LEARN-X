@@ -19,6 +19,7 @@ const authRoutes = [
   '/verify-email',
   '/auth-code-error',
   '/auth/callback',
+  '/onboarding', // Onboarding should not show sidebar as it's a prerequisite
 ];
 
 // Landing page route that should use its own layout
