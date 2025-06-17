@@ -158,7 +158,7 @@ export function CommunicationStep() {
         </div>
 
         {/* Humor Toggle */}
-        <div className="flex items-center justify-between space-x-2 rounded-lg border p-4">
+        <div className="flex items-center justify-between space-x-2 rounded-lg border-2 border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-4">
           <div className="space-y-0.5">
             <Label htmlFor="humor" className="font-medium">
               Include Humor
