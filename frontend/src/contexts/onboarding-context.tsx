@@ -13,8 +13,9 @@ import { useRouter } from 'next/navigation';
 import type { OnboardingStep, Persona } from '@/lib/types/persona';
 import { analyticsApi } from '@/lib/api/analytics';
 
-// Temporary debug import
+// Temporary debug imports
 import '@/lib/api/test-persona-debug';
+import '@/lib/api/test-backend';
 
 interface OnboardingContextType {
   currentStep: OnboardingStep;
