@@ -46,7 +46,7 @@ router.get('/stats', asyncHandler(dashboardController.getStats));
  */
 router.get(
   '/activity',
-  validateRequest(getActivitySchema),
+  validateRequest(getActivitySchema, 'query'),
   asyncHandler(dashboardController.getActivity)
 );
 
