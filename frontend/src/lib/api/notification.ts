@@ -31,13 +31,18 @@ export const notificationApi = {
     limit?: number;
     unreadOnly?: boolean;
   }): Promise<NotificationResponse> => {
-    const response = await API_CLIENT.get<{ success: boolean; data: NotificationResponse }>('/notifications', { params });
+    const response = await API_CLIENT.get<{ success: boolean; data: NotificationResponse }>(
+      '/notifications',
+      { params }
+    );
     return response.data.data;
   },
 
   // Get unread notification count
   getUnreadCount: async (): Promise<UnreadCountResponse> => {
-    const response = await API_CLIENT.get<{ success: boolean; data: UnreadCountResponse }>('/notifications/unread-count');
+    const response = await API_CLIENT.get<{ success: boolean; data: UnreadCountResponse }>(
+      '/notifications/unread-count'
+    );
     return response.data.data;
   },
 

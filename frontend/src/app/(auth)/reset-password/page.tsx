@@ -33,7 +33,7 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     // Check if we have access to update password
-    supabase.auth.onAuthStateChange(async (event, session) => {
+    supabase.auth.onAuthStateChange(async (event, _session) => {
       if (event !== 'PASSWORD_RECOVERY') {
         // If no password recovery session, redirect to login
         router.push('/login');

@@ -1,6 +1,36 @@
 import { supabase } from '../config/supabase';
 import { logger } from '../utils/logger';
 
+interface CourseModule {
+  id: string;
+  title: string;
+  description?: string;
+  position: number;
+  is_published: boolean;
+  estimated_duration?: number;
+  files?: Array<{ count: number }>;
+}
+
+interface Course {
+  id: string;
+  user_id: string;
+  title: string;
+  description?: string;
+  is_public: boolean;
+  is_archived: boolean;
+  settings?: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  modules?: CourseModule[];
+}
+
+interface CourseFile {
+  id: string;
+  file_type?: string;
+  file_size_bytes?: number;
+  status?: 'pending' | 'processing' | 'completed' | 'failed';
+}
+
 interface CourseFilters {
   search?: string;
   isPublic?: boolean;
@@ -106,7 +136,7 @@ export class CourseService {
       if (course) {
         // Calculate total duration and file count
         let totalDuration = 0;
-        const modulesWithCounts = course.modules?.map((module: any) => {
+        const modulesWithCounts = course.modules?.map((module: CourseModule) => {
           totalDuration += module.estimated_duration || 0;
           return {
             ...module,
@@ -130,7 +160,13 @@ export class CourseService {
     }
   }
 
-  async createCourse(courseData: any) {
+  async createCourse(courseData: {
+    userId: string;
+    title: string;
+    description?: string;
+    isPublic?: boolean;
+    settings?: Record<string, unknown>;
+  }) {
     try {
       const { data: course, error } = await supabase
         .from('courses')
@@ -153,7 +189,13 @@ export class CourseService {
     }
   }
 
-  async updateCourse(courseId: string, updateData: any) {
+  async updateCourse(courseId: string, updateData: {
+    title?: string;
+    description?: string;
+    isPublic?: boolean;
+    isArchived?: boolean;
+    settings?: Record<string, unknown>;
+  }) {
     try {
       const { data: course, error } = await supabase
         .from('courses')
@@ -242,7 +284,7 @@ export class CourseService {
 
       // Duplicate modules if any
       if (originalCourse.modules && originalCourse.modules.length > 0) {
-        const modulesToInsert = originalCourse.modules.map((module: any) => ({
+        const modulesToInsert = originalCourse.modules.map((module: CourseModule) => ({
           course_id: newCourse.id,
           title: module.title,
           description: module.description,
@@ -297,10 +339,10 @@ export class CourseService {
         estimatedDuration: 0,
       };
 
-      course.modules?.forEach((module: any) => {
+      course.modules?.forEach((module: CourseModule & { files?: CourseFile[] }) => {
         stats.estimatedDuration += module.estimated_duration || 0;
 
-        module.files?.forEach((file: any) => {
+        module.files?.forEach((file: CourseFile) => {
           stats.totalFiles++;
           stats.totalFileSize += file.file_size_bytes || 0;
 

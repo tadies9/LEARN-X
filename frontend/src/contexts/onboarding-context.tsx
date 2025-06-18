@@ -13,7 +13,6 @@ import { useRouter } from 'next/navigation';
 import type { OnboardingStep, Persona } from '@/lib/types/persona';
 import { analyticsApi } from '@/lib/api/analytics';
 
-
 interface OnboardingContextType {
   currentStep: OnboardingStep;
   stepIndex: number;
@@ -88,7 +87,11 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
 
   const skipToReview = useCallback(() => {
     // Ensure minimum required data is present - check both new and legacy field names
-    if ((!formData.academicCareer && !formData.professional) || !formData.interests || !formData.learningStyle) {
+    if (
+      (!formData.academicCareer && !formData.professional) ||
+      !formData.interests ||
+      !formData.learningStyle
+    ) {
       return;
     }
 
@@ -117,10 +120,10 @@ export function OnboardingProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     try {
       const { personaApi } = await import('@/lib/api/persona');
-      
+
       // Use the new field names, with fallback to legacy names for backward compatibility
       const academicCareerData = formData.academicCareer || formData.professional;
-      
+
       // Apply defaults for skipped sections
       const personaWithDefaults = {
         academicCareer: academicCareerData!,

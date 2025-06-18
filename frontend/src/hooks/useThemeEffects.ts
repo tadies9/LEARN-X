@@ -1,9 +1,9 @@
 import { useEffect } from 'react';
 import { ThemePreference, ThemeMode } from '@/lib/types/theme';
-import { 
-  getTimeBasedTheme, 
+import {
+  getTimeBasedTheme,
   applyThemeToDOM,
-  applyAccessibilityEnhancements 
+  applyAccessibilityEnhancements,
 } from '@/lib/utils/theme';
 
 interface UseThemeEffectsProps {

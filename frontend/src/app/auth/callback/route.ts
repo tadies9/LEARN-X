@@ -13,7 +13,9 @@ export async function GET(request: Request) {
     if (!error) {
       // If no next parameter provided, check if user needs onboarding
       if (!next) {
-        const { data: { user } } = await supabase.auth.getUser();
+        const {
+          data: { user },
+        } = await supabase.auth.getUser();
         if (user) {
           // Check if user has completed onboarding
           const { data: persona } = await supabase
@@ -21,13 +23,13 @@ export async function GET(request: Request) {
             .select('id')
             .eq('user_id', user.id)
             .single();
-          
+
           next = persona ? '/dashboard' : '/onboarding';
         } else {
           next = '/dashboard';
         }
       }
-      
+
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

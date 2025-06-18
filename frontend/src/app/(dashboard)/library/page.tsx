@@ -6,18 +6,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Library, 
-  Download, 
-  FileText, 
-  Video, 
-  Image, 
-  FileCode, 
-  Search, 
+import {
+  Library,
+  Download,
+  FileText,
+  Video,
+  Image,
+  FileCode,
+  Search,
   Filter,
   Bookmark,
   Clock,
-  Eye
+  Eye,
 } from 'lucide-react';
 
 export default function LibraryPage() {
@@ -102,7 +102,15 @@ export default function LibraryPage() {
     },
   ];
 
-  const categories = ['All', 'Reference', 'Lecture', 'Visual Aid', 'Template', 'Example', 'AI Generated'];
+  const categories = [
+    'All',
+    'Reference',
+    'Lecture',
+    'Visual Aid',
+    'Template',
+    'Example',
+    'AI Generated',
+  ];
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -121,19 +129,21 @@ export default function LibraryPage() {
     }
   };
 
-  const filteredItems = libraryItems.filter(item => {
-    const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.course.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesTab = selectedTab === 'all' || 
-                      (selectedTab === 'downloaded' && item.downloaded) ||
-                      (selectedTab === 'bookmarked' && item.bookmarked) ||
-                      (selectedTab === 'ai-generated' && item.aiGenerated);
+  const filteredItems = libraryItems.filter((item) => {
+    const matchesSearch =
+      item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.course.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesTab =
+      selectedTab === 'all' ||
+      (selectedTab === 'downloaded' && item.downloaded) ||
+      (selectedTab === 'bookmarked' && item.bookmarked) ||
+      (selectedTab === 'ai-generated' && item.aiGenerated);
     return matchesSearch && matchesTab;
   });
 
-  const downloadedCount = libraryItems.filter(item => item.downloaded).length;
-  const bookmarkedCount = libraryItems.filter(item => item.bookmarked).length;
-  const aiGeneratedCount = libraryItems.filter(item => item.aiGenerated).length;
+  const downloadedCount = libraryItems.filter((item) => item.downloaded).length;
+  const bookmarkedCount = libraryItems.filter((item) => item.bookmarked).length;
+  const aiGeneratedCount = libraryItems.filter((item) => item.aiGenerated).length;
 
   return (
     <div className="container mx-auto p-6">
@@ -153,8 +163,8 @@ export default function LibraryPage() {
           <div className="flex gap-4 items-center mb-4">
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
-                placeholder="Search library..." 
+              <Input
+                placeholder="Search library..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -165,7 +175,7 @@ export default function LibraryPage() {
               Filter
             </Button>
           </div>
-          
+
           {/* Category filters */}
           <div className="flex gap-2 flex-wrap">
             {categories.map((category) => (
@@ -236,9 +246,7 @@ export default function LibraryPage() {
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
                       <item.icon className="h-5 w-5 text-primary" />
-                      <Badge className={getTypeColor(item.type)}>
-                        {item.type}
-                      </Badge>
+                      <Badge className={getTypeColor(item.type)}>{item.type}</Badge>
                       {item.aiGenerated && (
                         <Badge variant="outline" className="text-xs">
                           AI
@@ -249,15 +257,11 @@ export default function LibraryPage() {
                       {item.bookmarked && (
                         <Bookmark className="h-4 w-4 text-yellow-500 fill-current" />
                       )}
-                      {item.downloaded && (
-                        <Download className="h-4 w-4 text-green-500" />
-                      )}
+                      {item.downloaded && <Download className="h-4 w-4 text-green-500" />}
                     </div>
                   </div>
                   <CardTitle className="text-base line-clamp-2">{item.title}</CardTitle>
-                  <CardDescription className="text-sm">
-                    {item.course}
-                  </CardDescription>
+                  <CardDescription className="text-sm">{item.course}</CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
@@ -265,9 +269,7 @@ export default function LibraryPage() {
                       <span>Size: {item.size}</span>
                       {item.duration && <span>Duration: {item.duration}</span>}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Added: {item.downloadDate}
-                    </div>
+                    <div className="text-xs text-muted-foreground">Added: {item.downloadDate}</div>
                     <div className="flex gap-2">
                       <Button size="sm" variant="outline" className="flex-1">
                         <Eye className="h-4 w-4 mr-1" />

@@ -8,46 +8,43 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { 
-  HelpCircle, 
-  Search, 
-  MessageSquare, 
-  Book, 
-  Video, 
-  Mail, 
-  Phone 
-} from 'lucide-react';
+import { HelpCircle, Search, MessageSquare, Book, Video, Mail, Phone } from 'lucide-react';
 
 export default function HelpPage() {
   const faqs = [
     {
       id: 1,
       question: 'How do I enroll in a course?',
-      answer: 'To enroll in a course, navigate to the Courses page, find the course you want, and click the "Enroll" button.',
+      answer:
+        'To enroll in a course, navigate to the Courses page, find the course you want, and click the "Enroll" button.',
       category: 'Courses',
     },
     {
       id: 2,
       question: 'Can I download course materials?',
-      answer: 'Yes, you can download most course materials including PDFs, slides, and code files from the module pages.',
+      answer:
+        'Yes, you can download most course materials including PDFs, slides, and code files from the module pages.',
       category: 'Content',
     },
     {
       id: 3,
       question: 'How do I track my learning progress?',
-      answer: 'Your progress is automatically tracked and can be viewed on your Dashboard and in the Analytics section.',
+      answer:
+        'Your progress is automatically tracked and can be viewed on your Dashboard and in the Analytics section.',
       category: 'Progress',
     },
     {
       id: 4,
       question: 'What payment methods do you accept?',
-      answer: 'We accept all major credit cards, PayPal, and bank transfers for premium subscriptions.',
+      answer:
+        'We accept all major credit cards, PayPal, and bank transfers for premium subscriptions.',
       category: 'Billing',
     },
     {
       id: 5,
       question: 'How do I reset my password?',
-      answer: 'Click on "Forgot Password" on the login page and follow the email instructions to reset your password.',
+      answer:
+        'Click on "Forgot Password" on the login page and follow the email instructions to reset your password.',
       category: 'Account',
     },
   ];
@@ -139,10 +136,7 @@ export default function HelpPage() {
               </div>
               <div>
                 <label className="text-sm font-medium">Message</label>
-                <Textarea 
-                  placeholder="Describe your issue or question in detail..."
-                  rows={4}
-                />
+                <Textarea placeholder="Describe your issue or question in detail..." rows={4} />
               </div>
               <Button>
                 <MessageSquare className="h-4 w-4 mr-2" />
@@ -213,9 +207,7 @@ export default function HelpPage() {
                 <div className="w-2 h-2 bg-green-500 rounded-full" />
                 <span className="text-sm">All systems operational</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-2">
-                Last checked: Just now
-              </p>
+              <p className="text-xs text-muted-foreground mt-2">Last checked: Just now</p>
             </CardContent>
           </Card>
         </div>

@@ -29,9 +29,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
 
   // Check if current route should use sidebar
-  const isAuthRoute = authRoutes.some(route => pathname.startsWith(route));
+  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
   const isLandingRoute = landingRoutes.includes(pathname);
-  
+
   // Use sidebar for all pages except auth routes and landing page
   const shouldUseSidebar = !isAuthRoute && !isLandingRoute;
 
@@ -40,9 +40,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="flex h-screen overflow-hidden">
         <DashboardSidebar />
         <div className="flex-1 flex flex-col overflow-hidden">
-          <main className="flex-1 overflow-y-auto">
-            {children}
-          </main>
+          <main className="flex-1 overflow-y-auto">{children}</main>
         </div>
       </div>
     );

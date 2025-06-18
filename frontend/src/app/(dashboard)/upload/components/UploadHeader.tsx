@@ -8,7 +8,8 @@ export function UploadHeader() {
         Upload Learning Content
       </h1>
       <p className="text-muted-foreground">
-        Upload any document and let our AI transform it into personalized study materials just for you
+        Upload any document and let our AI transform it into personalized study materials just for
+        you
       </p>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 
 export function CTAFinal() {
   return (
@@ -14,10 +14,7 @@ export function CTAFinal() {
             Start your personalized learning journey today.
           </p>
           <div className="mt-6">
-            <Button
-              size="lg"
-              onClick={() => window.location.href = '/register'}
-            >
+            <Button size="lg" onClick={() => (window.location.href = '/register')}>
               Start Learning Free
             </Button>
           </div>

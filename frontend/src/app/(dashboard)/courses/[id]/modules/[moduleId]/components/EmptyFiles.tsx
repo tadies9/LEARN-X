@@ -16,7 +16,8 @@ export function EmptyFiles({ onUpload }: EmptyFilesProps) {
       </div>
       <h3 className="text-lg font-semibold mb-2">No course materials yet</h3>
       <p className="text-sm text-muted-foreground text-center max-w-sm mb-8">
-        Upload PDFs, documents, presentations, and other learning materials to start building your course content.
+        Upload PDFs, documents, presentations, and other learning materials to start building your
+        course content.
       </p>
       <Button onClick={onUpload} size="lg" className="gap-2">
         <Upload className="h-4 w-4" />

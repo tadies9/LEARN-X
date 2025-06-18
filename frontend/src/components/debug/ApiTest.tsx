@@ -12,15 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { courseApi } from '@/lib/api/course';
 import { personaApi } from '@/lib/api/persona';
 import { notificationApi } from '@/lib/api/notification';
-import { 
-  CheckCircle, 
-  XCircle, 
-  Loader2, 
-  Network,
-  Database,
-  User,
-  Bell
-} from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, Network, Database, User, Bell } from 'lucide-react';
 
 interface TestResult {
   name: string;
@@ -50,7 +42,11 @@ export function ApiTest() {
       await courseApi.getCourses({ page: 1, limit: 1 });
       updateResult('Course API', 'success', 'Successfully fetched courses');
     } catch (error) {
-      updateResult('Course API', 'error', `Failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      updateResult(
+        'Course API',
+        'error',
+        `Failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
 
     // Test Persona API
@@ -58,7 +54,11 @@ export function ApiTest() {
       await personaApi.getPersona();
       updateResult('Persona API', 'success', 'Successfully fetched persona');
     } catch (error) {
-      updateResult('Persona API', 'error', `Failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      updateResult(
+        'Persona API',
+        'error',
+        `Failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
 
     // Test Notification API
@@ -66,18 +66,20 @@ export function ApiTest() {
       await notificationApi.getUnreadCount();
       updateResult('Notification API', 'success', 'Successfully fetched notification count');
     } catch (error) {
-      updateResult('Notification API', 'error', `Failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      updateResult(
+        'Notification API',
+        'error',
+        `Failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
 
     setTesting(false);
   };
 
   const updateResult = (name: string, status: 'success' | 'error', message: string) => {
-    setResults(prev => prev.map(result => 
-      result.name === name 
-        ? { ...result, status, message }
-        : result
-    ));
+    setResults((prev) =>
+      prev.map((result) => (result.name === name ? { ...result, status, message } : result))
+    );
   };
 
   return (
@@ -87,16 +89,10 @@ export function ApiTest() {
           <Network className="h-5 w-5" />
           API Connection Test
         </CardTitle>
-        <CardDescription>
-          Test connectivity to all backend APIs
-        </CardDescription>
+        <CardDescription>Test connectivity to all backend APIs</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <Button 
-          onClick={runApiTests} 
-          disabled={testing}
-          className="w-full"
-        >
+        <Button onClick={runApiTests} disabled={testing} className="w-full">
           {testing ? (
             <>
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -123,21 +119,19 @@ export function ApiTest() {
                       {result.status === 'success' && (
                         <CheckCircle className="h-4 w-4 text-green-600" />
                       )}
-                      {result.status === 'error' && (
-                        <XCircle className="h-4 w-4 text-red-600" />
-                      )}
+                      {result.status === 'error' && <XCircle className="h-4 w-4 text-red-600" />}
                     </div>
                     {result.message && (
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {result.message}
-                      </p>
+                      <p className="text-sm text-muted-foreground mt-1">{result.message}</p>
                     )}
                   </div>
-                  <Badge 
+                  <Badge
                     variant={
-                      result.status === 'success' ? 'default' : 
-                      result.status === 'error' ? 'destructive' : 
-                      'secondary'
+                      result.status === 'success'
+                        ? 'default'
+                        : result.status === 'error'
+                          ? 'destructive'
+                          : 'secondary'
                     }
                   >
                     {result.status}

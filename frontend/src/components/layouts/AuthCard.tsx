@@ -42,7 +42,11 @@ export function AuthCard({
       <div className="absolute inset-0 bg-primary/[0.2] dark:bg-transparent pointer-events-none" />
       <CardHeader className="space-y-1 relative">
         <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">{title}</CardTitle>
-        {description && <CardDescription className="text-gray-600 dark:text-gray-400">{description}</CardDescription>}
+        {description && (
+          <CardDescription className="text-gray-600 dark:text-gray-400">
+            {description}
+          </CardDescription>
+        )}
       </CardHeader>
       <CardContent className="relative">{children}</CardContent>
       {(footerContent || footerLink) && (

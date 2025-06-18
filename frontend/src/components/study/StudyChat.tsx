@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/ScrollArea';
@@ -13,6 +13,8 @@ import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
+import { Components } from 'react-markdown';
+import { ReactNode } from 'react';
 
 interface StudyChatProps {
   fileId: string;
@@ -116,13 +118,28 @@ export function StudyChat({ fileId, currentPage, selectedText, userPersona }: St
             <div className="prose prose-sm max-w-none">
               <ReactMarkdown
                 components={{
-                  code({ node, className, children, ...props }: any) {
+                  code({
+                    node,
+                    className,
+                    children,
+                    ...props
+                  }: {
+                    node?: {
+                      position?: {
+                        start: { line: number; column: number };
+                        end: { line: number; column: number };
+                      };
+                    };
+                    className?: string;
+                    children?: ReactNode;
+                    [key: string]: unknown;
+                  }) {
                     const inline = node?.position === undefined;
                     const match = /language-(\w+)/.exec(className || '');
                     return !inline && match ? (
                       <div className="relative">
                         <SyntaxHighlighter
-                          style={oneDark as any}
+                          style={oneDark as { [key: string]: React.CSSProperties }}
                           language={match[1]}
                           PreTag="div"
                           {...props}
@@ -267,7 +284,7 @@ export function StudyChat({ fileId, currentPage, selectedText, userPersona }: St
           <Input
             ref={inputRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Ask a question..."
             disabled={isLoading}

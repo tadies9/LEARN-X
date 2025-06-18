@@ -42,11 +42,7 @@ export function QueryClientProvider({ children }: QueryClientProviderProps) {
   return (
     <TanstackQueryClientProvider client={queryClient}>
       {children}
-      {process.env.NODE_ENV === 'development' && (
-        <ReactQueryDevtools 
-          initialIsOpen={false}
-        />
-      )}
+      {process.env.NODE_ENV === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
     </TanstackQueryClientProvider>
   );
 }

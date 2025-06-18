@@ -2,10 +2,32 @@ import { supabase } from '../../config/supabase';
 import { logger } from '../../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
 
+interface PGMQMessage {
+  msg_id: bigint;
+  message: {
+    job_id?: string;
+    job_type: string;
+    payload: Record<string, unknown>;
+  };
+  enqueued_at: string;
+}
+
+interface JobTrackingRecord {
+  id: string;
+  message_id?: bigint;
+  queue_name: string;
+  job_type: string;
+  payload: Record<string, unknown>;
+  status: 'queued' | 'processing' | 'completed' | 'failed' | 'dead';
+  attempts: number;
+  created_at: string;
+  error_message?: string;
+}
+
 export interface JobPayload {
   jobId?: string;
   jobType: string;
-  payload: any;
+  payload: Record<string, unknown>;
 }
 
 export interface JobOptions {
@@ -19,7 +41,7 @@ export interface Job {
   messageId?: bigint;
   queueName: string;
   jobType: string;
-  payload: any;
+  payload: Record<string, unknown>;
   status: 'queued' | 'processing' | 'completed' | 'failed' | 'dead';
   attempts: number;
   createdAt: Date;
@@ -42,7 +64,7 @@ export class PGMQService {
   async enqueue(
     queueName: string,
     jobType: string,
-    payload: any,
+    payload: Record<string, unknown>,
     options: JobOptions = {}
   ): Promise<string> {
     try {
@@ -117,7 +139,7 @@ export class PGMQService {
 
         if (messages && messages.length > 0) {
           await Promise.all(
-            messages.map(async (message: any) => {
+            messages.map(async (message: PGMQMessage) => {
               const job = this.messageToJob(queueName, message);
 
               try {
@@ -196,7 +218,13 @@ export class PGMQService {
   /**
    * Get queue health metrics
    */
-  async getQueueHealth(): Promise<any[]> {
+  async getQueueHealth(): Promise<Array<{
+    queue_name: string;
+    total_messages: number;
+    oldest_msg_age_sec?: number;
+    newest_msg_age_sec?: number;
+    total_messages_sent: number;
+  }>> {
     try {
       // Use the new wrapper function instead of direct view access
       const { data, error } = await supabase.rpc('get_queue_metrics');
@@ -296,7 +324,7 @@ export class PGMQService {
 
   // Private helper methods
 
-  private messageToJob(queueName: string, message: any): Job {
+  private messageToJob(queueName: string, message: PGMQMessage): Job {
     const messageData = message.message;
     return {
       id: messageData.job_id || uuidv4(),
@@ -310,7 +338,7 @@ export class PGMQService {
     };
   }
 
-  private transformJob(data: any): Job {
+  private transformJob(data: JobTrackingRecord): Job {
     return {
       id: data.id,
       messageId: data.message_id,

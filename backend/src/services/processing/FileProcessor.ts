@@ -18,7 +18,7 @@ export interface FileProcessingJob {
   processingOptions?: {
     chunkSize?: number;
     priority?: number; // Use integer priorities
-    [key: string]: any;
+    [key: string]: unknown;
   };
   queuedAt: string;
   retryCount?: number;
@@ -147,7 +147,18 @@ export class FileProcessor {
   /**
    * Gets file details with ownership validation
    */
-  private async getFileWithValidation(fileId: string, userId: string): Promise<any> {
+  private async getFileWithValidation(fileId: string, userId: string): Promise<{
+    id: string;
+    filename?: string;
+    original_name?: string;
+    mime_type?: string;
+    storage_path: string;
+    modules: {
+      courses: {
+        user_id: string;
+      };
+    };
+  }> {
     const { data: file, error: fileError } = await supabase
       .from('course_files')
       .select(`
@@ -170,7 +181,7 @@ export class FileProcessor {
     }
 
     // Verify ownership
-    const fileOwner = (file as any).modules.courses.user_id;
+    const fileOwner = file.modules.courses.user_id;
     if (fileOwner !== userId) {
       throw new Error(`Access denied: User ${userId} cannot access file ${fileId}`);
     }
@@ -181,7 +192,10 @@ export class FileProcessor {
   /**
    * Extracts content with retry logic for transient failures
    */
-  private async extractContentWithRetry(file: any, maxRetries = 3): Promise<string> {
+  private async extractContentWithRetry(file: {
+    mime_type?: string;
+    storage_path: string;
+  }, maxRetries = 3): Promise<string> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         logger.info(`[FileProcessor] Extracting content (attempt ${attempt}): ${file.mime_type}`);
@@ -222,7 +236,17 @@ export class FileProcessor {
     content: string, 
     filename: string, 
     options?: FileProcessingJob['processingOptions']
-  ): Promise<any[]> {
+  ): Promise<Array<{
+    content: string;
+    metadata?: {
+      type?: string;
+      importance?: string;
+      title?: string;
+      level?: number;
+      concepts?: string[];
+      [key: string]: unknown;
+    };
+  }>> {
     return this.fileProcessingService.chunkContent(content, filename, {
       minChunkSize: 200,
       maxChunkSize: options?.chunkSize || 1500,
@@ -236,7 +260,22 @@ export class FileProcessor {
   /**
    * Saves chunks to database with batch insertion and sanitization
    */
-  private async saveChunksBatch(fileId: string, chunks: any[]): Promise<any[]> {
+  private async saveChunksBatch(fileId: string, chunks: Array<{
+    content: string;
+    metadata?: {
+      type?: string;
+      importance?: string;
+      title?: string;
+      level?: number;
+      concepts?: string[];
+      [key: string]: unknown;
+    };
+  }>): Promise<Array<{
+    id: string;
+    content: string;
+    chunk_index: number;
+    metadata?: Record<string, unknown>;
+  }>> {
     // First, delete any existing chunks for this file to avoid duplicates
     const { error: deleteError } = await supabase
       .from('file_chunks')
@@ -246,14 +285,14 @@ export class FileProcessor {
     if (deleteError) {
       logger.warn(`[FileProcessor] Failed to delete existing chunks:`, deleteError);
     }
-    const chunksToInsert = chunks.map((chunk: any, index: number) => {
+    const chunksToInsert = chunks.map((chunk, index: number) => {
       // Sanitize all text content
       const sanitizedContent = this.fileProcessingService.sanitizeChunkContent(chunk.content);
       const sanitizedSectionTitle = chunk.metadata?.title 
         ? this.fileProcessingService.sanitizeChunkContent(chunk.metadata.title)
         : null;
       const sanitizedConcepts = Array.isArray(chunk.metadata?.concepts) 
-        ? chunk.metadata.concepts.map((concept: string) => 
+        ? chunk.metadata.concepts.map((concept) => 
             typeof concept === 'string' 
               ? this.fileProcessingService.sanitizeChunkContent(concept)
               : concept
@@ -303,7 +342,7 @@ export class FileProcessor {
   private async updateFileStatus(
     fileId: string, 
     status: string, 
-    additionalFields?: Record<string, any>
+    additionalFields?: Record<string, unknown>
   ): Promise<void> {
     const updateData = {
       status,

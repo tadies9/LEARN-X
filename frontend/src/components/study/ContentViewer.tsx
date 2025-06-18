@@ -164,7 +164,7 @@ export function ContentViewer({
             />
           </Document>
         );
-      
+
       case 'txt':
       case 'md':
         // For text files, we'll fetch and display the content
@@ -173,7 +173,7 @@ export function ContentViewer({
             <pre className="whitespace-pre-wrap">{/* Content would be fetched here */}</pre>
           </div>
         );
-      
+
       default:
         return (
           <div className="flex h-full items-center justify-center">
@@ -257,30 +257,17 @@ export function ContentViewer({
             />
             <span className="w-12 text-sm">{Math.round(scale * 100)}%</span>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => handleZoom(0.1)}
-            disabled={scale >= 3}
-          >
+          <Button variant="ghost" size="icon" onClick={() => handleZoom(0.1)} disabled={scale >= 3}>
             <ZoomIn className="h-4 w-4" />
           </Button>
 
           {/* Search */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setShowSearch(!showSearch)}
-          >
+          <Button variant="ghost" size="icon" onClick={() => setShowSearch(!showSearch)}>
             <Search className="h-4 w-4" />
           </Button>
 
           {/* Download */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => window.open(fileUrl, '_blank')}
-          >
+          <Button variant="ghost" size="icon" onClick={() => window.open(fileUrl, '_blank')}>
             <Download className="h-4 w-4" />
           </Button>
         </div>
@@ -300,11 +287,7 @@ export function ContentViewer({
       )}
 
       {/* Content area */}
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-auto"
-        style={{ userSelect: 'text' }}
-      >
+      <div ref={containerRef} className="flex-1 overflow-auto" style={{ userSelect: 'text' }}>
         {renderContent()}
       </div>
     </div>

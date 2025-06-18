@@ -1,5 +1,5 @@
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
 
 export function HeroMain() {
   return (
@@ -24,14 +24,11 @@ function HeroContent() {
         Give every student a personal AI tutor in &lt;60 sec
       </h1>
       <p className="text-lg text-muted-foreground md:text-xl max-w-[600px]">
-        Transform your Canvas materials into personalized learning pathways.
-        Educators report 32% higher engagement and 28% improved test scores.
+        Transform your Canvas materials into personalized learning pathways. Educators report 32%
+        higher engagement and 28% improved test scores.
       </p>
       <div className="flex flex-col sm:flex-row gap-3 pt-2">
-        <Button
-          size="lg"
-          className="bg-blue-600 hover:bg-blue-700 text-base"
-        >
+        <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-base">
           Book a 15-min Demo
         </Button>
       </div>

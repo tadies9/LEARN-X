@@ -2,7 +2,7 @@ import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
 import { supabase } from '../config/supabase';
 import { logger } from '../utils/logger';
-import { DocumentAnalyzer } from './document/DocumentAnalyzer';
+import { DocumentAnalyzer, DocumentStructure, Section } from './document/DocumentAnalyzer';
 import { SemanticChunker, ChunkOptions } from './document/SemanticChunker';
 
 interface FileMetadata {
@@ -196,7 +196,7 @@ export class EnhancedFileProcessingService {
       extractedTitle: structure.title,
       documentType: structure.metadata.documentType,
       academicLevel: structure.metadata.academicLevel,
-      contentDistribution: structure.contentTypes as any,
+      contentDistribution: structure.contentTypes,
     };
 
     // Extract additional metadata
@@ -207,7 +207,13 @@ export class EnhancedFileProcessingService {
     return metadata;
   }
 
-  async chunkContent(content: string, fileName: string, options?: ChunkOptions): Promise<any[]> {
+  async chunkContent(content: string, fileName: string, options?: ChunkOptions): Promise<Array<{
+    content: string;
+    metadata: Record<string, unknown>;
+    chunk_metadata: Record<string, unknown>;
+    chunk_type: string;
+    hierarchy_level: number;
+  }>> {
     logger.info('[FileProcessing] Starting semantic chunking');
 
     // Analyze document structure
@@ -287,11 +293,11 @@ export class EnhancedFileProcessingService {
     return undefined;
   }
 
-  private extractTopics(structure: any): string[] {
+  private extractTopics(structure: DocumentStructure): string[] {
     const topics: string[] = [];
 
     // Extract topics from section titles
-    structure.sections.forEach((section: any) => {
+    structure.sections.forEach((section: Section) => {
       if (section.keywords && section.keywords.length > 0) {
         topics.push(...section.keywords);
       }
@@ -299,7 +305,7 @@ export class EnhancedFileProcessingService {
 
     // Extract main concepts
     const concepts = new Set<string>();
-    structure.sections.forEach((section: any) => {
+    structure.sections.forEach((section: Section) => {
       if (section.title && !section.title.match(/^(chapter|section|unit)\s+\d+/i)) {
         concepts.add(section.title);
       }
@@ -312,13 +318,25 @@ export class EnhancedFileProcessingService {
   }
 
   // Backward compatibility methods
-  async extractMetadataLegacy(content: string, fileName: string): Promise<any> {
+  async extractMetadataLegacy(content: string, fileName: string): Promise<FileMetadata> {
     return this.extractMetadata(content, fileName);
   }
 
-  async chunkContentLegacy(content: string, chunkSize: number = 1000): Promise<any[]> {
+  async chunkContentLegacy(content: string, chunkSize: number = 1000): Promise<Array<{
+    content: string;
+    metadata: {
+      startIndex: number;
+      endIndex: number;
+    };
+  }>> {
     // Use simple chunking for backward compatibility
-    const chunks: any[] = [];
+    const chunks: Array<{
+      content: string;
+      metadata: {
+        startIndex: number;
+        endIndex: number;
+      };
+    }> = [];
     const sentences = content.match(/[^.!?]+[.!?]+/g) || [];
 
     let currentChunk = '';

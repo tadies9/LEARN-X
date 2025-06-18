@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -13,7 +13,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import {
   Play,
   Pause,
@@ -54,11 +60,13 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
   const [settings, setSettings] = useState<TimerSettings>(DEFAULT_SETTINGS);
   const [timeLeft, setTimeLeft] = useState(settings.studyDuration * 60);
   const [isRunning, setIsRunning] = useState(false);
-  const [currentSession, setCurrentSession] = useState<'study' | 'short-break' | 'long-break'>('study');
+  const [currentSession, setCurrentSession] = useState<'study' | 'short-break' | 'long-break'>(
+    'study'
+  );
   const [completedSessions, setCompletedSessions] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [sessionStartTime, setSessionStartTime] = useState<number>(0);
-  
+
   const intervalRef = useRef<NodeJS.Timeout>();
   const audioRef = useRef<HTMLAudioElement>();
 
@@ -71,7 +79,7 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
   useEffect(() => {
     if (isRunning && timeLeft > 0) {
       intervalRef.current = setInterval(() => {
-        setTimeLeft(prev => prev - 1);
+        setTimeLeft((prev) => prev - 1);
       }, 1000);
     } else if (timeLeft === 0) {
       completeSession();
@@ -107,18 +115,19 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
   };
 
   const resetTimer = () => {
-    const duration = currentSession === 'study' 
-      ? settings.studyDuration
-      : currentSession === 'short-break'
-      ? settings.shortBreakDuration
-      : settings.longBreakDuration;
-    
+    const duration =
+      currentSession === 'study'
+        ? settings.studyDuration
+        : currentSession === 'short-break'
+          ? settings.shortBreakDuration
+          : settings.longBreakDuration;
+
     setTimeLeft(duration * 60);
   };
 
   const completeSession = () => {
     setIsRunning(false);
-    
+
     // Play notification sound
     if (settings.playNotifications && audioRef.current) {
       audioRef.current.play().catch(console.error);
@@ -129,13 +138,13 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
     onSessionComplete?.(duration, currentSession === 'study' ? 'study' : 'break');
 
     if (currentSession === 'study') {
-      setCompletedSessions(prev => prev + 1);
-      
+      setCompletedSessions((prev) => prev + 1);
+
       // Determine next session type
       const isLongBreakTime = (completedSessions + 1) % settings.sessionsUntilLongBreak === 0;
       const nextSession = isLongBreakTime ? 'long-break' : 'short-break';
       setCurrentSession(nextSession);
-      
+
       // Auto-start break if enabled
       if (settings.autoStartBreaks) {
         setTimeout(() => {
@@ -145,7 +154,7 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
       }
     } else {
       setCurrentSession('study');
-      
+
       // Auto-start study if enabled
       if (settings.autoStartStudy) {
         setTimeout(() => {
@@ -168,8 +177,8 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
     return currentSession === 'study'
       ? settings.studyDuration * 60
       : currentSession === 'short-break'
-      ? settings.shortBreakDuration * 60
-      : settings.longBreakDuration * 60;
+        ? settings.shortBreakDuration * 60
+        : settings.longBreakDuration * 60;
   };
 
   const getProgress = (): number => {
@@ -217,9 +226,7 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               {getSessionIcon()}
-              <span className={cn('font-medium', getSessionColor())}>
-                {getSessionName()}
-              </span>
+              <span className={cn('font-medium', getSessionColor())}>{getSessionName()}</span>
             </div>
             <Dialog open={showSettings} onOpenChange={setShowSettings}>
               <DialogTrigger asChild>
@@ -241,8 +248,8 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
                         min="1"
                         max="120"
                         value={settings.studyDuration}
-                        onChange={(e) =>
-                          setSettings(prev => ({
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setSettings((prev) => ({
                             ...prev,
                             studyDuration: parseInt(e.target.value) || 25,
                           }))
@@ -257,8 +264,8 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
                         min="1"
                         max="30"
                         value={settings.shortBreakDuration}
-                        onChange={(e) =>
-                          setSettings(prev => ({
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setSettings((prev) => ({
                             ...prev,
                             shortBreakDuration: parseInt(e.target.value) || 5,
                           }))
@@ -266,7 +273,7 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
                       />
                     </div>
                   </div>
-                  
+
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="long-break">Long Break (min)</Label>
@@ -276,8 +283,8 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
                         min="1"
                         max="60"
                         value={settings.longBreakDuration}
-                        onChange={(e) =>
-                          setSettings(prev => ({
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setSettings((prev) => ({
                             ...prev,
                             longBreakDuration: parseInt(e.target.value) || 15,
                           }))
@@ -292,8 +299,8 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
                         min="2"
                         max="10"
                         value={settings.sessionsUntilLongBreak}
-                        onChange={(e) =>
-                          setSettings(prev => ({
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                          setSettings((prev) => ({
                             ...prev,
                             sessionsUntilLongBreak: parseInt(e.target.value) || 4,
                           }))
@@ -309,7 +316,7 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
                         variant="outline"
                         size="sm"
                         onClick={() =>
-                          setSettings(prev => ({
+                          setSettings((prev) => ({
                             ...prev,
                             autoStartBreaks: !prev.autoStartBreaks,
                           }))
@@ -324,7 +331,7 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
                         variant="outline"
                         size="sm"
                         onClick={() =>
-                          setSettings(prev => ({
+                          setSettings((prev) => ({
                             ...prev,
                             autoStartStudy: !prev.autoStartStudy,
                           }))
@@ -339,7 +346,7 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
                         variant="outline"
                         size="sm"
                         onClick={() =>
-                          setSettings(prev => ({
+                          setSettings((prev) => ({
                             ...prev,
                             playNotifications: !prev.playNotifications,
                           }))
@@ -356,9 +363,7 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
 
           {/* Timer Display */}
           <div className="text-center">
-            <div className="text-4xl font-mono font-bold mb-2">
-              {formatTime(timeLeft)}
-            </div>
+            <div className="text-4xl font-mono font-bold mb-2">{formatTime(timeLeft)}</div>
             <Progress value={getProgress()} className="h-2" />
           </div>
 
@@ -366,9 +371,13 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
           <div className="text-center text-sm text-muted-foreground">
             <div>Session {completedSessions + 1}</div>
             <div>
-              Next: {completedSessions % settings.sessionsUntilLongBreak === settings.sessionsUntilLongBreak - 1 
-                ? 'Long break' 
-                : completedSessions % 2 === 0 ? 'Short break' : 'Study session'}
+              Next:{' '}
+              {completedSessions % settings.sessionsUntilLongBreak ===
+              settings.sessionsUntilLongBreak - 1
+                ? 'Long break'
+                : completedSessions % 2 === 0
+                  ? 'Short break'
+                  : 'Study session'}
             </div>
           </div>
 
@@ -385,12 +394,12 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
                 Pause
               </Button>
             )}
-            
+
             <Button variant="outline" onClick={stopTimer}>
               <Square className="mr-2 h-4 w-4" />
               Stop
             </Button>
-            
+
             <Button variant="outline" onClick={resetTimer}>
               <RotateCcw className="h-4 w-4" />
             </Button>
@@ -402,10 +411,7 @@ export function StudyTimer({ onSessionComplete }: StudyTimerProps) {
               <div className="text-xs text-muted-foreground">Completed Sessions</div>
               <div className="flex justify-center gap-1 mt-1">
                 {Array.from({ length: completedSessions }, (_, i) => (
-                  <div
-                    key={i}
-                    className="w-2 h-2 rounded-full bg-green-500"
-                  />
+                  <div key={i} className="w-2 h-2 rounded-full bg-green-500" />
                 ))}
               </div>
             </div>

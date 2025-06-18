@@ -56,16 +56,19 @@ export function ReviewStep() {
           <span className="font-medium">Current Status:</span> {prof.currentStatus || prof.role}
         </p>
         <p>
-          <span className="font-medium">Aspired Industry:</span> {prof.aspiredIndustry || prof.industry}
+          <span className="font-medium">Aspired Industry:</span>{' '}
+          {prof.aspiredIndustry || prof.industry}
         </p>
-        {(prof.fieldOfStudy || (prof.domainExpertise?.[0])) && (
+        {(prof.fieldOfStudy || prof.domainExpertise?.[0]) && (
           <p>
-            <span className="font-medium">Field of Study:</span> {prof.fieldOfStudy || prof.domainExpertise?.[0]}
+            <span className="font-medium">Field of Study:</span>{' '}
+            {prof.fieldOfStudy || prof.domainExpertise?.[0]}
           </p>
         )}
         {(prof.careerGoalsLearningObjectives || prof.careerAspirations) && (
           <p>
-            <span className="font-medium">Career Goals & Learning Objectives:</span> {prof.careerGoalsLearningObjectives || prof.careerAspirations}
+            <span className="font-medium">Career Goals & Learning Objectives:</span>{' '}
+            {prof.careerGoalsLearningObjectives || prof.careerAspirations}
           </p>
         )}
       </div>
@@ -190,7 +193,9 @@ export function ReviewStep() {
             <Sparkles className="h-8 w-8 text-primary" />
           </div>
           <CardTitle className="text-3xl">Review Your Learning Profile</CardTitle>
-          <CardDescription className="text-lg mt-2">Let's make sure we've captured everything correctly</CardDescription>
+          <CardDescription className="text-lg mt-2">
+            Let's make sure we've captured everything correctly
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {sections.map(({ key, render }) => (
@@ -202,7 +207,9 @@ export function ReviewStep() {
               )}
             >
               <div className="flex items-center justify-between mb-1">
-                <h3 className="font-semibold text-sm">{STEP_LABELS[key as keyof typeof STEP_LABELS]}</h3>
+                <h3 className="font-semibold text-sm">
+                  {STEP_LABELS[key as keyof typeof STEP_LABELS]}
+                </h3>
                 <Button
                   size="sm"
                   variant="ghost"
@@ -226,11 +233,23 @@ export function ReviewStep() {
           </div>
 
           <div className="flex justify-between pt-6 border-t">
-            <Button type="button" variant="outline" size="lg" onClick={previousStep} disabled={isLoading} className="min-w-[120px]">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              onClick={previousStep}
+              disabled={isLoading}
+              className="min-w-[120px]"
+            >
               <ChevronLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
-            <Button onClick={handleComplete} disabled={isLoading} size="lg" className="min-w-[140px]">
+            <Button
+              onClick={handleComplete}
+              disabled={isLoading}
+              size="lg"
+              className="min-w-[140px]"
+            >
               <ButtonLoader loading={isLoading} loadingText="Creating Profile...">
                 Complete Setup
               </ButtonLoader>

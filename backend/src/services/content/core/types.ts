@@ -2,7 +2,18 @@ import { GenerationParams } from '../../../types/ai';
 import { UserPersona } from '../../../types/persona';
 
 export interface DeepExplanationParams extends GenerationParams {
-  chunks: Array<{ id: string; content: string; metadata?: any }>;
+  chunks: Array<{ 
+    id: string; 
+    content: string; 
+    metadata?: {
+      chunkIndex: number;
+      contentType: string;
+      importance: string;
+      sectionTitle?: string;
+      concepts?: string[];
+      keywords?: string[];
+    };
+  }>;
   topic: string;
   subtopic?: string;
   persona: UserPersona;

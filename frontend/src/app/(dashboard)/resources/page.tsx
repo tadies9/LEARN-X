@@ -1,6 +1,15 @@
 'use client';
 
-import { FileText, Download, ExternalLink, Search, Filter, BookOpen, Video, FileCode } from 'lucide-react';
+import {
+  FileText,
+  Download,
+  ExternalLink,
+  Search,
+  Filter,
+  BookOpen,
+  Video,
+  FileCode,
+} from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -124,9 +133,7 @@ export default function ResourcesPage() {
             <CardContent>
               <div className="flex items-center justify-between">
                 <div className="text-sm text-muted-foreground">
-                  {resource.downloads > 0 && (
-                    <span>{resource.downloads} downloads</span>
-                  )}
+                  {resource.downloads > 0 && <span>{resource.downloads} downloads</span>}
                 </div>
                 <div className="flex gap-2">
                   {resource.downloads > 0 ? (
@@ -151,9 +158,7 @@ export default function ResourcesPage() {
       <Card className="mt-8">
         <CardHeader>
           <CardTitle>Contribute Resources</CardTitle>
-          <CardDescription>
-            Share helpful resources with the learning community
-          </CardDescription>
+          <CardDescription>Share helpful resources with the learning community</CardDescription>
         </CardHeader>
         <CardContent>
           <Button>

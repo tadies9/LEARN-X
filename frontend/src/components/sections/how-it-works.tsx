@@ -1,6 +1,6 @@
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { CheckCircle } from "lucide-react";
+import Image from 'next/image';
+import { Button } from '@/components/ui/button';
+import { CheckCircle } from 'lucide-react';
 
 export function HowItWorks() {
   return (
@@ -25,8 +25,8 @@ function HowItWorksContent() {
         Your Students' Personalized Learning Journey
       </h2>
       <p className="text-muted-foreground md:text-lg">
-        Learn-X transforms existing Canvas materials into engaging, personalized
-        learning pathways tailored to each student's style, pace, and goals.
+        Learn-X transforms existing Canvas materials into engaging, personalized learning pathways
+        tailored to each student's style, pace, and goals.
       </p>
       <ul className="space-y-4 mt-6">
         {steps.map((step) => (
@@ -60,8 +60,8 @@ function HowItWorksImage() {
 }
 
 const steps = [
-  "Instant syllabus generation from any Canvas materials",
-  "Smart quizzes that adapt to individual learning pace",
-  "Detailed progress tracking and performance insights",
-  "Ethical AI that supports learning, not shortcuts",
+  'Instant syllabus generation from any Canvas materials',
+  'Smart quizzes that adapt to individual learning pace',
+  'Detailed progress tracking and performance insights',
+  'Ethical AI that supports learning, not shortcuts',
 ];

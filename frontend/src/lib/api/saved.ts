@@ -72,10 +72,13 @@ export class SavedContentApiService {
   /**
    * Update saved content (tags/notes)
    */
-  static async update(id: string, updates: {
-    tags?: string[];
-    notes?: string;
-  }): Promise<{ success: boolean; message: string }> {
+  static async update(
+    id: string,
+    updates: {
+      tags?: string[];
+      notes?: string;
+    }
+  ): Promise<{ success: boolean; message: string }> {
     const response = await API_CLIENT.patch(`/saved/${id}`, updates);
     return response.data;
   }

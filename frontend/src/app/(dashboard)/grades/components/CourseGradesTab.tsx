@@ -30,9 +30,7 @@ export function CourseGradesTab({ courseGrades }: CourseGradesTabProps) {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg">{course.course}</CardTitle>
-              <Badge variant={getGradeBadgeVariant(course.percentage)}>
-                {course.grade}
-              </Badge>
+              <Badge variant={getGradeBadgeVariant(course.percentage)}>{course.grade}</Badge>
             </div>
             <CardDescription>
               {course.completed}/{course.assignments} assignments completed

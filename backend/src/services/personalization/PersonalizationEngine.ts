@@ -2,7 +2,7 @@ import { supabase } from '../../config/supabase';
 import { logger } from '../../utils/logger';
 import { promptTemplates } from '../ai/PromptTemplates';
 import { openAIService } from '../openai/OpenAIService';
-import { UserPersona } from '../../types';
+import { UserPersona, PersonaRow, UserPersonaRow, ContentFeedbackParams } from '../../types';
 
 export interface PersonalizationParams {
   userId: string;
@@ -44,7 +44,7 @@ export class PersonalizationEngine {
     }
   }
 
-  private mapPersonasTableToUserPersona(data: any): UserPersona {
+  private mapPersonasTableToUserPersona(data: PersonaRow): UserPersona {
     // Map from personas table with JSONB fields according to exact structure
     const professional = data.professional_context || {};
     const interests = data.personal_interests || {};
@@ -66,7 +66,7 @@ export class PersonalizationEngine {
       // Personal Interests from JSONB
       primaryInterests: interests.primary || [],
       secondaryInterests: interests.secondary || [],
-      hobbies: interests.hobbies || [], // Not in current structure but keeping for compatibility
+      hobbies: interests.hobbies || [],
       
       // Learning Style from JSONB
       learningStyle: learningStyle.primary || 'visual',
@@ -77,16 +77,14 @@ export class PersonalizationEngine {
       
       // Content Preferences from JSONB
       contentDensity: contentPrefs.density === 'balanced' ? 'comprehensive' : (contentPrefs.density || 'concise'),
-      explanationDepth: contentPrefs.detailTolerance || 'moderate',
-      exampleFrequency: contentPrefs.examplesPerConcept <= 1 ? 'low' : 
-                       contentPrefs.examplesPerConcept <= 3 ? 'medium' : 'high',
+      explanationDepth: this.mapDetailTolerance(contentPrefs.detailTolerance),
+      exampleFrequency: this.mapExampleFrequency(contentPrefs.examplesPerConcept),
       visualPreference: 'moderate', // Not in current structure, using default
       
       // Communication Style from JSONB
       communicationTone: communication.style === 'professional_friendly' ? 'friendly' : 
                         (communication.style || 'friendly'),
-      formalityLevel: communication.technicalComfort >= 0.7 ? 'formal' : 
-                     communication.technicalComfort >= 0.3 ? 'neutral' : 'informal',
+      formalityLevel: this.mapTechnicalComfortToFormality(communication.technicalComfort),
       encouragementLevel: communication.encouragementLevel || 'moderate',
       humorAppreciation: communication.humorAppropriate ? 'moderate' : 'none',
       
@@ -96,7 +94,7 @@ export class PersonalizationEngine {
   }
 
 
-  private mapToUserPersona(data: any): UserPersona {
+  private mapToUserPersona(data: UserPersonaRow): UserPersona {
     return {
       id: data.id,
       userId: data.user_id,
@@ -104,25 +102,25 @@ export class PersonalizationEngine {
       industry: data.industry,
       experienceYears: data.experience_years,
       careerGoals: data.career_goals,
-      technicalLevel: data.technical_level,
+      technicalLevel: this.mapTechnicalLevel(data.technical_level),
       primaryInterests: data.primary_interests || [],
       secondaryInterests: data.secondary_interests || [],
       hobbies: data.hobbies || [],
-      learningStyle: data.learning_style,
+      learningStyle: this.mapLearningStyle(data.learning_style),
       learningGoals: data.learning_goals || [],
       preferredContentTypes: data.preferred_content_types || [],
       dailyLearningTime: data.daily_learning_time,
       preferredSessionLength: data.preferred_session_length,
-      contentDensity: data.content_density,
-      explanationDepth: data.explanation_depth,
-      exampleFrequency: data.example_frequency,
-      visualPreference: data.visual_preference,
-      communicationTone: data.communication_tone,
-      formalityLevel: data.formality_level,
-      encouragementLevel: data.encouragement_level,
-      humorAppreciation: data.humor_appreciation,
-      createdAt: data.created_at,
-      updatedAt: data.updated_at,
+      contentDensity: this.mapContentDensity(data.content_density),
+      explanationDepth: this.mapExplanationDepth(data.explanation_depth),
+      exampleFrequency: this.mapExampleFrequencyFromString(data.example_frequency),
+      visualPreference: this.mapVisualPreference(data.visual_preference),
+      communicationTone: this.mapCommunicationTone(data.communication_tone),
+      formalityLevel: this.mapFormalityLevel(data.formality_level),
+      encouragementLevel: this.mapEncouragementLevel(data.encouragement_level),
+      humorAppreciation: this.mapHumorAppreciation(data.humor_appreciation),
+      createdAt: new Date(data.created_at),
+      updatedAt: new Date(data.updated_at),
     };
   }
 
@@ -261,13 +259,7 @@ export class PersonalizationEngine {
     }
   }
 
-  async saveContentFeedback(params: {
-    userId: string;
-    contentId: string;
-    helpful: boolean;
-    rating?: number;
-    comments?: string;
-  }): Promise<void> {
+  async saveContentFeedback(params: ContentFeedbackParams): Promise<void> {
     try {
       await supabase.from('content_feedback').insert({
         user_id: params.userId,
@@ -319,6 +311,129 @@ export class PersonalizationEngine {
         contentHelpfulness: 0,
         engagementRate: 0,
       };
+    }
+  }
+
+  // Type mapping helper methods
+  private mapDetailTolerance(value?: string): 'surface' | 'moderate' | 'deep' {
+    if (!value) return 'moderate';
+    switch (value) {
+      case 'minimal': return 'surface';
+      case 'moderate': return 'moderate';
+      case 'extensive': return 'deep';
+      default: return 'moderate';
+    }
+  }
+
+  private mapExampleFrequency(count?: number): 'low' | 'medium' | 'high' {
+    if (!count) return 'medium';
+    if (count <= 1) return 'low';
+    if (count <= 3) return 'medium';
+    return 'high';
+  }
+
+  private mapTechnicalComfortToFormality(comfort?: number): 'formal' | 'neutral' | 'informal' {
+    if (!comfort) return 'neutral';
+    if (comfort >= 0.7) return 'formal';
+    if (comfort >= 0.3) return 'neutral';
+    return 'informal';
+  }
+
+  private mapTechnicalLevel(value?: string): 'beginner' | 'intermediate' | 'advanced' | 'expert' {
+    if (!value) return 'intermediate';
+    const level = value.toLowerCase();
+    if (['beginner', 'intermediate', 'advanced', 'expert'].includes(level)) {
+      return level as 'beginner' | 'intermediate' | 'advanced' | 'expert';
+    }
+    return 'intermediate';
+  }
+
+  private mapLearningStyle(value?: string): 'visual' | 'auditory' | 'reading' | 'kinesthetic' | 'mixed' {
+    if (!value) return 'mixed';
+    const style = value.toLowerCase();
+    if (['visual', 'auditory', 'reading', 'kinesthetic', 'mixed'].includes(style)) {
+      return style as 'visual' | 'auditory' | 'reading' | 'kinesthetic' | 'mixed';
+    }
+    return 'mixed';
+  }
+
+  private mapContentDensity(value?: string): 'concise' | 'comprehensive' {
+    if (!value) return 'concise';
+    return value === 'comprehensive' ? 'comprehensive' : 'concise';
+  }
+
+  private mapExplanationDepth(value?: string): 'surface' | 'moderate' | 'deep' {
+    if (!value) return 'moderate';
+    switch (value.toLowerCase()) {
+      case 'surface': return 'surface';
+      case 'moderate': return 'moderate';
+      case 'deep': return 'deep';
+      default: return 'moderate';
+    }
+  }
+
+  private mapExampleFrequencyFromString(value?: string): 'low' | 'medium' | 'high' {
+    if (!value) return 'medium';
+    switch (value.toLowerCase()) {
+      case 'low': return 'low';
+      case 'medium': return 'medium';
+      case 'high': return 'high';
+      default: return 'medium';
+    }
+  }
+
+  private mapCommunicationTone(value?: string): 'casual' | 'academic' | 'formal' | 'friendly' | 'professional' {
+    if (!value) return 'friendly';
+    switch (value.toLowerCase()) {
+      case 'casual': return 'casual';
+      case 'academic': return 'academic';
+      case 'formal': return 'formal';
+      case 'friendly': return 'friendly';
+      case 'professional': return 'professional';
+      default: return 'friendly';
+    }
+  }
+
+  private mapFormalityLevel(value?: string): 'formal' | 'neutral' | 'informal' | 'very_formal' | 'very_informal' {
+    if (!value) return 'neutral';
+    switch (value.toLowerCase()) {
+      case 'formal': return 'formal';
+      case 'neutral': return 'neutral';
+      case 'informal': return 'informal';
+      case 'very_formal': return 'very_formal';
+      case 'very_informal': return 'very_informal';
+      default: return 'neutral';
+    }
+  }
+
+  private mapEncouragementLevel(value?: string): 'minimal' | 'moderate' | 'high' {
+    if (!value) return 'moderate';
+    switch (value.toLowerCase()) {
+      case 'minimal': return 'minimal';
+      case 'moderate': return 'moderate';
+      case 'high': return 'high';
+      default: return 'moderate';
+    }
+  }
+
+  private mapHumorAppreciation(value?: string): 'moderate' | 'high' | 'none' | 'light' {
+    if (!value) return 'none';
+    switch (value.toLowerCase()) {
+      case 'moderate': return 'moderate';
+      case 'high': return 'high';
+      case 'none': return 'none';
+      case 'light': return 'light';
+      default: return 'none';
+    }
+  }
+
+  private mapVisualPreference(value?: string): 'minimal' | 'moderate' | 'heavy' {
+    if (!value) return 'moderate';
+    switch (value.toLowerCase()) {
+      case 'minimal': return 'minimal';
+      case 'moderate': return 'moderate';
+      case 'heavy': return 'heavy';
+      default: return 'moderate';
     }
   }
 }

@@ -30,15 +30,15 @@ export interface ThemeProviderProps {
 export interface ThemeColors {
   // AI-specific gradients
   aiGradient: string;
-  
+
   // Status colors
   statusColors: {
     'not-started': string;
     'in-progress': string;
-    'completed': string;
-    'mastered': string;
+    completed: string;
+    mastered: string;
   };
-  
+
   // Gamification colors
   achievementColors: {
     bronze: string;

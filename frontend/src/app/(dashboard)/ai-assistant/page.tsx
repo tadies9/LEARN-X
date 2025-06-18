@@ -16,16 +16,17 @@ export default function AIAssistantPage() {
     {
       id: 1,
       type: 'assistant',
-      content: "Hi! I'm your AI learning assistant. I can help you with course recommendations, answer questions about your learning materials, and provide personalized study tips. How can I help you today?",
+      content:
+        "Hi! I'm your AI learning assistant. I can help you with course recommendations, answer questions about your learning materials, and provide personalized study tips. How can I help you today?",
       timestamp: new Date(),
     },
   ]);
 
   const suggestions = [
-    "Recommend courses based on my progress",
-    "Explain React hooks in simple terms",
-    "Create a study plan for data science",
-    "Quiz me on JavaScript fundamentals",
+    'Recommend courses based on my progress',
+    'Explain React hooks in simple terms',
+    'Create a study plan for data science',
+    'Quiz me on JavaScript fundamentals',
   ];
 
   const handleSendMessage = () => {
@@ -46,10 +47,11 @@ export default function AIAssistantPage() {
       const aiResponse = {
         id: messages.length + 2,
         type: 'assistant' as const,
-        content: "I understand your question. This is a demo AI assistant interface. In the full implementation, I would provide personalized learning recommendations and answers based on your learning profile and course content.",
+        content:
+          'I understand your question. This is a demo AI assistant interface. In the full implementation, I would provide personalized learning recommendations and answers based on your learning profile and course content.',
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, aiResponse]);
+      setMessages((prev) => [...prev, aiResponse]);
     }, 1000);
   };
 
@@ -60,9 +62,7 @@ export default function AIAssistantPage() {
           <Brain className="h-8 w-8 text-primary" />
           AI Learning Assistant
         </h1>
-        <p className="text-muted-foreground">
-          Get personalized help with your learning journey
-        </p>
+        <p className="text-muted-foreground">Get personalized help with your learning journey</p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-4">
@@ -88,9 +88,7 @@ export default function AIAssistantPage() {
                     >
                       <div
                         className={`max-w-[80%] p-3 rounded-lg ${
-                          msg.type === 'user'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
+                          msg.type === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                         }`}
                       >
                         <p className="text-sm">{msg.content}</p>

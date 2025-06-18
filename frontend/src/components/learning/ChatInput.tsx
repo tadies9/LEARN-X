@@ -34,11 +34,7 @@ export function ChatInput({ input, setInput, isLoading, onSend, inputRef }: Chat
           className="flex-1"
         />
         <Button onClick={onSend} disabled={!input.trim() || isLoading}>
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
+          {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         </Button>
       </div>
       <p className="text-xs text-muted-foreground mt-2">

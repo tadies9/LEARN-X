@@ -22,7 +22,7 @@ export default function OnboardingPage() {
             />
           </div>
         </header>
-        
+
         {/* Main onboarding content */}
         <main className="flex-1 overflow-auto">
           <OnboardingWizard />

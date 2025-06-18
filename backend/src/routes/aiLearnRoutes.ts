@@ -9,6 +9,32 @@ import { AICache } from '../services/cache/AICache';
 import { CostTracker } from '../services/ai/CostTracker';
 import { redisClient } from '../config/redis';
 
+interface AuthenticatedRequest extends Request {
+  user: {
+    id: string;
+  };
+}
+
+interface SSEData {
+  type: string;
+  data?: unknown;
+  message?: string;
+}
+
+interface FileChunk {
+  id: string;
+  content: string;
+  chunk_index: number;
+  content_type?: string;
+  importance?: string;
+}
+
+interface CourseFile {
+  id: string;
+  filename: string;
+  chunks?: FileChunk[];
+}
+
 const router = Router();
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -20,7 +46,7 @@ const costTracker = new CostTracker();
 const streamingExplanationService = new StreamingExplanationService(aiCache, costTracker);
 
 // SSE helper to send events
-const sendSSE = (res: Response, event: string, data: any) => {
+const sendSSE = (res: Response, event: string, data: SSEData) => {
   res.write(`event: ${event}\n`);
   res.write(`data: ${JSON.stringify(data)}\n\n`);
 };
@@ -51,7 +77,7 @@ router.get(
   authenticateSSE,
   async (req: Request, res: Response): Promise<void> => {
     const { fileId } = req.query;
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user.id;
 
     logger.info('[AI Learn] Generate outline request:', { fileId, userId });
 
@@ -104,7 +130,7 @@ router.get(
         return;
       }
 
-      const chunks = file.chunks.map((c: any) => c.content).join('\n\n');
+      const chunks = file.chunks.map((c: FileChunk) => c.content).join('\n\n');
 
       const topicPrompt = `Analyze this document and create a learning outline with 4-6 main topics.
 
@@ -163,7 +189,7 @@ Return a JSON object with a "topics" array containing objects with this structur
 
         // Ensure subtopics have proper IDs
         if (topic.subtopics) {
-          topic.subtopics = topic.subtopics.map((st: any) => ({
+          topic.subtopics = topic.subtopics.map((st: { id?: string; type: string; [key: string]: unknown }) => ({
             ...st,
             id: st.id || `${st.type}-${i + 1}`,
           }));
@@ -194,7 +220,7 @@ router.post(
   authenticateUser,
   async (req: Request, res: Response): Promise<void> => {
     const { fileId, topicId, subtopic, mode } = req.body;
-    const userId = (req as any).user.id;
+    const userId = (req as AuthenticatedRequest).user.id;
 
     logger.info('[AI Learn] Explain stream request:', { fileId, topicId, subtopic, mode, userId });
 
@@ -270,7 +296,7 @@ router.post(
 
       // Convert chunks to the format expected by our orchestrator
       const chunks =
-        file.chunks?.slice(0, 10).map((c: any) => ({
+        file.chunks?.slice(0, 10).map((c: FileChunk) => ({
           id: c.id,
           content: c.content,
           metadata: {
@@ -301,7 +327,7 @@ router.post(
         }
       } else if (mode === 'summary') {
         // Use progressive explanation for summary mode
-        const content = chunks.map((c: any) => c.content).join('\n\n');
+        const content = chunks.map((c: { content: string }) => c.content).join('\n\n');
         const result = await streamingExplanationService.generateProgressiveExplanation(
           topicId || 'Summary',
           content,
@@ -312,7 +338,7 @@ router.post(
         sendSSE(res, 'message', { type: 'content', data: result.content });
       } else if (mode === 'flashcards') {
         // Use progressive explanation for flashcards mode
-        const content = chunks.map((c: any) => c.content).join('\n\n');
+        const content = chunks.map((c: { content: string }) => c.content).join('\n\n');
         const result = await streamingExplanationService.generateProgressiveExplanation(
           topicId || 'Flashcards',
           content,
@@ -329,7 +355,7 @@ router.post(
         sendSSE(res, 'message', { type: 'content', data: flashcardHtml });
       } else if (mode === 'quiz') {
         // Use progressive explanation for quiz mode
-        const content = chunks.map((c: any) => c.content).join('\n\n');
+        const content = chunks.map((c: { content: string }) => c.content).join('\n\n');
         const result = await streamingExplanationService.generateProgressiveExplanation(
           topicId || 'Quiz',
           content,
@@ -374,7 +400,7 @@ router.post(
 // Save user feedback
 router.post('/feedback', authenticateUser, async (req: Request, res: Response) => {
   const { contentId, reaction, note } = req.body;
-  const userId = (req as any).user.id;
+  const userId = (req as AuthenticatedRequest).user.id;
 
   try {
     // Store feedback in a simple table (you can create a proper table later)

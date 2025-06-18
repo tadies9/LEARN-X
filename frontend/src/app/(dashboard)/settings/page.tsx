@@ -24,7 +24,7 @@ export default function SettingsPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isDirty },
+    formState: { errors: _errors, isDirty },
     reset,
     setValue,
     watch,

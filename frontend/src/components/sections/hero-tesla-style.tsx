@@ -44,7 +44,8 @@ export function HeroTeslaStyle() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
           className="text-5xl md:text-7xl font-semibold leading-tight text-[#1d1d1f] mb-6"
         >
-          Turn any PDF into<br className="hidden lg:block" />
+          Turn any PDF into
+          <br className="hidden lg:block" />
           <span className="lg:hidden"> </span>your personal AI tutor
         </motion.h1>
 

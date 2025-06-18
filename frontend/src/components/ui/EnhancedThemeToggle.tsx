@@ -7,14 +7,7 @@
 
 import { Button } from '@/components/ui/button';
 import { useTheme } from '@/components/providers/EnhancedThemeProvider';
-import { 
-  Monitor, 
-  Moon, 
-  Sun, 
-  Clock, 
-  Check,
-  Palette 
-} from 'lucide-react';
+import { Monitor, Moon, Sun, Clock, Check, Palette } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -35,13 +28,7 @@ interface ThemeOption {
 }
 
 export function EnhancedThemeToggle() {
-  const { 
-    preference, 
-    setThemePreference, 
-    resolvedTheme, 
-    systemTheme,
-    mounted 
-  } = useTheme();
+  const { preference, setThemePreference, resolvedTheme, systemTheme, mounted } = useTheme();
 
   const themeOptions: ThemeOption[] = [
     {
@@ -71,7 +58,7 @@ export function EnhancedThemeToggle() {
   ];
 
   const getCurrentIcon = () => {
-    const currentOption = themeOptions.find(option => option.value === preference);
+    const currentOption = themeOptions.find((option) => option.value === preference);
     if (!currentOption) return Palette;
     return currentOption.icon;
   };
@@ -91,74 +78,61 @@ export function EnhancedThemeToggle() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button 
-          variant="ghost" 
+        <Button
+          variant="ghost"
           size="icon"
           className={cn(
-            "relative transition-colors",
-            resolvedTheme === 'dark' 
-              ? "hover:bg-accent/20" 
-              : "hover:bg-accent"
+            'relative transition-colors',
+            resolvedTheme === 'dark' ? 'hover:bg-accent/20' : 'hover:bg-accent'
           )}
         >
           <CurrentIcon className="h-4 w-4" />
-          <span className="sr-only">
-            Toggle theme (current: {getThemeDisplayName(preference)})
-          </span>
-          
+          <span className="sr-only">Toggle theme (current: {getThemeDisplayName(preference)})</span>
+
           {/* Visual indicator for current resolved theme */}
-          <div 
+          <div
             className={cn(
-              "absolute -bottom-1 -right-1 w-2 h-2 rounded-full border border-background",
-              resolvedTheme === 'dark' 
-                ? "bg-blue-400" 
-                : "bg-yellow-400"
+              'absolute -bottom-1 -right-1 w-2 h-2 rounded-full border border-background',
+              resolvedTheme === 'dark' ? 'bg-blue-400' : 'bg-yellow-400'
             )}
           />
         </Button>
       </DropdownMenuTrigger>
-      
+
       <DropdownMenuContent align="end" className="w-56">
         <DropdownMenuLabel className="flex items-center gap-2">
           <Palette className="h-4 w-4" />
           Theme Settings
         </DropdownMenuLabel>
-        
+
         <DropdownMenuSeparator />
-        
+
         {themeOptions.map((option) => {
           const Icon = option.icon;
           const isSelected = preference === option.value;
-          
+
           return (
-            <DropdownMenuItem 
+            <DropdownMenuItem
               key={option.value}
               onClick={() => setThemePreference(option.value)}
-              className={cn(
-                "flex items-start gap-3 p-3 cursor-pointer",
-                isSelected && "bg-accent"
-              )}
+              className={cn('flex items-start gap-3 p-3 cursor-pointer', isSelected && 'bg-accent')}
             >
               <div className="flex items-center gap-2 flex-1">
                 <Icon className="h-4 w-4 shrink-0" />
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{option.label}</span>
-                    {isSelected && (
-                      <Check className="h-3 w-3 text-primary" />
-                    )}
+                    {isSelected && <Check className="h-3 w-3 text-primary" />}
                   </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {option.description}
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">{option.description}</p>
                 </div>
               </div>
             </DropdownMenuItem>
           );
         })}
-        
+
         <DropdownMenuSeparator />
-        
+
         <div className="p-3">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground">Currently using:</span>
@@ -188,20 +162,14 @@ export function SimpleThemeToggle() {
   }
 
   return (
-    <Button 
-      variant="ghost" 
-      size="icon" 
+    <Button
+      variant="ghost"
+      size="icon"
       onClick={toggleTheme}
       className="transition-transform hover:scale-105"
     >
-      {resolvedTheme === 'dark' ? (
-        <Sun className="h-4 w-4" />
-      ) : (
-        <Moon className="h-4 w-4" />
-      )}
-      <span className="sr-only">
-        Switch to {resolvedTheme === 'dark' ? 'light' : 'dark'} theme
-      </span>
+      {resolvedTheme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+      <span className="sr-only">Switch to {resolvedTheme === 'dark' ? 'light' : 'dark'} theme</span>
     </Button>
   );
 }

@@ -1,13 +1,30 @@
 import { logger } from '../../utils/logger';
 import { AIResponse } from '../../types/ai';
 
+interface ErrorWithResponse {
+  response?: {
+    status: number;
+    data?: {
+      error?: {
+        message?: string;
+      };
+    };
+    headers?: {
+      'retry-after'?: string;
+    };
+  };
+  message?: string;
+  code?: string;
+}
+
 export class AIErrorHandler {
-  handle(error: any): AIResponse {
+  handle(error: ErrorWithResponse | Error | unknown): AIResponse {
     logger.error('AI Service Error:', error);
 
     // OpenAI specific errors
-    if (error?.response?.status) {
-      switch (error.response.status) {
+    if ((error as ErrorWithResponse)?.response?.status) {
+      const errorWithResponse = error as ErrorWithResponse;
+      switch (errorWithResponse.response!.status) {
         case 401:
           return {
             success: false,
@@ -29,7 +46,7 @@ export class AIErrorHandler {
           };
 
         case 400:
-          if (error.response.data?.error?.message?.includes('context_length_exceeded')) {
+          if (errorWithResponse.response!.data?.error?.message?.includes('context_length_exceeded')) {
             return {
               success: false,
               error: 'Content too long for processing. Please try with shorter content.',
@@ -49,7 +66,7 @@ export class AIErrorHandler {
     }
 
     // Rate limit errors
-    if (error.message?.includes('rate limit')) {
+    if ((error as Error)?.message?.includes('rate limit')) {
       return {
         success: false,
         error: 'Rate limit reached. Please wait a moment before trying again.',
@@ -57,7 +74,7 @@ export class AIErrorHandler {
     }
 
     // Budget errors
-    if (error.message?.includes('budget') || error.message?.includes('limit exceeded')) {
+    if ((error as Error)?.message?.includes('budget') || (error as Error)?.message?.includes('limit exceeded')) {
       return {
         success: false,
         error: 'Daily usage limit reached. Please try again tomorrow.',
@@ -65,7 +82,7 @@ export class AIErrorHandler {
     }
 
     // Network errors
-    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+    if ((error as ErrorWithResponse)?.code === 'ECONNREFUSED' || (error as ErrorWithResponse)?.code === 'ETIMEDOUT') {
       return {
         success: false,
         error: 'Unable to connect to AI service. Please check your connection.',
@@ -84,25 +101,25 @@ export class AIErrorHandler {
     maxRetries: number = 3,
     delay: number = 1000
   ): Promise<T> {
-    let lastError: any;
+    let lastError: unknown;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         return await operation();
-      } catch (error: any) {
+      } catch (error: unknown) {
         lastError = error;
 
         // Don't retry on certain errors
         if (
-          error?.response?.status === 401 || // Auth errors
-          error?.response?.status === 400 || // Bad requests
-          error?.message?.includes('budget') // Budget errors
+          (error as ErrorWithResponse)?.response?.status === 401 || // Auth errors
+          (error as ErrorWithResponse)?.response?.status === 400 || // Bad requests
+          (error as Error)?.message?.includes('budget') // Budget errors
         ) {
           throw error;
         }
 
         // Log retry attempt
-        logger.warn(`AI operation failed (attempt ${attempt}/${maxRetries}):`, error.message);
+        logger.warn(`AI operation failed (attempt ${attempt}/${maxRetries}):`, (error as Error)?.message || 'Unknown error');
 
         // Wait before retrying (exponential backoff)
         if (attempt < maxRetries) {
@@ -114,34 +131,34 @@ export class AIErrorHandler {
     throw lastError;
   }
 
-  isRetryableError(error: any): boolean {
+  isRetryableError(error: ErrorWithResponse | Error | unknown): boolean {
     // OpenAI errors that are retryable
-    if (error?.response?.status) {
-      return [429, 500, 502, 503, 504].includes(error.response.status);
+    if ((error as ErrorWithResponse)?.response?.status) {
+      return [429, 500, 502, 503, 504].includes((error as ErrorWithResponse).response!.status);
     }
 
     // Network errors are retryable
-    if (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT') {
+    if ((error as ErrorWithResponse)?.code === 'ECONNREFUSED' || (error as ErrorWithResponse)?.code === 'ETIMEDOUT') {
       return true;
     }
 
     // Rate limit errors are retryable after delay
-    if (error.message?.includes('rate limit')) {
+    if ((error as Error)?.message?.includes('rate limit')) {
       return true;
     }
 
     return false;
   }
 
-  getRetryDelay(error: any, attempt: number): number {
+  getRetryDelay(error: ErrorWithResponse | Error | unknown, attempt: number): number {
     // Check for Retry-After header
-    const retryAfter = error?.response?.headers?.['retry-after'];
+    const retryAfter = (error as ErrorWithResponse)?.response?.headers?.['retry-after'];
     if (retryAfter) {
       return parseInt(retryAfter) * 1000;
     }
 
     // Rate limit errors - wait longer
-    if (error?.response?.status === 429) {
+    if ((error as ErrorWithResponse)?.response?.status === 429) {
       return Math.min(60000, 1000 * Math.pow(2, attempt)); // Max 60s
     }
 

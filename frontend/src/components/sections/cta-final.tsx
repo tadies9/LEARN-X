@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 
 export function CTAFinal() {
   return (
@@ -12,10 +12,7 @@ export function CTAFinal() {
             Join educators already teaching with personalized AI learning.
           </p>
           <div className="mt-6">
-            <Button
-              size="lg"
-              className="bg-blue-600 hover:bg-blue-700 text-base"
-            >
+            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-base">
               Book a 15-min Demo
             </Button>
           </div>

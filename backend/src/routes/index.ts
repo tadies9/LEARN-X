@@ -23,33 +23,36 @@ router.get('/learn-test', (_req, res) => {
   res.json({ success: true, message: 'Learn test route working!' });
 });
 
-// Test endpoint for module files (bypasses all middleware)
-router.get('/test-module-files/:moduleId', async (req, res) => {
-  try {
-    // Direct test endpoint - getting files for module
-    const { FileService } = await import('../services/fileService');
-    const fileService = new FileService();
+// Development-only test endpoint - SECURITY: Must never be accessible in production
+// This endpoint bypasses authentication and uses hardcoded user ID for testing
+if (process.env.NODE_ENV === 'development') {
+  router.get('/test-module-files/:moduleId', async (req, res) => {
+    try {
+      // Direct test endpoint - getting files for module - development testing only
+      const { FileService } = await import('../services/fileService');
+      const fileService = new FileService();
 
-    // Use a hardcoded user ID for testing
-    const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a';
-    const files = await fileService.getModuleFiles(req.params.moduleId, userId);
+      // Use a hardcoded user ID for testing - development only
+      const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a';
+      const files = await fileService.getModuleFiles(req.params.moduleId, userId);
 
-    res.json({
-      success: true,
-      data: files,
-      debug: {
-        moduleId: req.params.moduleId,
-        userId,
-        fileCount: files.length,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      error: error instanceof Error ? error.message : 'Unknown error',
-      debug: { moduleId: req.params.moduleId },
-    });
-  }
-});
+      res.json({
+        success: true,
+        data: files,
+        debug: {
+          moduleId: req.params.moduleId,
+          userId,
+          fileCount: files.length,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({
+        error: error instanceof Error ? error.message : 'Unknown error',
+        debug: { moduleId: req.params.moduleId },
+      });
+    }
+  });
+}
 
 // Mount route modules
 router.use('/auth', authRoutes);

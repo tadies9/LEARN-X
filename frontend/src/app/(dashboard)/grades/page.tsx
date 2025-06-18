@@ -43,9 +43,9 @@ export default function GradesPage() {
         </TabsContent>
 
         <TabsContent value="performance" className="mt-6">
-          <PerformanceTab 
-            performanceData={performanceData} 
-            improvement={overallGrades.improvement} 
+          <PerformanceTab
+            performanceData={performanceData}
+            improvement={overallGrades.improvement}
           />
         </TabsContent>
       </Tabs>

@@ -12,14 +12,7 @@ import { FileUploadDialog } from './components/FileUploadDialog';
 
 export default function ModuleDetailPage({ params }: { params: { id: string; moduleId: string } }) {
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
-  const {
-    course,
-    module,
-    files,
-    loading,
-    loadData,
-    handleFileReorder,
-  } = useModuleDetail({
+  const { course, module, files, loading, loadData, handleFileReorder } = useModuleDetail({
     courseId: params.id,
     moduleId: params.moduleId,
   });

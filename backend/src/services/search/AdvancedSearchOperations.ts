@@ -3,6 +3,43 @@ import { logger } from '../../utils/logger';
 import { VectorEmbeddingService } from '../embeddings/VectorEmbeddingService';
 import { SearchOptions, SearchResult } from './types';
 
+interface UserInteraction {
+  file_id: string;
+  interaction_type: 'view' | 'download' | 'bookmark' | 'share';
+  interaction_count: number;
+}
+
+interface FileMetadata {
+  id: string;
+  created_at: string;
+  view_count: number;
+  download_count: number;
+}
+
+interface VectorSearchResult {
+  chunk_id: string;
+  file_id: string;
+  file_name?: string;
+  content: string;
+  similarity: number;
+  chunk_index?: number;
+  chunk_type?: string;
+  importance?: string;
+  section_title?: string;
+  concepts?: string[];
+  keywords?: string[];
+}
+
+interface ScoredResult extends VectorSearchResult {
+  customScore: number;
+  scoreComponents: {
+    vector: number;
+    recency: number;
+    popularity: number;
+    personal: number;
+  };
+}
+
 export class AdvancedSearchOperations {
   private embeddingService: VectorEmbeddingService;
 
@@ -91,7 +128,7 @@ export class AdvancedSearchOperations {
       .eq('user_id', userId);
 
     // Get file metadata for recency and popularity
-    const fileIds = vectorResults?.map((r: any) => r.file_id) || [];
+    const fileIds = vectorResults?.map((r: VectorSearchResult) => r.file_id) || [];
     const { data: fileMetadata } = await supabase
       .from('files')
       .select('id, created_at, view_count, download_count')
@@ -128,7 +165,7 @@ export class AdvancedSearchOperations {
         similarity_threshold: 0.8,
       });
 
-      return data?.map((d: any) => d.query) || [];
+      return data?.map((d: { query: string }) => d.query) || [];
     } catch (error) {
       logger.error('[AdvancedSearch] Error getting semantic suggestions:', error);
       return [];
@@ -136,15 +173,15 @@ export class AdvancedSearchOperations {
   }
 
   private applyCustomScoring(
-    vectorResults: any[],
-    userInteractions: any[],
-    fileMetadata: any[],
+    vectorResults: VectorSearchResult[],
+    userInteractions: UserInteraction[],
+    fileMetadata: FileMetadata[],
     scoringWeights: {
       recencyWeight?: number;
       popularityWeight?: number;
       personalRelevanceWeight?: number;
     }
-  ): any[] {
+  ): ScoredResult[] {
     const weights = {
       recency: scoringWeights.recencyWeight || 0.2,
       popularity: scoringWeights.popularityWeight || 0.2,
@@ -209,7 +246,7 @@ export class AdvancedSearchOperations {
     return Math.min(Math.log10(totalInteractions + 1) / 3, 1);
   }
 
-  private calculatePersonalRelevanceScore(interaction: any): number {
+  private calculatePersonalRelevanceScore(interaction: UserInteraction): number {
     const interactionWeight = {
       view: 0.3,
       download: 0.5,
@@ -224,7 +261,7 @@ export class AdvancedSearchOperations {
     return weight * frequency;
   }
 
-  private transformToSearchResults(scoredResults: any[]): SearchResult[] {
+  private transformToSearchResults(scoredResults: ScoredResult[]): SearchResult[] {
     return scoredResults.map((item) => ({
       id: item.chunk_id,
       fileId: item.file_id,

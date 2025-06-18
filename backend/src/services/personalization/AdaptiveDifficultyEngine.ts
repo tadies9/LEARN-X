@@ -1,4 +1,4 @@
-import { UserPersona } from '../../types';
+import { UserPersona, UserInteractionRow, ContentFeedbackRow, InteractionMetadata } from '../../types';
 import { supabase } from '../../config/supabase';
 import { logger } from '../../utils/logger';
 
@@ -123,7 +123,7 @@ export class AdaptiveDifficultyEngine {
     userId: string,
     sessionId: string,
     action: 'start' | 'engage' | 'struggle' | 'skip' | 'complete',
-    metadata?: any
+    metadata?: InteractionMetadata
   ): Promise<DifficultyAdjustment | null> {
     try {
       // Log the interaction
@@ -380,7 +380,7 @@ export class AdaptiveDifficultyEngine {
     return 'medium';
   }
 
-  private inferDifficultyRating(interactions: any[], feedback: any[]): number {
+  private inferDifficultyRating(interactions: UserInteractionRow[], feedback: ContentFeedbackRow[]): number {
     // Infer perceived difficulty from behavior patterns
     const skipRate =
       interactions.filter((i) => i.action_type === 'skip').length / interactions.length;
@@ -439,7 +439,7 @@ export class AdaptiveDifficultyEngine {
     return baseOptimal;
   }
 
-  private async getRecentSessionInteractions(sessionId: string): Promise<any[]> {
+  private async getRecentSessionInteractions(sessionId: string): Promise<UserInteractionRow[]> {
     const { data } = await supabase
       .from('user_interactions')
       .select('*')

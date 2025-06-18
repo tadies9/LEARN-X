@@ -51,9 +51,7 @@ export function GradesHeader({ overallGrades }: GradesHeaderProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">{overallGrades.averageScore}%</div>
-          <p className="text-xs text-muted-foreground">
-            Across all courses
-          </p>
+          <p className="text-xs text-muted-foreground">Across all courses</p>
         </CardContent>
       </Card>
 
@@ -64,9 +62,7 @@ export function GradesHeader({ overallGrades }: GradesHeaderProps) {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold">+{overallGrades.improvement}%</div>
-          <p className="text-xs text-muted-foreground">
-            Over past 4 months
-          </p>
+          <p className="text-xs text-muted-foreground">Over past 4 months</p>
         </CardContent>
       </Card>
     </div>

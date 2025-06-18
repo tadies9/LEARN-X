@@ -56,7 +56,10 @@ export function useDashboardStats({ stats }: UseDashboardStatsProps) {
       {
         title: 'Study Time',
         value: formatStudyTime(stats?.weeklyStudyTime ?? 0),
-        change: weeklyStudyChange > 0 ? { value: weeklyStudyChange, type: 'increase' as const } : undefined,
+        change:
+          weeklyStudyChange > 0
+            ? { value: weeklyStudyChange, type: 'increase' as const }
+            : undefined,
         icon: Clock,
         iconColor: 'text-info',
         description: 'This week',

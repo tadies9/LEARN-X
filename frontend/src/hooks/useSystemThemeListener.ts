@@ -11,7 +11,7 @@ export function useSystemThemeListener({ setSystemTheme }: UseSystemThemeListene
     if (typeof window === 'undefined') return;
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
+
     const handleChange = (e: MediaQueryListEvent) => {
       setSystemTheme(e.matches ? 'dark' : 'light');
     };

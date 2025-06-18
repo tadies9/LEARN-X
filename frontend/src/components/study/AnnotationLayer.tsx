@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -19,14 +19,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useAnnotations } from '@/hooks/useAnnotations';
-import {
-  Highlighter,
-  MessageSquare,
-  Edit,
-  Trash2,
-  Plus,
-  Palette,
-} from 'lucide-react';
+import { Highlighter, MessageSquare, Edit, Trash2, Plus, Palette } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Annotation {
@@ -103,7 +96,7 @@ export function AnnotationLayer({
 
     const range = selection.getRangeAt(0);
     const text = selection.toString().trim();
-    
+
     if (text.length === 0) return;
 
     const rect = range.getBoundingClientRect();
@@ -157,7 +150,7 @@ export function AnnotationLayer({
     try {
       const newAnnotation = await createAnnotation(annotation);
       if (newAnnotation) {
-        setAnnotations(prev => [...prev, newAnnotation]);
+        setAnnotations((prev) => [...prev, newAnnotation]);
         onAnnotationCreate?.(annotation);
       }
     } catch (error) {
@@ -173,8 +166,8 @@ export function AnnotationLayer({
   const updateNote = async (annotationId: string, note: string) => {
     try {
       await updateAnnotation(annotationId, { note });
-      setAnnotations(prev =>
-        prev.map(ann => (ann.id === annotationId ? { ...ann, note } : ann))
+      setAnnotations((prev) =>
+        prev.map((ann) => (ann.id === annotationId ? { ...ann, note } : ann))
       );
       setNoteDialog({ open: false, note: '' });
     } catch (error) {
@@ -186,7 +179,7 @@ export function AnnotationLayer({
   const handleDeleteAnnotation = async (annotationId: string) => {
     try {
       await deleteAnnotation(annotationId);
-      setAnnotations(prev => prev.filter(ann => ann.id !== annotationId));
+      setAnnotations((prev) => prev.filter((ann) => ann.id !== annotationId));
     } catch (error) {
       console.error('Failed to delete annotation:', error);
     }
@@ -272,14 +265,12 @@ export function AnnotationLayer({
                   <DialogTitle>Add Note</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <div className="rounded bg-muted p-3 text-sm">
-                    "{selection.text}"
-                  </div>
+                  <div className="rounded bg-muted p-3 text-sm">"{selection.text}"</div>
                   <Input
                     placeholder="Add your note..."
                     value={noteDialog.note}
-                    onChange={(e) =>
-                      setNoteDialog(prev => ({ ...prev, note: e.target.value }))
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                      setNoteDialog((prev) => ({ ...prev, note: e.target.value }))
                     }
                   />
                   <div className="flex gap-2">
@@ -340,22 +331,15 @@ export function AnnotationLayer({
             <h3 className="font-semibold mb-3">Annotations</h3>
             <div className="space-y-2">
               {annotations.map((annotation) => (
-                <div
-                  key={annotation.id}
-                  className="flex items-start gap-2 p-2 rounded border"
-                >
+                <div key={annotation.id} className="flex items-start gap-2 p-2 rounded border">
                   <div
                     className="h-4 w-4 rounded border flex-shrink-0 mt-0.5"
                     style={{ backgroundColor: annotation.color }}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">
-                      "{annotation.text}"
-                    </p>
+                    <p className="text-sm font-medium truncate">"{annotation.text}"</p>
                     {annotation.note && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {annotation.note}
-                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">{annotation.note}</p>
                     )}
                   </div>
                   <div className="flex gap-1">
@@ -400,29 +384,23 @@ export function AnnotationLayer({
           </DialogHeader>
           {noteDialog.annotation && (
             <div className="space-y-4">
-              <div className="rounded bg-muted p-3 text-sm">
-                "{noteDialog.annotation.text}"
-              </div>
+              <div className="rounded bg-muted p-3 text-sm">"{noteDialog.annotation.text}"</div>
               <Input
                 placeholder="Edit your note..."
                 value={noteDialog.note}
-                onChange={(e) =>
-                  setNoteDialog(prev => ({ ...prev, note: e.target.value }))
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  setNoteDialog((prev) => ({ ...prev, note: e.target.value }))
                 }
               />
               <div className="flex gap-2">
                 <Button
                   onClick={() =>
-                    noteDialog.annotation &&
-                    updateNote(noteDialog.annotation.id, noteDialog.note)
+                    noteDialog.annotation && updateNote(noteDialog.annotation.id, noteDialog.note)
                   }
                 >
                   Save
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setNoteDialog({ open: false, note: '' })}
-                >
+                <Button variant="outline" onClick={() => setNoteDialog({ open: false, note: '' })}>
                   Cancel
                 </Button>
               </div>

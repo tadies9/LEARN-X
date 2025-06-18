@@ -14,25 +14,13 @@ interface AIChatProps {
 }
 
 export function AIChat({ contextId, initialMessages = [], onSendMessage }: AIChatProps) {
-  const {
-    messages,
-    input,
-    setInput,
-    isLoading,
-    scrollAreaRef,
-    inputRef,
-    handleSend,
-    clearChat,
-  } = useAIChat({ initialMessages, onSendMessage });
+  const { messages, input, setInput, isLoading, scrollAreaRef, inputRef, handleSend, clearChat } =
+    useAIChat({ initialMessages, onSendMessage });
 
   return (
     <Card className="flex flex-col h-full">
       <ChatHeader onClearChat={clearChat} />
-      <ChatMessages
-        messages={messages}
-        isLoading={isLoading}
-        scrollAreaRef={scrollAreaRef}
-      />
+      <ChatMessages messages={messages} isLoading={isLoading} scrollAreaRef={scrollAreaRef} />
       <ChatInput
         input={input}
         setInput={setInput}

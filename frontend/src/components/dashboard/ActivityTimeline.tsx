@@ -1,15 +1,15 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { 
-  BookOpen, 
-  Trophy, 
-  Upload, 
-  Clock, 
-  CheckCircle, 
-  HelpCircle, 
+import {
+  BookOpen,
+  Trophy,
+  Upload,
+  Clock,
+  CheckCircle,
+  HelpCircle,
   Layers,
-  Activity as ActivityIcon 
+  Activity as ActivityIcon,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -55,7 +55,7 @@ const getActivityDetails = (activity: UserActivity) => {
   };
 
   const title = typeLabels[activity.type as keyof typeof typeLabels] || activity.type;
-  
+
   // Build description from metadata
   let description = '';
   if (activity.metadata) {
@@ -81,7 +81,9 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
         <div className="text-center py-8">
           <ActivityIcon className="h-12 w-12 mx-auto text-muted-foreground/20 mb-3" />
           <p className="text-sm text-muted-foreground">No recent activity yet</p>
-          <p className="text-xs text-muted-foreground mt-1">Start learning to see your progress here!</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Start learning to see your progress here!
+          </p>
         </div>
       </Card>
     );
@@ -95,7 +97,7 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
           const Icon = iconMap[activity.type as keyof typeof iconMap] || iconMap.default;
           const colorClass = colorMap[activity.type as keyof typeof colorMap] || colorMap.default;
           const { title, description } = getActivityDetails(activity);
-          
+
           return (
             <motion.div
               key={activity.id}
@@ -116,9 +118,7 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-medium text-sm">{title}</p>
-                    {description && (
-                      <p className="text-xs text-muted-foreground">{description}</p>
-                    )}
+                    {description && <p className="text-xs text-muted-foreground">{description}</p>}
                   </div>
                 </div>
                 <p className="text-xs text-muted-foreground">

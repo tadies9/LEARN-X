@@ -177,7 +177,10 @@ export function CourseCard({ course, onUpdate }: CourseCardProps) {
       <CardFooter>
         <div className="flex items-center justify-between w-full">
           <p className="text-sm text-muted-foreground">
-            Updated {course.updatedAt ? formatDistanceToNow(new Date(course.updatedAt), { addSuffix: true }) : 'recently'}
+            Updated{' '}
+            {course.updatedAt
+              ? formatDistanceToNow(new Date(course.updatedAt), { addSuffix: true })
+              : 'recently'}
           </p>
           {course.isArchived && <Badge variant="secondary">Archived</Badge>}
         </div>

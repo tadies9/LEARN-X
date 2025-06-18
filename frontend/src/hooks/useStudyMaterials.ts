@@ -54,22 +54,18 @@ export function useStudyMaterials(): UseStudyMaterialsReturn {
       const allMaterials: StudyMaterial[] = [];
 
       // Handle both paginated and array responses
-      const courses = Array.isArray(coursesResponse) 
-        ? coursesResponse 
-        : coursesResponse.data;
+      const courses = Array.isArray(coursesResponse) ? coursesResponse : coursesResponse.data;
 
       // For each course, get modules and files
       for (const course of courses) {
         try {
           const modulesResponse = await moduleApi.getModules(course.id);
-          const modules = Array.isArray(modulesResponse) 
-            ? modulesResponse 
-            : modulesResponse.data;
-          
+          const modules = Array.isArray(modulesResponse) ? modulesResponse : modulesResponse.data;
+
           for (const module of modules) {
             try {
               const files = await moduleApi.getModuleFiles(module.id);
-              
+
               // Transform files into study materials
               const moduleMaterials = files.map((file: CourseFile) => ({
                 id: file.id,
@@ -82,7 +78,7 @@ export function useStudyMaterials(): UseStudyMaterialsReturn {
                 progress: 0, // TODO: Add progress tracking
                 lastStudied: null, // TODO: Add study session tracking
                 aiFeatures: getAiFeatures(file.mimeType),
-                status: file.status === 'completed' ? 'ready' as const : 'in-progress' as const,
+                status: file.status === 'completed' ? ('ready' as const) : ('in-progress' as const),
                 courseTitle: course.title,
                 moduleTitle: module.title,
               }));
@@ -139,7 +135,7 @@ function estimateReadingTime(fileSize: number): string {
 
 function getAiFeatures(mimeType: string): string[] {
   const baseFeatures = ['AI Summarization', 'Key Points Extraction'];
-  
+
   if (mimeType.includes('pdf')) {
     return [...baseFeatures, 'Visual Diagrams', 'Interactive Reading'];
   }
@@ -149,6 +145,6 @@ function getAiFeatures(mimeType: string): string[] {
   if (mimeType.includes('document')) {
     return [...baseFeatures, 'Document Structure', 'Citations'];
   }
-  
+
   return baseFeatures;
 }

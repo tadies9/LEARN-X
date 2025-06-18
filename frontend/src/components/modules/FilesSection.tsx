@@ -37,7 +37,11 @@ export function FilesSection({ files, onUpdate, onUpload, onReorder }: FilesSect
             </CardDescription>
           </div>
           {files.length > 0 && (
-            <ToggleGroup type="single" value={viewMode} onValueChange={(value) => value && setViewMode(value as 'list' | 'grid')}>
+            <ToggleGroup
+              type="single"
+              value={viewMode}
+              onValueChange={(value) => value && setViewMode(value as 'list' | 'grid')}
+            >
               <ToggleGroupItem value="list" aria-label="List view">
                 <List className="h-4 w-4" />
               </ToggleGroupItem>

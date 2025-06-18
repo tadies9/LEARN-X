@@ -1,6 +1,6 @@
 'use client';
 
-import { Button } from "@/components/ui/button";
+import { Button } from '@/components/ui/button';
 
 export function GetStartedBanner() {
   return (
@@ -13,11 +13,7 @@ export function GetStartedBanner() {
           <p className="max-w-[600px] text-muted-foreground md:text-lg">
             Join students who are already learning smarter, not harder.
           </p>
-          <Button 
-            size="lg" 
-            className="mt-4"
-            onClick={() => window.location.href = '/register'}
-          >
+          <Button size="lg" className="mt-4" onClick={() => (window.location.href = '/register')}>
             Get Started Free
           </Button>
           <p className="text-sm text-muted-foreground">

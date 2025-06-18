@@ -101,21 +101,23 @@ export default async function StudyPage({ params }: StudyPageProps) {
     .select('*')
     .eq('user_id', user.id)
     .single();
-    
+
   // Transform to UserPersona format if exists
-  const persona = personaData ? {
-    id: personaData.id,
-    userId: personaData.user_id,
-    primaryInterests: personaData.personal_interests?.primary || [],
-    secondaryInterests: personaData.personal_interests?.secondary || [],
-    currentRole: personaData.professional_context?.role,
-    industry: personaData.professional_context?.industry,
-    technicalLevel: personaData.professional_context?.technicalLevel,
-    learningStyle: personaData.learning_style?.primary,
-    communicationTone: personaData.communication_tone?.style,
-    createdAt: new Date(personaData.created_at),
-    updatedAt: new Date(personaData.updated_at),
-  } : null;
+  const persona = personaData
+    ? {
+        id: personaData.id,
+        userId: personaData.user_id,
+        primaryInterests: personaData.personal_interests?.primary || [],
+        secondaryInterests: personaData.personal_interests?.secondary || [],
+        currentRole: personaData.professional_context?.role,
+        industry: personaData.professional_context?.industry,
+        technicalLevel: personaData.professional_context?.technicalLevel,
+        learningStyle: personaData.learning_style?.primary,
+        communicationTone: personaData.communication_tone?.style,
+        createdAt: new Date(personaData.created_at),
+        updatedAt: new Date(personaData.updated_at),
+      }
+    : null;
 
   // Generate signed URL for the file using backend API
   let fileUrl = '';

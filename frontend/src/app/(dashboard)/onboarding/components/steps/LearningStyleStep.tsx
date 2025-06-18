@@ -73,7 +73,8 @@ export function LearningStyleStep() {
         </div>
         <CardTitle className="text-3xl">Learning Style Assessment</CardTitle>
         <CardDescription className="text-lg mt-2">
-          Understanding how you learn best helps us present information in the most effective way for you
+          Understanding how you learn best helps us present information in the most effective way
+          for you
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
@@ -81,7 +82,9 @@ export function LearningStyleStep() {
         <div className="space-y-4">
           <div className="text-center">
             <h3 className="font-semibold text-lg mb-1">Select Your Primary Learning Style</h3>
-            <p className="text-sm text-muted-foreground">Choose the way you learn most effectively</p>
+            <p className="text-sm text-muted-foreground">
+              Choose the way you learn most effectively
+            </p>
           </div>
           <RadioGroup value={primary} onValueChange={setPrimary}>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -94,20 +97,26 @@ export function LearningStyleStep() {
                     className={cn(
                       'relative rounded-lg border-2 p-4 cursor-pointer transition-all duration-200',
                       'hover:shadow-md hover:border-primary/50',
-                      isSelected ? 'border-primary shadow-md' : 'border-gray-200 dark:border-gray-800',
+                      isSelected
+                        ? 'border-primary shadow-md'
+                        : 'border-gray-200 dark:border-gray-800',
                       'bg-white dark:bg-gray-900'
                     )}
                     onClick={() => setPrimary(style.id)}
                   >
                     <div className="flex flex-col items-center text-center space-y-3">
-                      <div className={cn(
-                        "w-12 h-12 rounded-full flex items-center justify-center transition-colors",
-                        isSelected ? "bg-primary/20" : "bg-gray-100 dark:bg-gray-800"
-                      )}>
-                        <Icon className={cn(
-                          "h-6 w-6 transition-colors",
-                          isSelected ? "text-primary" : "text-gray-600 dark:text-gray-400"
-                        )} />
+                      <div
+                        className={cn(
+                          'w-12 h-12 rounded-full flex items-center justify-center transition-colors',
+                          isSelected ? 'bg-primary/20' : 'bg-gray-100 dark:bg-gray-800'
+                        )}
+                      >
+                        <Icon
+                          className={cn(
+                            'h-6 w-6 transition-colors',
+                            isSelected ? 'text-primary' : 'text-gray-600 dark:text-gray-400'
+                          )}
+                        />
                       </div>
                       <div className="space-y-1">
                         <Label htmlFor={style.id} className="font-semibold text-sm cursor-pointer">
@@ -122,10 +131,10 @@ export function LearningStyleStep() {
                           <span className="font-medium">e.g.</span> {style.examples}
                         </p>
                       </div>
-                      <RadioGroupItem 
-                        value={style.id} 
-                        id={style.id} 
-                        className="absolute top-3 right-3 scale-90" 
+                      <RadioGroupItem
+                        value={style.id}
+                        id={style.id}
+                        className="absolute top-3 right-3 scale-90"
                       />
                     </div>
                   </div>
@@ -184,7 +193,13 @@ export function LearningStyleStep() {
         </div>
 
         <div className="flex justify-between pt-6 border-t">
-          <Button type="button" variant="outline" size="lg" onClick={previousStep} className="min-w-[120px]">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={previousStep}
+            className="min-w-[120px]"
+          >
             <ChevronLeft className="mr-2 h-4 w-4" />
             Back
           </Button>

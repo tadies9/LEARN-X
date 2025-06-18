@@ -49,7 +49,7 @@ export abstract class BaseApiService {
 
     const queryString = params.toString();
     const fullUrl = queryString ? `${url}?${queryString}` : url;
-    
+
     const response = await this.client.get<ApiResponse<PaginatedResponse<T> | T[]>>(fullUrl);
     return response.data.data;
   }
@@ -60,10 +60,7 @@ export abstract class BaseApiService {
     return response.data.data;
   }
 
-  protected async create<T, U = Partial<T>>(
-    data: U,
-    endpoint?: string
-  ): Promise<T> {
+  protected async create<T, U = Partial<T>>(data: U, endpoint?: string): Promise<T> {
     const url = endpoint || this.baseEndpoint;
     const response = await this.client.post<ApiResponse<T>>(url, data);
     return response.data.data;
@@ -152,6 +149,6 @@ export abstract class BaseApiService {
     config?: AxiosRequestConfig
   ): Promise<T> {
     const response = await this.client[method]<ApiResponse<T>>(url, data, config);
-    return method === 'delete' ? response.data.success as T : response.data.data;
+    return method === 'delete' ? (response.data.success as T) : response.data.data;
   }
 }

@@ -2,12 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import {
   Brain,
   FileText,
@@ -133,17 +128,12 @@ export function StudyToolbar({
       {/* Tools */}
       <div className="flex items-center gap-1">
         <Separator orientation="vertical" className="mx-2 h-6" />
-        
+
         <TooltipProvider>
           {tools.map((tool) => (
             <Tooltip key={tool.id}>
               <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={tool.onClick}
-                  className="h-8 w-8"
-                >
+                <Button variant="ghost" size="icon" onClick={tool.onClick} className="h-8 w-8">
                   <tool.icon className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
@@ -159,9 +149,7 @@ export function StudyToolbar({
       {selectedText && (
         <div className="ml-4 flex items-center gap-2 text-sm text-muted-foreground">
           <span>Selected:</span>
-          <span className="max-w-[200px] truncate font-medium">
-            "{selectedText}"
-          </span>
+          <span className="max-w-[200px] truncate font-medium">"{selectedText}"</span>
         </div>
       )}
     </div>

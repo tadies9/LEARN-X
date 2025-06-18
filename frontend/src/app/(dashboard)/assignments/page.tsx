@@ -2,9 +2,17 @@
 
 import { useState } from 'react';
 
-import { ClipboardList, Clock, CheckCircle, AlertCircle, Calendar, FileText, Upload } from 'lucide-react';
+import {
+  ClipboardList,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  Calendar,
+  FileText,
+  Upload,
+} from 'lucide-react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -119,16 +127,19 @@ export default function AssignmentsPage() {
     }
   };
 
-  const filteredAssignments = assignments.filter(assignment => {
-    if (selectedTab === 'pending') return assignment.status === 'pending' || assignment.status === 'in-progress';
+  const filteredAssignments = assignments.filter((assignment) => {
+    if (selectedTab === 'pending')
+      return assignment.status === 'pending' || assignment.status === 'in-progress';
     if (selectedTab === 'completed') return assignment.status === 'completed';
     if (selectedTab === 'overdue') return assignment.status === 'overdue';
     return true;
   });
 
-  const pendingCount = assignments.filter(a => a.status === 'pending' || a.status === 'in-progress').length;
-  const overdueCount = assignments.filter(a => a.status === 'overdue').length;
-  const completedCount = assignments.filter(a => a.status === 'completed').length;
+  const pendingCount = assignments.filter(
+    (a) => a.status === 'pending' || a.status === 'in-progress'
+  ).length;
+  const overdueCount = assignments.filter((a) => a.status === 'overdue').length;
+  const completedCount = assignments.filter((a) => a.status === 'completed').length;
 
   return (
     <div className="container mx-auto p-6">
@@ -137,9 +148,7 @@ export default function AssignmentsPage() {
           <ClipboardList className="h-8 w-8 text-primary" />
           My Assignments
         </h1>
-        <p className="text-muted-foreground">
-          Track your assignments, deadlines, and submissions
-        </p>
+        <p className="text-muted-foreground">Track your assignments, deadlines, and submissions</p>
       </div>
 
       {/* Stats Overview */}
@@ -207,7 +216,7 @@ export default function AssignmentsPage() {
                         Course: {assignment.course}
                       </p>
                       <p className="text-sm mb-3">{assignment.description}</p>
-                      
+
                       <div className="flex items-center gap-6 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Calendar className="h-4 w-4" />
@@ -226,7 +235,8 @@ export default function AssignmentsPage() {
                       {assignment.status === 'completed' && assignment.grade && (
                         <div className="mt-3 p-3 bg-green-50 rounded-lg">
                           <p className="text-sm text-green-800">
-                            ✅ Submitted on {assignment.submittedDate} | Grade: {assignment.grade}/{assignment.points}
+                            ✅ Submitted on {assignment.submittedDate} | Grade: {assignment.grade}/
+                            {assignment.points}
                           </p>
                         </div>
                       )}

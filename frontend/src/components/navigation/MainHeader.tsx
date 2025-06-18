@@ -1,10 +1,10 @@
 'use client';
 
-import Link from "next/link";
-import Image from "next/image";
+import Link from 'next/link';
+import Image from 'next/image';
 
-import { Button } from "@/components/ui/button";
-import { ThemeToggle } from "@/components/navigation/ThemeToggle";
+import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/navigation/ThemeToggle';
 
 export function MainHeader() {
   return (
@@ -28,10 +28,7 @@ export function MainHeader() {
           >
             Log In
           </Link>
-          <Button
-            variant="default"
-            onClick={() => window.location.href = '/register'}
-          >
+          <Button variant="default" onClick={() => (window.location.href = '/register')}>
             Get Started
           </Button>
         </div>

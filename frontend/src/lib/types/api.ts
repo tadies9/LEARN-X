@@ -38,9 +38,7 @@ export function isPaginatedResponse<T>(
   );
 }
 
-export function extractItems<T>(
-  response: PaginatedResponse<T> | T[]
-): T[] {
+export function extractItems<T>(response: PaginatedResponse<T> | T[]): T[] {
   if (isPaginatedResponse(response)) {
     return response.data.items;
   }

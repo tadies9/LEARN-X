@@ -24,12 +24,12 @@ export function useContentStream() {
     try {
       // Get auth token from localStorage
       const token = localStorage.getItem('auth_token');
-      
+
       const response = await fetch('/api/v1/learn/explain/stream', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token && { 'Authorization': `Bearer ${token}` }),
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify({
           fileId: params.fileId,
@@ -61,7 +61,7 @@ export function useContentStream() {
         if (value) {
           buffer += decoder.decode(value, { stream: true });
         }
-        
+
         // Process SSE data
         const lines = buffer.split('\n');
         buffer = lines.pop() || '';
@@ -69,7 +69,7 @@ export function useContentStream() {
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6);
-            
+
             if (data === '[DONE]') {
               setIsStreaming(false);
               return;

@@ -1,5 +1,5 @@
-import Link from "next/link";
-import { Twitter, Linkedin, ThumbsDown, Mail } from "lucide-react";
+import Link from 'next/link';
+import { Twitter, Linkedin, ThumbsDown, Mail } from 'lucide-react';
 
 export function MainFooter() {
   return (
@@ -50,31 +50,31 @@ export function MainFooter() {
         <FooterSection
           title="PLATFORM"
           links={[
-            { href: "/features", label: "Features" },
-            { href: "/how-it-works", label: "How It Works" },
-            { href: "/for-students", label: "For Students" },
-            { href: "/for-educators", label: "For Educators" },
-            { href: "/resources", label: "Resources" },
+            { href: '/features', label: 'Features' },
+            { href: '/how-it-works', label: 'How It Works' },
+            { href: '/for-students', label: 'For Students' },
+            { href: '/for-educators', label: 'For Educators' },
+            { href: '/resources', label: 'Resources' },
           ]}
         />
         <FooterSection
           title="COMPANY"
           links={[
-            { href: "/about", label: "About" },
-            { href: "/blog", label: "Blog" },
-            { href: "/careers", label: "Careers" },
-            { href: "/press", label: "Press" },
-            { href: "/contact", label: "Contact" },
+            { href: '/about', label: 'About' },
+            { href: '/blog', label: 'Blog' },
+            { href: '/careers', label: 'Careers' },
+            { href: '/press', label: 'Press' },
+            { href: '/contact', label: 'Contact' },
           ]}
         />
         <FooterSection
           title="LEGAL"
           links={[
-            { href: "/terms", label: "Terms" },
-            { href: "/privacy", label: "Privacy" },
-            { href: "/cookies", label: "Cookies" },
-            { href: "/licenses", label: "Licenses" },
-            { href: "/accessibility", label: "Accessibility" },
+            { href: '/terms', label: 'Terms' },
+            { href: '/privacy', label: 'Privacy' },
+            { href: '/cookies', label: 'Cookies' },
+            { href: '/licenses', label: 'Licenses' },
+            { href: '/accessibility', label: 'Accessibility' },
           ]}
         />
       </div>
@@ -85,7 +85,7 @@ export function MainFooter() {
           </p>
           <div className="mt-4 md:mt-0 text-xs text-muted-foreground">
             <p>
-              FERPA-compliant. GDPR-ready.{" "}
+              FERPA-compliant. GDPR-ready.{' '}
               <Link href="/security" className="underline">
                 Security details
               </Link>
@@ -109,10 +109,7 @@ function FooterSection({ title, links }: FooterSectionProps) {
       <ul className="space-y-2">
         {links.map((link) => (
           <li key={link.href}>
-            <Link
-              href={link.href}
-              className="text-sm text-muted-foreground hover:text-foreground"
-            >
+            <Link href={link.href} className="text-sm text-muted-foreground hover:text-foreground">
               {link.label}
             </Link>
           </li>

@@ -41,12 +41,12 @@ export function useChat({ fileId, onMessage }: UseChatOptions) {
       try {
         // Get auth token
         const token = localStorage.getItem('auth_token');
-        
+
         const response = await fetch('/api/v1/learn/chat/stream', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            ...(token && { 'Authorization': `Bearer ${token}` }),
+            ...(token && { Authorization: `Bearer ${token}` }),
           },
           body: JSON.stringify({
             fileId,
@@ -82,7 +82,7 @@ export function useChat({ fileId, onMessage }: UseChatOptions) {
           for (const line of lines) {
             if (line.startsWith('data: ')) {
               const data = line.slice(6);
-              
+
               if (data === '[DONE]') {
                 // Create final message with full content
                 const finalMessage: ChatMessage = {

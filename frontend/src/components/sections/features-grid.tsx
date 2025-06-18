@@ -1,5 +1,5 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Book, BarChart3, Shield, Users, Zap, Database } from "lucide-react";
+import { Card, CardContent } from '@/components/ui/card';
+import { Book, BarChart3, Shield, Users, Zap, Database } from 'lucide-react';
 
 export function FeaturesGrid() {
   return (
@@ -26,8 +26,8 @@ function FeaturesHeader() {
         Revolutionize Your Students' Learning
       </h2>
       <p className="max-w-[700px] text-muted-foreground md:text-lg">
-        Our comprehensive suite of tools transforms how your students learn,
-        making complex concepts accessible and engaging.
+        Our comprehensive suite of tools transforms how your students learn, making complex concepts
+        accessible and engaging.
       </p>
     </div>
   );
@@ -58,38 +58,38 @@ function FeatureCard({ icon, title, description }: FeatureCardProps) {
 const features = [
   {
     icon: <Book className="h-5 w-5 text-blue-600" />,
-    title: "Canvas One-Click Upload",
+    title: 'Canvas One-Click Upload',
     description:
-      "Import your existing Canvas materials in seconds. No reformatting or rebuilding required.",
+      'Import your existing Canvas materials in seconds. No reformatting or rebuilding required.',
   },
   {
     icon: <Zap className="h-5 w-5 text-blue-600" />,
-    title: "Adaptive Assessments",
+    title: 'Adaptive Assessments',
     description:
-      "Quizzes that automatically adjust difficulty based on student performance, focusing on areas needing improvement.",
+      'Quizzes that automatically adjust difficulty based on student performance, focusing on areas needing improvement.',
   },
   {
     icon: <Shield className="h-5 w-5 text-blue-600" />,
-    title: "Integrity Guard",
+    title: 'Integrity Guard',
     description:
-      "Advanced AI that blocks answer-dump prompts while still providing helpful guidance and learning support.",
+      'Advanced AI that blocks answer-dump prompts while still providing helpful guidance and learning support.',
   },
   {
     icon: <BarChart3 className="h-5 w-5 text-blue-600" />,
-    title: "Actionable Analytics",
+    title: 'Actionable Analytics',
     description:
-      "Identify knowledge gaps and struggling students with real-time insights and customizable reports.",
+      'Identify knowledge gaps and struggling students with real-time insights and customizable reports.',
   },
   {
     icon: <Users className="h-5 w-5 text-blue-600" />,
-    title: "AI-Powered Personalization",
+    title: 'AI-Powered Personalization',
     description:
       "Automatically creates customized learning paths based on each student's strengths, weaknesses, and pace.",
   },
   {
     icon: <Database className="h-5 w-5 text-blue-600" />,
-    title: "Cloud-Based Access",
+    title: 'Cloud-Based Access',
     description:
-      "Secure, FERPA-compliant cloud storage ensures materials are accessible from any device, anywhere.",
+      'Secure, FERPA-compliant cloud storage ensures materials are accessible from any device, anywhere.',
   },
 ];

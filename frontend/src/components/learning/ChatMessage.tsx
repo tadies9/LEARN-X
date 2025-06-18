@@ -24,16 +24,11 @@ export function ChatMessage({ message }: ChatMessageProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className={cn(
-        'flex gap-3',
-        message.role === 'user' ? 'justify-end' : 'justify-start'
-      )}
+      className={cn('flex gap-3', message.role === 'user' ? 'justify-end' : 'justify-start')}
     >
       {message.role === 'assistant' && (
         <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-primary text-primary-foreground">
-            AI
-          </AvatarFallback>
+          <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
         </Avatar>
       )}
 

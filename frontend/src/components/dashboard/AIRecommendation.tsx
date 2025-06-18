@@ -24,9 +24,13 @@ const difficultyIcons = {
 
 export function AIRecommendation() {
   const router = useRouter();
-  
+
   // Fetch AI recommendations from the API
-  const { data: recommendations, isLoading, error } = useQuery({
+  const {
+    data: recommendations,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['ai-recommendations'],
     queryFn: () => dashboardApi.getRecommendations(),
     staleTime: 5 * 60 * 1000, // Cache for 5 minutes
@@ -62,7 +66,12 @@ export function AIRecommendation() {
               <p className="text-sm text-muted-foreground">
                 Complete your profile to get personalized course recommendations.
               </p>
-              <Button size="sm" variant="outline" className="mt-3" onClick={() => router.push('/settings/profile')}>
+              <Button
+                size="sm"
+                variant="outline"
+                className="mt-3"
+                onClick={() => router.push('/settings/profile')}
+              >
                 Complete Profile
               </Button>
             </div>
@@ -95,15 +104,17 @@ export function AIRecommendation() {
               <p className="text-sm text-muted-foreground mb-1">
                 <strong>{topRecommendation.title}</strong>
               </p>
-              <p className="text-sm text-muted-foreground mb-3">
-                {topRecommendation.description}
-              </p>
+              <p className="text-sm text-muted-foreground mb-3">{topRecommendation.description}</p>
               <p className="text-xs text-muted-foreground mb-3 italic">
                 {topRecommendation.reason}
               </p>
-              <Button 
+              <Button
                 size="sm"
-                onClick={() => router.push(`/courses/new?template=${encodeURIComponent(topRecommendation.title)}`)}
+                onClick={() =>
+                  router.push(
+                    `/courses/new?template=${encodeURIComponent(topRecommendation.title)}`
+                  )
+                }
               >
                 <Target className="h-4 w-4 mr-2" />
                 Start Learning
@@ -121,10 +132,12 @@ export function AIRecommendation() {
             </h4>
             <div className="space-y-2">
               {recommendations.slice(1, 3).map((rec, index) => (
-                <div 
+                <div
                   key={index}
                   className="flex items-center justify-between p-2 rounded-lg hover:bg-muted/50 cursor-pointer transition-colors"
-                  onClick={() => router.push(`/courses/new?template=${encodeURIComponent(rec.title)}`)}
+                  onClick={() =>
+                    router.push(`/courses/new?template=${encodeURIComponent(rec.title)}`)
+                  }
                 >
                   <div className="flex-1">
                     <p className="text-sm font-medium">{rec.title}</p>

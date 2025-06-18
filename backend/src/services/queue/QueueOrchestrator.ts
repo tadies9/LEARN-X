@@ -48,7 +48,7 @@ export class QueueOrchestrator {
     options?: {
       chunkSize?: number;
       priority?: PriorityLevel;
-      [key: string]: any;
+      [key: string]: unknown;
     }
   ): Promise<string> {
     try {
@@ -83,7 +83,7 @@ export class QueueOrchestrator {
       id: string;
       content: string;
       position: number;
-      metadata?: Record<string, any>;
+      metadata?: Record<string, unknown>;
     }>,
     userId: string,
     model = 'text-embedding-3-small'
@@ -112,7 +112,7 @@ export class QueueOrchestrator {
     type: 'file_processed' | 'file_failed' | 'course_shared' | 'system_alert',
     title: string,
     message: string,
-    data?: Record<string, any>,
+    data?: Record<string, unknown>,
     priority: PriorityLevel = 'medium'
   ): Promise<string> {
     try {
@@ -192,7 +192,7 @@ export class QueueOrchestrator {
    */
   private async getQueueHealth(queueName: string): Promise<QueueHealth> {
     try {
-      const metrics = await enhancedPGMQClient.getQueueMetrics(queueName as any);
+      const metrics = await enhancedPGMQClient.getQueueMetrics(queueName as keyof typeof ENHANCED_QUEUE_NAMES);
       
       if (!metrics) {
         return {
@@ -242,9 +242,9 @@ export class QueueOrchestrator {
    * Gets queue metrics for monitoring dashboards
    */
   async getDetailedMetrics(): Promise<{
-    fileProcessing: any;
-    embeddings: any;
-    notifications: any;
+    fileProcessing: unknown;
+    embeddings: unknown;
+    notifications: { status: string };
   }> {
     try {
       const [fileMetrics, embeddingMetrics] = await Promise.all([
@@ -281,7 +281,7 @@ export class QueueOrchestrator {
     const queueNames = Object.values(ENHANCED_QUEUE_NAMES);
     const purgeResults = await Promise.allSettled(
       queueNames.map(queueName => 
-        enhancedPGMQClient.purge(queueName as any)
+        enhancedPGMQClient.purge(queueName as keyof typeof ENHANCED_QUEUE_NAMES)
       )
     );
 

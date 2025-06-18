@@ -58,7 +58,8 @@ export const recentSubmissions = [
     grade: 89,
     maxScore: 100,
     status: 'graded' as const,
-    feedback: 'Excellent work on component structure and reusability. Consider adding more comprehensive unit tests.',
+    feedback:
+      'Excellent work on component structure and reusability. Consider adding more comprehensive unit tests.',
   },
   {
     id: 2,

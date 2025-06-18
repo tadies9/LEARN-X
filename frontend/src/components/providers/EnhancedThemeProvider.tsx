@@ -47,40 +47,35 @@ export function EnhancedThemeProvider({
   });
 
   // Memoized context value
-  const value = useMemo((): ThemeContextType => ({
-    preference,
-    resolvedTheme,
-    systemTheme,
-    autoTheme,
-    setThemePreference,
-    toggleTheme,
-    isSystemTheme,
-    mounted,
-  }), [
-    preference,
-    resolvedTheme,
-    systemTheme,
-    autoTheme,
-    setThemePreference,
-    toggleTheme,
-    isSystemTheme,
-    mounted,
-  ]);
+  const value = useMemo(
+    (): ThemeContextType => ({
+      preference,
+      resolvedTheme,
+      systemTheme,
+      autoTheme,
+      setThemePreference,
+      toggleTheme,
+      isSystemTheme,
+      mounted,
+    }),
+    [
+      preference,
+      resolvedTheme,
+      systemTheme,
+      autoTheme,
+      setThemePreference,
+      toggleTheme,
+      isSystemTheme,
+      mounted,
+    ]
+  );
 
   // Prevent flash of unstyled content
   if (!mounted) {
-    return (
-      <div style={{ visibility: 'hidden' }}>
-        {children}
-      </div>
-    );
+    return <div style={{ visibility: 'hidden' }}>{children}</div>;
   }
 
-  return (
-    <ThemeContext.Provider value={value}>
-      {children}
-    </ThemeContext.Provider>
-  );
+  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
 
 /**

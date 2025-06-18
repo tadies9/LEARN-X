@@ -71,7 +71,7 @@ export default function CoursesPage() {
               paginationData = responseData.pagination;
             }
           }
-          
+
           // Handle pagination at response level
           if ('pagination' in response && (response as any).pagination) {
             paginationData = (response as any).pagination;

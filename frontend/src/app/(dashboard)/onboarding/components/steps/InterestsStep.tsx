@@ -34,7 +34,7 @@ export function InterestsStep() {
     // Check if it's already selected
     const isInPrimary = primaryInterests.includes(interest);
     const isInSecondary = secondaryInterests.includes(interest);
-    
+
     if (isInPrimary) {
       // Remove from primary
       setPrimaryInterests((prev) => prev.filter((i) => i !== interest));
@@ -121,7 +121,8 @@ export function InterestsStep() {
         </div>
         <CardTitle className="text-3xl">Your Interests & Learning Goals</CardTitle>
         <CardDescription className="text-lg mt-2">
-          Select topics you're passionate about - we'll use these to make your learning more engaging
+          Select topics you're passionate about - we'll use these to make your learning more
+          engaging
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -152,13 +153,15 @@ export function InterestsStep() {
                 <div className="space-y-2">
                   {primaryInterests.length > 0 && (
                     <div>
-                      <span className="text-xs text-muted-foreground">Primary ({primaryInterests.length}/5):</span>
+                      <span className="text-xs text-muted-foreground">
+                        Primary ({primaryInterests.length}/5):
+                      </span>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {primaryInterests.map((interest) => (
                           <Badge key={interest} variant="default" className="text-xs gap-1">
                             {interest}
-                            <X 
-                              className="h-3 w-3 cursor-pointer hover:text-primary-foreground/80" 
+                            <X
+                              className="h-3 w-3 cursor-pointer hover:text-primary-foreground/80"
                               onClick={() => removeInterest(interest)}
                             />
                           </Badge>
@@ -168,13 +171,15 @@ export function InterestsStep() {
                   )}
                   {secondaryInterests.length > 0 && (
                     <div>
-                      <span className="text-xs text-muted-foreground">Secondary ({secondaryInterests.length}/5):</span>
+                      <span className="text-xs text-muted-foreground">
+                        Secondary ({secondaryInterests.length}/5):
+                      </span>
                       <div className="flex flex-wrap gap-2 mt-1">
                         {secondaryInterests.map((interest) => (
                           <Badge key={interest} variant="secondary" className="text-xs gap-1">
                             {interest}
-                            <X 
-                              className="h-3 w-3 cursor-pointer hover:text-secondary-foreground/80" 
+                            <X
+                              className="h-3 w-3 cursor-pointer hover:text-secondary-foreground/80"
                               onClick={() => removeInterest(interest)}
                             />
                           </Badge>
@@ -192,7 +197,7 @@ export function InterestsStep() {
                   Click interests to select them. We'll use your top 5 as primary examples.
                 </p>
               </div>
-              
+
               {Object.entries(INTEREST_CATEGORIES).map(([category, interests]) => (
                 <div key={category} className="space-y-3">
                   <h4 className="text-base font-semibold capitalize flex items-center gap-2">
@@ -202,9 +207,12 @@ export function InterestsStep() {
                     {interests.map((interest) => {
                       const isPrimary = primaryInterests.includes(interest);
                       const isSecondary = secondaryInterests.includes(interest);
-                      const isDisabled = !isPrimary && !isSecondary && 
-                        primaryInterests.length >= 5 && secondaryInterests.length >= 5;
-                      
+                      const isDisabled =
+                        !isPrimary &&
+                        !isSecondary &&
+                        primaryInterests.length >= 5 &&
+                        secondaryInterests.length >= 5;
+
                       return (
                         <Button
                           key={interest}
@@ -214,8 +222,10 @@ export function InterestsStep() {
                           disabled={isDisabled}
                           className={cn(
                             'transition-all duration-200 text-sm',
-                            isPrimary && 'bg-primary text-primary-foreground hover:bg-primary/90 border-primary',
-                            isSecondary && 'bg-secondary text-secondary-foreground hover:bg-secondary/90 border-secondary',
+                            isPrimary &&
+                              'bg-primary text-primary-foreground hover:bg-primary/90 border-primary',
+                            isSecondary &&
+                              'bg-secondary text-secondary-foreground hover:bg-secondary/90 border-secondary',
                             isDisabled && 'opacity-50 cursor-not-allowed'
                           )}
                           onClick={() => toggleInterest(interest)}
@@ -227,9 +237,9 @@ export function InterestsStep() {
                   </div>
                 </div>
               ))}
-              
+
               <Separator className="my-6" />
-              
+
               {/* Custom Interest Input */}
               <div className="space-y-3">
                 <h4 className="text-base font-semibold">Add Your Own Interest</h4>
@@ -241,7 +251,9 @@ export function InterestsStep() {
                     placeholder="Enter a custom interest"
                     value={customInterest}
                     onChange={(e) => setCustomInterest(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCustomInterest())}
+                    onKeyDown={(e) =>
+                      e.key === 'Enter' && (e.preventDefault(), addCustomInterest())
+                    }
                     className="flex-1"
                     disabled={primaryInterests.length >= 5 && secondaryInterests.length >= 5}
                   />
@@ -249,7 +261,10 @@ export function InterestsStep() {
                     type="button"
                     size="sm"
                     onClick={addCustomInterest}
-                    disabled={!customInterest.trim() || (primaryInterests.length >= 5 && secondaryInterests.length >= 5)}
+                    disabled={
+                      !customInterest.trim() ||
+                      (primaryInterests.length >= 5 && secondaryInterests.length >= 5)
+                    }
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -269,8 +284,8 @@ export function InterestsStep() {
                   {learningTopics.map((topic) => (
                     <Badge key={topic} variant="default" className="text-xs gap-1">
                       {topic}
-                      <X 
-                        className="h-3 w-3 cursor-pointer hover:text-primary-foreground/80" 
+                      <X
+                        className="h-3 w-3 cursor-pointer hover:text-primary-foreground/80"
                         onClick={() => removeTopic(topic)}
                       />
                     </Badge>
@@ -285,12 +300,12 @@ export function InterestsStep() {
                   Select the subjects and skills you want to learn about
                 </p>
               </div>
-              
+
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {LEARNING_TOPICS.map((topic) => {
                   const isSelected = learningTopics.includes(topic);
                   const isDisabled = !isSelected && learningTopics.length >= 10;
-                  
+
                   return (
                     <Button
                       key={topic}
@@ -300,7 +315,8 @@ export function InterestsStep() {
                       disabled={isDisabled}
                       className={cn(
                         'transition-all duration-200 text-sm',
-                        isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90 border-primary',
+                        isSelected &&
+                          'bg-primary text-primary-foreground hover:bg-primary/90 border-primary',
                         isDisabled && 'opacity-50 cursor-not-allowed'
                       )}
                       onClick={() => toggleLearningTopic(topic)}
@@ -310,9 +326,9 @@ export function InterestsStep() {
                   );
                 })}
               </div>
-              
+
               <Separator className="my-6" />
-              
+
               {/* Custom Topic Input */}
               <div className="space-y-3">
                 <h4 className="text-base font-semibold">Add Your Own Topic</h4>
@@ -343,7 +359,13 @@ export function InterestsStep() {
         </Tabs>
 
         <div className="flex justify-between pt-6 border-t">
-          <Button type="button" variant="outline" size="lg" onClick={previousStep} className="min-w-[120px]">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={previousStep}
+            className="min-w-[120px]"
+          >
             <ChevronLeft className="mr-2 h-4 w-4" />
             Back
           </Button>

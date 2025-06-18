@@ -39,9 +39,7 @@ function LoadingIndicator() {
       className="flex gap-3"
     >
       <Avatar className="h-8 w-8">
-        <AvatarFallback className="bg-primary text-primary-foreground">
-          AI
-        </AvatarFallback>
+        <AvatarFallback className="bg-primary text-primary-foreground">AI</AvatarFallback>
       </Avatar>
       <div className="bg-muted rounded-lg px-4 py-3">
         <Loader2 className="h-4 w-4 animate-spin" />

@@ -37,7 +37,9 @@ export const personaApi = {
 
   // Get persona history
   getHistory: async () => {
-    const response = await API_CLIENT.get<{ success: boolean; data: Persona[] }>('/persona/history');
+    const response = await API_CLIENT.get<{ success: boolean; data: Persona[] }>(
+      '/persona/history'
+    );
     return response.data.data;
   },
 

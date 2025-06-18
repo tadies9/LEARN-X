@@ -1,5 +1,5 @@
-import { Card, CardContent } from "@/components/ui/card";
-import { Book, Shield } from "lucide-react";
+import { Card, CardContent } from '@/components/ui/card';
+import { Book, Shield } from 'lucide-react';
 
 export function ForEducators() {
   return (
@@ -26,8 +26,8 @@ function ForEducatorsHeader() {
         Help Your Students Learn Their Own Way
       </h2>
       <p className="max-w-[700px] text-muted-foreground md:text-lg">
-        Learn-X equips students with practical skills for the modern world
-        while giving you powerful tools to enhance your teaching.
+        Learn-X equips students with practical skills for the modern world while giving you powerful
+        tools to enhance your teaching.
       </p>
     </div>
   );
@@ -39,11 +39,7 @@ interface EducatorFeatureCardProps {
   description: string;
 }
 
-function EducatorFeatureCard({
-  icon,
-  title,
-  description,
-}: EducatorFeatureCardProps) {
+function EducatorFeatureCard({ icon, title, description }: EducatorFeatureCardProps) {
   return (
     <Card className="border border-gray-200 shadow-sm">
       <CardContent className="p-6">
@@ -64,14 +60,14 @@ function EducatorFeatureCard({
 const educatorFeatures = [
   {
     icon: <Book className="h-5 w-5 text-blue-600" />,
-    title: "Canvas Compatibility",
+    title: 'Canvas Compatibility',
     description:
-      "Works seamlessly with Canvas. With just a few steps, your class materials can be uploaded to Learn-X AI.",
+      'Works seamlessly with Canvas. With just a few steps, your class materials can be uploaded to Learn-X AI.',
   },
   {
     icon: <Shield className="h-5 w-5 text-blue-600" />,
-    title: "Integrity Guard",
+    title: 'Integrity Guard',
     description:
-      "Our AI engine prevents students from getting answers to homework and quiz questions while still providing helpful guidance.",
+      'Our AI engine prevents students from getting answers to homework and quiz questions while still providing helpful guidance.',
   },
 ];

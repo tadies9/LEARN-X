@@ -166,16 +166,17 @@ export function LearningLayout({
                   <ProgressTracker
                     courseTitle={courseTitle}
                     totalProgress={65}
-                    modules={modules.map(m => ({
+                    modules={modules.map((m) => ({
                       id: m.id,
                       title: m.title,
                       duration: m.estimatedDuration ? `${m.estimatedDuration} min` : '30 min',
                       status: 'in-progress' as const,
-                      lessons: m.files?.map(f => ({
-                        id: f.id,
-                        title: f.name,
-                        completed: false
-                      })) || []
+                      lessons:
+                        m.files?.map((f) => ({
+                          id: f.id,
+                          title: f.name,
+                          completed: false,
+                        })) || [],
                     }))}
                     currentModuleId={modules[1]?.id}
                   />

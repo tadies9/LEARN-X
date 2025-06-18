@@ -6,7 +6,10 @@ const CommonValidations = {
     z.string().min(min, `${field} is required`).max(max, `${field} is too long`),
   optionalString: (max = 255) => z.string().max(max).optional(),
   positiveNumber: (field: string, min = 0, max = 100) =>
-    z.number().min(min, `${field} must be at least ${min}`).max(max, `${field} must be at most ${max}`),
+    z
+      .number()
+      .min(min, `${field} must be at least ${min}`)
+      .max(max, `${field} must be at most ${max}`),
 };
 
 // Academic & Career Goals Schema (matches UI exactly)

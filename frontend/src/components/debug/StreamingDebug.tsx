@@ -5,15 +5,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  AlertCircle, 
-  CheckCircle, 
-  Clock, 
-  RefreshCw, 
+import {
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  RefreshCw,
   XCircle,
   Activity,
   Download,
-  Trash2
+  Trash2,
 } from 'lucide-react';
 
 interface StreamEvent {
@@ -32,12 +32,12 @@ interface StreamingDebugProps {
   fileId: string | null;
 }
 
-export function StreamingDebug({ 
-  isStreaming, 
-  streamingContent, 
-  error, 
+export function StreamingDebug({
+  isStreaming,
+  streamingContent,
+  error,
   activeMode,
-  fileId 
+  fileId,
 }: StreamingDebugProps) {
   const [events, setEvents] = useState<StreamEvent[]>([]);
   const [stats, setStats] = useState({
@@ -58,10 +58,10 @@ export function StreamingDebug({
       const startEvent: StreamEvent = {
         timestamp: new Date(),
         type: 'start',
-        data: { mode: activeMode, fileId }
+        data: { mode: activeMode, fileId },
       };
-      setEvents(prev => [...prev, startEvent]);
-      setStats(prev => ({ ...prev, startTime: new Date() }));
+      setEvents((prev) => [...prev, startEvent]);
+      setStats((prev) => ({ ...prev, startTime: new Date() }));
     }
   }, [isStreaming, stats.startTime, activeMode, fileId]);
 
@@ -73,13 +73,13 @@ export function StreamingDebug({
         type: 'data',
         data: streamingContent.slice(-100), // Last 100 chars
         size: streamingContent.length,
-        chunkIndex: stats.totalChunks
+        chunkIndex: stats.totalChunks,
       };
-      setEvents(prev => [...prev, event]);
-      setStats(prev => ({
+      setEvents((prev) => [...prev, event]);
+      setStats((prev) => ({
         ...prev,
         totalChunks: prev.totalChunks + 1,
-        totalSize: streamingContent.length
+        totalSize: streamingContent.length,
       }));
     }
   }, [streamingContent]);
@@ -89,18 +89,18 @@ export function StreamingDebug({
     if (!isStreaming && stats.startTime && !stats.endTime) {
       const endTime = new Date();
       const duration = endTime.getTime() - stats.startTime.getTime();
-      
+
       const completeEvent: StreamEvent = {
         timestamp: endTime,
         type: 'complete',
-        data: { duration, finalSize: streamingContent.length }
+        data: { duration, finalSize: streamingContent.length },
       };
-      
-      setEvents(prev => [...prev, completeEvent]);
-      setStats(prev => ({ 
-        ...prev, 
+
+      setEvents((prev) => [...prev, completeEvent]);
+      setStats((prev) => ({
+        ...prev,
         endTime,
-        duration
+        duration,
       }));
     }
   }, [isStreaming, stats.startTime, stats.endTime, streamingContent.length]);
@@ -111,10 +111,10 @@ export function StreamingDebug({
       const errorEvent: StreamEvent = {
         timestamp: new Date(),
         type: 'error',
-        data: error
+        data: error,
       };
-      setEvents(prev => [...prev, errorEvent]);
-      setStats(prev => ({ ...prev, errorCount: prev.errorCount + 1 }));
+      setEvents((prev) => [...prev, errorEvent]);
+      setStats((prev) => ({ ...prev, errorCount: prev.errorCount + 1 }));
     }
   }, [error]);
 
@@ -140,10 +140,10 @@ export function StreamingDebug({
         exportTime: new Date().toISOString(),
         activeMode,
         fileId,
-        contentLength: streamingContent.length
-      }
+        contentLength: streamingContent.length,
+      },
     };
-    
+
     const blob = new Blob([JSON.stringify(debugData, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -190,34 +190,19 @@ export function StreamingDebug({
             <CardTitle className="text-sm">Streaming Debug</CardTitle>
           </div>
           <div className="flex gap-1">
-            <Button 
-              size="sm" 
-              variant="ghost"
-              onClick={exportDebugData}
-              title="Export debug data"
-            >
+            <Button size="sm" variant="ghost" onClick={exportDebugData} title="Export debug data">
               <Download className="h-3 w-3" />
             </Button>
-            <Button 
-              size="sm" 
-              variant="ghost"
-              onClick={clearDebugData}
-              title="Clear debug data"
-            >
+            <Button size="sm" variant="ghost" onClick={clearDebugData} title="Clear debug data">
               <Trash2 className="h-3 w-3" />
             </Button>
-            <Button 
-              size="sm" 
-              variant="ghost"
-              onClick={() => setIsExpanded(false)}
-              title="Minimize"
-            >
+            <Button size="sm" variant="ghost" onClick={() => setIsExpanded(false)} title="Minimize">
               ×
             </Button>
           </div>
         </div>
       </CardHeader>
-      
+
       <CardContent className="p-3">
         <Tabs defaultValue="stats" className="w-full">
           <TabsList className="grid w-full grid-cols-3">
@@ -225,7 +210,7 @@ export function StreamingDebug({
             <TabsTrigger value="events">Events</TabsTrigger>
             <TabsTrigger value="content">Content</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="stats" className="space-y-2 mt-2">
             <div className="grid grid-cols-2 gap-2 text-xs">
               <div className="p-2 bg-muted rounded">
@@ -257,7 +242,7 @@ export function StreamingDebug({
                 <p className="font-medium text-destructive">{stats.errorCount}</p>
               </div>
             </div>
-            
+
             {error && (
               <div className="p-2 bg-destructive/10 rounded text-xs">
                 <p className="font-medium text-destructive">Last Error:</p>
@@ -265,48 +250,51 @@ export function StreamingDebug({
               </div>
             )}
           </TabsContent>
-          
+
           <TabsContent value="events" className="mt-2">
             <div className="max-h-[300px] overflow-y-auto space-y-1">
-              {events.slice(-20).reverse().map((event, idx) => (
-                <div key={idx} className="text-xs p-2 bg-muted rounded flex items-start gap-2">
-                  <Badge 
-                    variant={
-                      event.type === 'error' ? 'destructive' : 
-                      event.type === 'complete' ? 'default' : 
-                      'secondary'
-                    }
-                    className="text-xs"
-                  >
-                    {event.type}
-                  </Badge>
-                  <div className="flex-1">
-                    <p className="text-muted-foreground">
-                      {event.timestamp.toLocaleTimeString()}
-                    </p>
-                    {event.data && (
-                      <p className="font-mono text-xs mt-1 break-all">
-                        {typeof event.data === 'string' 
-                          ? event.data.slice(0, 100) 
-                          : JSON.stringify(event.data).slice(0, 100)}
-                      </p>
-                    )}
-                    {event.size && (
+              {events
+                .slice(-20)
+                .reverse()
+                .map((event, idx) => (
+                  <div key={idx} className="text-xs p-2 bg-muted rounded flex items-start gap-2">
+                    <Badge
+                      variant={
+                        event.type === 'error'
+                          ? 'destructive'
+                          : event.type === 'complete'
+                            ? 'default'
+                            : 'secondary'
+                      }
+                      className="text-xs"
+                    >
+                      {event.type}
+                    </Badge>
+                    <div className="flex-1">
                       <p className="text-muted-foreground">
-                        Size: {(event.size / 1024).toFixed(1)} KB
+                        {event.timestamp.toLocaleTimeString()}
                       </p>
-                    )}
+                      {event.data && (
+                        <p className="font-mono text-xs mt-1 break-all">
+                          {typeof event.data === 'string'
+                            ? event.data.slice(0, 100)
+                            : JSON.stringify(event.data).slice(0, 100)}
+                        </p>
+                      )}
+                      {event.size && (
+                        <p className="text-muted-foreground">
+                          Size: {(event.size / 1024).toFixed(1)} KB
+                        </p>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
               {events.length === 0 && (
-                <p className="text-center text-muted-foreground text-xs py-4">
-                  No events recorded
-                </p>
+                <p className="text-center text-muted-foreground text-xs py-4">No events recorded</p>
               )}
             </div>
           </TabsContent>
-          
+
           <TabsContent value="content" className="mt-2">
             <div className="space-y-2">
               <div className="text-xs">
@@ -316,7 +304,9 @@ export function StreamingDebug({
                 </div>
               </div>
               <div className="text-xs">
-                <p className="text-muted-foreground">Total Length: {streamingContent.length} chars</p>
+                <p className="text-muted-foreground">
+                  Total Length: {streamingContent.length} chars
+                </p>
               </div>
             </div>
           </TabsContent>

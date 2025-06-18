@@ -1,7 +1,7 @@
-import Link from "next/link";
-import Image from "next/image";
+import Link from 'next/link';
+import Image from 'next/image';
 
-import { Linkedin, Mail, Instagram } from "lucide-react";
+import { Linkedin, Mail, Instagram } from 'lucide-react';
 
 export function MainFooter() {
   return (
@@ -18,36 +18,36 @@ export function MainFooter() {
               className="h-auto w-auto"
             />
           </Link>
-          
+
           <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="text-sm text-slate-400 hover:text-slate-200"
-            >
+            <Link href="/login" className="text-sm text-slate-400 hover:text-slate-200">
               Login
             </Link>
             <span className="text-slate-600">|</span>
-            <Link
-              href="/register"
-              className="text-sm text-slate-400 hover:text-slate-200"
-            >
+            <Link href="/register" className="text-sm text-slate-400 hover:text-slate-200">
               Get Started
             </Link>
           </div>
         </div>
-        
+
         {/* Bottom row: Copyright, legal links, and social */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between">
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 mb-4 md:mb-0">
             <span>© 2025 Learn-X</span>
             <span className="text-slate-600">·</span>
-            <Link href="/terms" className="hover:text-slate-200">Terms</Link>
+            <Link href="/terms" className="hover:text-slate-200">
+              Terms
+            </Link>
             <span className="text-slate-600">·</span>
-            <Link href="/privacy" className="hover:text-slate-200">Privacy</Link>
+            <Link href="/privacy" className="hover:text-slate-200">
+              Privacy
+            </Link>
             <span className="text-slate-600">·</span>
-            <Link href="/contact" className="hover:text-slate-200">Contact</Link>
+            <Link href="/contact" className="hover:text-slate-200">
+              Contact
+            </Link>
           </div>
-          
+
           {/* Social icons */}
           <div className="flex items-center gap-3">
             <Link

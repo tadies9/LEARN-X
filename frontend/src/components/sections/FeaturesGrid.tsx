@@ -1,6 +1,6 @@
-import { Book, BarChart3, Shield, Users, Zap, Database } from "lucide-react";
+import { Book, BarChart3, Shield, Users, Zap, Database } from 'lucide-react';
 
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from '@/components/ui/card';
 
 export function FeaturesGrid() {
   return (
@@ -27,8 +27,8 @@ function FeaturesHeader() {
         Everything You Need to Learn Better
       </h2>
       <p className="max-w-[700px] text-muted-foreground md:text-lg">
-        Our comprehensive suite of tools transforms how you learn,
-        making complex concepts accessible and engaging.
+        Our comprehensive suite of tools transforms how you learn, making complex concepts
+        accessible and engaging.
       </p>
     </div>
   );
@@ -59,38 +59,38 @@ function FeatureCard({ icon, title, description }: FeatureCardProps) {
 const features = [
   {
     icon: <Book className="h-5 w-5 text-primary" />,
-    title: "Instant Course Import",
+    title: 'Instant Course Import',
     description:
-      "Upload your Canvas materials in seconds. Start learning immediately with AI-powered explanations.",
+      'Upload your Canvas materials in seconds. Start learning immediately with AI-powered explanations.',
   },
   {
     icon: <Zap className="h-5 w-5 text-primary" />,
-    title: "Adaptive Learning",
+    title: 'Adaptive Learning',
     description:
-      "Quizzes that adjust to your level, focusing on areas where you need the most help.",
+      'Quizzes that adjust to your level, focusing on areas where you need the most help.',
   },
   {
     icon: <Shield className="h-5 w-5 text-primary" />,
     title: "Learn, Don't Cheat",
     description:
-      "Get genuine understanding with AI that guides you to answers instead of just giving them away.",
+      'Get genuine understanding with AI that guides you to answers instead of just giving them away.',
   },
   {
     icon: <BarChart3 className="h-5 w-5 text-primary" />,
-    title: "Track Your Progress",
+    title: 'Track Your Progress',
     description:
-      "See your improvement over time with detailed insights into your learning journey.",
+      'See your improvement over time with detailed insights into your learning journey.',
   },
   {
     icon: <Users className="h-5 w-5 text-primary" />,
-    title: "Personalized for You",
+    title: 'Personalized for You',
     description:
-      "AI adapts to your learning style, pace, and interests to create the perfect study experience.",
+      'AI adapts to your learning style, pace, and interests to create the perfect study experience.',
   },
   {
     icon: <Database className="h-5 w-5 text-primary" />,
-    title: "Study Anywhere",
+    title: 'Study Anywhere',
     description:
-      "Access your materials from any device, anytime. Your learning follows you everywhere.",
+      'Access your materials from any device, anytime. Your learning follows you everywhere.',
   },
 ];

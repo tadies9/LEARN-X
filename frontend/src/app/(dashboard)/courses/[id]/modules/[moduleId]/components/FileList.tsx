@@ -134,7 +134,10 @@ export function FileList({ files, onUpdate, onReorder }: FileListProps) {
               <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
                 <span>{formatFileSize(file.size)}</span>
                 <span>
-                  Uploaded {file.createdAt ? formatDistanceToNow(new Date(file.createdAt), { addSuffix: true }) : 'recently'}
+                  Uploaded{' '}
+                  {file.createdAt
+                    ? formatDistanceToNow(new Date(file.createdAt), { addSuffix: true })
+                    : 'recently'}
                 </span>
               </div>
             </div>

@@ -11,13 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { FadeIn } from '@/components/animations/FadeIn';
 
-export type HeroVariant = 
-  | 'main' 
-  | 'tesla' 
-  | 'standard' 
-  | 'premium' 
-  | 'minimal' 
-  | 'cinematic';
+export type HeroVariant = 'main' | 'tesla' | 'standard' | 'premium' | 'minimal' | 'cinematic';
 
 export interface HeroContent {
   badge?: string;
@@ -55,7 +49,8 @@ interface UnifiedHeroSectionProps {
 
 const variantStyles = {
   main: {
-    section: 'relative w-full py-12 md:py-16 lg:py-20 bg-gradient-to-b from-white to-gray-50 dark:from-[#0A1628] dark:to-[#0A1628]',
+    section:
+      'relative w-full py-12 md:py-16 lg:py-20 bg-gradient-to-b from-white to-gray-50 dark:from-[#0A1628] dark:to-[#0A1628]',
     container: 'container px-4 md:px-6',
     layout: 'grid gap-6 lg:grid-cols-2 lg:gap-12 items-center',
   },
@@ -70,17 +65,20 @@ const variantStyles = {
     layout: 'space-y-8',
   },
   premium: {
-    section: 'relative isolate overflow-hidden bg-gradient-to-b from-gray-50 to-white dark:bg-[#0A1628] pt-40 pb-28 px-4',
+    section:
+      'relative isolate overflow-hidden bg-gradient-to-b from-gray-50 to-white dark:bg-[#0A1628] pt-40 pb-28 px-4',
     container: 'mx-auto max-w-5xl',
     layout: 'space-y-8 text-center',
   },
   minimal: {
-    section: 'relative min-h-screen flex flex-col items-center justify-center px-4 bg-white dark:bg-[#0A1628]',
+    section:
+      'relative min-h-screen flex flex-col items-center justify-center px-4 bg-white dark:bg-[#0A1628]',
     container: 'text-center max-w-5xl mx-auto',
     layout: 'space-y-8',
   },
   cinematic: {
-    section: 'relative flex items-center justify-center py-32 bg-gradient-to-br from-gray-50 to-gray-100 dark:bg-[#0A1628]',
+    section:
+      'relative flex items-center justify-center py-32 bg-gradient-to-br from-gray-50 to-gray-100 dark:bg-[#0A1628]',
     container: 'relative z-10 text-center max-w-3xl px-4',
     layout: 'space-y-8',
   },
@@ -155,10 +153,7 @@ export function UnifiedHeroSection({ variant, content }: UnifiedHeroSectionProps
           className="flex flex-col sm:flex-row gap-3 pt-2 justify-center items-center"
         >
           <Link href={content.primaryCTA.href}>
-            <Button
-              size="lg"
-              className={getPrimaryCTAClass(variant)}
-            >
+            <Button size="lg" className={getPrimaryCTAClass(variant)}>
               {content.primaryCTA.text}
               {variant === 'standard' && <ArrowRight className="ml-2 h-5 w-5" />}
             </Button>
@@ -168,7 +163,10 @@ export function UnifiedHeroSection({ variant, content }: UnifiedHeroSectionProps
             <Button
               variant="outline"
               size="lg"
-              onClick={content.secondaryCTA.onClick || (() => content.secondaryCTA?.href && window.open(content.secondaryCTA.href))}
+              onClick={
+                content.secondaryCTA.onClick ||
+                (() => content.secondaryCTA?.href && window.open(content.secondaryCTA.href))
+              }
               className={getSecondaryCTAClass(variant)}
             >
               {content.secondaryCTA.text}
@@ -280,13 +278,13 @@ export function UnifiedHeroSection({ variant, content }: UnifiedHeroSectionProps
   return (
     <section className={styles.section}>
       {renderBackgroundEffects(variant)}
-      
+
       <div className={styles.container}>
         <div className={styles.layout}>
           <div className={variant === 'main' ? 'flex flex-col justify-center space-y-4' : ''}>
             {renderContent()}
           </div>
-          
+
           {(content.image || content.video) && renderMedia()}
         </div>
       </div>
@@ -386,8 +384,8 @@ function renderBackgroundEffects(variant: HeroVariant) {
 }
 
 function getHeadlineClass(variant: HeroVariant): string {
-  const baseClasses = "font-bold mb-6";
-  
+  const baseClasses = 'font-bold mb-6';
+
   switch (variant) {
     case 'main':
       return `text-4xl ${baseClasses} tracking-tighter sm:text-5xl md:text-6xl text-primary dark:text-primary`;
@@ -409,25 +407,25 @@ function getHeadlineClass(variant: HeroVariant): string {
 function getSubheadingClass(variant: HeroVariant): string {
   switch (variant) {
     case 'main':
-      return "text-lg text-gray-600 dark:text-gray-400 md:text-xl max-w-[600px] mb-6";
+      return 'text-lg text-gray-600 dark:text-gray-400 md:text-xl max-w-[600px] mb-6';
     case 'tesla':
-      return "text-xl text-gray-600 dark:text-[#86868b] mb-10 max-w-2xl mx-auto";
+      return 'text-xl text-gray-600 dark:text-[#86868b] mb-10 max-w-2xl mx-auto';
     case 'standard':
-      return "text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto";
+      return 'text-xl md:text-2xl text-gray-600 dark:text-gray-400 mb-8 max-w-3xl mx-auto';
     case 'premium':
-      return "mt-6 text-xl text-gray-600 dark:text-gray-400 font-normal";
+      return 'mt-6 text-xl text-gray-600 dark:text-gray-400 font-normal';
     case 'minimal':
-      return "text-lg md:text-xl text-gray-600 dark:text-gray-400 mb-12 font-light";
+      return 'text-lg md:text-xl text-gray-600 dark:text-gray-400 mb-12 font-light';
     case 'cinematic':
-      return "mt-6 text-xl text-gray-600 dark:text-gray-400";
+      return 'mt-6 text-xl text-gray-600 dark:text-gray-400';
     default:
-      return "text-lg text-muted-foreground";
+      return 'text-lg text-muted-foreground';
   }
 }
 
 function getPrimaryCTAClass(variant: HeroVariant): string {
-  const baseClasses = "transition-all duration-200";
-  
+  const baseClasses = 'transition-all duration-200';
+
   switch (variant) {
     case 'main':
       return `${baseClasses} text-base`;
@@ -447,8 +445,8 @@ function getPrimaryCTAClass(variant: HeroVariant): string {
 }
 
 function getSecondaryCTAClass(variant: HeroVariant): string {
-  const baseClasses = "transition-all duration-200";
-  
+  const baseClasses = 'transition-all duration-200';
+
   switch (variant) {
     case 'tesla':
       return `${baseClasses} rounded-xl px-8 py-4 text-lg font-medium border-[#86868b] text-[#86868b] hover:text-[#1d1d1f] hover:border-[#1d1d1f]`;

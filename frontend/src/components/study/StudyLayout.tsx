@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { Button } from '@/components/ui/button';
 import { ContentViewer } from './ContentViewer';
@@ -53,14 +53,35 @@ export function StudyLayout({
   const [showPersonalized, setShowPersonalized] = useState(true);
   const [selectedText, setSelectedText] = useState<string>();
   const [currentPage, setCurrentPage] = useState(1);
-  const [studyMode, setStudyMode] = useState<'explain' | 'summarize' | 'flashcards' | 'quiz'>('explain');
+  const [studyMode, setStudyMode] = useState<'explain' | 'summarize' | 'flashcards' | 'quiz'>(
+    'explain'
+  );
   const [activePanel, setActivePanel] = useState<'content' | 'practice' | 'timer'>('content');
   const [showAnnotations, setShowAnnotations] = useState(false);
   const [practiceData, setPracticeData] = useState<{
-    flashcards: any[];
-    quizQuestions: any[];
+    flashcards: Array<{
+      id: string;
+      front: string;
+      back: string;
+      difficulty: 'easy' | 'medium' | 'hard';
+      tags: string[];
+      reviewCount: number;
+      lastReviewed?: Date;
+      nextReview?: Date;
+      confidence: number;
+    }>;
+    quizQuestions: Array<{
+      id: string;
+      type: 'multiple_choice' | 'true_false' | 'short_answer';
+      question: string;
+      options?: string[];
+      answer: string;
+      explanation: string;
+      difficulty: 'easy' | 'medium' | 'hard';
+      topic: string;
+    }>;
   }>({ flashcards: [], quizQuestions: [] });
-  
+
   // Initialize study session
   const { session, saveProgress } = useStudySession({
     fileId,
@@ -99,19 +120,21 @@ export function StudyLayout({
   // Handle page change
   function handlePageChange(page: number) {
     setCurrentPage(page);
-    saveProgress({ 
+    saveProgress({
       lastPosition: { page, scroll: 0 },
       progress: {
         ...session?.progress,
         viewedPages: [...(session?.progress?.viewedPages || []), page],
         totalTime: session?.duration || 0,
         completedSections: session?.progress?.completedSections || [],
-      }
+      },
     });
   }
 
   // Handle tool actions
-  const handleToolAction = (action: 'highlight' | 'note' | 'timer' | 'stats' | 'export' | 'practice') => {
+  const handleToolAction = (
+    action: 'highlight' | 'note' | 'timer' | 'stats' | 'export' | 'practice'
+  ) => {
     switch (action) {
       case 'highlight':
         setShowAnnotations(!showAnnotations);
@@ -146,12 +169,12 @@ export function StudyLayout({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ fileId }),
       });
-      
-      // Generate quiz questions  
+
+      // Generate quiz questions
       const quizResponse = await fetch('/api/ai/quiz', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           fileId,
           type: 'multiple_choice',
         }),
@@ -160,7 +183,7 @@ export function StudyLayout({
       if (flashcardResponse.ok && quizResponse.ok) {
         const flashcards = await flashcardResponse.json();
         const quiz = await quizResponse.json();
-        
+
         setPracticeData({
           flashcards: flashcards.data || [],
           quizQuestions: quiz.data || [],
@@ -172,7 +195,9 @@ export function StudyLayout({
   };
 
   return (
-    <div className={cn('flex h-screen flex-col bg-background', isFullscreen && 'fixed inset-0 z-50')}>
+    <div
+      className={cn('flex h-screen flex-col bg-background', isFullscreen && 'fixed inset-0 z-50')}
+    >
       {/* Header */}
       <div className="flex items-center justify-between border-b px-4 py-2">
         <div className="flex items-center gap-4">
@@ -197,7 +222,11 @@ export function StudyLayout({
             onClick={() => setShowPersonalized(!showPersonalized)}
             title={showPersonalized ? 'Hide AI panel' : 'Show AI panel'}
           >
-            {showPersonalized ? <PanelRightClose className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+            {showPersonalized ? (
+              <PanelRightClose className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
           </Button>
           <Button
             variant="ghost"
@@ -241,15 +270,12 @@ export function StudyLayout({
                 onPageChange={handlePageChange}
                 initialPage={session?.lastPosition?.page}
               />
-              
+
               {/* Annotation Layer */}
               {showAnnotations && (
                 <div className="absolute inset-0 pointer-events-none">
                   <div className="pointer-events-auto">
-                    <AnnotationLayer
-                      fileId={fileId}
-                      containerRef={contentRef}
-                    />
+                    <AnnotationLayer fileId={fileId} containerRef={contentRef} />
                   </div>
                 </div>
               )}
@@ -260,7 +286,7 @@ export function StudyLayout({
           {showPersonalized && (
             <>
               <PanelResizeHandle className="w-1 bg-border hover:bg-primary/20 transition-colors" />
-              
+
               {/* Personalized Content Panel */}
               <Panel defaultSize={50} minSize={30}>
                 <div ref={personalizedRef} className="h-full">
@@ -273,7 +299,7 @@ export function StudyLayout({
                       userPersona={userPersona}
                     />
                   )}
-                  
+
                   {activePanel === 'practice' && (
                     <div className="h-full overflow-auto">
                       {studyMode === 'flashcards' ? (
@@ -297,7 +323,7 @@ export function StudyLayout({
                       )}
                     </div>
                   )}
-                  
+
                   {activePanel === 'timer' && (
                     <div className="h-full flex items-center justify-center p-6">
                       <StudyTimer
@@ -309,7 +335,7 @@ export function StudyLayout({
                               totalTime: (session?.progress?.totalTime || 0) + duration,
                               completedSections: session?.progress?.completedSections || [],
                               viewedPages: session?.progress?.viewedPages || [],
-                            }
+                            },
                           });
                         }}
                       />

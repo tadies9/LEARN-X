@@ -7,13 +7,13 @@ interface DashboardWelcomeProps {
 
 export function DashboardWelcome({ greeting }: DashboardWelcomeProps) {
   const { persona } = usePersona();
-  
+
   // Generate streak message based on persona's encouragement level
   const getStreakMessage = () => {
     if (!persona?.communication?.encouragementLevel) {
       return "You're making great progress!";
     }
-    
+
     switch (persona.communication.encouragementLevel) {
       case 'minimal':
         return 'Consistent progress.';
@@ -29,9 +29,7 @@ export function DashboardWelcome({ greeting }: DashboardWelcomeProps) {
   return (
     <FadeIn>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">
-          {greeting}
-        </h1>
+        <h1 className="text-3xl font-bold mb-2">{greeting}</h1>
         <p className="text-muted-foreground">{getStreakMessage()}</p>
       </div>
     </FadeIn>

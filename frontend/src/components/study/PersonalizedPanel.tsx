@@ -41,18 +41,12 @@ export function PersonalizedPanel({
 }: PersonalizedPanelProps) {
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<'helpful' | 'not-helpful' | null>(null);
-  
+
   // Fetch outline
   const { outline, loading: outlineLoading } = useOutline(fileId);
-  
+
   // Stream content
-  const {
-    content,
-    isStreaming,
-    error,
-    streamContent,
-    clearContent,
-  } = useContentStream();
+  const { content, isStreaming, error, streamContent, clearContent } = useContentStream();
 
   // Generate content when section is selected or text is highlighted
   useEffect(() => {
@@ -66,7 +60,7 @@ export function PersonalizedPanel({
   const generateContent = async (type: 'selection' | 'section', value: string) => {
     clearContent();
     setFeedback(null);
-    
+
     await streamContent({
       type: studyMode,
       fileId,
@@ -77,7 +71,7 @@ export function PersonalizedPanel({
 
   const handleFeedback = async (isHelpful: boolean) => {
     setFeedback(isHelpful ? 'helpful' : 'not-helpful');
-    
+
     // Send feedback to backend
     try {
       await fetch('/api/v1/learn/feedback', {
@@ -144,7 +138,12 @@ export function PersonalizedPanel({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => generateContent(selectedText ? 'selection' : 'section', selectedText || activeSection!)}
+              onClick={() =>
+                generateContent(
+                  selectedText ? 'selection' : 'section',
+                  selectedText || activeSection!
+                )
+              }
               disabled={isStreaming}
             >
               <RefreshCw className={cn('h-4 w-4', isStreaming && 'animate-spin')} />
@@ -192,11 +191,9 @@ export function PersonalizedPanel({
       <div className="w-64 border-r">
         <div className="p-4">
           <h3 className="font-semibold">Content Outline</h3>
-          <p className="text-sm text-muted-foreground">
-            AI-generated structure
-          </p>
+          <p className="text-sm text-muted-foreground">AI-generated structure</p>
         </div>
-        
+
         <ScrollArea className="h-[calc(100%-5rem)]">
           {outlineLoading ? (
             <div className="flex justify-center p-4">
@@ -226,9 +223,7 @@ export function PersonalizedPanel({
       </div>
 
       {/* Content area */}
-      <div className="flex-1 overflow-auto p-6">
-        {renderContent()}
-      </div>
+      <div className="flex-1 overflow-auto p-6">{renderContent()}</div>
     </div>
   );
 }

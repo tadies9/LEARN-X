@@ -22,19 +22,27 @@ interface SubmissionsTabProps {
 export function SubmissionsTab({ recentSubmissions }: SubmissionsTabProps) {
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'graded': return 'text-green-600';
-      case 'pending': return 'text-yellow-600';
-      case 'late': return 'text-red-600';
-      default: return 'text-gray-600';
+      case 'graded':
+        return 'text-green-600';
+      case 'pending':
+        return 'text-yellow-600';
+      case 'late':
+        return 'text-red-600';
+      default:
+        return 'text-gray-600';
     }
   };
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
-      case 'graded': return 'default' as const;
-      case 'pending': return 'secondary' as const;
-      case 'late': return 'destructive' as const;
-      default: return 'outline' as const;
+      case 'graded':
+        return 'default' as const;
+      case 'pending':
+        return 'secondary' as const;
+      case 'late':
+        return 'destructive' as const;
+      default:
+        return 'outline' as const;
     }
   };
 
@@ -48,9 +56,7 @@ export function SubmissionsTab({ recentSubmissions }: SubmissionsTabProps) {
                 <CardTitle className="text-lg">{submission.assignment}</CardTitle>
                 <CardDescription>{submission.course}</CardDescription>
               </div>
-              <Badge variant={getStatusBadgeVariant(submission.status)}>
-                {submission.status}
-              </Badge>
+              <Badge variant={getStatusBadgeVariant(submission.status)}>{submission.status}</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -62,10 +68,11 @@ export function SubmissionsTab({ recentSubmissions }: SubmissionsTabProps) {
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
-                  Status: <span className={getStatusColor(submission.status)}>{submission.status}</span>
+                  Status:{' '}
+                  <span className={getStatusColor(submission.status)}>{submission.status}</span>
                 </span>
               </div>
-              
+
               {submission.grade !== undefined ? (
                 <div className="p-3 bg-green-50 rounded-lg">
                   <div className="flex items-center justify-between mb-2">

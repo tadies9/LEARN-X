@@ -110,8 +110,8 @@ export default function ProgressPage() {
               <p className="text-sm text-muted-foreground">
                 {overallStats.xpToNext - overallStats.xp} XP to next level
               </p>
-              <Progress 
-                value={(overallStats.xp / overallStats.xpToNext) * 100} 
+              <Progress
+                value={(overallStats.xp / overallStats.xpToNext) * 100}
                 className="mt-2 h-2"
               />
             </div>
@@ -162,7 +162,15 @@ export default function ProgressPage() {
                         </span>
                       </div>
                     </div>
-                    <Badge variant={course.level === 'Beginner' ? 'secondary' : course.level === 'Intermediate' ? 'default' : 'destructive'}>
+                    <Badge
+                      variant={
+                        course.level === 'Beginner'
+                          ? 'secondary'
+                          : course.level === 'Intermediate'
+                            ? 'default'
+                            : 'destructive'
+                      }
+                    >
                       {course.level}
                     </Badge>
                   </div>
@@ -210,11 +218,11 @@ export default function ProgressPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               {achievements.map((achievement) => (
-                <div 
-                  key={achievement.id} 
+                <div
+                  key={achievement.id}
                   className={`flex items-center gap-3 p-3 rounded-lg border ${
-                    achievement.earned 
-                      ? 'bg-green-50 border-green-200' 
+                    achievement.earned
+                      ? 'bg-green-50 border-green-200'
                       : 'bg-gray-50 border-gray-200 opacity-60'
                   }`}
                 >

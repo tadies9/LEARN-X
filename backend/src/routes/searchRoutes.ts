@@ -269,11 +269,15 @@ router.get('/search/filters', authenticateUser, async (req: Request, res: Respon
   }
 });
 
-// Debug endpoints for testing (bypasses authentication)
+// Development-only debug endpoints - SECURITY: These bypass authentication and must never be accessible in production
+// They contain hardcoded user IDs and are only for development testing
 if (process.env.NODE_ENV === 'development') {
+  logger.info('[SearchRoute] Setting up development-only debug endpoints');
+
+  // Debug search endpoint - bypasses authentication for development testing only
   router.post('/debug/search', async (req: Request, res: Response) => {
     try {
-      const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a'; // Hardcoded test user
+      const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a'; // Hardcoded test user - development only
       const { query, filters = {}, options = {} } = req.body;
 
       if (!query || typeof query !== 'string' || query.trim().length === 0) {
@@ -284,7 +288,7 @@ if (process.env.NODE_ENV === 'development') {
         return;
       }
 
-      logger.info(`[SearchRoute] Debug search for: "${query}"`, {
+      logger.debug(`[SearchRoute] Debug search for: "${query}"`, {
         filters,
         options,
       });
@@ -307,9 +311,10 @@ if (process.env.NODE_ENV === 'development') {
     }
   });
 
+  // Debug filters endpoint - bypasses authentication for development testing only
   router.get('/debug/filters', async (_req: Request, res: Response) => {
     try {
-      const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a'; // Hardcoded test user
+      const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a'; // Hardcoded test user - development only
 
       const [courses, fileTypes, contentTypes] = await Promise.all([
         // Get user's courses
@@ -352,6 +357,10 @@ if (process.env.NODE_ENV === 'development') {
       });
     }
   });
+
+  logger.info('[SearchRoute] Development debug endpoints registered');
+} else {
+  logger.info('[SearchRoute] Production mode: Debug endpoints disabled for security');
 }
 
 export default router;

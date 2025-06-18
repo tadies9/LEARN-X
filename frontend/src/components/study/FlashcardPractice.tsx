@@ -1,16 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   RotateCcw,
   ThumbsUp,
@@ -50,16 +45,12 @@ interface FlashcardSession {
 }
 
 const SPACED_REPETITION_INTERVALS = {
-  easy: [1, 6, 14, 30, 90],     // days
-  medium: [1, 4, 10, 25, 60],   // days
-  hard: [1, 3, 7, 16, 35],      // days
+  easy: [1, 6, 14, 30, 90], // days
+  medium: [1, 4, 10, 25, 60], // days
+  hard: [1, 3, 7, 16, 35], // days
 };
 
-export function FlashcardPractice({
-  fileId,
-  flashcards,
-  onComplete,
-}: FlashcardPracticeProps) {
+export function FlashcardPractice({ fileId, flashcards, onComplete }: FlashcardPracticeProps) {
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const [session, setSession] = useState<{
@@ -107,12 +98,11 @@ export function FlashcardPractice({
     if (!currentCard) return;
 
     // Update session stats
-    setSession(prev => ({
+    setSession((prev) => ({
       ...prev,
       correctCount: rating === 'easy' ? prev.correctCount + 1 : prev.correctCount,
-      difficultCards: rating === 'hard' 
-        ? [...prev.difficultCards, currentCard.id]
-        : prev.difficultCards,
+      difficultCards:
+        rating === 'hard' ? [...prev.difficultCards, currentCard.id] : prev.difficultCards,
       reviewedCards: new Set([...prev.reviewedCards, currentCard.id]),
     }));
 
@@ -159,7 +149,7 @@ export function FlashcardPractice({
 
   const nextCard = () => {
     if (currentCardIndex < practiceCards.length - 1) {
-      setCurrentCardIndex(prev => prev + 1);
+      setCurrentCardIndex((prev) => prev + 1);
       setIsFlipped(false);
     } else {
       completeSession();
@@ -168,7 +158,7 @@ export function FlashcardPractice({
 
   const previousCard = () => {
     if (currentCardIndex > 0) {
-      setCurrentCardIndex(prev => prev - 1);
+      setCurrentCardIndex((prev) => prev - 1);
       setIsFlipped(false);
     }
   };
@@ -191,10 +181,14 @@ export function FlashcardPractice({
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'hard': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'easy':
+        return 'bg-green-100 text-green-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'hard':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -234,7 +228,9 @@ export function FlashcardPractice({
         <Progress value={progress} className="h-2" />
         <div className="flex justify-between mt-2 text-sm text-muted-foreground">
           <span>Progress: {Math.round(progress)}%</span>
-          <span>Correct: {session.correctCount}/{session.reviewedCards.size}</span>
+          <span>
+            Correct: {session.correctCount}/{session.reviewedCards.size}
+          </span>
         </div>
       </div>
 
@@ -246,9 +242,7 @@ export function FlashcardPractice({
               <>
                 <div className="text-sm text-muted-foreground mb-4">Front</div>
                 <div className="text-xl font-medium">{currentCard.front}</div>
-                <div className="mt-6 text-sm text-muted-foreground">
-                  Click to reveal answer
-                </div>
+                <div className="mt-6 text-sm text-muted-foreground">Click to reveal answer</div>
               </>
             ) : (
               <>
@@ -258,7 +252,7 @@ export function FlashcardPractice({
                   <Badge className={getDifficultyColor(currentCard.difficulty)}>
                     {currentCard.difficulty}
                   </Badge>
-                  {currentCard.tags.map(tag => (
+                  {currentCard.tags.map((tag) => (
                     <Badge key={tag} variant="outline" className="text-xs">
                       {tag}
                     </Badge>
@@ -273,16 +267,10 @@ export function FlashcardPractice({
       {/* Controls */}
       <div className="flex justify-center gap-4">
         {!isFlipped ? (
-          <Button onClick={() => setIsFlipped(true)}>
-            Show Answer
-          </Button>
+          <Button onClick={() => setIsFlipped(true)}>Show Answer</Button>
         ) : (
           <>
-            <Button
-              variant="outline"
-              className="text-red-600"
-              onClick={() => rateCard('hard')}
-            >
+            <Button variant="outline" className="text-red-600" onClick={() => rateCard('hard')}>
               <ThumbsDown className="mr-2 h-4 w-4" />
               Hard
             </Button>
@@ -294,11 +282,7 @@ export function FlashcardPractice({
               <RotateCcw className="mr-2 h-4 w-4" />
               Medium
             </Button>
-            <Button
-              variant="outline"
-              className="text-green-600"
-              onClick={() => rateCard('easy')}
-            >
+            <Button variant="outline" className="text-green-600" onClick={() => rateCard('easy')}>
               <ThumbsUp className="mr-2 h-4 w-4" />
               Easy
             </Button>
@@ -308,11 +292,7 @@ export function FlashcardPractice({
 
       {/* Navigation */}
       <div className="flex justify-between mt-6">
-        <Button
-          variant="ghost"
-          onClick={previousCard}
-          disabled={currentCardIndex === 0}
-        >
+        <Button variant="ghost" onClick={previousCard} disabled={currentCardIndex === 0}>
           Previous
         </Button>
         <Button variant="ghost" onClick={skipCard}>
@@ -330,15 +310,11 @@ export function FlashcardPractice({
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Auto-flip cards</label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setAutoFlip(!autoFlip)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setAutoFlip(!autoFlip)}>
                 {autoFlip ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               </Button>
             </div>
-            
+
             {autoFlip && (
               <div className="space-y-2">
                 <label className="text-sm font-medium">Flip delay (seconds)</label>
@@ -347,22 +323,18 @@ export function FlashcardPractice({
                   min="1"
                   max="10"
                   value={flipDelay / 1000}
-                  onChange={(e) => setFlipDelay(parseInt(e.target.value) * 1000)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    setFlipDelay(parseInt(e.target.value) * 1000)
+                  }
                   className="w-full"
                 />
-                <div className="text-sm text-muted-foreground">
-                  {flipDelay / 1000} seconds
-                </div>
+                <div className="text-sm text-muted-foreground">{flipDelay / 1000} seconds</div>
               </div>
             )}
-            
+
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium">Shuffle cards</label>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setShuffled(!shuffled)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setShuffled(!shuffled)}>
                 {shuffled ? 'On' : 'Off'}
               </Button>
             </div>

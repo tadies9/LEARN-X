@@ -77,7 +77,7 @@ export default function CalendarPage() {
                   const isCurrentMonth = day > 0 && day <= 31;
                   const isToday = day === 13;
                   const hasEvent = [13, 15, 20].includes(day);
-                  
+
                   return (
                     <div
                       key={i}

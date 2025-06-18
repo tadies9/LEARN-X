@@ -1,14 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { 
-  Plus, 
-  Upload, 
-  BookOpen, 
-  Brain, 
-  Target,
-  BarChart3
-} from 'lucide-react';
+import { Plus, Upload, BookOpen, Brain, Target, BarChart3 } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';

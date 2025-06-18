@@ -31,8 +31,8 @@ export class FileApiService {
    * Upload a file with enhanced processing
    */
   static async uploadFile(
-    file: File, 
-    courseId: string, 
+    file: File,
+    courseId: string,
     moduleId?: string,
     onProgress?: (progress: number) => void
   ): Promise<UploadedFile> {
@@ -52,7 +52,7 @@ export class FileApiService {
           const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           onProgress(progress);
         }
-      }
+      },
     });
 
     return response.data.data;
@@ -71,7 +71,7 @@ export class FileApiService {
    */
   static async getFiles(courseId: string): Promise<UploadedFile[]> {
     const response = await API_CLIENT.get('/files', {
-      params: { courseId }
+      params: { courseId },
     });
     return response.data.data;
   }

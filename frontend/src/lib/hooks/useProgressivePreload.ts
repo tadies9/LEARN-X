@@ -42,12 +42,14 @@ export function useProgressivePreload({
 }: PreloadOptions) {
   const { user } = useAuth();
   const [session, setSession] = useState<any>(null);
-  
+
   useEffect(() => {
     const getSession = async () => {
       const { createClient } = await import('@/lib/supabase/client');
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       setSession(session);
     };
     getSession();

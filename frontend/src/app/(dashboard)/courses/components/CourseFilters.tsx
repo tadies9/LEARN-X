@@ -26,7 +26,10 @@ interface CourseFiltersProps {
 }
 
 export function CourseFilters({ filters, onFilterChange }: CourseFiltersProps) {
-  const handleChange = (key: keyof CourseFilterType, value: CourseFilterType[keyof CourseFilterType]) => {
+  const handleChange = (
+    key: keyof CourseFilterType,
+    value: CourseFilterType[keyof CourseFilterType]
+  ) => {
     onFilterChange({
       ...filters,
       [key]: value,

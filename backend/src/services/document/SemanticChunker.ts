@@ -1,5 +1,9 @@
 import { logger } from '../../utils/logger';
 import { DocumentStructure, Section, ContentType } from './DocumentAnalyzer';
+import { ChunkingStrategies, ChunkingOptions } from './ChunkingStrategies';
+import { ChunkValidation, ValidationResult } from './ChunkValidation';
+import { ChunkOptimization, OptimizationOptions } from './ChunkOptimization';
+import { ChunkMetadataGenerator, MetadataGenerationOptions } from './ChunkMetadata';
 
 export interface ChunkOptions {
   minChunkSize?: number;
@@ -45,23 +49,10 @@ export class SemanticChunker {
     includeMetadata: true,
   };
 
-  private readonly ADAPTIVE_SIZES: Record<ContentType, { min: number; max: number }> = {
-    definition: { min: 100, max: 500 },
-    example: { min: 200, max: 800 },
-    explanation: { min: 300, max: 1200 },
-    theory: { min: 400, max: 1500 },
-    practice: { min: 200, max: 1000 },
-    summary: { min: 200, max: 800 },
-    introduction: { min: 300, max: 1000 },
-    conclusion: { min: 200, max: 800 },
-    question: { min: 100, max: 400 },
-    answer: { min: 200, max: 1000 },
-    code: { min: 100, max: 2000 },
-    equation: { min: 50, max: 300 },
-    list: { min: 100, max: 600 },
-    table: { min: 200, max: 1000 },
-    other: { min: 200, max: 1000 },
-  };
+  private readonly chunkingStrategies = new ChunkingStrategies();
+  private readonly chunkValidation = new ChunkValidation();
+  private readonly chunkOptimization = new ChunkOptimization();
+  private readonly metadataGenerator = new ChunkMetadataGenerator();
 
   chunk(content: string, structure: DocumentStructure, options: ChunkOptions = {}): Chunk[] {
     const opts = { ...this.DEFAULT_OPTIONS, ...options };
@@ -74,24 +65,32 @@ export class SemanticChunker {
     let chunks: Chunk[] = [];
 
     if (opts.preserveStructure && structure.sections.length > 0) {
-      // Chunk based on document structure
       chunks = this.chunkByStructure(structure.sections, opts);
     } else {
-      // Fallback to content-based chunking
       chunks = this.chunkByContent(content, structure, opts);
     }
 
-    // Add overlap between chunks
-    if (opts.overlapSize > 0) {
-      chunks = this.addOverlap(chunks, opts.overlapSize);
-    }
-
-    // Add navigation metadata
-    chunks = this.addNavigationMetadata(chunks);
+    // Optimize chunks (includes overlap and merging)
+    const optimizationOptions: OptimizationOptions = {
+      overlapSize: opts.overlapSize,
+      enableMerging: true,
+      maxMergeSize: opts.maxChunkSize * 1.3,
+      minViableSize: opts.minChunkSize * 0.7,
+    };
+    chunks = this.chunkOptimization.optimizeChunks(chunks, optimizationOptions);
 
     // Enhance metadata with document-level information
     if (opts.includeMetadata) {
-      chunks = this.enhanceMetadata(chunks, structure);
+      chunks = this.metadataGenerator.enhanceWithDocumentMetadata(chunks, structure);
+    }
+
+    // Validate chunks
+    const validation = this.chunkValidation.validateBatch(chunks);
+    if (!validation.isValid) {
+      logger.warn('[SemanticChunker] Chunk validation warnings', {
+        errors: validation.errors,
+        warnings: validation.warnings,
+      });
     }
 
     logger.info(`[SemanticChunker] Created ${chunks.length} chunks`);
@@ -129,13 +128,16 @@ export class SemanticChunker {
     const chunks: Chunk[] = [];
     const contentType = section.contentType || 'other';
 
-    // Get adaptive size for this content type
-    const sizeConstraints = options.adaptiveSize
-      ? this.ADAPTIVE_SIZES[contentType]
-      : { min: options.minChunkSize, max: options.maxChunkSize };
+    // Get adaptive size constraints
+    const chunkingOptions: ChunkingOptions = {
+      minChunkSize: options.minChunkSize,
+      maxChunkSize: options.maxChunkSize,
+      adaptiveSize: options.adaptiveSize,
+    };
+    const sizeConstraints = this.chunkingStrategies.getSizeConstraints(contentType, chunkingOptions);
 
     // Split section content into semantic units
-    const semanticUnits = this.splitIntoSemanticUnits(section.content, contentType);
+    const semanticUnits = this.chunkingStrategies.splitIntoSemanticUnits(section.content, contentType);
 
     let currentChunk = '';
     let unitIndex = 0;
@@ -144,13 +146,10 @@ export class SemanticChunker {
       const potentialChunk = currentChunk + (currentChunk ? '\n\n' : '') + unit;
 
       if (potentialChunk.length > sizeConstraints.max && currentChunk) {
-        // Save current chunk
         chunks.push(
           this.createChunk(currentChunk, section, contentType, parentTitle, unitIndex === 1, false)
         );
         currentChunk = unit;
-      } else if (potentialChunk.length >= sizeConstraints.min) {
-        currentChunk = potentialChunk;
       } else {
         currentChunk = potentialChunk;
       }
@@ -168,336 +167,43 @@ export class SemanticChunker {
     return chunks;
   }
 
-  private splitIntoSemanticUnits(content: string, contentType: ContentType): string[] {
-    const units: string[] = [];
-
-    switch (contentType) {
-      case 'code':
-        // Split by code blocks
-        units.push(...this.splitCodeContent(content));
-        break;
-
-      case 'list':
-        // Split by list items
-        units.push(...this.splitListContent(content));
-        break;
-
-      case 'equation':
-        // Keep equations together
-        units.push(content);
-        break;
-
-      case 'definition':
-        // Split by sentences but keep definitions together
-        units.push(...this.splitDefinitionContent(content));
-        break;
-
-      default:
-        // Split by paragraphs, then sentences if needed
-        units.push(...this.splitByParagraphsAndSentences(content));
-    }
-
-    return units.filter((unit) => unit.trim().length > 0);
-  }
-
-  private splitCodeContent(content: string): string[] {
-    const codeBlocks = content.match(/```[\s\S]*?```/g) || [];
-    const nonCodeParts = content.split(/```[\s\S]*?```/);
-
-    const units: string[] = [];
-    for (let i = 0; i < nonCodeParts.length; i++) {
-      if (nonCodeParts[i].trim()) {
-        units.push(...this.splitByParagraphsAndSentences(nonCodeParts[i]));
-      }
-      if (i < codeBlocks.length) {
-        units.push(codeBlocks[i]);
-      }
-    }
-
-    return units;
-  }
-
-  private splitListContent(content: string): string[] {
-    const lines = content.split('\n');
-    const units: string[] = [];
-    let currentList: string[] = [];
-    let inList = false;
-
-    for (const line of lines) {
-      const isListItem = /^[\s]*[-*+•]\s+|^[\s]*\d+[.)]\s+|^[\s]*[a-z][.)]\s+/i.test(line);
-
-      if (isListItem) {
-        currentList.push(line);
-        inList = true;
-      } else if (inList && line.trim() === '') {
-        // Empty line might end the list
-        if (currentList.length > 0) {
-          units.push(currentList.join('\n'));
-          currentList = [];
-        }
-        inList = false;
-      } else if (!inList) {
-        units.push(line);
-      } else {
-        // Continuation of list item
-        currentList.push(line);
-      }
-    }
-
-    if (currentList.length > 0) {
-      units.push(currentList.join('\n'));
-    }
-
-    return units;
-  }
-
-  private splitDefinitionContent(content: string): string[] {
-    // Keep definitions as single units
-    const sentences = this.splitIntoSentences(content);
-    const units: string[] = [];
-    let currentDefinition = '';
-
-    for (const sentence of sentences) {
-      if (this.isDefinitionSentence(sentence)) {
-        if (currentDefinition) {
-          units.push(currentDefinition);
-        }
-        currentDefinition = sentence;
-      } else if (currentDefinition) {
-        // Add explanation to definition
-        currentDefinition += ' ' + sentence;
-      } else {
-        units.push(sentence);
-      }
-    }
-
-    if (currentDefinition) {
-      units.push(currentDefinition);
-    }
-
-    return units;
-  }
-
-  private splitByParagraphsAndSentences(content: string): string[] {
-    const paragraphs = content.split(/\n\n+/);
-    const units: string[] = [];
-
-    for (const paragraph of paragraphs) {
-      if (paragraph.length < 500) {
-        units.push(paragraph);
-      } else {
-        // Split long paragraphs by sentences
-        const sentences = this.splitIntoSentences(paragraph);
-        let currentUnit = '';
-
-        for (const sentence of sentences) {
-          const potential = currentUnit + (currentUnit ? ' ' : '') + sentence;
-          if (potential.length > 400 && currentUnit) {
-            units.push(currentUnit);
-            currentUnit = sentence;
-          } else {
-            currentUnit = potential;
-          }
-        }
-
-        if (currentUnit) {
-          units.push(currentUnit);
-        }
-      }
-    }
-
-    return units;
-  }
-
-  private splitIntoSentences(text: string): string[] {
-    // Improved sentence splitting that handles abbreviations
-    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
-    const refined: string[] = [];
-    let buffer = '';
-
-    for (const sentence of sentences) {
-      buffer += sentence;
-
-      // Check if this is likely a complete sentence
-      if (this.isCompleteSentence(buffer)) {
-        refined.push(buffer.trim());
-        buffer = '';
-      }
-    }
-
-    if (buffer) {
-      refined.push(buffer.trim());
-    }
-
-    return refined;
-  }
-
-  private isCompleteSentence(text: string): boolean {
-    // Check for common abbreviations that don't end sentences
-    const abbreviations = /\b(?:Dr|Mr|Mrs|Ms|Prof|Sr|Jr|Inc|Ltd|Co|Corp|etc|eg|ie|vs|cf)\.\s*$/i;
-    if (abbreviations.test(text)) {
-      return false;
-    }
-
-    // Check if it ends with proper punctuation
-    return /[.!?]$/.test(text);
-  }
-
-  private isDefinitionSentence(sentence: string): boolean {
-    const patterns = [
-      /\b(?:is|are|means?|refers?\s+to|can\s+be\s+defined\s+as)\b/i,
-      /^[A-Z][^:]+:\s+/,
-      /\bdefinition\b/i,
-    ];
-
-    return patterns.some((pattern) => pattern.test(sentence));
-  }
-
   private createChunk(
     content: string,
     section: Section,
     contentType: ContentType,
-    _parentTitle: string | undefined,
+    parentTitle: string | undefined,
     isStart: boolean,
     isEnd: boolean
   ): Chunk {
     const id = `chunk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    
+    const metadata = this.metadataGenerator.generateMetadata(
+      content,
+      section,
+      contentType,
+      parentTitle,
+      isStart,
+      isEnd
+    );
 
     return {
       id,
       content: content.trim(),
-      metadata: {
-        type: contentType,
-        hierarchyLevel: section.level,
-        sectionTitle: section.title,
-        sectionId: section.id,
-        keywords: section.keywords,
-        position: 0, // Will be set later
-        isStartOfSection: isStart,
-        isEndOfSection: isEnd,
-        importance: this.calculateImportance(content, contentType),
-        concepts: this.extractConcepts(content),
-        references: this.extractReferences(content),
-      },
+      metadata,
     };
   }
 
-  private calculateImportance(
-    content: string,
-    contentType: ContentType
-  ): 'high' | 'medium' | 'low' {
-    // High importance for definitions, summaries, and introductions
-    if (['definition', 'summary', 'introduction', 'conclusion'].includes(contentType)) {
-      return 'high';
-    }
-
-    // Check for importance indicators
-    const highImportanceIndicators = [
-      /\b(?:important|crucial|essential|fundamental|key|critical|significant)\b/i,
-      /\b(?:must|should|need\s+to|have\s+to|required)\b/i,
-      /\b(?:note|remember|recall|caution|warning)\b/i,
-    ];
-
-    if (highImportanceIndicators.some((pattern) => pattern.test(content))) {
-      return 'high';
-    }
-
-    // Examples and practice problems are medium importance
-    if (['example', 'practice', 'question'].includes(contentType)) {
-      return 'medium';
-    }
-
-    return 'low';
+  // Utility methods for accessing sub-services
+  validateChunk(chunk: Chunk): ValidationResult {
+    return this.chunkValidation.validateChunk(chunk);
   }
 
-  private extractConcepts(content: string): string[] {
-    // Extract important concepts (capitalized phrases, technical terms)
-    const concepts: string[] = [];
-
-    // Extract capitalized phrases (likely proper nouns or important concepts)
-    const capitalizedPhrases = content.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*/g) || [];
-    concepts.push(...capitalizedPhrases);
-
-    // Extract quoted terms
-    const quotedTerms = content.match(/["']([^"']+)["']/g) || [];
-    concepts.push(...quotedTerms.map((term) => term.replace(/["']/g, '')));
-
-    // Extract terms in parentheses (often abbreviations or clarifications)
-    const parentheticalTerms = content.match(/\(([^)]+)\)/g) || [];
-    concepts.push(...parentheticalTerms.map((term) => term.replace(/[()]/g, '')));
-
-    // Deduplicate and filter
-    return [...new Set(concepts)]
-      .filter((concept) => concept.length > 2 && concept.length < 50)
-      .slice(0, 10);
+  validateChunks(chunks: Chunk[]): ValidationResult {
+    return this.chunkValidation.validateBatch(chunks);
   }
 
-  private extractReferences(content: string): string[] {
-    const references: string[] = [];
-
-    // Extract citations (e.g., [1], (Smith, 2020))
-    const citations = content.match(/\[[^\]]+\]|\([^)]+\d{4}[^)]*\)/g) || [];
-    references.push(...citations);
-
-    // Extract figure/table references
-    const figureRefs = content.match(/\b(?:Figure|Fig\.|Table|Equation|Eq\.)\s+\S+/gi) || [];
-    references.push(...figureRefs);
-
-    return [...new Set(references)];
-  }
-
-  private addOverlap(chunks: Chunk[], overlapSize: number): Chunk[] {
-    const overlappedChunks: Chunk[] = [];
-
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      let content = chunk.content;
-
-      // Add overlap from previous chunk
-      if (i > 0) {
-        const prevContent = chunks[i - 1].content;
-        const prevWords = prevContent.split(/\s+/);
-        const overlapWords = prevWords.slice(-Math.min(overlapSize, prevWords.length));
-        content = overlapWords.join(' ') + '\n\n' + content;
-      }
-
-      // Add overlap from next chunk
-      if (i < chunks.length - 1) {
-        const nextContent = chunks[i + 1].content;
-        const nextWords = nextContent.split(/\s+/);
-        const overlapWords = nextWords.slice(0, Math.min(overlapSize, nextWords.length));
-        content = content + '\n\n' + overlapWords.join(' ');
-      }
-
-      overlappedChunks.push({
-        ...chunk,
-        content,
-      });
-    }
-
-    return overlappedChunks;
-  }
-
-  private addNavigationMetadata(chunks: Chunk[]): Chunk[] {
-    return chunks.map((chunk, index) => ({
-      ...chunk,
-      metadata: {
-        ...chunk.metadata,
-        totalChunks: chunks.length,
-        previousChunkId: index > 0 ? chunks[index - 1].id : undefined,
-        nextChunkId: index < chunks.length - 1 ? chunks[index + 1].id : undefined,
-      },
-    }));
-  }
-
-  private enhanceMetadata(chunks: Chunk[], structure: DocumentStructure): Chunk[] {
-    return chunks.map((chunk) => ({
-      ...chunk,
-      metadata: {
-        ...chunk.metadata,
-        academicLevel: structure.metadata.academicLevel,
-      },
-    }));
+  analyzeChunkSizes(chunks: Chunk[]) {
+    return this.chunkOptimization.analyzeChunkSizes(chunks);
   }
 
   private chunkByContent(

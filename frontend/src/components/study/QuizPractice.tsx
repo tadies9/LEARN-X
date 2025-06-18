@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -8,21 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  CheckCircle,
-  XCircle,
-  Clock,
-  Target,
-  RotateCcw,
-  Play,
-  Pause,
-} from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CheckCircle, XCircle, Clock, Target, RotateCcw, Play, Pause } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface QuizQuestion {
@@ -57,12 +44,7 @@ interface QuizResults {
   completedAt: Date;
 }
 
-export function QuizPractice({
-  fileId,
-  questions,
-  timeLimit = 30,
-  onComplete,
-}: QuizPracticeProps) {
+export function QuizPractice({ fileId, questions, timeLimit = 30, onComplete }: QuizPracticeProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState<Record<string, string>>({});
   const [timeRemaining, setTimeRemaining] = useState(timeLimit * 60);
@@ -82,7 +64,7 @@ export function QuizPractice({
     if (!isStarted || isPaused || showResults) return;
 
     const timer = setInterval(() => {
-      setTimeRemaining(prev => {
+      setTimeRemaining((prev) => {
         if (prev <= 1) {
           completeQuiz();
           return 0;
@@ -108,11 +90,11 @@ export function QuizPractice({
 
   const pauseQuiz = () => {
     setIsPaused(!isPaused);
-    
+
     if (!isPaused && questionStartTime > 0) {
       // Record time spent on current question
       const timeSpent = Date.now() - questionStartTime;
-      setQuestionTimes(prev => ({
+      setQuestionTimes((prev) => ({
         ...prev,
         [currentQuestion.id]: (prev[currentQuestion.id] || 0) + timeSpent,
       }));
@@ -122,7 +104,7 @@ export function QuizPractice({
   };
 
   const selectAnswer = (answer: string) => {
-    setUserAnswers(prev => ({
+    setUserAnswers((prev) => ({
       ...prev,
       [currentQuestion.id]: answer,
     }));
@@ -132,7 +114,7 @@ export function QuizPractice({
     // Record time spent on current question
     if (questionStartTime > 0) {
       const timeSpent = Date.now() - questionStartTime;
-      setQuestionTimes(prev => ({
+      setQuestionTimes((prev) => ({
         ...prev,
         [currentQuestion.id]: (prev[currentQuestion.id] || 0) + timeSpent,
       }));
@@ -141,22 +123,22 @@ export function QuizPractice({
     if (isLastQuestion) {
       completeQuiz();
     } else {
-      setCurrentQuestionIndex(prev => prev + 1);
+      setCurrentQuestionIndex((prev) => prev + 1);
     }
   };
 
   const previousQuestion = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
+      setCurrentQuestionIndex((prev) => prev - 1);
     }
   };
 
   const completeQuiz = () => {
     const totalTime = (timeLimit * 60 - timeRemaining) * 1000;
-    const questionResults = questions.map(question => {
+    const questionResults = questions.map((question) => {
       const userAnswer = userAnswers[question.id] || '';
       const correct = checkAnswer(question, userAnswer);
-      
+
       return {
         questionId: question.id,
         correct,
@@ -165,7 +147,7 @@ export function QuizPractice({
       };
     });
 
-    const correctCount = questionResults.filter(r => r.correct).length;
+    const correctCount = questionResults.filter((r) => r.correct).length;
     const accuracy = (correctCount / questions.length) * 100;
 
     const quizResults: QuizResults = {
@@ -202,10 +184,14 @@ export function QuizPractice({
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'hard': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'easy':
+        return 'bg-green-100 text-green-800';
+      case 'medium':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'hard':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -230,30 +216,26 @@ export function QuizPractice({
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-blue-600">
-                    {questions.length}
-                  </div>
+                  <div className="text-2xl font-bold text-blue-600">{questions.length}</div>
                   <div className="text-sm text-muted-foreground">Questions</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-green-600">
-                    {timeLimit}
-                  </div>
+                  <div className="text-2xl font-bold text-green-600">{timeLimit}</div>
                   <div className="text-sm text-muted-foreground">Minutes</div>
                 </div>
               </div>
-              
+
               <div className="space-y-2">
                 <h3 className="font-semibold">Question Types:</h3>
                 <div className="flex flex-wrap gap-2 justify-center">
-                  {Array.from(new Set(questions.map(q => q.type))).map(type => (
+                  {Array.from(new Set(questions.map((q) => q.type))).map((type) => (
                     <Badge key={type} variant="outline">
                       {type.replace('_', ' ')}
                     </Badge>
                   ))}
                 </div>
               </div>
-              
+
               <Button onClick={startQuiz} size="lg" className="w-full">
                 <Play className="mr-2 h-4 w-4" />
                 Start Quiz
@@ -269,7 +251,7 @@ export function QuizPractice({
     return (
       <div className="max-w-2xl mx-auto p-6">
         <h2 className="text-3xl font-bold mb-6 text-center">Quiz Results</h2>
-        
+
         <Card className="mb-6">
           <CardContent className="p-6">
             <div className="grid grid-cols-2 gap-6 mb-6">
@@ -286,15 +268,17 @@ export function QuizPractice({
                 <div className="text-sm text-muted-foreground">Time Spent</div>
               </div>
             </div>
-            
+
             <div className="space-y-2 mb-6">
               <div className="flex justify-between text-sm">
                 <span>Correct Answers:</span>
-                <span>{results.correctAnswers} / {results.totalQuestions}</span>
+                <span>
+                  {results.correctAnswers} / {results.totalQuestions}
+                </span>
               </div>
               <Progress value={results.accuracy} className="h-2" />
             </div>
-            
+
             <div className="flex gap-2 justify-center">
               <Button onClick={restartQuiz}>
                 <RotateCcw className="mr-2 h-4 w-4" />
@@ -311,9 +295,9 @@ export function QuizPractice({
         <div className="space-y-4">
           <h3 className="text-lg font-semibold">Answer Review</h3>
           {questions.map((question, index) => {
-            const result = results.questionResults.find(r => r.questionId === question.id);
+            const result = results.questionResults.find((r) => r.questionId === question.id);
             const isCorrect = result?.correct || false;
-            
+
             return (
               <Card key={question.id}>
                 <CardContent className="p-4">
@@ -345,9 +329,7 @@ export function QuizPractice({
                               <span className="text-green-600">{question.answer}</span>
                             </div>
                           )}
-                          <div className="text-muted-foreground">
-                            {question.explanation}
-                          </div>
+                          <div className="text-muted-foreground">{question.explanation}</div>
                         </div>
                       )}
                     </div>
@@ -374,9 +356,7 @@ export function QuizPractice({
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2 text-sm">
             <Clock className="h-4 w-4" />
-            <span className={cn(
-              timeRemaining < 300 && 'text-red-600 font-medium'
-            )}>
+            <span className={cn(timeRemaining < 300 && 'text-red-600 font-medium')}>
               {formatTime(timeRemaining)}
             </span>
           </div>
@@ -391,7 +371,9 @@ export function QuizPractice({
         <Progress value={progress} className="h-2" />
         <div className="flex justify-between mt-2 text-sm text-muted-foreground">
           <span>Progress: {Math.round(progress)}%</span>
-          <span>Answered: {Object.keys(userAnswers).length}/{questions.length}</span>
+          <span>
+            Answered: {Object.keys(userAnswers).length}/{questions.length}
+          </span>
         </div>
       </div>
 
@@ -411,7 +393,7 @@ export function QuizPractice({
         <CardContent>
           <div className="space-y-4">
             <p className="text-lg">{currentQuestion.question}</p>
-            
+
             {currentQuestion.type === 'multiple_choice' && currentQuestion.options && (
               <RadioGroup
                 value={userAnswers[currentQuestion.id] || ''}
@@ -419,10 +401,7 @@ export function QuizPractice({
               >
                 {currentQuestion.options.map((option, index) => (
                   <div key={index} className="flex items-center space-x-2">
-                    <RadioGroupItem
-                      value={option}
-                      id={`option-${index}`}
-                    />
+                    <RadioGroupItem value={option} id={`option-${index}`} />
                     <Label htmlFor={`option-${index}`} className="text-sm">
                       {option}
                     </Label>
@@ -430,7 +409,7 @@ export function QuizPractice({
                 ))}
               </RadioGroup>
             )}
-            
+
             {currentQuestion.type === 'true_false' && (
               <RadioGroup
                 value={userAnswers[currentQuestion.id] || ''}
@@ -446,12 +425,12 @@ export function QuizPractice({
                 </div>
               </RadioGroup>
             )}
-            
+
             {currentQuestion.type === 'short_answer' && (
               <Input
                 placeholder="Type your answer..."
                 value={userAnswers[currentQuestion.id] || ''}
-                onChange={(e) => selectAnswer(e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => selectAnswer(e.target.value)}
               />
             )}
           </div>
@@ -460,18 +439,11 @@ export function QuizPractice({
 
       {/* Navigation */}
       <div className="flex justify-between">
-        <Button
-          variant="outline"
-          onClick={previousQuestion}
-          disabled={currentQuestionIndex === 0}
-        >
+        <Button variant="outline" onClick={previousQuestion} disabled={currentQuestionIndex === 0}>
           Previous
         </Button>
-        
-        <Button
-          onClick={nextQuestion}
-          disabled={!userAnswers[currentQuestion.id]}
-        >
+
+        <Button onClick={nextQuestion} disabled={!userAnswers[currentQuestion.id]}>
           {isLastQuestion ? 'Finish Quiz' : 'Next Question'}
         </Button>
       </div>
@@ -483,9 +455,7 @@ export function QuizPractice({
             <CardContent className="p-6 text-center">
               <Pause className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
               <h3 className="text-lg font-semibold mb-2">Quiz Paused</h3>
-              <p className="text-muted-foreground mb-4">
-                Click resume to continue your quiz
-              </p>
+              <p className="text-muted-foreground mb-4">Click resume to continue your quiz</p>
               <Button onClick={pauseQuiz}>
                 <Play className="mr-2 h-4 w-4" />
                 Resume Quiz

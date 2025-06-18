@@ -21,7 +21,7 @@ export function FileProcessingDebug({ fileId, fileName, currentStatus }: FilePro
   const checkStatus = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       const statusData = await FileApiService.getProcessingStatus(fileId);
       setStatus(statusData);
@@ -35,7 +35,7 @@ export function FileProcessingDebug({ fileId, fileName, currentStatus }: FilePro
   const retryProcessing = async () => {
     setLoading(true);
     setError(null);
-    
+
     try {
       await FileApiService.retryProcessing(fileId);
       setError(null);
@@ -73,29 +73,19 @@ export function FileProcessingDebug({ fileId, fileName, currentStatus }: FilePro
             <CardTitle className="text-sm">Debug Info</CardTitle>
           </div>
           <div className="flex gap-2">
-            <Button 
-              size="sm" 
-              variant="outline"
-              onClick={checkStatus}
-              disabled={loading}
-            >
+            <Button size="sm" variant="outline" onClick={checkStatus} disabled={loading}>
               <RefreshCw className={`h-3 w-3 mr-1 ${loading ? 'animate-spin' : ''}`} />
               Check Status
             </Button>
             {currentStatus === 'error' && (
-              <Button 
-                size="sm" 
-                variant="default"
-                onClick={retryProcessing}
-                disabled={loading}
-              >
+              <Button size="sm" variant="default" onClick={retryProcessing} disabled={loading}>
                 Retry
               </Button>
             )}
           </div>
         </div>
       </CardHeader>
-      
+
       {(status || error) && (
         <CardContent className="pt-0">
           {error && (
@@ -103,7 +93,7 @@ export function FileProcessingDebug({ fileId, fileName, currentStatus }: FilePro
               {error}
             </div>
           )}
-          
+
           {status && (
             <div className="space-y-2 text-xs">
               <div className="flex justify-between">
@@ -112,42 +102,44 @@ export function FileProcessingDebug({ fileId, fileName, currentStatus }: FilePro
                   {status.status}
                 </Badge>
               </div>
-              
+
               {status.progress !== undefined && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Progress:</span>
                   <span>{status.progress}%</span>
                 </div>
               )}
-              
+
               {status.stage && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Stage:</span>
                   <span>{status.stage}</span>
                 </div>
               )}
-              
+
               {status.chunksGenerated !== undefined && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Chunks:</span>
-                  <span>{status.chunksGenerated} / {status.totalChunks || '?'}</span>
+                  <span>
+                    {status.chunksGenerated} / {status.totalChunks || '?'}
+                  </span>
                 </div>
               )}
-              
+
               {status.embeddingsGenerated !== undefined && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Embeddings:</span>
                   <span>{status.embeddingsGenerated}</span>
                 </div>
               )}
-              
+
               {status.processingTime !== undefined && (
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Time:</span>
                   <span>{(status.processingTime / 1000).toFixed(1)}s</span>
                 </div>
               )}
-              
+
               {status.error && (
                 <div className="mt-2 p-2 bg-destructive/10 rounded">
                   <p className="font-medium text-destructive">Error:</p>

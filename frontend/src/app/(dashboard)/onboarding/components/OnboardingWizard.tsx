@@ -49,7 +49,9 @@ export function OnboardingWizard() {
                   <span className="text-gray-600 dark:text-gray-400 font-medium">
                     Step {currentProgressStep + 1} of {progressSteps}
                   </span>
-                  <span className="text-primary font-semibold">{Math.round(progress)}% Complete</span>
+                  <span className="text-primary font-semibold">
+                    {Math.round(progress)}% Complete
+                  </span>
                 </div>
                 <Progress value={progress} className="h-2" />
               </div>

@@ -33,7 +33,6 @@ const CONTENT_DENSITY_OPTIONS = [
   },
 ];
 
-
 export function ContentPreferencesStep() {
   const { nextStep, previousStep, updateFormData, formData } = useOnboarding();
   const [density, setDensity] = useState<string>(
@@ -75,7 +74,9 @@ export function ContentPreferencesStep() {
         <div className="space-y-4">
           <div className="text-center">
             <h3 className="font-semibold text-lg mb-1">Content Density</h3>
-            <p className="text-sm text-muted-foreground">How much detail do you prefer in explanations?</p>
+            <p className="text-sm text-muted-foreground">
+              How much detail do you prefer in explanations?
+            </p>
           </div>
           <RadioGroup value={density} onValueChange={setDensity}>
             <div className="grid grid-cols-3 gap-3">
@@ -87,7 +88,9 @@ export function ContentPreferencesStep() {
                     className={cn(
                       'relative rounded-lg border-2 p-4 cursor-pointer transition-all duration-200',
                       'hover:shadow-md hover:border-primary/50',
-                      isSelected ? 'border-primary shadow-md' : 'border-gray-200 dark:border-gray-800',
+                      isSelected
+                        ? 'border-primary shadow-md'
+                        : 'border-gray-200 dark:border-gray-800',
                       'bg-white dark:bg-gray-900'
                     )}
                     onClick={() => setDensity(option.value)}
@@ -112,7 +115,6 @@ export function ContentPreferencesStep() {
             </div>
           </RadioGroup>
         </div>
-
 
         {/* Detail Tolerance */}
         <div className="space-y-3">
@@ -151,7 +153,13 @@ export function ContentPreferencesStep() {
         </div>
 
         <div className="flex justify-between pt-6 border-t">
-          <Button type="button" variant="outline" size="lg" onClick={previousStep} className="min-w-[120px]">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={previousStep}
+            className="min-w-[120px]"
+          >
             <ChevronLeft className="mr-2 h-4 w-4" />
             Back
           </Button>

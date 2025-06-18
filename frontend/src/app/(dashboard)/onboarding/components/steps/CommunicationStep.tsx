@@ -88,7 +88,9 @@ export function CommunicationStep() {
           <MessageSquare className="h-8 w-8 text-primary" />
         </div>
         <CardTitle className="text-3xl">Communication Style</CardTitle>
-        <CardDescription className="text-lg mt-2">How would you like LEARN-X to communicate with you?</CardDescription>
+        <CardDescription className="text-lg mt-2">
+          How would you like LEARN-X to communicate with you?
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Communication Style */}
@@ -107,7 +109,9 @@ export function CommunicationStep() {
                     className={cn(
                       'relative rounded-lg border-2 p-4 cursor-pointer transition-all duration-200',
                       'hover:shadow-md hover:border-primary/50',
-                      isSelected ? 'border-primary shadow-md' : 'border-gray-200 dark:border-gray-800',
+                      isSelected
+                        ? 'border-primary shadow-md'
+                        : 'border-gray-200 dark:border-gray-800',
                       'bg-white dark:bg-gray-900'
                     )}
                     onClick={() => setStyle(option.value)}
@@ -171,7 +175,13 @@ export function CommunicationStep() {
         </div>
 
         <div className="flex justify-between pt-6 border-t">
-          <Button type="button" variant="outline" size="lg" onClick={previousStep} className="min-w-[120px]">
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={previousStep}
+            className="min-w-[120px]"
+          >
             <ChevronLeft className="mr-2 h-4 w-4" />
             Back
           </Button>

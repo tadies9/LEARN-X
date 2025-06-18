@@ -2,6 +2,13 @@ import { AICache } from '../../cache/AICache';
 import { CostTracker } from '../../ai/CostTracker';
 import { UserPersona } from '../../../types/persona';
 import Redis from 'ioredis';
+import { 
+  DeepExplanationParams, 
+  DeepSummaryParams, 
+  ChatParams, 
+  FlashcardParams, 
+  QuizParams 
+} from './types';
 
 // Import specialized orchestrators
 import { ExplanationOrchestrator } from './ExplanationOrchestrator';
@@ -10,7 +17,16 @@ import { InteractiveOrchestrator } from './InteractiveOrchestrator';
 import { ChatOrchestrator } from './ChatOrchestrator';
 
 // Re-export types for convenience
-export { DeepExplanationParams, DeepSummaryParams, PersonalizedContent } from './types';
+export { 
+  DeepExplanationParams, 
+  DeepSummaryParams, 
+  PersonalizedContent, 
+  ChatParams, 
+  FlashcardParams, 
+  QuizParams,
+  FlashcardResult,
+  QuizResult
+} from './types';
 
 /**
  * Content Orchestrator - Main coordination point for personalized content generation
@@ -44,7 +60,7 @@ export class ContentOrchestrator {
     return this.explanationOrchestrator.generatePersonalizedIntroduction(topic, content, persona);
   }
 
-  async *generateDeepExplanation(params: any) {
+  async *generateDeepExplanation(params: DeepExplanationParams) {
     yield* this.explanationOrchestrator.generateDeepExplanation(params);
   }
 
@@ -75,7 +91,7 @@ export class ContentOrchestrator {
   }
 
   // Summary Methods
-  async generateDeepSummary(params: any) {
+  async generateDeepSummary(params: DeepSummaryParams) {
     return this.summaryOrchestrator.generateDeepSummary(params);
   }
 
@@ -112,16 +128,16 @@ export class ContentOrchestrator {
     return this.interactiveOrchestrator.generateVisualLearningAid(concept, persona, aidType);
   }
 
-  async generateDeepFlashcards(params: any) {
+  async generateDeepFlashcards(params: FlashcardParams) {
     return this.interactiveOrchestrator.generateDeepFlashcards(params);
   }
 
-  async generateDeepQuiz(params: any) {
+  async generateDeepQuiz(params: QuizParams) {
     return this.interactiveOrchestrator.generateDeepQuiz(params);
   }
 
   // Chat Methods
-  async *streamPersonalizedChat(params: any) {
+  async *streamPersonalizedChat(params: ChatParams) {
     yield* this.chatOrchestrator.streamPersonalizedChat(params);
   }
 } 

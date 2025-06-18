@@ -130,7 +130,7 @@ export function ModuleList({ modules = [], onUpdate, onReorder }: ModuleListProp
 
   // Ensure modules is an array before mapping
   const safeModules = Array.isArray(modules) ? modules : [];
-  
+
   return (
     <div className="space-y-3">
       {safeModules.map((module, index) => (

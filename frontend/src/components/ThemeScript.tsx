@@ -39,10 +39,5 @@ export function ThemeScript() {
     })();
   `;
 
-  return (
-    <script 
-      dangerouslySetInnerHTML={{ __html: script }} 
-      suppressHydrationWarning 
-    />
-  );
+  return <script dangerouslySetInnerHTML={{ __html: script }} suppressHydrationWarning />;
 }

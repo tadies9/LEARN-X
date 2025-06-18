@@ -3,15 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  User, 
-  Briefcase, 
-  BookOpen, 
-  Heart, 
-  MessageSquare,
-  Target,
-  Layers
-} from 'lucide-react';
+import { User, Briefcase, BookOpen, Heart, MessageSquare, Target, Layers } from 'lucide-react';
 import { usePersona } from '@/hooks/usePersona';
 
 export function PersonaDisplay() {
@@ -101,7 +93,9 @@ export function PersonaDisplay() {
               <span className="text-sm text-muted-foreground">Primary Interests:</span>
               <div className="flex flex-wrap gap-2 mt-1">
                 {persona.interests.primary.map((interest, i) => (
-                  <Badge key={i} variant="default">{interest}</Badge>
+                  <Badge key={i} variant="default">
+                    {interest}
+                  </Badge>
                 ))}
               </div>
             </div>
@@ -111,7 +105,9 @@ export function PersonaDisplay() {
               <span className="text-sm text-muted-foreground">Secondary Interests:</span>
               <div className="flex flex-wrap gap-2 mt-1">
                 {persona.interests.secondary.map((interest, i) => (
-                  <Badge key={i} variant="secondary">{interest}</Badge>
+                  <Badge key={i} variant="secondary">
+                    {interest}
+                  </Badge>
                 ))}
               </div>
             </div>
@@ -121,7 +117,9 @@ export function PersonaDisplay() {
               <span className="text-sm text-muted-foreground">Learning Topics:</span>
               <div className="flex flex-wrap gap-2 mt-1">
                 {persona.interests.learningTopics.map((topic, i) => (
-                  <Badge key={i} variant="outline">{topic}</Badge>
+                  <Badge key={i} variant="outline">
+                    {topic}
+                  </Badge>
                 ))}
               </div>
             </div>
