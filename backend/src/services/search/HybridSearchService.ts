@@ -7,7 +7,7 @@ import { SearchCacheManager, QueryProcessor, SearchRanker } from './SearchUtilit
 import { SearchOptions, SearchFilters, SearchResult, SearchResponse } from './types';
 
 export class HybridSearchService {
-  private embeddinService: VectorEmbeddingService;
+  private embeddingService: VectorEmbeddingService;
   private advancedOps: AdvancedSearchOperations;
   private facetManager: FacetManager;
   private cacheManager: SearchCacheManager;
@@ -15,7 +15,7 @@ export class HybridSearchService {
   private searchRanker: SearchRanker;
 
   constructor() {
-    this.embeddinService = new VectorEmbeddingService();
+    this.embeddingService = new VectorEmbeddingService();
     this.advancedOps = new AdvancedSearchOperations();
     this.facetManager = new FacetManager();
     this.cacheManager = new SearchCacheManager();
@@ -141,7 +141,7 @@ export class HybridSearchService {
     options: Required<SearchOptions>
   ): Promise<SearchResult[]> {
     // Generate embedding for query
-    const queryEmbedding = await this.embeddinService.generateEmbedding(query);
+    const queryEmbedding = await this.embeddingService.generateEmbedding(query);
 
     // Format embedding for PostgreSQL vector type
     const embeddingStr = `[${queryEmbedding.join(',')}]`;

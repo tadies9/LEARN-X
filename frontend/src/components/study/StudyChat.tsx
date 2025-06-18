@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
-import { Components } from 'react-markdown';
 import { ReactNode } from 'react';
 
 interface CodeComponentProps extends React.HTMLAttributes<HTMLElement> {
@@ -124,7 +123,7 @@ export function StudyChat({ fileId, currentPage, selectedText, userPersona }: St
             <div className="prose prose-sm max-w-none">
               <ReactMarkdown
                 components={{
-                  code: ({ node, className, children, ...props }: CodeComponentProps) => {
+                  code: ({ className, children, ...props }: CodeComponentProps) => {
                     const inline = !className?.includes('language-');
                     const match = /language-(\w+)/.exec(className || '');
                     return !inline && match ? (
