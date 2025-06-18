@@ -10,8 +10,6 @@ import {
   ContentPreferences,
   CommunicationTone,
 } from '../types/persona';
-// Import express type extensions
-import '../types/express';
 
 export class PersonaController {
   private personaService: PersonaService;
