@@ -81,6 +81,7 @@ router.get('/', (_, res) => {
       users: '/users',
       files: '/files',
       learn: '/learn',
+      dashboard: '/dashboard',
       health: '/health',
     },
   });

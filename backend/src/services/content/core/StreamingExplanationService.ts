@@ -36,52 +36,54 @@ const selectRelevantInterests = (
   const allInterests = [
     ...(persona.primaryInterests || []),
     ...(persona.secondaryInterests || []),
-    ...(persona.learningGoals || []),  // Use learningGoals instead of learningTopics
+    ...(persona.learningGoals || []), // Use learningGoals instead of learningTopics
   ];
 
   if (allInterests.length === 0) return [];
 
   // Content keywords for matching
   const contentText = `${topic} ${content}`.toLowerCase();
-  
+
   // Score interests based on relevance to content
-  const scoredInterests = allInterests.map(interest => {
+  const scoredInterests = allInterests.map((interest) => {
     const interestWords = interest.toLowerCase().split(' ');
     let score = 0;
-    
+
     // Higher score for primary interests
     if (persona.primaryInterests?.includes(interest)) {
       score += 2;
     }
-    
+
     // Score based on keyword matches
     interestWords.forEach((word: string) => {
       if (contentText.includes(word)) {
         score += 3;
       }
     });
-    
+
     // Bonus for domain-related interests
-    if (DOMAIN_KEYWORDS.some((keyword) =>
-      interest.toLowerCase().includes(keyword) && contentText.includes(keyword)
-    )) {
+    if (
+      DOMAIN_KEYWORDS.some(
+        (keyword) => interest.toLowerCase().includes(keyword) && contentText.includes(keyword)
+      )
+    ) {
       score += 2;
     }
-    
+
     return { interest, score };
   });
 
   // Sort by score and take top 3-4 interests
   const selectedInterests = scoredInterests
-    .filter(item => item.score > 0)
+    .filter((item) => item.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, 4)
-    .map(item => item.interest);
+    .map((item) => item.interest);
 
   // Ensure we have at least 2 interests for engagement
   if (selectedInterests.length < 2 && allInterests.length >= 2) {
     // Add highest-scored interests if we don't have enough relevant ones
-    const remainingInterests = allInterests.filter(i => !selectedInterests.includes(i));
+    const remainingInterests = allInterests.filter((i) => !selectedInterests.includes(i));
     selectedInterests.push(...remainingInterests.slice(0, 2 - selectedInterests.length));
   }
 
@@ -93,9 +95,10 @@ const selectRelevantInterests = (
  */
 const buildSystemPrompt = (persona: UserPersona, content: string, topic: string): string => {
   const relevantInterests = selectRelevantInterests(persona, content, topic);
-  const interestContext = relevantInterests.length > 0 
-    ? `Student's key interests that should guide examples: ${relevantInterests.join(', ')}`
-    : 'Use general engaging examples';
+  const interestContext =
+    relevantInterests.length > 0
+      ? `Student's key interests that should guide examples: ${relevantInterests.join(', ')}`
+      : 'Use general engaging examples';
 
   const learningStyle = persona.learningStyle ?? 'mixed';
   const technicalLevel = persona.technicalLevel ?? 'intermediate';
@@ -117,11 +120,15 @@ Communication Preference: ${communicationTone}
 ${interestContext}
 
 ## ADAPTIVE ENGAGEMENT STRATEGY
-${relevantInterests.length > 0 ? `
+${
+  relevantInterests.length > 0
+    ? `
 - Connect concepts to: ${relevantInterests.slice(0, 2).join(' and ')}
 - Use examples from: ${relevantInterests.join(', ')} domains
 - Make analogies that bridge the student's interests with the learning material
-` : '- Use relatable, real-world examples appropriate for the student\'s background'}
+`
+    : "- Use relatable, real-world examples appropriate for the student's background"
+}
 
 ## STRUCTURE REQUIREMENTS
 1. <h2>Main Topic</h2>
@@ -130,32 +137,99 @@ ${relevantInterests.length > 0 ? `
 4. Begin with a compelling hook that connects to the student's world
 
 ## VISUAL REQUIREMENTS
-• Embed ≥1 visual (table, mermaid diagram, or chart) relevant to content
+• Create at least 1 visual using ACTUAL code/markup (not placeholder paths):
+  - For diagrams: Use <pre class="mermaid">...</pre> with valid Mermaid syntax
+  - For tables: Use proper HTML <table> with <thead>, <tbody>, <tr>, <th>, <td>
+  - For comparisons: Create visual tables or charts
 ${learningStyle === 'visual' ? '• Include ≥2 distinct visuals with detailed captions' : ''}
+• NEVER use placeholder image paths like "path/to/image" 
 • Every visual needs a <figcaption> explaining its relevance
 
+## MERMAID DIAGRAM RULES - FOLLOW EXACTLY:
+
+1. MERMAID DIAGRAMS MUST BE COMPLETE AND SEPARATE FROM TEXT
+   - NEVER mix regular text with diagram syntax
+   - NEVER put partial diagrams inside paragraphs
+   - Each diagram must be a complete, standalone element
+   - NEVER mix HTML table tags with Mermaid syntax
+
+2. CORRECT MERMAID SYNTAX:
+<figure>
+<pre class="mermaid">
+graph TD
+    A[Node Label Here] --> B[Another Node]
+    B --> C[Third Node]
+    C --> D[Final Node]
+</pre>
+<figcaption>Clear description of what the diagram shows</figcaption>
+</figure>
+
+3. FORBIDDEN PATTERNS:
+   ❌ "Understanding Report Structure A[Node] --> B[Node]" (mixed with text)
+   ❌ "graph TD A --> B inside a paragraph" (incomplete)
+   ❌ Single line: graph TD A[Start] --> B[End] C[Other] --> D[More]
+   ❌ <table>graph TD A[Node]</table> (NEVER mix HTML with Mermaid!)
+   ❌ graph<td>TD A[Node]</td> (NEVER embed Mermaid in HTML tags!)
+
+4. VALID NODE LABELS:
+   ✅ A[Short Clear Label]
+   ✅ B[Maximum 3-4 Words]
+   ❌ A[This is a very long label that goes on and on]
+   ❌ A[<th>Label</th>] (NO HTML in node labels!)
+
+5. SIMPLE DIAGRAMS ONLY:
+   - Maximum 6-8 nodes per diagram
+   - Use clear, simple connections (-->)
+   - One concept per diagram
+   - NO HTML tags anywhere in the diagram
+
+6. EXAMPLE OF A COMPLETE, VALID DIAGRAM:
+<figure>
+<pre class="mermaid">
+graph TD
+    A[User Input] --> B[Process Data]
+    B --> C[Generate Output]
+    C --> D[Display Results]
+    B --> E[Error Check]
+    E --> F[Log Errors]
+</pre>
+<figcaption>Data processing workflow</figcaption>
+</figure>
+
+CRITICAL: NEVER mix HTML tags (like <table>, <th>, <td>) with Mermaid syntax!
+
 ## TECHNICAL LEVEL ADAPTATION
-${technicalLevel === 'beginner' ? `
+${
+  technicalLevel === 'beginner'
+    ? `
 • Include <aside class="glossary"> with 3-4 key term definitions
 • Use simple analogies from ${relevantInterests[0] || 'everyday life'}
 • Provide step-by-step breakdowns
-` : technicalLevel === 'advanced' ? `
+`
+    : technicalLevel === 'advanced'
+      ? `
 • Include technical depth and nuanced explanations
 • Reference advanced concepts and industry standards
 • Challenge thinking with complex scenarios
-` : `
+`
+      : `
 • Balance accessibility with depth
 • Provide both conceptual understanding and practical applications
 • Include intermediate-level examples and use cases
-`}
+`
+}
 
 ## INTEREST-DRIVEN EXAMPLES
-${relevantInterests.length > 1 ? `
+${
+  relevantInterests.length > 1
+    ? `
 Create examples that naturally incorporate these interests:
 ${relevantInterests.map((interest, i) => `${i + 1}. ${interest}`).join('\n')}
 
 Rotate between these interests to maintain engagement and show diverse applications.
-` : ''}
+`
+    : ''
+}
 
 ## DYNAMIC CONTENT ADAPTATION
 • Analyze the specific content and adapt explanations accordingly
@@ -238,10 +312,10 @@ export class StreamingExplanationService {
   ): Promise<PersonalizedContent> {
     try {
       const relevantInterests = selectRelevantInterests(persona, content, concept);
-      
+
       let prompt = `Explain "${concept}" at ${currentLevel} level.\n\n`;
       prompt += `Content: ${content}\n\n`;
-      
+
       if (relevantInterests.length > 0) {
         prompt += `Student's relevant interests: ${relevantInterests.join(', ')}\n\n`;
         prompt += `Build explanation progressively, connecting to their interests naturally. `;
@@ -257,7 +331,7 @@ export class StreamingExplanationService {
             role: 'system',
             content: buildSystemPrompt(persona, content, concept),
           },
-          { role: 'user', content: prompt }
+          { role: 'user', content: prompt },
         ],
         temperature: 0.6,
         max_tokens: 1500,

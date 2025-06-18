@@ -10,9 +10,9 @@ interface LogoProps {
   height?: number;
 }
 
-export function Logo({ className, showText = true, width = 40, height = 40 }: LogoProps) {
+export function Logo({ className, width = 40, height = 40 }: LogoProps) {
   return (
-    <Link href="/" className={cn('flex items-center space-x-2', className)}>
+    <Link href="/" className={cn('flex items-center', className)}>
       <Image
         src="/images/logo-optimized.svg"
         alt="LEARN-X Logo"
@@ -22,7 +22,6 @@ export function Logo({ className, showText = true, width = 40, height = 40 }: Lo
         priority
         unoptimized // For SVGs, Next.js Image optimization can be skipped
       />
-      {showText && <span className="font-display text-2xl font-bold text-primary">LEARN-X</span>}
     </Link>
   );
 }

@@ -1,5 +1,6 @@
 'use client';
 
+import '@/styles/ai-content.css';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import {
@@ -12,7 +13,6 @@ import {
   ThumbsUp,
   ThumbsDown,
   Meh,
-  Download,
   RefreshCw,
   Save,
 } from 'lucide-react';
@@ -24,33 +24,59 @@ import { createClient } from '@/lib/supabase/client';
 import { contentCache, CacheOptions } from '@/lib/cache/ContentCache';
 import { SavedContentApiService } from '@/lib/api/saved';
 import { StreamingDebug } from '@/components/debug/StreamingDebug';
+import { AIContentRenderer } from '@/components/content/AIContentRenderer';
 import React from 'react';
+
+// SSE Event Types
+interface SSEEvent {
+  type: string;
+  data: unknown;
+}
+
+interface ContentEvent extends SSEEvent {
+  type: 'content';
+  data: string;
+}
+
+interface CompleteEvent extends SSEEvent {
+  type: 'complete' | 'done';
+  data: null;
+}
+
+interface ErrorEvent extends SSEEvent {
+  type: 'error';
+  data: {
+    message?: string;
+  } | null;
+}
+
+type StreamEvent = ContentEvent | CompleteEvent | ErrorEvent;
 
 // SSE Parser to handle different event formats
 class SSEParser {
   private buffer = '';
-  
-  parseChunk(chunk: string): Array<{ type: string; data: any }> {
+
+  parseChunk(chunk: string): Array<StreamEvent> {
     this.buffer += chunk;
     const lines = this.buffer.split('\n');
-    const events: Array<{ type: string; data: any }> = [];
-    
+    const events: Array<StreamEvent> = [];
+
     // Keep the last line if it's incomplete
     this.buffer = lines[lines.length - 1];
-    
+
     for (let i = 0; i < lines.length - 1; i++) {
       const line = lines[i].trim();
-      
+
       if (line.startsWith('data: ')) {
         const data = line.slice(6).trim();
-        
+
         if (data === '[DONE]') {
           events.push({ type: 'done', data: null });
           continue;
         }
-        
+
         if (data === '') continue;
-        
+
         try {
           const parsed = JSON.parse(data);
           events.push(parsed);
@@ -62,10 +88,10 @@ class SSEParser {
         }
       }
     }
-    
+
     return events;
   }
-  
+
   reset() {
     this.buffer = '';
   }
@@ -80,8 +106,10 @@ export default function LearnPage({ params }: { params: { id: string } }) {
 
   // Auth & Profile
   const { user: _user } = useAuth();
-  const [session, setSession] = useState<any>(null);
-  const [profile, setProfile] = useState<{ persona?: any } | null>(null);
+  const [session, setSession] = useState<{ access_token: string; user: { id: string } } | null>(
+    null
+  );
+  const [profile, setProfile] = useState<{ persona?: Record<string, unknown> } | null>(null);
   const [fileVersion, setFileVersion] = useState<string>('');
 
   // UI State
@@ -129,7 +157,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
             setProfile(profileData);
           }
         } catch (error) {
-          console.warn('Failed to load user profile:', error);
+          // Silently handle error - profile might not exist yet
         }
       }
     };
@@ -154,7 +182,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
           setFileVersion(fileData.updatedAt || fileData.updated_at);
         }
       } catch (error) {
-        console.warn('Failed to get file version:', error);
+        // Silently handle error - file might not exist
       }
     };
     getFileVersion();
@@ -176,7 +204,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
     contentAccumulatorRef.current = '';
     lastChunkRef.current = '';
     sseParserRef.current.reset();
-    
+
     streamContent();
 
     return () => {
@@ -195,14 +223,13 @@ export default function LearnPage({ params }: { params: { id: string } }) {
 
     // Prevent multiple simultaneous streams
     if (isLoadingRef.current) {
-      console.log('[LearnPage] Stream already in progress, skipping...');
       return;
     }
 
     try {
       // Set loading flag
       isLoadingRef.current = true;
-      
+
       // Check cache first
       const cacheOptions: CacheOptions = {
         userId: session.user.id,
@@ -258,16 +285,17 @@ export default function LearnPage({ params }: { params: { id: string } }) {
           const decoder = new TextDecoder();
 
           try {
-            while (true) {
+            let done = false;
+            while (!done) {
               // Check if request was aborted
               if (abortControllerRef.current?.signal.aborted) {
-                console.log('[LearnPage] Stream aborted');
                 break;
               }
 
-              const { done, value } = await reader.read();
+              const { done: isDone, value } = await reader.read();
 
-              if (done) {
+              if (isDone) {
+                done = true;
                 setIsStreaming(false);
                 break;
               }
@@ -298,13 +326,16 @@ export default function LearnPage({ params }: { params: { id: string } }) {
           }
 
           // Cache the content after successful streaming
-          if (contentAccumulatorRef.current && session?.user?.id && !abortControllerRef.current?.signal.aborted) {
+          if (
+            contentAccumulatorRef.current &&
+            session?.user?.id &&
+            !abortControllerRef.current?.signal.aborted
+          ) {
             await contentCache.set(cacheOptions, contentAccumulatorRef.current);
           }
         } catch (streamError) {
           // Don't show error if request was aborted
           if (!abortControllerRef.current?.signal.aborted) {
-            console.error('[LearnPage] Explanation streaming error:', streamError);
             setError('Failed to load explanation. Please try again.');
           }
           setIsStreaming(false);
@@ -314,7 +345,6 @@ export default function LearnPage({ params }: { params: { id: string } }) {
         await handleNonStreamingContent();
       }
     } catch (err) {
-      console.error('[LearnPage] Error streaming content:', err);
       setError('Failed to load content');
       setIsStreaming(false);
     } finally {
@@ -329,34 +359,43 @@ export default function LearnPage({ params }: { params: { id: string } }) {
       switch (activeMode) {
         case 'summary': {
           const summaryResult = await AIApiService.generateSummary(fileId!, 'key-points');
-          setStreamingContent(
-            `<div class="summary"><h3>Summary</h3><p>${summaryResult.summary}</p></div>`
-          );
+          const summaryHtml = `
+            <div class="ai-generated-content">
+              <h2>Summary</h2>
+              <p>${summaryResult.summary}</p>
+            </div>
+          `;
+          setStreamingContent(summaryHtml);
           break;
         }
 
         case 'flashcards': {
           const flashcardsResult = await AIApiService.generateFlashcards(fileId!, []);
-          const flashcardsHtml = flashcardsResult.flashcards
-            .map(
-              (card, index) => `
-            <div class="flashcard mb-4 p-4 border rounded-lg">
-              <div class="flashcard-front mb-2">
-                <strong>Card ${index + 1}:</strong> ${card.front}
-              </div>
-              <div class="flashcard-back">
-                <strong>Answer:</strong> ${card.back}
-              </div>
-              <div class="flashcard-difficulty text-sm text-gray-600 mt-2">
-                Difficulty: ${card.difficulty}
-              </div>
+          const flashcardsHtml = `
+            <div class="ai-generated-content">
+              <h2>Flashcards</h2>
+              ${flashcardsResult.flashcards
+                .map(
+                  (card, index) => `
+                <div class="flashcard mb-4 p-4 border rounded-lg">
+                  <div class="flashcard-front mb-2">
+                    <h3>Question ${index + 1}</h3>
+                    <p>${card.front}</p>
+                  </div>
+                  <div class="flashcard-back mt-3 p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                    <strong>Answer:</strong>
+                    <p>${card.back}</p>
+                  </div>
+                  <div class="flashcard-difficulty text-sm text-gray-600 mt-2">
+                    Difficulty: ${card.difficulty}
+                  </div>
+                </div>
+              `
+                )
+                .join('')}
             </div>
-          `
-            )
-            .join('');
-          setStreamingContent(
-            `<div class="flashcards"><h3>Flashcards (${flashcardsResult.count})</h3>${flashcardsHtml}</div>`
-          );
+          `;
+          setStreamingContent(flashcardsHtml);
           break;
         }
 
@@ -400,7 +439,6 @@ export default function LearnPage({ params }: { params: { id: string } }) {
 
       setIsStreaming(false);
     } catch (error) {
-      console.error('[LearnPage] Error generating content:', error);
       setError('Failed to generate content. Please try again.');
       setIsStreaming(false);
     }
@@ -419,7 +457,7 @@ export default function LearnPage({ params }: { params: { id: string } }) {
         comments: quickNote || undefined,
       });
     } catch (err) {
-      console.error('[LearnPage] Error sending feedback:', err);
+      // Error already handled in specific catch blocks
     }
   };
 
@@ -440,7 +478,6 @@ export default function LearnPage({ params }: { params: { id: string } }) {
 
       alert('Content saved successfully! You can access it from your saved content library.');
     } catch (err) {
-      console.error('[LearnPage] Error saving content:', err);
       alert('Failed to save content. Please try again.');
     }
   };
@@ -451,7 +488,6 @@ export default function LearnPage({ params }: { params: { id: string } }) {
 
     // Prevent regeneration if already loading
     if (isLoadingRef.current) {
-      console.log('[LearnPage] Already loading, cannot regenerate');
       return;
     }
 
@@ -514,7 +550,12 @@ export default function LearnPage({ params }: { params: { id: string } }) {
 
           {/* Mode Selector */}
           <div className="flex items-center gap-2">
-            <Tabs value={activeMode} onValueChange={(v) => setActiveMode(v as any)}>
+            <Tabs
+              value={activeMode}
+              onValueChange={(v) =>
+                setActiveMode(v as 'explain' | 'summary' | 'flashcards' | 'quiz' | 'chat')
+              }
+            >
               <TabsList>
                 <TabsTrigger value="explain" className="gap-2">
                   <BookOpen className="h-4 w-4" />
@@ -545,7 +586,12 @@ export default function LearnPage({ params }: { params: { id: string } }) {
                 <RefreshCw className="h-4 w-4 mr-1" />
                 Regenerate
               </Button>
-              <Button variant="outline" size="sm" onClick={handleSaveContent} disabled={!streamingContent}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleSaveContent}
+                disabled={!streamingContent}
+              >
                 <Save className="h-4 w-4 mr-1" />
                 Save
               </Button>
@@ -561,14 +607,12 @@ export default function LearnPage({ params }: { params: { id: string } }) {
               <p className="text-sm text-muted-foreground">Generating personalized content…</p>
             </div>
           )}
-          {error && (
-            <p className="text-sm text-destructive mb-4">{error}</p>
-          )}
+          {error && <p className="text-sm text-destructive mb-4">{error}</p>}
           {streamingContent && (
             <>
-              <article
-                className="prose lg:prose-lg dark:prose-invert max-w-screen-lg mx-auto"
-                dangerouslySetInnerHTML={{ __html: streamingContent }}
+              <AIContentRenderer
+                content={streamingContent}
+                className="prose lg:prose-lg dark:prose-invert max-w-screen-lg mx-auto ai-generated-content"
               />
 
               {/* Feedback Section */}

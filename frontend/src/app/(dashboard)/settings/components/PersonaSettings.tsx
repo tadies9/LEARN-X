@@ -3,13 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { Download, FileJson, FileText, RefreshCw } from 'lucide-react';
+import { FileJson, FileText, RefreshCw } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { personaApi } from '@/lib/api/persona';
 import { useToast } from '@/components/ui/use-toast';
-import { PersonaDisplay } from '@/components/settings/PersonaDisplay';
+import { EditablePersonaDisplay } from '@/components/settings/EditablePersonaDisplay';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 export function PersonaSettings() {
@@ -46,11 +46,11 @@ export function PersonaSettings() {
         <TabsTrigger value="profile">Your Profile</TabsTrigger>
         <TabsTrigger value="manage">Manage & Export</TabsTrigger>
       </TabsList>
-      
+
       <TabsContent value="profile" className="space-y-6">
-        <PersonaDisplay />
+        <EditablePersonaDisplay />
       </TabsContent>
-      
+
       <TabsContent value="manage" className="space-y-6">
         <Card>
           <CardHeader>

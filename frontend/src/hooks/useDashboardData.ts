@@ -32,7 +32,7 @@ export function useDashboardData(): DashboardData {
       setError(null);
 
       // Fetch dashboard stats from the new API
-      const apiStats = await dashboardApi.getStats();
+      const apiStats = await dashboardApi.getDashboardStats();
 
       // Fetch recent courses
       const allCoursesResponse = await courseApi.getCourses({
@@ -78,7 +78,8 @@ export function useDashboardData(): DashboardData {
       // Transform API stats to match the dashboard format
       const dashboardStats: DashboardStats = {
         activeCourses: apiStats.courses.active,
-        totalCourses: apiStats.courses.active + apiStats.courses.completed + apiStats.courses.archived,
+        totalCourses:
+          apiStats.courses.active + apiStats.courses.completed + apiStats.courses.archived,
         completedCourses: apiStats.courses.completed,
         archivedCourses: apiStats.courses.archived,
         totalStudyTime: apiStats.studyTime.total,

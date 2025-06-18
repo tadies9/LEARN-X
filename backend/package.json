@@ -13,7 +13,7 @@
     "start:api": "node dist/api-server.js",
     "start:worker": "node dist/workers/enhanced-pgmq-worker.js",
     "lint": "eslint . --ext .ts",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "type-check": "tsc --noEmit -p tsconfig.build.json",

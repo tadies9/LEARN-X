@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { dashboardService } from '../services/dashboardService';
 import { AppError } from '../utils/errors';
 import { logger } from '../utils/logger';
-import '../types/express';
 
 class DashboardController {
   /**

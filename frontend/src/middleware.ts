@@ -2,7 +2,29 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 
+// Define locked dashboard routes
+const LOCKED_DASHBOARD_ROUTES = [
+  '/upload',
+  '/study',
+  '/library',
+  '/ai-tutor',
+  '/progress',
+  '/analytics',
+  '/help',
+  '/settings',
+];
+
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+
+  // Check if trying to access a locked route
+  const isLockedRoute = LOCKED_DASHBOARD_ROUTES.some((route) => pathname.startsWith(route));
+
+  if (isLockedRoute) {
+    // Redirect to dashboard with a locked query parameter
+    return NextResponse.redirect(new URL('/dashboard?locked=true', request.url));
+  }
+
   let response = NextResponse.next({
     request: {
       headers: request.headers,

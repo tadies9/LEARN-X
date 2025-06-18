@@ -22,6 +22,7 @@ import {
 import { EnhancedThemeToggle } from '@/components/ui/EnhancedThemeToggle';
 import { Badge } from '@/components/ui/badge';
 import { notificationApi } from '@/lib/api/notification';
+import { useAuth } from '@/hooks/useAuth';
 
 // 4. Types
 import type { Notification } from '@/lib/api/notification';
@@ -35,6 +36,7 @@ interface DashboardHeaderProps {
 }
 
 export function DashboardHeader({ user }: DashboardHeaderProps) {
+  const { logout } = useAuth();
   const [showSearch, setShowSearch] = useState(false);
   const [notifications, setNotifications] = useState(0);
   const [notificationList, setNotificationList] = useState<Notification[]>([]);
@@ -79,6 +81,14 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
       loadNotifications();
     } catch (error) {
       console.error('Failed to mark all notifications as read:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Logout failed:', error);
     }
   };
 
@@ -199,7 +209,7 @@ export function DashboardHeader({ user }: DashboardHeaderProps) {
               Help & Support
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">
+            <DropdownMenuItem className="text-destructive" onClick={handleLogout}>
               <LogOut className="mr-2 h-4 w-4" />
               Logout
             </DropdownMenuItem>
