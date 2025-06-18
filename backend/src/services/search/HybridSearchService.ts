@@ -1,77 +1,26 @@
 import { supabase } from '../../config/supabase';
-import { redisClient } from '../../config/redis';
 import { logger } from '../../utils/logger';
 import { VectorEmbeddingService } from '../embeddings/VectorEmbeddingService';
-import { ContentType } from '../document/DocumentAnalyzer';
-
-export interface SearchOptions {
-  limit?: number;
-  offset?: number;
-  threshold?: number;
-  searchType?: 'vector' | 'keyword' | 'hybrid';
-  filters?: SearchFilters;
-  weightVector?: number; // Weight for vector search (0-1)
-  weightKeyword?: number; // Weight for keyword search (0-1)
-  includeContent?: boolean;
-  highlightMatches?: boolean;
-}
-
-export interface SearchFilters {
-  courseId?: string;
-  moduleId?: string;
-  fileId?: string;
-  fileTypes?: string[];
-  contentTypes?: ContentType[];
-  importance?: ('high' | 'medium' | 'low')[];
-  dateRange?: {
-    start?: Date;
-    end?: Date;
-  };
-}
-
-export interface SearchResult {
-  id: string;
-  fileId: string;
-  fileName: string;
-  content: string;
-  highlights?: string[];
-  score: number;
-  vectorScore?: number;
-  keywordScore?: number;
-  metadata: {
-    chunkIndex: number;
-    contentType: string;
-    importance: string;
-    sectionTitle?: string;
-    concepts?: string[];
-    keywords?: string[];
-  };
-  context?: {
-    before?: string;
-    after?: string;
-  };
-}
-
-export interface SearchResponse {
-  results: SearchResult[];
-  totalCount: number;
-  searchTime: number;
-  cached: boolean;
-  query: {
-    original: string;
-    processed: string;
-    keywords: string[];
-    filters: SearchFilters;
-  };
-}
+import { AdvancedSearchOperations } from './AdvancedSearchOperations';
+import { FacetManager } from './FacetManager';
+import { SearchCacheManager, QueryProcessor, SearchRanker } from './SearchUtilities';
+import { SearchOptions, SearchFilters, SearchResult, SearchResponse } from './types';
 
 export class HybridSearchService {
   private embeddinService: VectorEmbeddingService;
-  private readonly CACHE_TTL = 300; // 5 minutes
-  private readonly CACHE_PREFIX = 'search:';
+  private advancedOps: AdvancedSearchOperations;
+  private facetManager: FacetManager;
+  private cacheManager: SearchCacheManager;
+  private queryProcessor: QueryProcessor;
+  private searchRanker: SearchRanker;
 
   constructor() {
     this.embeddinService = new VectorEmbeddingService();
+    this.advancedOps = new AdvancedSearchOperations();
+    this.facetManager = new FacetManager();
+    this.cacheManager = new SearchCacheManager();
+    this.queryProcessor = new QueryProcessor();
+    this.searchRanker = new SearchRanker();
   }
 
   async search(
@@ -95,8 +44,8 @@ export class HybridSearchService {
     };
 
     // Check cache
-    const cacheKey = this.generateCacheKey(query, userId, opts);
-    const cached = await this.getFromCache(cacheKey);
+    const cacheKey = this.cacheManager.generateCacheKey(query, userId, opts);
+    const cached = await this.cacheManager.getFromCache(cacheKey);
     if (cached) {
       return {
         ...cached,
@@ -112,8 +61,8 @@ export class HybridSearchService {
     });
 
     // Process query
-    const processedQuery = this.preprocessQuery(query);
-    const keywords = this.extractKeywords(processedQuery);
+    const processedQuery = this.queryProcessor.preprocessQuery(query);
+    const keywords = this.queryProcessor.extractKeywords(processedQuery);
 
     let results: SearchResult[] = [];
 
@@ -131,7 +80,7 @@ export class HybridSearchService {
     }
 
     // Apply post-processing
-    results = this.rankResults(results, opts);
+    results = this.searchRanker.rankResults(results, opts);
 
     if (opts.highlightMatches) {
       results = this.highlightResults(results, keywords);
@@ -158,9 +107,33 @@ export class HybridSearchService {
     };
 
     // Cache the response
-    await this.cacheResponse(cacheKey, response);
+    await this.cacheManager.cacheResponse(cacheKey, response);
 
     return response;
+  }
+
+  // Delegate to advanced operations
+  async getSuggestions(query: string, userId: string, limit?: number): Promise<string[]> {
+    return this.advancedOps.getSuggestions(query, userId, limit);
+  }
+
+  async searchWithCustomScoring(
+    query: string,
+    userId: string,
+    options: SearchOptions & {
+      customScoring?: {
+        recencyWeight?: number;
+        popularityWeight?: number;
+        personalRelevanceWeight?: number;
+      };
+    }
+  ): Promise<SearchResult[]> {
+    return this.advancedOps.searchWithCustomScoring(query, userId, options);
+  }
+
+  async searchWithFacets(query: string, userId: string, options: SearchOptions) {
+    const searchResponse = await this.search(query, userId, options);
+    return this.facetManager.searchWithFacets(query, userId, options, searchResponse.results);
   }
 
   private async vectorSearch(
@@ -250,7 +223,7 @@ export class HybridSearchService {
     ]);
 
     // Merge and deduplicate results
-    const mergedResults = this.mergeResults(
+    const mergedResults = this.searchRanker.mergeResults(
       vectorResults,
       keywordResults,
       options.weightVector,
@@ -258,72 +231,6 @@ export class HybridSearchService {
     );
 
     return mergedResults;
-  }
-
-  private mergeResults(
-    vectorResults: SearchResult[],
-    keywordResults: SearchResult[],
-    vectorWeight: number,
-    keywordWeight: number
-  ): SearchResult[] {
-    const resultMap = new Map<string, SearchResult>();
-
-    // Add vector results
-    vectorResults.forEach((result) => {
-      const existing = resultMap.get(result.id);
-      if (existing) {
-        existing.score =
-          (existing.vectorScore || 0) * vectorWeight + (result.vectorScore || 0) * vectorWeight;
-        existing.vectorScore = result.vectorScore;
-      } else {
-        result.score = (result.vectorScore || 0) * vectorWeight;
-        resultMap.set(result.id, result);
-      }
-    });
-
-    // Add keyword results
-    keywordResults.forEach((result) => {
-      const existing = resultMap.get(result.id);
-      if (existing) {
-        existing.score += (result.keywordScore || 0) * keywordWeight;
-        existing.keywordScore = result.keywordScore;
-      } else {
-        result.score = (result.keywordScore || 0) * keywordWeight;
-        resultMap.set(result.id, result);
-      }
-    });
-
-    // Convert to array and sort by score
-    return Array.from(resultMap.values()).sort((a, b) => b.score - a.score);
-  }
-
-  private rankResults(results: SearchResult[], _options: Required<SearchOptions>): SearchResult[] {
-    // Apply additional ranking factors
-    return results
-      .map((result) => {
-        let boost = 1.0;
-
-        // Boost high importance content
-        if (result.metadata.importance === 'high') {
-          boost *= 1.2;
-        } else if (result.metadata.importance === 'low') {
-          boost *= 0.8;
-        }
-
-        // Boost certain content types
-        if (['definition', 'summary', 'introduction'].includes(result.metadata.contentType)) {
-          boost *= 1.1;
-        }
-
-        // Boost if chunk is start of section
-        if (result.metadata.sectionTitle) {
-          boost *= 1.05;
-        }
-
-        result.score *= boost;
-        return result;
-      })
-      .sort((a, b) => b.score - a.score);
   }
 
   private highlightResults(results: SearchResult[], keywords: string[]): SearchResult[] {
@@ -465,56 +372,6 @@ export class HybridSearchService {
     });
   }
 
-  private preprocessQuery(query: string): string {
-    // Clean and normalize query
-    return query
-      .toLowerCase()
-      .replace(/[^\w\s]/g, ' ') // Remove special characters
-      .replace(/\s+/g, ' ') // Normalize whitespace
-      .trim();
-  }
-
-  private extractKeywords(query: string): string[] {
-    // Extract meaningful keywords from query
-    const stopWords = new Set([
-      'a',
-      'an',
-      'and',
-      'are',
-      'as',
-      'at',
-      'be',
-      'by',
-      'for',
-      'from',
-      'has',
-      'he',
-      'in',
-      'is',
-      'it',
-      'its',
-      'of',
-      'on',
-      'that',
-      'the',
-      'to',
-      'was',
-      'will',
-      'with',
-      'what',
-      'when',
-      'where',
-      'who',
-      'why',
-      'how',
-    ]);
-
-    return query
-      .split(/\s+/)
-      .filter((word) => word.length > 2 && !stopWords.has(word))
-      .map((word) => word.trim());
-  }
-
   private async getTotalCount(userId: string, filters: SearchFilters): Promise<number> {
     let query = supabase.from('semantic_chunks').select('id', { count: 'exact', head: true });
 
@@ -530,59 +387,7 @@ export class HybridSearchService {
     return count || 0;
   }
 
-  private generateCacheKey(
-    query: string,
-    userId: string,
-    options: Required<SearchOptions>
-  ): string {
-    const key = {
-      q: query,
-      u: userId,
-      ...options,
-    };
-
-    return `${this.CACHE_PREFIX}${Buffer.from(JSON.stringify(key)).toString('base64')}`;
-  }
-
-  private async getFromCache(key: string): Promise<SearchResponse | null> {
-    try {
-      const cached = await redisClient.get(key);
-      if (cached) {
-        return JSON.parse(cached);
-      }
-    } catch (error) {
-      logger.warn('[HybridSearch] Cache retrieval error:', error);
-    }
-    return null;
-  }
-
-  private async cacheResponse(key: string, response: SearchResponse): Promise<void> {
-    try {
-      await redisClient.setex(key, this.CACHE_TTL, JSON.stringify(response));
-    } catch (error) {
-      logger.warn('[HybridSearch] Cache storage error:', error);
-    }
-  }
-
   async clearCache(userId?: string): Promise<void> {
-    try {
-      if (userId) {
-        // Clear cache for specific user
-        const pattern = `${this.CACHE_PREFIX}*${userId}*`;
-        const keys = await redisClient.keys(pattern);
-        if (keys.length > 0) {
-          await redisClient.del(...keys);
-        }
-      } else {
-        // Clear all search cache
-        const keys = await redisClient.keys(`${this.CACHE_PREFIX}*`);
-        if (keys.length > 0) {
-          await redisClient.del(...keys);
-        }
-      }
-      logger.info('[HybridSearch] Cache cleared', { userId });
-    } catch (error) {
-      logger.error('[HybridSearch] Error clearing cache:', error);
-    }
+    return this.cacheManager.clearCache(userId);
   }
 }

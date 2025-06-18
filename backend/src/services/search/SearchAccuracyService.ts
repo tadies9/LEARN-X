@@ -99,7 +99,7 @@ export class SearchAccuracyService {
     const searchOptions = this.optimizeSearchForIntent(intent, options);
 
     // Perform enhanced search
-    const results = await this.enhancedSearch.semanticSearch(query, userId, searchOptions);
+    const results = await this.enhancedSearch.search(query, userId, searchOptions);
 
     // Post-process results based on intent
     const improvedResults = await this.postProcessResults(results, intent, query);

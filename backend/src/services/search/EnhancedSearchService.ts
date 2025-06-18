@@ -1,10 +1,5 @@
-import {
-  HybridSearchService,
-  SearchOptions,
-  SearchResult,
-  SearchResponse,
-} from './HybridSearchService';
-import { VectorEmbeddingService } from '../embeddings/VectorEmbeddingService';
+import { HybridSearchService } from './HybridSearchService';
+import { SearchOptions, SearchResult, SearchResponse } from './types';
 import { supabase } from '../../config/supabase';
 
 interface SemanticSearchOptions extends SearchOptions {
@@ -21,23 +16,30 @@ interface EnhancedSearchResult extends SearchResult {
 }
 
 export class EnhancedSearchService extends HybridSearchService {
-  private embeddingService: VectorEmbeddingService;
-
   constructor() {
     super();
-    this.embeddingService = new VectorEmbeddingService();
   }
 
-  async semanticSearch(
+  async search(
     query: string,
     userId: string,
     options: SemanticSearchOptions = {}
   ): Promise<SearchResponse> {
-    const startTime = Date.now();
+    // Convert SemanticSearchOptions to SearchOptions
+    const searchOptions: SearchOptions = {
+      limit: options.limit,
+      offset: options.offset,
+      threshold: options.threshold,
+      searchType: options.searchType,
+      filters: options.filters,
+      weightVector: options.weightVector,
+      weightKeyword: options.weightKeyword,
+      includeContent: options.includeContent,
+      highlightMatches: options.highlightMatches,
+    };
 
-    // Enhanced options with semantic features
-    const enhancedOptions: SemanticSearchOptions = {
-      ...options,
+    const enhancedOptions = {
+      ...searchOptions,
       semanticBoost: options.semanticBoost ?? true,
       contextWindow: options.contextWindow ?? 3,
       rerank: options.rerank ?? true,
@@ -45,7 +47,7 @@ export class EnhancedSearchService extends HybridSearchService {
     };
 
     // Get initial results from hybrid search
-    const initialResults = await super.search(query, userId, enhancedOptions);
+    const initialResults = await super.search(query, userId, searchOptions);
 
     if (!enhancedOptions.semanticBoost) {
       return initialResults;
@@ -59,284 +61,235 @@ export class EnhancedSearchService extends HybridSearchService {
       enhancedResults = await this.semanticRerank(query, enhancedResults, enhancedOptions);
     }
 
-    // 2. Add contextual relevance scores
-    enhancedResults = await this.addContextualRelevance(
-      enhancedResults,
-      enhancedOptions.contextWindow || 3
-    );
-
-    // 3. Apply diversity optimization
+    // 2. Add diversity to results
     if (enhancedOptions.diversityFactor && enhancedOptions.diversityFactor > 0) {
-      enhancedResults = this.optimizeForDiversity(enhancedResults, enhancedOptions.diversityFactor);
+      enhancedResults = this.addDiversity(enhancedResults, enhancedOptions.diversityFactor);
     }
+
+    // 3. Calculate final semantic scores
+    enhancedResults = enhancedResults.map((result: SearchResult) => ({
+      ...result,
+      semanticScore: result.score,
+    })) as EnhancedSearchResult[];
 
     return {
       ...initialResults,
-      results: enhancedResults.slice(0, enhancedOptions.limit || 10),
-      searchTime: Date.now() - startTime,
+      results: enhancedResults,
     };
   }
 
   private async semanticRerank(
-    query: string,
+    _query: string,
     results: EnhancedSearchResult[],
-    _options: SemanticSearchOptions
+    options: SemanticSearchOptions
   ): Promise<EnhancedSearchResult[]> {
-    // Generate query embedding for semantic comparison
-    const queryEmbedding = await this.embeddingService.generateEmbedding(query);
+    // Note: We could use query embedding for semantic similarity scoring in the future
 
-    // Get embeddings for all results
-    const resultEmbeddings = await this.getResultEmbeddings(results);
+    // Build context window
+    const contextualResults = await this.buildContextWindows(results, options.contextWindow || 3);
 
-    // Calculate semantic scores
-    const semanticScores = resultEmbeddings.map((embedding) =>
-      this.cosineSimilarity(queryEmbedding, embedding)
-    );
+    // Calculate semantic relevance scores
+    const rerankedResults = contextualResults.map((result: SearchResult) => {
+      const semanticBoost = this.calculateSemanticBoost(result);
 
-    // Combine with existing scores
-    return results
-      .map((result, index) => {
-        const semanticScore = semanticScores[index];
-        const combinedScore = result.score * 0.4 + semanticScore * 0.6;
+      return {
+        ...result,
+        score: result.score * semanticBoost,
+        semanticScore: semanticBoost,
+      } as EnhancedSearchResult;
+    });
 
-        return {
-          ...result,
-          semanticScore,
-          score: combinedScore,
-        };
-      })
-      .sort((a, b) => b.score - a.score);
+    return rerankedResults.sort((a: SearchResult, b: SearchResult) => b.score - a.score);
   }
 
-  private async addContextualRelevance(
+  private async buildContextWindows(
     results: EnhancedSearchResult[],
-    contextWindow: number
+    _contextWindow: number
   ): Promise<EnhancedSearchResult[]> {
-    return Promise.all(
-      results.map(async (result) => {
-        // Get surrounding chunks
-        const contextChunks = await this.getContextualChunks(
-          result.fileId,
-          result.metadata.chunkIndex,
-          contextWindow
-        );
+    // Group results by file
+    const fileGroups = new Map<string, EnhancedSearchResult[]>();
+    results.forEach((result: SearchResult) => {
+      if (!fileGroups.has(result.fileId)) {
+        fileGroups.set(result.fileId, []);
+      }
+      fileGroups.get(result.fileId)!.push(result as EnhancedSearchResult);
+    });
 
-        // Calculate contextual relevance based on surrounding content
-        const contextualRelevance = this.calculateContextualRelevance(result, contextChunks);
+    // Calculate contextual relevance
+    const contextualResults = results.map((result: SearchResult) => {
+      const fileResults = fileGroups.get(result.fileId) || [];
+      let contextualRelevance = 1.0;
 
-        return {
-          ...result,
-          contextualRelevance,
-        };
-      })
-    );
+      // Boost results from same file
+      const fileScore = fileResults.length > 1 ? 1.1 : 1.0;
+
+      contextualRelevance = fileScore;
+
+      return {
+        ...result,
+        contextualRelevance,
+      } as EnhancedSearchResult;
+    });
+
+    return contextualResults;
   }
 
-  private optimizeForDiversity(
+  private addDiversity(
     results: EnhancedSearchResult[],
     diversityFactor: number
   ): EnhancedSearchResult[] {
-    const selected: EnhancedSearchResult[] = [];
-    const remaining = [...results];
+    const seenFiles = new Set<string>();
+    const diverseResults: EnhancedSearchResult[] = [];
 
-    while (selected.length < results.length && remaining.length > 0) {
-      if (selected.length === 0) {
-        // Select the highest scoring result first
-        selected.push(remaining.shift()!);
-      } else {
-        // Select next result based on score and diversity
-        let bestIndex = 0;
-        let bestScore = -Infinity;
+    // First pass: add top results from unique files
+    for (const result of results) {
+      if (!seenFiles.has(result.fileId)) {
+        seenFiles.add(result.fileId);
+        diverseResults.push(result);
+      }
+    }
 
-        remaining.forEach((candidate, index) => {
-          const diversity = this.calculateDiversity(candidate, selected);
-          const combinedScore =
-            candidate.score * (1 - diversityFactor) + diversity * diversityFactor;
+    // Second pass: add remaining results with diversity penalty
+    for (const result of results) {
+      if (!diverseResults.includes(result)) {
+        const boost = this.calculateSemanticBoost(result);
+        const diversityPenalty = 1 - diversityFactor;
 
-          if (combinedScore > bestScore) {
-            bestScore = combinedScore;
-            bestIndex = index;
-          }
+        diverseResults.push({
+          ...result,
+          score: result.score * boost * diversityPenalty,
+          diversityScore: diversityPenalty,
         });
-
-        selected.push(remaining.splice(bestIndex, 1)[0]);
       }
     }
 
-    return selected;
+    return diverseResults.sort((a: SearchResult, b: SearchResult) => b.score - a.score);
   }
 
-  private calculateDiversity(
-    candidate: EnhancedSearchResult,
-    selected: EnhancedSearchResult[]
-  ): number {
-    // Calculate diversity based on different factors
-    const factors = {
-      section: 0,
-      contentType: 0,
-      concepts: 0,
-    };
+  private calculateSemanticBoost(result: SearchResult): number {
+    let boost = 1.0;
 
-    selected.forEach((result) => {
-      // Different section
-      if (result.metadata.sectionTitle !== candidate.metadata.sectionTitle) {
-        factors.section += 1;
-      }
-
-      // Different content type
-      if (result.metadata.contentType !== candidate.metadata.contentType) {
-        factors.contentType += 1;
-      }
-
-      // Different concepts
-      const resultConcepts = new Set(result.metadata.concepts || []);
-      const candidateConcepts = new Set(candidate.metadata.concepts || []);
-      const intersection = new Set([...resultConcepts].filter((x) => candidateConcepts.has(x)));
-      factors.concepts +=
-        1 - intersection.size / Math.max(resultConcepts.size, candidateConcepts.size, 1);
-    });
-
-    // Normalize diversity score
-    return (
-      (factors.section * 0.3 + factors.contentType * 0.3 + factors.concepts * 0.4) / selected.length
-    );
-  }
-
-  private async getResultEmbeddings(results: SearchResult[]): Promise<number[][]> {
-    const embeddings = await Promise.all(
-      results.map(async (result) => {
-        // Try to get cached embedding first
-        const { data } = await supabase
-          .from('file_embeddings')
-          .select('embedding')
-          .eq('chunk_id', result.id)
-          .single();
-
-        if (data?.embedding) {
-          return Array.isArray(data.embedding) ? data.embedding : JSON.parse(data.embedding);
-        }
-
-        // Generate embedding if not cached
-        return this.embeddingService.generateEmbedding(result.content);
-      })
-    );
-
-    return embeddings;
-  }
-
-  private async getContextualChunks(
-    fileId: string,
-    chunkIndex: number,
-    window: number
-  ): Promise<any[]> {
-    const { data } = await supabase
-      .from('file_chunks')
-      .select('*')
-      .eq('file_id', fileId)
-      .gte('chunk_index', chunkIndex - window)
-      .lte('chunk_index', chunkIndex + window)
-      .order('chunk_index');
-
-    return data || [];
-  }
-
-  private calculateContextualRelevance(result: SearchResult, contextChunks: any[]): number {
-    // Calculate relevance based on context continuity and coherence
-    let relevance = 0;
-    const resultIndex = result.metadata.chunkIndex;
-
-    contextChunks.forEach((chunk) => {
-      const distance = Math.abs(chunk.chunk_index - resultIndex);
-      if (distance === 0) return; // Skip self
-
-      // Closer chunks have more influence
-      const weight = 1 / (distance + 1);
-
-      // Check for topic continuity
-      const sharedConcepts = this.getSharedConcepts(
-        result.metadata.concepts || [],
-        chunk.chunk_metadata?.concepts || []
-      );
-
-      relevance += weight * (sharedConcepts.length > 0 ? 1 : 0.5);
-    });
-
-    return Math.min(relevance / contextChunks.length, 1);
-  }
-
-  private getSharedConcepts(concepts1: string[], concepts2: string[]): string[] {
-    const set1 = new Set(concepts1);
-    return concepts2.filter((c) => set1.has(c));
-  }
-
-  private cosineSimilarity(vec1: number[], vec2: number[]): number {
-    let dotProduct = 0;
-    let norm1 = 0;
-    let norm2 = 0;
-
-    for (let i = 0; i < vec1.length; i++) {
-      dotProduct += vec1[i] * vec2[i];
-      norm1 += vec1[i] * vec1[i];
-      norm2 += vec2[i] * vec2[i];
+    // Boost based on content type
+    if (['heading', 'summary'].includes(result.metadata.contentType)) {
+      boost *= 1.15;
     }
 
-    return dotProduct / (Math.sqrt(norm1) * Math.sqrt(norm2));
+    // Boost based on importance
+    if (result.metadata.importance === 'high') {
+      boost *= 1.1;
+    }
+
+    // Consider context
+    if (result.metadata.chunkIndex !== undefined) {
+      boost *= 1.05;
+    }
+
+    return boost;
   }
 
-  async searchWithFeedback(
+  // Enhanced search with semantic clustering
+  async searchWithClusters(
     query: string,
     userId: string,
-    options: SemanticSearchOptions = {},
-    previousResults?: string[]
-  ): Promise<SearchResponse> {
-    // Adjust search based on previous results to avoid repetition
-    const enhancedOptions: SemanticSearchOptions = {
-      ...options,
-      filters: {
-        ...options.filters,
-      },
+    options: SemanticSearchOptions = {}
+  ): Promise<{
+    results: SearchResult[];
+    clusters: Array<{
+      topic: string;
+      results: SearchResult[];
+      confidence: number;
+    }>;
+    totalCount: number;
+  }> {
+    const searchResults = await this.search(query, userId, options);
+
+    // Cluster results by semantic similarity
+    const clusters = await this.clusterResults(searchResults.results, query);
+
+    return {
+      results: searchResults.results,
+      clusters,
+      totalCount: searchResults.totalCount,
     };
-
-    const results = await this.semanticSearch(query, userId, enhancedOptions);
-
-    if (previousResults && previousResults.length > 0) {
-      // Filter out previously seen results
-      results.results = results.results.filter((r) => !previousResults.includes(r.id));
-    }
-
-    return results;
   }
 
-  async searchByExample(
-    exampleChunkId: string,
+  private async clusterResults(
+    results: SearchResult[],
+    _query: string
+  ): Promise<
+    Array<{
+      topic: string;
+      results: SearchResult[];
+      confidence: number;
+    }>
+  > {
+    // Simple clustering by content type and importance
+    const clusters = new Map<string, SearchResult[]>();
+
+    results.forEach((result: SearchResult) => {
+      const key = `${result.metadata.contentType}-${result.metadata.importance}`;
+      if (!clusters.has(key)) {
+        clusters.set(key, []);
+      }
+      clusters.get(key)!.push(result);
+    });
+
+    return Array.from(clusters.entries()).map(([key, clusterResults]) => ({
+      topic: key,
+      results: clusterResults,
+      confidence: clusterResults.length / results.length,
+    }));
+  }
+
+  // Semantic query expansion
+  async searchWithExpansion(
+    query: string,
     userId: string,
     options: SemanticSearchOptions = {}
   ): Promise<SearchResponse> {
-    // Get the example chunk
-    const { data: exampleChunk } = await supabase
-      .from('file_chunks')
-      .select('*')
-      .eq('id', exampleChunkId)
-      .single();
+    // Get expanded query terms
+    const expandedTerms = await this.expandQuery(query);
+    const expandedQuery = [query, ...expandedTerms].join(' ');
 
-    if (!exampleChunk) {
-      throw new Error('Example chunk not found');
+    // Perform search with expanded query
+    return this.search(expandedQuery, userId, options);
+  }
+
+  private async expandQuery(query: string): Promise<string[]> {
+    try {
+      // Get related terms from the knowledge base
+      const { data } = await supabase
+        .from('semantic_chunks')
+        .select('keywords, concepts')
+        .textSearch('content', query, {
+          type: 'websearch',
+          config: 'english',
+        })
+        .limit(10);
+
+      if (!data) return [];
+
+      const relatedTerms = new Set<string>();
+      data.forEach((item: any) => {
+        if (item.keywords) {
+          JSON.parse(item.keywords).forEach((keyword: string) => {
+            if (keyword.toLowerCase() !== query.toLowerCase()) {
+              relatedTerms.add(keyword);
+            }
+          });
+        }
+        if (item.concepts) {
+          JSON.parse(item.concepts).forEach((concept: string) => {
+            if (concept.toLowerCase() !== query.toLowerCase()) {
+              relatedTerms.add(concept);
+            }
+          });
+        }
+      });
+
+      return Array.from(relatedTerms).slice(0, 3); // Top 3 related terms
+    } catch (error) {
+      return [];
     }
-
-    // Use the example content as the query
-    const query = exampleChunk.content;
-
-    // Search with boosted semantic similarity
-    return this.semanticSearch(query, userId, {
-      ...options,
-      searchType: 'vector',
-      weightVector: 0.9,
-      weightKeyword: 0.1,
-      filters: {
-        ...options.filters,
-        // Exclude the example chunk itself
-        fileId: options.filters?.fileId || undefined,
-      },
-    });
   }
 }

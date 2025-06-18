@@ -105,7 +105,7 @@ export async function middleware(request: NextRequest) {
   if (user && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/register')) {
     // Check if user has completed onboarding
     const { data: persona } = await supabase
-      .from('user_personas')
+      .from('personas')
       .select('id')
       .eq('user_id', user.id)
       .single();
@@ -118,7 +118,7 @@ export async function middleware(request: NextRequest) {
   // Prevent skipping onboarding - if user is on onboarding page and has already completed it
   if (user && request.nextUrl.pathname === '/onboarding') {
     const { data: persona } = await supabase
-      .from('user_personas')
+      .from('personas')
       .select('id')
       .eq('user_id', user.id)
       .single();
