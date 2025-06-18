@@ -14,7 +14,6 @@ import {
   Target,
   Sparkles,
   Play,
-  Pause,
   RotateCcw,
   CheckCircle,
   Star,
@@ -22,8 +21,8 @@ import {
 } from 'lucide-react';
 
 export default function StudyPage() {
-  const [activeSession, setActiveSession] = useState<string | null>(null);
-  const [sessionTime, setSessionTime] = useState(0);
+  const [_activeSession, _setActiveSession] = useState<string | null>(null);
+  const [_sessionTime, _setSessionTime] = useState(0);
   const { materials, loading, error, refetch } = useStudyMaterials();
 
   const currentStudyStreak = 7;
@@ -57,8 +56,8 @@ export default function StudyPage() {
   };
 
   const startStudySession = (materialId: string | number) => {
-    setActiveSession(materialId.toString());
-    setSessionTime(0);
+    _setActiveSession(materialId.toString());
+    _setSessionTime(0);
     // In real app, this would start the AI-powered study session
   };
 

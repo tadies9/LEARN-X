@@ -7,6 +7,7 @@ import { useEffect, useRef, useCallback, useState } from 'react';
 import { contentCache, CacheOptions } from '../cache/ContentCache';
 import { AIApiService } from '../api/ai';
 import { useAuth } from '@/hooks/useAuth';
+import type { Session } from '@supabase/supabase-js';
 
 interface PreloadOptions {
   fileId: string;
@@ -41,7 +42,7 @@ export function useProgressivePreload({
   mode = 'explain',
 }: PreloadOptions) {
   const { user } = useAuth();
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
 
   useEffect(() => {
     const getSession = async () => {

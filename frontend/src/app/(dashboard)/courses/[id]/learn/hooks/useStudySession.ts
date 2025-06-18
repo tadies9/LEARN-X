@@ -10,7 +10,11 @@ interface UseStudySessionOptions {
   courseId: string;
 }
 
-export function useStudySession({ fileId, fileName, courseId }: UseStudySessionOptions) {
+export function useStudySession({
+  fileId,
+  fileName: _fileName,
+  courseId: _courseId,
+}: UseStudySessionOptions) {
   // Auth & Profile
   const [session, setSession] = useState<any>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);

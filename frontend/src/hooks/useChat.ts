@@ -71,9 +71,13 @@ export function useChat({ fileId, onMessage }: UseChatOptions) {
         let assistantMessage = '';
         const messageId = Date.now().toString();
 
-        while (true) {
+        let readerDone = false;
+        while (!readerDone) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            readerDone = true;
+            break;
+          }
 
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');

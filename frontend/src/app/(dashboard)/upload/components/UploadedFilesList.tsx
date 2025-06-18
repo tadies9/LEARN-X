@@ -1,15 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  CheckCircle,
-  AlertCircle,
-  Sparkles,
-  RefreshCw,
-  Trash2,
-  Clock,
-  Loader2,
-} from 'lucide-react';
+import { CheckCircle, AlertCircle, RefreshCw, Trash2, Clock, Loader2 } from 'lucide-react';
 
 import { getFileIcon, formatFileSize } from '../utils/fileHelpers';
 import type { UploadedFile } from '@/lib/api/files';

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { ThumbsUp, ThumbsDown, Meh } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AIApiService } from '@/lib/api/ai';

@@ -19,7 +19,7 @@ import { ActiveMode, SessionData, UserProfile } from './types/streaming';
 import { getSession, loadUserProfile } from './utils/sessionUtils';
 import { getFileVersion } from './utils/fileUtils';
 
-export default function LearnPage({ params }: { params: { id: string } }) {
+export default function LearnPage({ params: _params }: { params: { id: string } }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const fileId = searchParams.get('fileId');

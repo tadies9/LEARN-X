@@ -15,7 +15,7 @@ export function AnimatedCounter({
   value,
   suffix = '',
   prefix = '',
-  duration = 2,
+  duration: _duration = 2,
 }: AnimatedCounterProps) {
   const ref = useRef<HTMLSpanElement>(null);
   const motionValue = useMotionValue(0);

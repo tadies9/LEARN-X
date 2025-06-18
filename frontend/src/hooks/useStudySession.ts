@@ -62,8 +62,8 @@ export function useStudySession({ fileId, userId }: UseStudySessionOptions) {
   }, [fileId, userId]);
 
   // Save session periodically
-  const saveSession = useCallback(
-    debounce(async (sessionData: StudySession) => {
+  const debouncedSave = useCallback(
+    debounce(async (sessionData: unknown) => {
       try {
         await fetch('/api/sessions/save', {
           method: 'POST',
@@ -75,6 +75,13 @@ export function useStudySession({ fileId, userId }: UseStudySessionOptions) {
       }
     }, 5000),
     []
+  );
+
+  const saveSession = useCallback(
+    (sessionData: StudySession) => {
+      debouncedSave(sessionData);
+    },
+    [debouncedSave]
   );
 
   // Update progress
@@ -111,10 +118,10 @@ export function useStudySession({ fileId, userId }: UseStudySessionOptions) {
   useEffect(() => {
     return () => {
       if (session) {
-        saveSession.flush();
+        debouncedSave.flush();
       }
     };
-  }, [session, saveSession]);
+  }, [session, debouncedSave]);
 
   return {
     session,

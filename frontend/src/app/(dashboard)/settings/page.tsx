@@ -22,7 +22,7 @@ export default function SettingsPage() {
     useUserSettings();
 
   const {
-    register,
+    register: _register,
     handleSubmit,
     formState: { errors: _errors, isDirty },
     reset,

@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 import { Plus, Search } from 'lucide-react';
@@ -19,7 +18,6 @@ import { CourseFilters } from './components/CourseFilters';
 import type { Course, CourseFilters as CourseFilterType } from '@/lib/types/course';
 
 export default function CoursesPage() {
-  const router = useRouter();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');

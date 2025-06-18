@@ -2,7 +2,7 @@
 
 import { ChevronRight, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Topic, Subtopic } from '../types/study';
+import { Topic } from '../types/study';
 
 interface SidebarPanelProps {
   outline: Topic[];

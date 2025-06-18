@@ -8,7 +8,6 @@ import { useProgressivePreload } from '@/lib/hooks/useProgressivePreload';
 
 // Import components
 import { ContentHeader } from './components/ContentHeader';
-import { StudyModeSelector } from './components/StudyModeSelector';
 import { MainContentArea } from './components/MainContentArea';
 import { SidebarPanel } from './components/SidebarPanel';
 import { StudyTools } from './components/StudyTools';

@@ -118,22 +118,8 @@ export function StudyChat({ fileId, currentPage, selectedText, userPersona }: St
             <div className="prose prose-sm max-w-none">
               <ReactMarkdown
                 components={{
-                  code({
-                    node,
-                    className,
-                    children,
-                    ...props
-                  }: {
-                    node?: {
-                      position?: {
-                        start: { line: number; column: number };
-                        end: { line: number; column: number };
-                      };
-                    };
-                    className?: string;
-                    children?: ReactNode;
-                    [key: string]: unknown;
-                  }) {
+                  code: (props: any) => {
+                    const { node, className, children, ...rest } = props;
                     const inline = node?.position === undefined;
                     const match = /language-(\w+)/.exec(className || '');
                     return !inline && match ? (
@@ -142,7 +128,7 @@ export function StudyChat({ fileId, currentPage, selectedText, userPersona }: St
                           style={oneDark as { [key: string]: React.CSSProperties }}
                           language={match[1]}
                           PreTag="div"
-                          {...props}
+                          {...rest}
                         >
                           {String(children).replace(/\n$/, '')}
                         </SyntaxHighlighter>
@@ -156,7 +142,7 @@ export function StudyChat({ fileId, currentPage, selectedText, userPersona }: St
                         </Button>
                       </div>
                     ) : (
-                      <code className={className} {...props}>
+                      <code className={className} {...rest}>
                         {children}
                       </code>
                     );

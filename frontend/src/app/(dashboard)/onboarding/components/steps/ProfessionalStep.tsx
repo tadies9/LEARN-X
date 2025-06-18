@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useOnboarding } from '@/contexts/onboarding-context';
@@ -36,7 +35,7 @@ export function ProfessionalStep() {
     handleSubmit,
     formState: { errors },
     setValue,
-    watch,
+    watch: _watch,
   } = useForm<AcademicCareerData>({
     resolver: zodResolver(academicCareerSchema),
     defaultValues: formData.academicCareer || {},

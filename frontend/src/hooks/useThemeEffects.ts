@@ -34,7 +34,7 @@ export function useThemeEffects({
     if (preference !== 'auto') return;
 
     const interval = setInterval(() => {
-      const newAutoTheme = getTimeBasedTheme();
+      getTimeBasedTheme();
       // The resolved theme will automatically update due to dependency
     }, 60000); // Check every minute
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { FileUp, FileText, BookOpen, Upload } from 'lucide-react';
+import { FileText, BookOpen, Upload } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 

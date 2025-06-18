@@ -34,7 +34,7 @@ export function isPaginatedResponse<T>(
     response !== null &&
     'success' in response &&
     'data' in response &&
-    'items' in (response as any).data
+    'items' in (response as PaginatedResponse<T>).data
   );
 }
 

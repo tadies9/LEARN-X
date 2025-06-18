@@ -133,7 +133,7 @@ export class ContentValidator {
 
   /** Clean mermaid content */
   cleanMermaidContent(content: string): string {
-    let cleaned = content
+    const cleaned = content
       .replace(/&lt;/g, '<')
       .replace(/&gt;/g, '>')
       .replace(/&amp;/g, '&')

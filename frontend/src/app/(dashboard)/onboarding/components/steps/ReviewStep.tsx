@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { ChevronLeft, Edit2, CheckCircle, Sparkles } from 'lucide-react';
+import { ChevronLeft, Edit2, Sparkles } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
 import { Button } from '@/components/ui/button';

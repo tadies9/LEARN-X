@@ -15,7 +15,7 @@ interface FileViewerProps {
 
 export function FileViewer({ url, fileName, mimeType, onPageChange }: FileViewerProps) {
   const [fileType, setFileType] = useState<string>('');
-  const [isSupported, setIsSupported] = useState(true);
+  const [_isSupported, _setIsSupported] = useState(true);
 
   useEffect(() => {
     // Determine file type from mime type or file extension
@@ -51,7 +51,7 @@ export function FileViewer({ url, fileName, mimeType, onPageChange }: FileViewer
     }
 
     setFileType(type);
-    setIsSupported(['pdf', 'image'].includes(type));
+    _setIsSupported(['pdf', 'image'].includes(type));
   }, [fileName, mimeType]);
 
   // Handle PDF files

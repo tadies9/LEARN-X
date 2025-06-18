@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Topic, Subtopic, ReactionType } from '../types/study';
+import { Topic, ReactionType } from '../types/study';
 
 interface MainContentAreaProps {
   selectedTopic: string | null;

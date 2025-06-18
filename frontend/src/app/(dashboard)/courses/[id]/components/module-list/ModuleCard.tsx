@@ -33,7 +33,6 @@ import {
   List,
 } from 'lucide-react';
 import type { ModuleCardProps } from './types';
-import type { CourseFile } from '@/lib/types/course';
 
 export function ModuleCard({
   module,

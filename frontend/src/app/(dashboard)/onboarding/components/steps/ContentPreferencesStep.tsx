@@ -10,7 +10,6 @@ import { CardContent, CardDescription, CardHeader, CardTitle } from '@/component
 import { OnboardingCard } from '../OnboardingCard';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
 import { cn } from '@/lib/utils';
 
 import type { ContentPreferences } from '@/lib/types/persona';

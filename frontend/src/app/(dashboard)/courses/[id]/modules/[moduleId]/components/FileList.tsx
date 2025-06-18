@@ -92,7 +92,7 @@ export function FileList({ files, onUpdate, onReorder }: FileListProps) {
     setDraggedFile(null);
   };
 
-  const getFileIcon = (mimeType: string) => {
+  const getFileIcon = (_mimeType: string) => {
     // You could expand this to show different icons for different file types
     return <FileText className="h-5 w-5" />;
   };
