@@ -38,7 +38,7 @@ export class EmbeddingQueue {
     totalFailed: 0,
     averageApiTime: 0,
     queueDepth: 0,
-    costEstimate: 0
+    costEstimate: 0,
   };
 
   constructor() {
@@ -52,10 +52,10 @@ export class EmbeddingQueue {
     try {
       // Ensure partitioned queue exists for high volume
       await this.client.createQueue(this.queueName);
-      
+
       this.isProcessing = true;
       this.processWithOptimizedPolling();
-      
+
       logger.info('[EmbeddingQueue] Started with partitioned queue optimization');
     } catch (error) {
       logger.error('[EmbeddingQueue] Failed to start:', error);
@@ -78,15 +78,15 @@ export class EmbeddingQueue {
         userId,
         chunks,
         model,
-        queuedAt: new Date().toISOString()
+        queuedAt: new Date().toISOString(),
       };
 
       const msgId = await this.client.send(this.queueName, payload);
-      
+
       logger.info(`[EmbeddingQueue] Enqueued embedding generation: ${fileId}`, {
         msgId: msgId.toString(),
         chunkCount: chunks.length,
-        model
+        model,
       });
 
       return msgId;
@@ -109,7 +109,7 @@ export class EmbeddingQueue {
       // Split into smaller batches to optimize API calls
       const batchSize = 10; // Optimal batch size for OpenAI API
       const batches: EmbeddingPayload[] = [];
-      
+
       for (let i = 0; i < chunks.length; i += batchSize) {
         const batchChunks = chunks.slice(i, i + batchSize);
         batches.push({
@@ -117,16 +117,16 @@ export class EmbeddingQueue {
           userId,
           chunks: batchChunks,
           model,
-          queuedAt: new Date().toISOString()
+          queuedAt: new Date().toISOString(),
         });
       }
 
       const msgIds = await this.client.sendBatch(this.queueName, batches);
-      
+
       logger.info(`[EmbeddingQueue] Enqueued embedding batches: ${fileId}`, {
         totalChunks: chunks.length,
         batches: batches.length,
-        msgIds: msgIds.map(id => id.toString())
+        msgIds: msgIds.map((id) => id.toString()),
       });
 
       return msgIds;
@@ -142,7 +142,7 @@ export class EmbeddingQueue {
   async getMetrics(): Promise<EmbeddingMetrics> {
     try {
       const queueMetrics = await this.client.getQueueMetrics(this.queueName);
-      
+
       if (queueMetrics) {
         this.metrics.queueDepth = queueMetrics.queue_length;
       }
@@ -174,7 +174,7 @@ export class EmbeddingQueue {
       try {
         // Use long-polling for efficiency
         const jobs = await this.client.readWithPoll(this.queueName, 30);
-        
+
         if (jobs.length === 0) {
           // Exponential backoff when queue is empty
           const delay = Math.min(baseInterval * backoffMultiplier, maxBackoff);
@@ -186,7 +186,6 @@ export class EmbeddingQueue {
           await this.processBatch(jobs as QueueJob<EmbeddingPayload>[]);
           await this.sleep(baseInterval);
         }
-        
       } catch (error) {
         logger.error('[EmbeddingQueue] Processing error:', error);
         await this.sleep(baseInterval * 2);
@@ -206,9 +205,7 @@ export class EmbeddingQueue {
 
     for (let i = 0; i < jobs.length; i += concurrency) {
       const batch = jobs.slice(i, i + concurrency);
-      const batchResults = await Promise.allSettled(
-        batch.map(job => this.processJob(job))
-      );
+      const batchResults = await Promise.allSettled(batch.map((job) => this.processJob(job)));
 
       for (const result of batchResults) {
         if (result.status === 'fulfilled') {
@@ -220,14 +217,16 @@ export class EmbeddingQueue {
     }
 
     // Update metrics
-    const successful = results.filter(r => r.success).length;
-    const failed = results.filter(r => !r.success).length;
+    const successful = results.filter((r) => r.success).length;
+    const failed = results.filter((r) => !r.success).length;
     const totalChunks = results.reduce((sum, r) => sum + r.chunks, 0);
-    
+
     this.metrics.totalEmbeddings += totalChunks;
     this.metrics.totalFailed += failed;
-    
-    logger.info(`[EmbeddingQueue] Batch complete: ${successful} success, ${failed} failed, ${totalChunks} embeddings`);
+
+    logger.info(
+      `[EmbeddingQueue] Batch complete: ${successful} success, ${failed} failed, ${totalChunks} embeddings`
+    );
   }
 
   /**
@@ -241,59 +240,58 @@ export class EmbeddingQueue {
       logger.info(`[EmbeddingQueue] Processing embeddings: ${fileId}`, {
         msgId: job.msg_id.toString(),
         chunkCount: chunks.length,
-        attempt: job.read_ct
+        attempt: job.read_ct,
       });
 
       // Import dynamically to avoid circular dependencies
       const { VectorEmbeddingService } = await import('../embeddings/VectorEmbeddingService');
       const embeddingService = new VectorEmbeddingService();
-      
+
       // Process embeddings for the chunks - add fileId to each chunk
-      const chunksWithFileId = chunks.map(chunk => ({
+      const chunksWithFileId = chunks.map((chunk) => ({
         ...chunk,
-        fileId
+        fileId,
       }));
       await embeddingService.processBatch(chunksWithFileId, job.message.userId);
-      
+
       // Delete message on success
       await this.client.delete(this.queueName, job.msg_id);
-      
+
       // Update metrics
       const apiTime = Date.now() - startTime;
       this.updateAverageApiTime(apiTime);
       this.updateCostEstimate(chunks.length);
-      
+
       logger.info(`[EmbeddingQueue] Embeddings processed successfully: ${fileId}`, {
         apiTimeMs: apiTime,
         chunkCount: chunks.length,
-        msgId: job.msg_id.toString()
+        msgId: job.msg_id.toString(),
       });
-      
+
       return chunks.length;
-      
     } catch (error) {
       logger.error(`[EmbeddingQueue] Failed to process embeddings ${fileId}:`, error);
-      
+
       // Check if we should retry or archive
       const shouldRetry = this.shouldRetryJob(job, error);
-      
+
       if (shouldRetry) {
         // Let the message become visible again for retry
         logger.warn(`[EmbeddingQueue] Job will retry: ${fileId}`, {
           attempt: job.read_ct,
-          msgId: job.msg_id.toString()
+          msgId: job.msg_id.toString(),
         });
       } else {
         // Archive the failed job for analysis
         await this.client.archive(this.queueName, job.msg_id);
-        
+
         logger.error(`[EmbeddingQueue] Job archived after failure: ${fileId}`, {
           attempt: job.read_ct,
           msgId: job.msg_id.toString(),
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
-      
+
       throw error;
     }
   }
@@ -304,7 +302,7 @@ export class EmbeddingQueue {
   private shouldRetryJob(job: QueueJob<EmbeddingPayload>, error: any): boolean {
     const maxRetries = 5; // More retries for API failures
     const isRetryableError = this.isRetryableError(error);
-    
+
     return job.read_ct < maxRetries && isRetryableError;
   }
 
@@ -313,7 +311,7 @@ export class EmbeddingQueue {
    */
   private isRetryableError(error: any): boolean {
     const errorMessage = error instanceof Error ? error.message.toLowerCase() : '';
-    
+
     // Retryable API errors
     const retryablePatterns = [
       'rate limit',
@@ -321,25 +319,25 @@ export class EmbeddingQueue {
       'service unavailable',
       'temporary failure',
       'connection reset',
-      'network error'
+      'network error',
     ];
-    
+
     // Non-retryable API errors
     const nonRetryablePatterns = [
       'invalid api key',
       'quota exceeded',
       'content policy violation',
-      'invalid input'
+      'invalid input',
     ];
-    
-    if (nonRetryablePatterns.some(pattern => errorMessage.includes(pattern))) {
+
+    if (nonRetryablePatterns.some((pattern) => errorMessage.includes(pattern))) {
       return false;
     }
-    
-    if (retryablePatterns.some(pattern => errorMessage.includes(pattern))) {
+
+    if (retryablePatterns.some((pattern) => errorMessage.includes(pattern))) {
       return true;
     }
-    
+
     // Default to retryable for unknown API errors
     return true;
   }
@@ -352,7 +350,7 @@ export class EmbeddingQueue {
     if (totalJobs === 0) {
       this.metrics.averageApiTime = newTime;
     } else {
-      this.metrics.averageApiTime = 
+      this.metrics.averageApiTime =
         (this.metrics.averageApiTime * (totalJobs - 1) + newTime) / totalJobs;
     }
   }
@@ -371,6 +369,6 @@ export class EmbeddingQueue {
    * Sleep utility for delays
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

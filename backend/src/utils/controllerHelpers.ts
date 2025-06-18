@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import { AppError } from './errors';
 import { logger } from './logger';
 
@@ -128,7 +128,7 @@ export function createPermissionMiddleware<T>(
   resourceParam = 'id',
   action = 'access this resource'
 ) {
-  return async (req: AuthenticatedRequest, res: Response, next: Function) => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
@@ -247,7 +247,7 @@ export class CrudHelpers {
     });
   }
 
-  static createDeleteHandler<T>(
+  static createDeleteHandler(
     service: {
       delete(id: string, userId: string): Promise<void>;
       checkOwnership(id: string, userId: string): Promise<boolean>;
@@ -286,7 +286,7 @@ export function validateRequired(data: Record<string, any>, fields: string[]): s
 }
 
 export function validateRequestBody(requiredFields: string[]) {
-  return (req: AuthenticatedRequest, res: Response, next: Function) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
     const missing = validateRequired(req.body, requiredFields);
 
     if (missing.length > 0) {

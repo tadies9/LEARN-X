@@ -25,10 +25,10 @@ export class ValidationReports {
       keyMetrics: {
         validationScore: validationResult.score,
         issueCount: validationResult.issues.length,
-        errorCount: validationResult.issues.filter(i => i.type === 'error').length,
-        warningCount: validationResult.issues.filter(i => i.type === 'warning').length,
+        errorCount: validationResult.issues.filter((i) => i.type === 'error').length,
+        warningCount: validationResult.issues.filter((i) => i.type === 'warning').length,
       },
-      criticalIssues: validationResult.issues.filter(i => i.severity >= 8).length,
+      criticalIssues: validationResult.issues.filter((i) => i.severity >= 8).length,
       improvements: validationResult.recommendations.slice(0, 3),
     };
 
@@ -55,10 +55,11 @@ export class ValidationReports {
    * Generate testing report from test results
    */
   generateTestingReport(testResults: TestResult[]): AccuracyReport {
-    const passedTests = testResults.filter(r => r.passed).length;
+    const passedTests = testResults.filter((r) => r.passed).length;
     const totalTests = testResults.length;
     const passRate = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
-    const averageScore = totalTests > 0 ? testResults.reduce((sum, r) => sum + r.score, 0) / totalTests : 0;
+    const averageScore =
+      totalTests > 0 ? testResults.reduce((sum, r) => sum + r.score, 0) / totalTests : 0;
 
     const summary: ReportSummary = {
       overallScore: averageScore,
@@ -70,7 +71,7 @@ export class ValidationReports {
         passedTests,
         failedTests: totalTests - passedTests,
       },
-      criticalIssues: testResults.filter(r => !r.passed).length,
+      criticalIssues: testResults.filter((r) => !r.passed).length,
       improvements: this.extractCommonIssues(testResults).slice(0, 3),
     };
 
@@ -97,24 +98,30 @@ export class ValidationReports {
    * Group issues by category
    */
   private groupIssuesByCategory(issues: any[]): Record<string, any[]> {
-    return issues.reduce((groups, issue) => {
-      const category = issue.category || 'other';
-      groups[category] = groups[category] || [];
-      groups[category].push(issue);
-      return groups;
-    }, {} as Record<string, any[]>);
+    return issues.reduce(
+      (groups, issue) => {
+        const category = issue.category || 'other';
+        groups[category] = groups[category] || [];
+        groups[category].push(issue);
+        return groups;
+      },
+      {} as Record<string, any[]>
+    );
   }
 
   /**
    * Group issues by severity level
    */
   private groupIssuesBySeverity(issues: any[]): Record<string, any[]> {
-    return issues.reduce((groups, issue) => {
-      const severity = issue.severity >= 8 ? 'high' : issue.severity >= 5 ? 'medium' : 'low';
-      groups[severity] = groups[severity] || [];
-      groups[severity].push(issue);
-      return groups;
-    }, {} as Record<string, any[]>);
+    return issues.reduce(
+      (groups, issue) => {
+        const severity = issue.severity >= 8 ? 'high' : issue.severity >= 5 ? 'medium' : 'low';
+        groups[severity] = groups[severity] || [];
+        groups[severity].push(issue);
+        return groups;
+      },
+      {} as Record<string, any[]>
+    );
   }
 
   /**
@@ -140,8 +147,10 @@ export class ValidationReports {
   /**
    * Assess basic risk level
    */
-  private assessRiskLevel(validationResult: ValidationResult): 'low' | 'medium' | 'high' | 'critical' {
-    const criticalIssues = validationResult.issues.filter(i => i.severity >= 8).length;
+  private assessRiskLevel(
+    validationResult: ValidationResult
+  ): 'low' | 'medium' | 'high' | 'critical' {
+    const criticalIssues = validationResult.issues.filter((i) => i.severity >= 8).length;
     const totalIssues = validationResult.issues.length;
 
     if (criticalIssues > 0) return 'critical';
@@ -154,12 +163,15 @@ export class ValidationReports {
    * Group test results by category
    */
   private groupTestsByCategory(testResults: TestResult[]): Record<string, TestResult[]> {
-    return testResults.reduce((groups, result) => {
-      const category = result.testCase.expectedIntent;
-      groups[category] = groups[category] || [];
-      groups[category].push(result);
-      return groups;
-    }, {} as Record<string, TestResult[]>);
+    return testResults.reduce(
+      (groups, result) => {
+        const category = result.testCase.expectedIntent;
+        groups[category] = groups[category] || [];
+        groups[category].push(result);
+        return groups;
+      },
+      {} as Record<string, TestResult[]>
+    );
   }
 
   /**
@@ -167,8 +179,8 @@ export class ValidationReports {
    */
   private extractCommonIssues(testResults: TestResult[]): string[] {
     const issueCount = new Map<string, number>();
-    testResults.forEach(result => {
-      result.issues.forEach(issue => {
+    testResults.forEach((result) => {
+      result.issues.forEach((issue) => {
         issueCount.set(issue, (issueCount.get(issue) || 0) + 1);
       });
     });
@@ -187,9 +199,9 @@ export class ValidationReports {
     const analysis: any = {};
 
     Object.entries(byCategory).forEach(([category, results]) => {
-      const passRate = results.filter(r => r.passed).length / results.length * 100;
+      const passRate = (results.filter((r) => r.passed).length / results.length) * 100;
       const avgScore = results.reduce((sum, r) => sum + r.score, 0) / results.length;
-      
+
       analysis[category] = {
         passRate,
         avgScore,
@@ -204,15 +216,15 @@ export class ValidationReports {
    * Analyze test failures for patterns
    */
   private analyzeFailures(testResults: TestResult[]): any {
-    const failures = testResults.filter(r => !r.passed);
-    
+    const failures = testResults.filter((r) => !r.passed);
+
     if (failures.length === 0) {
       return { hasFailures: false };
     }
 
     const failuresByCategory = this.groupTestsByCategory(failures);
-    const failureRate = failures.length / testResults.length * 100;
-    
+    const failureRate = (failures.length / testResults.length) * 100;
+
     return {
       hasFailures: true,
       failureRate,
@@ -231,13 +243,13 @@ export class ValidationReports {
   private generateTestingRecommendations(testResults: TestResult[]): string[] {
     const recommendations: string[] = [];
     const commonIssues = this.extractCommonIssues(testResults);
-    const passRate = testResults.filter(r => r.passed).length / testResults.length * 100;
-    
+    const passRate = (testResults.filter((r) => r.passed).length / testResults.length) * 100;
+
     if (passRate < 70) {
       recommendations.push('Overall test pass rate is below 70% - comprehensive review needed');
     }
 
-    commonIssues.forEach(issue => {
+    commonIssues.forEach((issue) => {
       if (issue.includes('intent')) {
         recommendations.push('Improve query intent detection accuracy');
       } else if (issue.includes('relevance')) {
@@ -253,7 +265,7 @@ export class ValidationReports {
     if (failureAnalysis.hasFailures && failureAnalysis.failureRate > 30) {
       recommendations.push('High failure rate detected - focus on most common failure categories');
     }
-    
+
     return Array.from(new Set(recommendations)).slice(0, 8);
   }
 }

@@ -348,7 +348,7 @@ router.post('/files/test-upload', upload.single('file'), async (req, res) => {
     console.log('=== TEST UPLOAD ENDPOINT (AUTO-CHUNKING TEST) ===');
     console.log('File:', req.file ? req.file.originalname : 'No file');
     console.log('Body:', req.body);
-    
+
     if (!req.file) {
       return res.status(400).json({ error: 'No file provided' });
     }
@@ -356,12 +356,14 @@ router.post('/files/test-upload', upload.single('file'), async (req, res) => {
     // Use hardcoded test user and module for testing
     const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a';
     const moduleId = req.body.moduleId || 'd4a09fe4-bd1f-4c95-90cd-20d6ae325b84';
-    
+
     const fileData = {
       moduleId,
       name: req.body.name || `Test-${req.file.originalname}`,
       description: req.body.description || 'Automatic chunking test',
-      processingOptions: req.body.processingOptions ? JSON.parse(req.body.processingOptions) : undefined,
+      processingOptions: req.body.processingOptions
+        ? JSON.parse(req.body.processingOptions)
+        : undefined,
     };
 
     const { FileService } = await import('../services/fileService');
@@ -369,17 +371,17 @@ router.post('/files/test-upload', upload.single('file'), async (req, res) => {
     const file = await fileService.uploadFile(req.file, fileData, userId);
 
     console.log('✅ File uploaded successfully:', file.id);
-    
+
     return res.status(201).json({
       success: true,
       data: file,
-      message: 'Test upload successful - automatic processing should begin shortly'
+      message: 'Test upload successful - automatic processing should begin shortly',
     });
   } catch (error) {
     console.error('Test upload error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       error: error instanceof Error ? error.message : 'Upload failed',
-      details: error instanceof Error ? error.stack : undefined
+      details: error instanceof Error ? error.stack : undefined,
     });
   }
 });

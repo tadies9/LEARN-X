@@ -46,3 +46,21 @@ export interface UserProfile {
     expertise?: string;
   };
 }
+
+// Import Supabase types
+import type { Session } from '@supabase/supabase-js';
+
+// Re-export for convenience
+export type SupabaseSession = Session;
+
+// API Response types
+export interface OutlineSection {
+  id?: string;
+  title?: string;
+  summary?: string;
+  chunkIds?: string[];
+  chunkCount?: number;
+  startPage?: number;
+  endPage?: number;
+  topics?: string[];
+}

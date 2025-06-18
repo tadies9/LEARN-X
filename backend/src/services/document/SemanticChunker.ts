@@ -3,7 +3,7 @@ import { DocumentStructure, Section, ContentType } from './DocumentAnalyzer';
 import { ChunkingStrategies, ChunkingOptions } from './ChunkingStrategies';
 import { ChunkValidation, ValidationResult } from './ChunkValidation';
 import { ChunkOptimization, OptimizationOptions } from './ChunkOptimization';
-import { ChunkMetadataGenerator, MetadataGenerationOptions } from './ChunkMetadata';
+import { ChunkMetadataGenerator } from './ChunkMetadata';
 
 export interface ChunkOptions {
   minChunkSize?: number;
@@ -37,6 +37,7 @@ export interface ChunkMetadata {
   references?: string[];
   importance?: 'high' | 'medium' | 'low';
   academicLevel?: string;
+  [key: string]: unknown;
 }
 
 export class SemanticChunker {
@@ -134,10 +135,16 @@ export class SemanticChunker {
       maxChunkSize: options.maxChunkSize,
       adaptiveSize: options.adaptiveSize,
     };
-    const sizeConstraints = this.chunkingStrategies.getSizeConstraints(contentType, chunkingOptions);
+    const sizeConstraints = this.chunkingStrategies.getSizeConstraints(
+      contentType,
+      chunkingOptions
+    );
 
     // Split section content into semantic units
-    const semanticUnits = this.chunkingStrategies.splitIntoSemanticUnits(section.content, contentType);
+    const semanticUnits = this.chunkingStrategies.splitIntoSemanticUnits(
+      section.content,
+      contentType
+    );
 
     let currentChunk = '';
     let unitIndex = 0;
@@ -176,7 +183,7 @@ export class SemanticChunker {
     isEnd: boolean
   ): Chunk {
     const id = `chunk-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     const metadata = this.metadataGenerator.generateMetadata(
       content,
       section,

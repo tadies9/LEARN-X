@@ -227,7 +227,7 @@ export function mapPriorityToInteger(priority?: PriorityLevel | number): number 
   if (typeof priority === 'number') {
     return priority;
   }
-  
+
   switch (priority) {
     case 'critical':
       return QUEUE_PRIORITIES.CRITICAL;

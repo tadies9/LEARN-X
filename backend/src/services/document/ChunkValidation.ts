@@ -1,5 +1,4 @@
 import { Chunk, ChunkMetadata } from './SemanticChunker';
-import { ContentType } from './DocumentAnalyzer';
 
 export interface ValidationResult {
   isValid: boolean;
@@ -61,8 +60,8 @@ export class ChunkValidation {
     // Validate individual chunks
     chunks.forEach((chunk, index) => {
       const validation = this.validateChunk(chunk);
-      errors.push(...validation.errors.map(err => `Chunk ${index}: ${err}`));
-      warnings.push(...validation.warnings.map(warn => `Chunk ${index}: ${warn}`));
+      errors.push(...validation.errors.map((err) => `Chunk ${index}: ${err}`));
+      warnings.push(...validation.warnings.map((warn) => `Chunk ${index}: ${warn}`));
     });
 
     // Validate chunk sequence
@@ -81,7 +80,7 @@ export class ChunkValidation {
     const coherenceScore = this.calculateCoherenceScore(chunk);
     const completenessScore = this.calculateCompletenessScore(chunk);
     const readabilityScore = this.calculateReadabilityScore(chunk);
-    
+
     const overallScore = (coherenceScore + completenessScore + readabilityScore) / 3;
 
     return {
@@ -136,7 +135,10 @@ export class ChunkValidation {
       warnings.push('Code chunk does not contain code blocks');
     }
 
-    if (chunk.metadata.type === 'list' && !/^[\s]*[-*+•]\s+|^[\s]*\d+[.)]\s+/m.test(chunk.content)) {
+    if (
+      chunk.metadata.type === 'list' &&
+      !/^[\s]*[-*+•]\s+|^[\s]*\d+[.)]\s+/m.test(chunk.content)
+    ) {
       warnings.push('List chunk does not contain list items');
     }
 
@@ -153,14 +155,14 @@ export class ChunkValidation {
     const warnings: string[] = [];
 
     // Check for duplicate IDs
-    const ids = chunks.map(chunk => chunk.id);
+    const ids = chunks.map((chunk) => chunk.id);
     const uniqueIds = new Set(ids);
     if (ids.length !== uniqueIds.size) {
       errors.push('Duplicate chunk IDs detected');
     }
 
     // Check position sequence
-    const positions = chunks.map(chunk => chunk.metadata.position);
+    const positions = chunks.map((chunk) => chunk.metadata.position);
     const sortedPositions = [...positions].sort((a, b) => a - b);
     for (let i = 0; i < sortedPositions.length - 1; i++) {
       if (sortedPositions[i] === sortedPositions[i + 1]) {
@@ -190,10 +192,11 @@ export class ChunkValidation {
     let score = 1.0;
 
     // Check sentence transitions
-    const sentences = chunk.content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = chunk.content.split(/[.!?]+/).filter((s) => s.trim().length > 0);
     if (sentences.length > 1) {
-      const transitionWords = /\b(?:however|therefore|furthermore|moreover|additionally|consequently|meanwhile|subsequently|nevertheless|accordingly)\b/i;
-      const hasTransitions = sentences.some(sentence => transitionWords.test(sentence));
+      const transitionWords =
+        /\b(?:however|therefore|furthermore|moreover|additionally|consequently|meanwhile|subsequently|nevertheless|accordingly)\b/i;
+      const hasTransitions = sentences.some((sentence) => transitionWords.test(sentence));
       if (hasTransitions) score += 0.2;
     }
 
@@ -222,8 +225,10 @@ export class ChunkValidation {
     // Check content type specific completeness
     switch (chunk.metadata.type) {
       case 'definition':
-        if (chunk.content.toLowerCase().includes('definition') || 
-            /\b(?:is|are|means)\b/i.test(chunk.content)) {
+        if (
+          chunk.content.toLowerCase().includes('definition') ||
+          /\b(?:is|are|means)\b/i.test(chunk.content)
+        ) {
           score += 0.2;
         }
         break;
@@ -244,12 +249,12 @@ export class ChunkValidation {
 
   private calculateReadabilityScore(chunk: Chunk): number {
     const words = chunk.content.split(/\s+/).length;
-    const sentences = chunk.content.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
-    
+    const sentences = chunk.content.split(/[.!?]+/).filter((s) => s.trim().length > 0).length;
+
     if (sentences === 0) return 0;
 
     const avgWordsPerSentence = words / sentences;
-    
+
     // Optimal range: 15-20 words per sentence
     let score = 1.0;
     if (avgWordsPerSentence < 10 || avgWordsPerSentence > 25) {
@@ -257,8 +262,9 @@ export class ChunkValidation {
     }
 
     // Check for overly long sentences
-    const longSentences = chunk.content.split(/[.!?]+/)
-      .filter(s => s.trim().split(/\s+/).length > 30).length;
+    const longSentences = chunk.content
+      .split(/[.!?]+/)
+      .filter((s) => s.trim().split(/\s+/).length > 30).length;
     if (longSentences > 0) {
       score -= 0.2;
     }
@@ -286,14 +292,15 @@ export class ChunkValidation {
 
   private extractTopicWords(content: string): string[] {
     // Extract nouns and important terms
-    const words = content.toLowerCase()
+    const words = content
+      .toLowerCase()
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
-      .filter(word => word.length > 3);
+      .filter((word) => word.length > 3);
 
     // Simple topic extraction - could be enhanced with NLP
-    const topicWords = words.filter(word => 
-      !/^(?:the|this|that|with|from|they|have|been|will|would|could|should)$/.test(word)
+    const topicWords = words.filter(
+      (word) => !/^(?:the|this|that|with|from|they|have|been|will|would|could|should)$/.test(word)
     );
 
     return topicWords.slice(0, 10); // Limit to top 10

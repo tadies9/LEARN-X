@@ -27,7 +27,7 @@ export class SearchReports {
   ): AccuracyReport {
     const summary = this.createSearchSummary(metrics, validationResult);
     const recommendations = this.generateSearchRecommendations(metrics, validationResult);
-    
+
     const details = {
       query,
       intent,
@@ -39,22 +39,20 @@ export class SearchReports {
 
     const charts = this.chartGenerator.generateSearchCharts(metrics, results);
 
-    return this.reportGenerator.createReport(
-      'search',
-      summary,
-      details,
-      recommendations,
-      charts
-    );
+    return this.reportGenerator.createReport('search', summary, details, recommendations, charts);
   }
 
   /**
    * Create search summary from metrics and validation
    */
-  private createSearchSummary(metrics: SearchMetrics, validationResult?: ValidationResult): ReportSummary {
-    const searchScore = (metrics.precision + metrics.recall + metrics.f1Score + metrics.relevanceScore) * 25;
+  private createSearchSummary(
+    metrics: SearchMetrics,
+    validationResult?: ValidationResult
+  ): ReportSummary {
+    const searchScore =
+      (metrics.precision + metrics.recall + metrics.f1Score + metrics.relevanceScore) * 25;
     const finalScore = validationResult ? (searchScore + validationResult.score) / 2 : searchScore;
-    
+
     return {
       overallScore: finalScore,
       status: this.reportGenerator.getStatusFromScore(finalScore),
@@ -65,7 +63,9 @@ export class SearchReports {
         relevanceScore: metrics.relevanceScore * 100,
         diversityScore: metrics.diversityScore * 100,
       },
-      criticalIssues: validationResult ? validationResult.issues.filter(i => i.severity >= 8).length : 0,
+      criticalIssues: validationResult
+        ? validationResult.issues.filter((i) => i.severity >= 8).length
+        : 0,
       improvements: validationResult ? validationResult.recommendations.slice(0, 3) : [],
     };
   }
@@ -73,27 +73,30 @@ export class SearchReports {
   /**
    * Generate search-specific recommendations
    */
-  private generateSearchRecommendations(metrics: SearchMetrics, validationResult?: ValidationResult): string[] {
+  private generateSearchRecommendations(
+    metrics: SearchMetrics,
+    validationResult?: ValidationResult
+  ): string[] {
     const recommendations: string[] = [];
-    
+
     // Precision-based recommendations
     if (metrics.precision < 0.6) {
       recommendations.push('Improve result ranking to increase precision');
       recommendations.push('Consider implementing stricter relevance thresholds');
     }
-    
+
     // Recall-based recommendations
     if (metrics.recall < 0.5) {
       recommendations.push('Expand search scope to improve recall');
       recommendations.push('Review query expansion strategies');
     }
-    
+
     // Relevance-based recommendations
     if (metrics.relevanceScore < 0.7) {
       recommendations.push('Enhance relevance scoring algorithm');
       recommendations.push('Consider semantic similarity improvements');
     }
-    
+
     // Diversity-based recommendations
     if (metrics.diversityScore < 0.4) {
       recommendations.push('Implement diversity-aware result ranking');
@@ -101,7 +104,10 @@ export class SearchReports {
     }
 
     // Performance-based recommendations
-    if (metrics.performanceMetrics && 'responseTime' in metrics.performanceMetrics && metrics.performanceMetrics.responseTime > 1000) {
+    if (
+      metrics.performanceMetrics &&
+      metrics.performanceMetrics.searchTime + metrics.performanceMetrics.processingTime > 1000
+    ) {
       recommendations.push('Optimize search performance for faster response times');
     }
 
@@ -109,12 +115,12 @@ export class SearchReports {
     if (metrics.f1Score < 0.6) {
       recommendations.push('Balance precision and recall for better F1 score');
     }
-    
+
     // Include validation recommendations if available
     if (validationResult) {
       recommendations.push(...validationResult.recommendations.slice(0, 2));
     }
-    
+
     return Array.from(new Set(recommendations)).slice(0, 8);
   }
 
@@ -125,8 +131,8 @@ export class SearchReports {
     const analysis = {
       totalResults: results.length,
       avgScore: results.reduce((sum, r) => sum + (r.score || 0), 0) / Math.max(results.length, 1),
-      topScore: Math.max(...results.map(r => r.score || 0), 0),
-      intentMatches: results.filter(r => r.intentMatch).length,
+      topScore: Math.max(...results.map((r) => r.score || 0), 0),
+      intentMatches: results.filter((r) => r.intentMatch).length,
       contentTypeDistribution: this.getContentTypeDistribution(results),
       sectionDistribution: this.getSectionDistribution(results),
       scoreDistribution: this.getScoreDistribution(results),
@@ -141,7 +147,7 @@ export class SearchReports {
    */
   private getContentTypeDistribution(results: any[]): Record<string, number> {
     const distribution: Record<string, number> = {};
-    results.forEach(r => {
+    results.forEach((r) => {
       const type = r.metadata?.contentType || 'unknown';
       distribution[type] = (distribution[type] || 0) + 1;
     });
@@ -153,7 +159,7 @@ export class SearchReports {
    */
   private getSectionDistribution(results: any[]): Record<string, number> {
     const distribution: Record<string, number> = {};
-    results.forEach(r => {
+    results.forEach((r) => {
       const section = r.metadata?.sectionTitle || 'unknown';
       distribution[section] = (distribution[section] || 0) + 1;
     });
@@ -168,12 +174,12 @@ export class SearchReports {
     median: number;
     quartiles: { q1: number; q3: number };
   } {
-    const scores = results.map(r => r.score || 0).sort((a, b) => a - b);
-    
+    const scores = results.map((r) => r.score || 0).sort((a, b) => a - b);
+
     const ranges = {
-      'High (0.8-1.0)': scores.filter(s => s >= 0.8).length,
-      'Medium (0.5-0.79)': scores.filter(s => s >= 0.5 && s < 0.8).length,
-      'Low (0-0.49)': scores.filter(s => s < 0.5).length,
+      'High (0.8-1.0)': scores.filter((s) => s >= 0.8).length,
+      'Medium (0.5-0.79)': scores.filter((s) => s >= 0.5 && s < 0.8).length,
+      'Low (0-0.49)': scores.filter((s) => s < 0.5).length,
     };
 
     const median = scores.length > 0 ? scores[Math.floor(scores.length / 2)] : 0;
@@ -191,9 +197,9 @@ export class SearchReports {
    * Analyze relevance patterns in results
    */
   private analyzeRelevance(results: any[]): any {
-    const highRelevance = results.filter(r => (r.score || 0) >= 0.8);
-    const mediumRelevance = results.filter(r => (r.score || 0) >= 0.5 && (r.score || 0) < 0.8);
-    const lowRelevance = results.filter(r => (r.score || 0) < 0.5);
+    const highRelevance = results.filter((r) => (r.score || 0) >= 0.8);
+    const mediumRelevance = results.filter((r) => (r.score || 0) >= 0.5 && (r.score || 0) < 0.8);
+    const lowRelevance = results.filter((r) => (r.score || 0) < 0.5);
 
     return {
       highRelevanceCount: highRelevance.length,
@@ -209,14 +215,14 @@ export class SearchReports {
    */
   private calculateRelevanceDropoff(results: any[]): number {
     if (results.length < 2) return 0;
-    
-    const scores = results.map(r => r.score || 0);
+
+    const scores = results.map((r) => r.score || 0);
     let totalDrop = 0;
-    
+
     for (let i = 1; i < scores.length; i++) {
-      totalDrop += Math.max(0, scores[i-1] - scores[i]);
+      totalDrop += Math.max(0, scores[i - 1] - scores[i]);
     }
-    
+
     return totalDrop / (scores.length - 1);
   }
 
@@ -227,13 +233,13 @@ export class SearchReports {
     if (topResults.length === 0) return null;
 
     const avgScore = topResults.reduce((sum, r) => sum + (r.score || 0), 0) / topResults.length;
-    const consistentQuality = topResults.filter(r => (r.score || 0) >= avgScore * 0.8).length;
+    const consistentQuality = topResults.filter((r) => (r.score || 0) >= avgScore * 0.8).length;
 
     return {
       averageScore: avgScore,
       consistentQualityCount: consistentQuality,
       qualityConsistency: consistentQuality / topResults.length,
-      intentMatchRate: topResults.filter(r => r.intentMatch).length / topResults.length,
+      intentMatchRate: topResults.filter((r) => r.intentMatch).length / topResults.length,
     };
   }
 }

@@ -49,13 +49,13 @@ class DashboardService {
     try {
       // Get study time stats
       const studyTime = await this.getStudyTimeStats(userId);
-      
+
       // Get streak information
       const streak = await this.getStreakInfo(userId);
-      
+
       // Get course statistics
       const courses = await this.getCourseStats(userId);
-      
+
       // Get progress metrics
       const progress = await this.getProgressStats(userId);
 
@@ -135,7 +135,7 @@ class DashboardService {
 
       // Group activities by date
       const activityDates = new Set(
-        activities.map(a => format(new Date(a.created_at), 'yyyy-MM-dd'))
+        activities.map((a) => format(new Date(a.created_at), 'yyyy-MM-dd'))
       );
 
       const today = format(new Date(), 'yyyy-MM-dd');
@@ -144,7 +144,7 @@ class DashboardService {
       // Calculate current streak
       let currentStreak = 0;
       let checkDate = new Date();
-      
+
       if (!todayCompleted) {
         checkDate = subDays(checkDate, 1);
       }
@@ -158,7 +158,7 @@ class DashboardService {
       const sortedDates = Array.from(activityDates).sort();
       let longestStreak = 0;
       let tempStreak = 0;
-      
+
       for (let i = 0; i < sortedDates.length; i++) {
         if (i === 0) {
           tempStreak = 1;
@@ -166,7 +166,7 @@ class DashboardService {
           const prevDate = new Date(sortedDates[i - 1]);
           const currDate = new Date(sortedDates[i]);
           const dayDiff = differenceInDays(currDate, prevDate);
-          
+
           if (dayDiff === 1) {
             tempStreak++;
           } else {
@@ -179,7 +179,7 @@ class DashboardService {
 
       // Calculate days this week
       const weekStart = format(subDays(new Date(), 6), 'yyyy-MM-dd');
-      const daysThisWeek = Array.from(activityDates).filter(date => {
+      const daysThisWeek = Array.from(activityDates).filter((date) => {
         return date >= weekStart && date <= format(new Date(), 'yyyy-MM-dd');
       }).length;
 
@@ -205,17 +205,19 @@ class DashboardService {
       .select('status')
       .eq('user_id', userId);
 
-    const active = courseCounts?.filter(c => c.status === 'active').length || 0;
-    const completed = courseCounts?.filter(c => c.status === 'completed').length || 0;
-    const archived = courseCounts?.filter(c => c.status === 'archived').length || 0;
+    const active = courseCounts?.filter((c) => c.status === 'active').length || 0;
+    const completed = courseCounts?.filter((c) => c.status === 'completed').length || 0;
+    const archived = courseCounts?.filter((c) => c.status === 'archived').length || 0;
 
     // Get module statistics
     const { data: modules } = await supabase
       .from('modules')
-      .select(`
+      .select(
+        `
         id,
         course:courses!inner(user_id)
-      `)
+      `
+      )
       .eq('course.user_id', userId);
 
     const totalModules = modules?.length || 0;
@@ -241,14 +243,16 @@ class DashboardService {
       .eq('user_id', userId);
 
     const totalProgress = progressData?.reduce((sum, p) => sum + p.completion_percentage, 0) || 0;
-    const overallCompletion = progressData?.length ? Math.round(totalProgress / progressData.length) : 0;
+    const overallCompletion = progressData?.length
+      ? Math.round(totalProgress / progressData.length)
+      : 0;
 
     // Weekly goal progress (assuming 10 hours per week goal)
     const studyTime = await this.getStudyTimeStats(userId);
     const weeklyGoalProgress = Math.min(100, Math.round((studyTime.thisWeek / 10) * 100));
 
     // Mastered concepts (files with >80% completion)
-    const masteredConcepts = progressData?.filter(p => p.completion_percentage >= 80).length || 0;
+    const masteredConcepts = progressData?.filter((p) => p.completion_percentage >= 80).length || 0;
 
     return {
       overallCompletion,
@@ -301,7 +305,7 @@ class DashboardService {
 
   private generateRecommendations(persona: any, recentCourses: any[]) {
     const recommendations = [];
-    const recentTopics = recentCourses.map(c => c.title.toLowerCase());
+    const recentTopics = recentCourses.map((c) => c.title.toLowerCase());
 
     // Get user's interests and academic career
     const primaryInterests = persona?.interests?.primary || [];
@@ -309,46 +313,118 @@ class DashboardService {
     const learningTopics = persona?.interests?.learningTopics || [];
     const academicCareer = persona?.academic_career || persona?.professional;
     const currentStatus = academicCareer?.currentStatus || academicCareer?.role || 'Student';
-    
+
     // Recommendation topics based on interests
     const topicRecommendations: Record<string, any[]> = {
       'Web Development': [
-        { title: 'React Fundamentals', description: 'Build interactive UIs with React', difficulty: 'beginner' },
-        { title: 'Next.js Full Stack', description: 'Create production-ready web applications', difficulty: 'intermediate' },
-        { title: 'TypeScript Mastery', description: 'Type-safe JavaScript development', difficulty: 'intermediate' },
+        {
+          title: 'React Fundamentals',
+          description: 'Build interactive UIs with React',
+          difficulty: 'beginner',
+        },
+        {
+          title: 'Next.js Full Stack',
+          description: 'Create production-ready web applications',
+          difficulty: 'intermediate',
+        },
+        {
+          title: 'TypeScript Mastery',
+          description: 'Type-safe JavaScript development',
+          difficulty: 'intermediate',
+        },
       ],
       'Data Science': [
-        { title: 'Python for Data Analysis', description: 'Master pandas, numpy, and data visualization', difficulty: 'beginner' },
-        { title: 'Machine Learning Basics', description: 'Understand ML algorithms and implementation', difficulty: 'intermediate' },
-        { title: 'Deep Learning with PyTorch', description: 'Build neural networks from scratch', difficulty: 'advanced' },
+        {
+          title: 'Python for Data Analysis',
+          description: 'Master pandas, numpy, and data visualization',
+          difficulty: 'beginner',
+        },
+        {
+          title: 'Machine Learning Basics',
+          description: 'Understand ML algorithms and implementation',
+          difficulty: 'intermediate',
+        },
+        {
+          title: 'Deep Learning with PyTorch',
+          description: 'Build neural networks from scratch',
+          difficulty: 'advanced',
+        },
       ],
       'Mobile Development': [
-        { title: 'React Native Basics', description: 'Build cross-platform mobile apps', difficulty: 'intermediate' },
-        { title: 'Flutter Development', description: 'Create beautiful native apps', difficulty: 'beginner' },
-        { title: 'iOS with SwiftUI', description: 'Modern iOS app development', difficulty: 'intermediate' },
+        {
+          title: 'React Native Basics',
+          description: 'Build cross-platform mobile apps',
+          difficulty: 'intermediate',
+        },
+        {
+          title: 'Flutter Development',
+          description: 'Create beautiful native apps',
+          difficulty: 'beginner',
+        },
+        {
+          title: 'iOS with SwiftUI',
+          description: 'Modern iOS app development',
+          difficulty: 'intermediate',
+        },
       ],
       'Cloud Computing': [
-        { title: 'AWS Fundamentals', description: 'Core AWS services and architecture', difficulty: 'beginner' },
-        { title: 'Docker & Kubernetes', description: 'Container orchestration at scale', difficulty: 'intermediate' },
-        { title: 'Serverless Architecture', description: 'Build scalable serverless applications', difficulty: 'advanced' },
+        {
+          title: 'AWS Fundamentals',
+          description: 'Core AWS services and architecture',
+          difficulty: 'beginner',
+        },
+        {
+          title: 'Docker & Kubernetes',
+          description: 'Container orchestration at scale',
+          difficulty: 'intermediate',
+        },
+        {
+          title: 'Serverless Architecture',
+          description: 'Build scalable serverless applications',
+          difficulty: 'advanced',
+        },
       ],
       'Artificial Intelligence': [
-        { title: 'Introduction to AI', description: 'Core concepts and applications of AI', difficulty: 'beginner' },
-        { title: 'Natural Language Processing', description: 'Text analysis and language models', difficulty: 'intermediate' },
-        { title: 'Computer Vision', description: 'Image recognition and processing', difficulty: 'advanced' },
+        {
+          title: 'Introduction to AI',
+          description: 'Core concepts and applications of AI',
+          difficulty: 'beginner',
+        },
+        {
+          title: 'Natural Language Processing',
+          description: 'Text analysis and language models',
+          difficulty: 'intermediate',
+        },
+        {
+          title: 'Computer Vision',
+          description: 'Image recognition and processing',
+          difficulty: 'advanced',
+        },
       ],
-      'Cybersecurity': [
-        { title: 'Network Security Basics', description: 'Protect networks from threats', difficulty: 'beginner' },
-        { title: 'Ethical Hacking', description: 'Penetration testing techniques', difficulty: 'intermediate' },
-        { title: 'Cryptography', description: 'Encryption and secure communication', difficulty: 'advanced' },
+      Cybersecurity: [
+        {
+          title: 'Network Security Basics',
+          description: 'Protect networks from threats',
+          difficulty: 'beginner',
+        },
+        {
+          title: 'Ethical Hacking',
+          description: 'Penetration testing techniques',
+          difficulty: 'intermediate',
+        },
+        {
+          title: 'Cryptography',
+          description: 'Encryption and secure communication',
+          difficulty: 'advanced',
+        },
       ],
     };
 
     // Generate recommendations based on primary interests
     primaryInterests.forEach((interest: string) => {
       const topics = topicRecommendations[interest] || [];
-      topics.forEach(topic => {
-        if (!recentTopics.some(t => t.includes(topic.title.toLowerCase()))) {
+      topics.forEach((topic) => {
+        if (!recentTopics.some((t) => t.includes(topic.title.toLowerCase()))) {
           recommendations.push({
             ...topic,
             reason: `Perfect for your interest in ${interest} as a ${currentStatus}`,
@@ -361,10 +437,15 @@ class DashboardService {
     learningTopics.forEach((topic: string) => {
       // Find related recommendations
       Object.entries(topicRecommendations).forEach(([category, topics]) => {
-        if (topic.toLowerCase().includes(category.toLowerCase()) || 
-            category.toLowerCase().includes(topic.toLowerCase())) {
+        if (
+          topic.toLowerCase().includes(category.toLowerCase()) ||
+          category.toLowerCase().includes(topic.toLowerCase())
+        ) {
           const relevantTopic = topics[0]; // Get the beginner topic
-          if (relevantTopic && !recentTopics.some(t => t.includes(relevantTopic.title.toLowerCase()))) {
+          if (
+            relevantTopic &&
+            !recentTopics.some((t) => t.includes(relevantTopic.title.toLowerCase()))
+          ) {
             recommendations.push({
               ...relevantTopic,
               reason: `Aligned with your goal to learn ${topic}`,
@@ -396,8 +477,11 @@ class DashboardService {
     // Sort by difficulty and return top 5
     const difficultyOrder = { beginner: 1, intermediate: 2, advanced: 3 };
     return recommendations
-      .sort((a, b) => (difficultyOrder[a.difficulty as keyof typeof difficultyOrder] || 2) - 
-                      (difficultyOrder[b.difficulty as keyof typeof difficultyOrder] || 2))
+      .sort(
+        (a, b) =>
+          (difficultyOrder[a.difficulty as keyof typeof difficultyOrder] || 2) -
+          (difficultyOrder[b.difficulty as keyof typeof difficultyOrder] || 2)
+      )
       .slice(0, 5);
   }
 
@@ -431,7 +515,7 @@ class DashboardService {
     try {
       // Update streak when user has activity today
       const streak = await this.getStreakInfo(userId);
-      
+
       // Store streak info in user metadata or a dedicated table
       const { error } = await supabase
         .from('profiles')

@@ -5,18 +5,10 @@ import { ContentAnalyzer } from './ContentAnalysis';
 import { FileTypeManager } from './FileTypeHandlers';
 
 // Import types for use in this module
-import type {
-  DocumentStructure,
-  Section,
-} from './StructureAnalysis';
+import type { DocumentStructure, Section } from './StructureAnalysis';
 
 // Re-export types for convenience
-export type {
-  DocumentStructure,
-  Section,
-  HierarchyNode,
-  ContentType,
-} from './StructureAnalysis';
+export type { DocumentStructure, Section, HierarchyNode, ContentType } from './StructureAnalysis';
 export type { DocumentMetadata } from './MetadataExtraction';
 export type { ContentTypeDistribution } from './ContentAnalysis';
 
@@ -64,7 +56,7 @@ export class DocumentAnalyzer {
     sections.forEach((section) => {
       section.contentType = this.contentAnalyzer.classifyContent(section.content);
       section.keywords = this.contentAnalyzer.extractKeywords(section.content);
-      
+
       // Recursively enhance subsections
       if (section.subsections.length > 0) {
         this.enhanceSections(section.subsections);

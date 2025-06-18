@@ -1,4 +1,3 @@
-import { logger } from '../../utils/logger';
 import { QueryIntent } from './AccuracyCalculator';
 
 export interface ValidationResult {
@@ -65,7 +64,7 @@ export class AccuracyValidation {
     const score = this.calculateValidationScore(issues, results.length);
 
     return {
-      isValid: issues.filter(i => i.type === 'error').length === 0,
+      isValid: issues.filter((i) => i.type === 'error').length === 0,
       score,
       issues,
       recommendations,
@@ -107,7 +106,7 @@ export class AccuracyValidation {
     }
 
     // Check for duplicate results
-    const uniqueIds = new Set(results.map(r => r.id));
+    const uniqueIds = new Set(results.map((r) => r.id));
     if (uniqueIds.size < results.length) {
       issues.push({
         type: 'error',
@@ -119,7 +118,7 @@ export class AccuracyValidation {
     }
 
     // Check for empty or invalid content
-    const invalidResults = results.filter(r => !r.content || r.content.trim().length < 10);
+    const invalidResults = results.filter((r) => !r.content || r.content.trim().length < 10);
     if (invalidResults.length > 0) {
       issues.push({
         type: 'error',
@@ -191,7 +190,7 @@ export class AccuracyValidation {
     recommendations: string[]
   ): void {
     const topResults = results.slice(0, 5);
-    const relevantResults = topResults.filter(r => r.relevanceScore > 0.5);
+    const relevantResults = topResults.filter((r) => r.relevanceScore > 0.5);
 
     if (relevantResults.length === 0) {
       issues.push({
@@ -205,7 +204,7 @@ export class AccuracyValidation {
 
     // Check for content type alignment
     if (intent.expectedContentTypes.length > 0) {
-      const typeMatchingResults = topResults.filter(r =>
+      const typeMatchingResults = topResults.filter((r) =>
         intent.expectedContentTypes.includes(r.metadata.contentType)
       );
 
@@ -222,7 +221,7 @@ export class AccuracyValidation {
 
     // Check for concept alignment
     if (intent.concepts.length > 0) {
-      const conceptMatchingResults = topResults.filter(r => r.conceptMatches > 0);
+      const conceptMatchingResults = topResults.filter((r) => r.conceptMatches > 0);
       if (conceptMatchingResults.length === 0) {
         issues.push({
           type: 'warning',
@@ -244,9 +243,9 @@ export class AccuracyValidation {
     recommendations: string[]
   ): void {
     const topResults = results.slice(0, 10);
-    
+
     // Check section diversity
-    const uniqueSections = new Set(topResults.map(r => r.metadata.sectionTitle));
+    const uniqueSections = new Set(topResults.map((r) => r.metadata.sectionTitle));
     if (uniqueSections.size < Math.min(3, topResults.length)) {
       issues.push({
         type: 'info',
@@ -258,7 +257,7 @@ export class AccuracyValidation {
     }
 
     // Check content type diversity
-    const uniqueTypes = new Set(topResults.map(r => r.metadata.contentType));
+    const uniqueTypes = new Set(topResults.map((r) => r.metadata.contentType));
     if (uniqueTypes.size < Math.min(2, topResults.length)) {
       issues.push({
         type: 'info',
@@ -279,9 +278,9 @@ export class AccuracyValidation {
     issues: ValidationIssue[],
     recommendations: string[]
   ): void {
-    const intentMatchingResults = results.filter(r => r.intentMatch);
+    const intentMatchingResults = results.filter((r) => r.intentMatch);
     const topResults = results.slice(0, 5);
-    const topIntentMatches = topResults.filter(r => r.intentMatch);
+    const topIntentMatches = topResults.filter((r) => r.intentMatch);
 
     if (intentMatchingResults.length === 0) {
       issues.push({
@@ -311,9 +310,9 @@ export class AccuracyValidation {
     let score = 100;
 
     // Deduct points for issues
-    issues.forEach(issue => {
+    issues.forEach((issue) => {
       const multiplier = issue.type === 'error' ? 1.5 : issue.type === 'warning' ? 1.0 : 0.5;
-      score -= (issue.severity * multiplier);
+      score -= issue.severity * multiplier;
     });
 
     // Bonus for having results
@@ -379,7 +378,7 @@ export class AccuracyValidation {
     const score = this.calculateValidationScore(issues, 1);
 
     return {
-      isValid: issues.filter(i => i.type === 'error').length === 0,
+      isValid: issues.filter((i) => i.type === 'error').length === 0,
       score,
       issues,
       recommendations,

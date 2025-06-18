@@ -47,7 +47,8 @@ export class IntroductionService {
         messages: [
           {
             role: 'system',
-            content: 'You create engaging, personalized introductions that immediately capture learner interest.',
+            content:
+              'You create engaging, personalized introductions that immediately capture learner interest.',
           },
           {
             role: 'user',
@@ -77,4 +78,4 @@ export class IntroductionService {
       throw error;
     }
   }
-} 
+}

@@ -91,12 +91,12 @@ export function buildPersonalizedPrompt(content: string, context: Personalizatio
   return `${prompt}\n\nCONTENT TO PERSONALIZE:\n${content}`;
 }
 
-function processConditionals(template: string, context: any): string {
+function processConditionals(template: string, context: PersonalizationContext): string {
   // Simple conditional processor for {{#if}} blocks
   const conditionalRegex = /{{#if \(eq (\w+) '([^']+)'\)}}([\s\S]*?){{\/if}}/g;
 
   return template.replace(conditionalRegex, (_match, field, value, content) => {
-    if (context[field] === value) {
+    if (context[field as keyof PersonalizationContext] === value) {
       return content.trim();
     }
     return '';

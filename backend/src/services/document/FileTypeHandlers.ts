@@ -18,7 +18,7 @@ export class TextFileHandler implements FileTypeHandler {
 
   validate(fileName: string): boolean {
     const ext = fileName.toLowerCase().split('.').pop();
-    return this.supportedExtensions.some(supported => supported.includes(ext || ''));
+    return this.supportedExtensions.some((supported) => supported.includes(ext || ''));
   }
 }
 
@@ -32,7 +32,7 @@ export class MarkdownFileHandler implements FileTypeHandler {
 
   validate(fileName: string): boolean {
     const ext = fileName.toLowerCase().split('.').pop();
-    return this.supportedExtensions.some(supported => supported.includes(ext || ''));
+    return this.supportedExtensions.some((supported) => supported.includes(ext || ''));
   }
 }
 

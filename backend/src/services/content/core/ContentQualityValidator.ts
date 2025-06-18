@@ -22,13 +22,13 @@ export class ContentQualityValidator {
     try {
       // Natural Integration Score (0-1)
       const naturalIntegration = this.evaluateNaturalIntegration(personalized);
-      
+
       // Educational Integrity Score (0-1)
       const educationalIntegrity = this.evaluateEducationalIntegrity(original, personalized);
-      
+
       // Relevance & Engagement Score (0-1)
       const relevanceEngagement = this.evaluateRelevanceEngagement(personalized, persona);
-      
+
       // Flow & Readability Score (0-1)
       const flowReadability = this.evaluateFlowReadability(personalized);
 
@@ -130,16 +130,16 @@ export class ContentQualityValidator {
    */
   private evaluateFlowReadability(content: string): number {
     let score = 1.0;
-    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = content.split(/[.!?]+/).filter((s) => s.trim().length > 0);
     const avgLength = sentences.reduce((sum, s) => sum + s.length, 0) / sentences.length;
 
     if (avgLength > 150 || avgLength < 20) score -= 0.2;
-    
+
     const transitionWords = ['however', 'therefore', 'moreover', 'furthermore'];
-    if (transitionWords.some(word => content.toLowerCase().includes(word))) score += 0.1;
-    
+    if (transitionWords.some((word) => content.toLowerCase().includes(word))) score += 0.1;
+
     if (content.split('\n\n').length > 1) score += 0.1;
-    
+
     return Math.min(1.0, score);
   }
 
@@ -157,7 +157,7 @@ export class ContentQualityValidator {
    */
   private evaluateTechnicalLevelMatch(content: string, level: string): number {
     const words = content.split(/\s+/);
-    const complexWords = words.filter(word => word.length > 8).length;
+    const complexWords = words.filter((word) => word.length > 8).length;
     const complexityRatio = complexWords / words.length;
 
     switch (level) {
@@ -185,4 +185,4 @@ export class ContentQualityValidator {
       flowReadability: 0.7,
     };
   }
-} 
+}

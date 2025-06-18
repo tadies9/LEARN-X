@@ -1,3 +1,4 @@
+import { SearchResult } from './types';
 
 export interface QueryIntent {
   type: 'definition' | 'explanation' | 'example' | 'comparison' | 'how-to' | 'general';
@@ -73,14 +74,14 @@ export class AccuracyCalculator {
    * Calculate comprehensive relevance scores for search results
    */
   async calculateRelevanceScores(
-    results: any[],
+    results: SearchResult[],
     query: string,
     intent: QueryIntent
-  ): Promise<any[]> {
+  ): Promise<SearchResult[]> {
     const relevanceScores = await Promise.all(
       results.map(async (result) => {
         const scores = this.calculateIndividualRelevance(result, query, intent);
-        
+
         return {
           ...result,
           ...scores,
@@ -95,7 +96,7 @@ export class AccuracyCalculator {
    * Calculate relevance scores for individual result
    */
   private calculateIndividualRelevance(
-    result: any,
+    result: SearchResult,
     query: string,
     intent: QueryIntent
   ): RelevanceScores {
@@ -104,10 +105,7 @@ export class AccuracyCalculator {
     // Title/section relevance (20% weight)
     let sectionRelevance = 0;
     if (result.metadata.sectionTitle) {
-      sectionRelevance = this.calculateTextSimilarity(
-        query,
-        result.metadata.sectionTitle
-      );
+      sectionRelevance = this.calculateTextSimilarity(query, result.metadata.sectionTitle);
       relevance += sectionRelevance * 0.2;
     }
 
@@ -115,12 +113,13 @@ export class AccuracyCalculator {
     const keywordDensity = this.calculateKeywordDensity(result.content, intent.keywords);
     relevance += keywordDensity * 0.3;
 
-    // Structure bonus (10% weight)
-    const structureBonus = result.metadata.hierarchyLevel <= 2 ? 0.1 : 0;
+    // Structure bonus (10% weight) - assuming hierarchyLevel exists or default to 5
+    const hierarchyLevel = (result.metadata as any).hierarchyLevel || 5;
+    const structureBonus = hierarchyLevel <= 2 ? 0.1 : 0;
     relevance += structureBonus;
 
     // Intent alignment (20% weight)
-    const intentAlignment = result.intentMatch ? 0.2 : 0;
+    const intentAlignment = (result as any).intentMatch ? 0.2 : 0;
     relevance += intentAlignment;
 
     // Concept matching bonus (20% weight)
@@ -142,7 +141,7 @@ export class AccuracyCalculator {
   /**
    * Calculate concept matching score
    */
-  private calculateConceptMatchScore(result: any, concepts: string[]): number {
+  private calculateConceptMatchScore(result: SearchResult, concepts: string[]): number {
     const resultConcepts = result.metadata.concepts || [];
     const matchCount = concepts.filter((c) =>
       resultConcepts.some((rc: string) => rc.toLowerCase().includes(c.toLowerCase()))
@@ -154,11 +153,11 @@ export class AccuracyCalculator {
   /**
    * Calculate average relevance score for a set of results
    */
-  calculateAverageRelevance(results: any[]): number {
+  calculateAverageRelevance(results: SearchResult[]): number {
     if (results.length === 0) return 0;
 
     const totalRelevance = results.reduce(
-      (sum, result) => sum + (result.relevanceScore || result.score),
+      (sum, result) => sum + ((result as any).relevanceScore || result.score),
       0
     );
 
@@ -168,12 +167,12 @@ export class AccuracyCalculator {
   /**
    * Calculate diversity score based on unique sections and content types
    */
-  calculateDiversityScore(results: any[]): number {
+  calculateDiversityScore(results: SearchResult[]): number {
     if (results.length === 0) return 0;
 
     const uniqueSections = new Set(results.map((r) => r.metadata.sectionTitle));
     const uniqueTypes = new Set(results.map((r) => r.metadata.contentType));
-    
+
     return (uniqueSections.size + uniqueTypes.size) / (results.length * 2);
   }
 
@@ -182,7 +181,7 @@ export class AccuracyCalculator {
    */
   calculateExpectedResults(intent: QueryIntent): number {
     const baseExpected = Math.min(intent.keywords.length * 2, 10);
-    
+
     // Adjust based on query type
     switch (intent.type) {
       case 'definition':

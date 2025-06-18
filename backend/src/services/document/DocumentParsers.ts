@@ -3,12 +3,12 @@ import type { Section, HierarchyNode } from './StructureAnalysis';
 export class DocumentParser {
   private readonly HEADING_PATTERNS = [
     /^#{1,6}\s+(.+)$/m, // Markdown headings
-    /^Chapter\s+(\d+[\.\:]?\s*.+)$/im,
-    /^Section\s+(\d+[\.\:]?\s*.+)$/im,
-    /^Unit\s+(\d+[\.\:]?\s*.+)$/im,
-    /^Module\s+(\d+[\.\:]?\s*.+)$/im,
-    /^Lesson\s+(\d+[\.\:]?\s*.+)$/im,
-    /^Part\s+([IVX\d]+[\.\:]?\s*.+)$/im,
+    /^Chapter\s+(\d+[.:]?\s*.+)$/im,
+    /^Section\s+(\d+[.:]?\s*.+)$/im,
+    /^Unit\s+(\d+[.:]?\s*.+)$/im,
+    /^Module\s+(\d+[.:]?\s*.+)$/im,
+    /^Lesson\s+(\d+[.:]?\s*.+)$/im,
+    /^Part\s+([IVX\d]+[.:]?\s*.+)$/im,
     /^(\d+\.?\d*)\s+([A-Z].+)$/m, // Numbered sections
     /^([A-Z][A-Z\s]{2,})$/m, // All caps headings
   ];

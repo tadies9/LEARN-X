@@ -46,7 +46,9 @@ export class AIErrorHandler {
           };
 
         case 400:
-          if (errorWithResponse.response!.data?.error?.message?.includes('context_length_exceeded')) {
+          if (
+            errorWithResponse.response!.data?.error?.message?.includes('context_length_exceeded')
+          ) {
             return {
               success: false,
               error: 'Content too long for processing. Please try with shorter content.',
@@ -74,7 +76,10 @@ export class AIErrorHandler {
     }
 
     // Budget errors
-    if ((error as Error)?.message?.includes('budget') || (error as Error)?.message?.includes('limit exceeded')) {
+    if (
+      (error as Error)?.message?.includes('budget') ||
+      (error as Error)?.message?.includes('limit exceeded')
+    ) {
       return {
         success: false,
         error: 'Daily usage limit reached. Please try again tomorrow.',
@@ -82,7 +87,10 @@ export class AIErrorHandler {
     }
 
     // Network errors
-    if ((error as ErrorWithResponse)?.code === 'ECONNREFUSED' || (error as ErrorWithResponse)?.code === 'ETIMEDOUT') {
+    if (
+      (error as ErrorWithResponse)?.code === 'ECONNREFUSED' ||
+      (error as ErrorWithResponse)?.code === 'ETIMEDOUT'
+    ) {
       return {
         success: false,
         error: 'Unable to connect to AI service. Please check your connection.',
@@ -119,7 +127,10 @@ export class AIErrorHandler {
         }
 
         // Log retry attempt
-        logger.warn(`AI operation failed (attempt ${attempt}/${maxRetries}):`, (error as Error)?.message || 'Unknown error');
+        logger.warn(
+          `AI operation failed (attempt ${attempt}/${maxRetries}):`,
+          (error as Error)?.message || 'Unknown error'
+        );
 
         // Wait before retrying (exponential backoff)
         if (attempt < maxRetries) {
@@ -138,7 +149,10 @@ export class AIErrorHandler {
     }
 
     // Network errors are retryable
-    if ((error as ErrorWithResponse)?.code === 'ECONNREFUSED' || (error as ErrorWithResponse)?.code === 'ETIMEDOUT') {
+    if (
+      (error as ErrorWithResponse)?.code === 'ECONNREFUSED' ||
+      (error as ErrorWithResponse)?.code === 'ETIMEDOUT'
+    ) {
       return true;
     }
 

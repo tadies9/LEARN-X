@@ -46,7 +46,10 @@ export class ExampleService {
       });
 
       const content = response.choices[0].message.content || '';
-      return content.split('\n\n').filter(ex => ex.trim().length > 20).slice(0, count);
+      return content
+        .split('\n\n')
+        .filter((ex) => ex.trim().length > 20)
+        .slice(0, count);
     } catch (error) {
       logger.error('Failed to generate personalized examples:', error);
       throw error;
@@ -82,10 +85,13 @@ export class ExampleService {
       });
 
       const content = response.choices[0].message.content || '';
-      return content.split('\n\n').filter(ex => ex.trim().length > 20).slice(0, count);
+      return content
+        .split('\n\n')
+        .filter((ex) => ex.trim().length > 20)
+        .slice(0, count);
     } catch (error) {
       logger.error('Failed to generate contextual examples:', error);
       throw error;
     }
   }
-} 
+}

@@ -1,4 +1,9 @@
-import { UserPersona, UserInteractionRow, ContentFeedbackRow, InteractionMetadata } from '../../types';
+import {
+  UserPersona,
+  UserInteractionRow,
+  ContentFeedbackRow,
+  InteractionMetadata,
+} from '../../types';
 import { supabase } from '../../config/supabase';
 import { logger } from '../../utils/logger';
 
@@ -380,7 +385,10 @@ export class AdaptiveDifficultyEngine {
     return 'medium';
   }
 
-  private inferDifficultyRating(interactions: UserInteractionRow[], feedback: ContentFeedbackRow[]): number {
+  private inferDifficultyRating(
+    interactions: UserInteractionRow[],
+    feedback: ContentFeedbackRow[]
+  ): number {
     // Infer perceived difficulty from behavior patterns
     const skipRate =
       interactions.filter((i) => i.action_type === 'skip').length / interactions.length;

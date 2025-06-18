@@ -36,10 +36,10 @@ export interface PersonalizedContent {
 export class DeepContentGenerationService extends ContentOrchestrator {
   constructor(redis: Redis) {
     super(redis);
-    }
   }
+}
 
-  /**
+/**
  * Create a new instance of DeepContentGenerationService
  * @deprecated Use ContentOrchestrator directly for new code
  */

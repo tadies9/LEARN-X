@@ -2,12 +2,12 @@ import { AICache } from '../../cache/AICache';
 import { CostTracker } from '../../ai/CostTracker';
 import { UserPersona } from '../../../types/persona';
 import Redis from 'ioredis';
-import { 
-  DeepExplanationParams, 
-  DeepSummaryParams, 
-  ChatParams, 
-  FlashcardParams, 
-  QuizParams 
+import {
+  DeepExplanationParams,
+  DeepSummaryParams,
+  ChatParams,
+  FlashcardParams,
+  QuizParams,
 } from './types';
 
 // Import specialized orchestrators
@@ -17,15 +17,15 @@ import { InteractiveOrchestrator } from './InteractiveOrchestrator';
 import { ChatOrchestrator } from './ChatOrchestrator';
 
 // Re-export types for convenience
-export { 
-  DeepExplanationParams, 
-  DeepSummaryParams, 
-  PersonalizedContent, 
-  ChatParams, 
-  FlashcardParams, 
+export {
+  DeepExplanationParams,
+  DeepSummaryParams,
+  PersonalizedContent,
+  ChatParams,
+  FlashcardParams,
   QuizParams,
   FlashcardResult,
-  QuizResult
+  QuizResult,
 } from './types';
 
 /**
@@ -43,7 +43,7 @@ export class ContentOrchestrator {
   constructor(redis: Redis) {
     this.cache = new AICache(redis);
     this.costTracker = new CostTracker();
-    
+
     // Initialize specialized orchestrators
     this.explanationOrchestrator = new ExplanationOrchestrator(this.cache, this.costTracker);
     this.summaryOrchestrator = new SummaryOrchestrator(this.cache, this.costTracker);
@@ -52,11 +52,7 @@ export class ContentOrchestrator {
   }
 
   // Explanation Methods
-  async generatePersonalizedIntroduction(
-    topic: string,
-    content: string,
-    persona: UserPersona
-  ) {
+  async generatePersonalizedIntroduction(topic: string, content: string, persona: UserPersona) {
     return this.explanationOrchestrator.generatePersonalizedIntroduction(topic, content, persona);
   }
 
@@ -70,14 +66,15 @@ export class ContentOrchestrator {
     persona: UserPersona,
     currentLevel: 'foundation' | 'intermediate' | 'advanced' = 'foundation'
   ) {
-    return this.explanationOrchestrator.generateProgressiveExplanation(concept, content, persona, currentLevel);
+    return this.explanationOrchestrator.generateProgressiveExplanation(
+      concept,
+      content,
+      persona,
+      currentLevel
+    );
   }
 
-  async generatePersonalizedExamples(
-    concept: string,
-    persona: UserPersona,
-    count: number = 3
-  ) {
+  async generatePersonalizedExamples(concept: string, persona: UserPersona, count: number = 3) {
     return this.explanationOrchestrator.generatePersonalizedExamples(concept, persona, count);
   }
 
@@ -87,7 +84,12 @@ export class ContentOrchestrator {
     exampleType: 'basic' | 'application' | 'problem-solving' | 'real-world' = 'application',
     count: number = 3
   ) {
-    return this.explanationOrchestrator.generateContextualExamples(concept, persona, exampleType, count);
+    return this.explanationOrchestrator.generateContextualExamples(
+      concept,
+      persona,
+      exampleType,
+      count
+    );
   }
 
   // Summary Methods
@@ -109,13 +111,21 @@ export class ContentOrchestrator {
     persona: UserPersona,
     practiceType: 'guided' | 'independent' | 'challenge' = 'independent'
   ) {
-    return this.interactiveOrchestrator.generatePersonalizedPractice(concept, persona, practiceType);
+    return this.interactiveOrchestrator.generatePersonalizedPractice(
+      concept,
+      persona,
+      practiceType
+    );
   }
 
   async generateAdaptiveQuiz(
     content: string,
     persona: UserPersona,
-    questionType: 'multiple_choice' | 'scenario_analysis' | 'problem_solving' | 'application' = 'application'
+    questionType:
+      | 'multiple_choice'
+      | 'scenario_analysis'
+      | 'problem_solving'
+      | 'application' = 'application'
   ) {
     return this.interactiveOrchestrator.generateAdaptiveQuiz(content, persona, questionType);
   }
@@ -140,4 +150,4 @@ export class ContentOrchestrator {
   async *streamPersonalizedChat(params: ChatParams) {
     yield* this.chatOrchestrator.streamPersonalizedChat(params);
   }
-} 
+}

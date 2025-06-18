@@ -41,7 +41,13 @@ export class AccuracyReporting {
     intent: any,
     validationResult?: ValidationResult
   ) {
-    return this.searchReports.generateSearchReport(query, metrics, results, intent, validationResult);
+    return this.searchReports.generateSearchReport(
+      query,
+      metrics,
+      results,
+      intent,
+      validationResult
+    );
   }
 
   /**
@@ -66,7 +72,11 @@ export class AccuracyReporting {
     validationResults: ValidationResult[],
     testResults: TestResult[]
   ) {
-    return this.reportGenerator.generateComprehensiveReport(searchMetrics, validationResults, testResults);
+    return this.reportGenerator.generateComprehensiveReport(
+      searchMetrics,
+      validationResults,
+      testResults
+    );
   }
 
   /**
@@ -112,7 +122,7 @@ export class AccuracyReporting {
   }
 
   /**
-   * Generate charts for validation results  
+   * Generate charts for validation results
    */
   generateValidationCharts(validationResult: ValidationResult) {
     return this.chartGenerator.generateValidationCharts(validationResult);
@@ -133,11 +143,15 @@ export class AccuracyReporting {
     validationResults: ValidationResult[],
     testResults: TestResult[]
   ) {
-    return this.chartGenerator.generateComprehensiveCharts(searchMetrics, validationResults, testResults);
+    return this.chartGenerator.generateComprehensiveCharts(
+      searchMetrics,
+      validationResults,
+      testResults
+    );
   }
 
   // Legacy compatibility methods - delegate to ReportGenerator utilities
-  
+
   /**
    * Get status from score (utility method)
    */

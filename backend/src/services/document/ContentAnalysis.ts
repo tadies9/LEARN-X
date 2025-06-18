@@ -8,6 +8,7 @@ export interface ContentTypeDistribution {
   practice: number;
   summary: number;
   other: number;
+  [key: string]: number;
 }
 
 export class ContentAnalyzer {

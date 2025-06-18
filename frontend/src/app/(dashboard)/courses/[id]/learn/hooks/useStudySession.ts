@@ -2,7 +2,15 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { AIApiService } from '@/lib/api/ai';
 import { SavedContentApiService } from '@/lib/api/saved';
-import { Topic, Subtopic, StudyMode, ReactionType, UserProfile } from '../types/study';
+import {
+  Topic,
+  Subtopic,
+  StudyMode,
+  ReactionType,
+  UserProfile,
+  SupabaseSession,
+  OutlineSection,
+} from '../types/study';
 
 interface UseStudySessionOptions {
   fileId: string | null;
@@ -16,7 +24,7 @@ export function useStudySession({
   courseId: _courseId,
 }: UseStudySessionOptions) {
   // Auth & Profile
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<SupabaseSession | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [fileVersion, setFileVersion] = useState<string>('');
 
@@ -124,7 +132,7 @@ export function useStudySession({
       }
 
       // Map to Topic[] expected by UI
-      const mappedTopics: Topic[] = sections.map((section: any) => {
+      const mappedTopics: Topic[] = sections.map((section: OutlineSection) => {
         const baseId = section.id || `section-${Math.random().toString(36).slice(2, 8)}`;
 
         const subtopics: Subtopic[] = [

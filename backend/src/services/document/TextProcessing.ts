@@ -28,9 +28,38 @@ export class TextProcessing {
   };
 
   private readonly COMMON_ABBREVIATIONS = new Set([
-    'Dr', 'Mr', 'Mrs', 'Ms', 'Prof', 'Sr', 'Jr', 'Inc', 'Ltd', 'Co', 'Corp',
-    'etc', 'eg', 'ie', 'vs', 'cf', 'al', 'Ave', 'St', 'Rd', 'Blvd',
-    'Jan', 'Feb', 'Mar', 'Apr', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    'Dr',
+    'Mr',
+    'Mrs',
+    'Ms',
+    'Prof',
+    'Sr',
+    'Jr',
+    'Inc',
+    'Ltd',
+    'Co',
+    'Corp',
+    'etc',
+    'eg',
+    'ie',
+    'vs',
+    'cf',
+    'al',
+    'Ave',
+    'St',
+    'Rd',
+    'Blvd',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ]);
 
   cleanText(text: string, options: Partial<TextCleaningOptions> = {}): string {
@@ -47,12 +76,12 @@ export class TextProcessing {
 
     // Trim lines
     if (opts.trimLines) {
-      lines = lines.map(line => line.trim());
+      lines = lines.map((line) => line.trim());
     }
 
     // Remove empty lines
     if (opts.removeEmptyLines) {
-      lines = lines.filter(line => line.length > 0);
+      lines = lines.filter((line) => line.length > 0);
     }
 
     // Rejoin lines
@@ -71,44 +100,45 @@ export class TextProcessing {
 
   splitIntoSentences(text: string, options: Partial<SentenceOptions> = {}): string[] {
     const opts = { ...this.DEFAULT_SENTENCE_OPTIONS, ...options };
-    
+
     // Handle newline splitting if requested
     if (opts.splitOnNewlines) {
-      const lines = text.split('\n').filter(line => line.trim().length > 0);
+      const lines = text.split('\n').filter((line) => line.trim().length > 0);
       const sentences: string[] = [];
-      
+
       for (const line of lines) {
         sentences.push(...this.splitLineIntoSentences(line, opts));
       }
-      
-      return sentences.filter(sentence => sentence.length >= opts.minimumLength);
+
+      return sentences.filter((sentence) => sentence.length >= opts.minimumLength);
     }
 
-    return this.splitLineIntoSentences(text, opts)
-      .filter(sentence => sentence.length >= opts.minimumLength);
+    return this.splitLineIntoSentences(text, opts).filter(
+      (sentence) => sentence.length >= opts.minimumLength
+    );
   }
 
   private splitLineIntoSentences(text: string, options: SentenceOptions): string[] {
     // Basic sentence splitting pattern
     const sentencePattern = /[^.!?]+[.!?]+/g;
     const matches = text.match(sentencePattern) || [];
-    
+
     if (matches.length === 0) {
       return text.trim() ? [text.trim()] : [];
     }
 
     const sentences: string[] = [];
     let buffer = '';
-    
+
     for (const match of matches) {
       buffer += match;
-      
+
       if (this.isCompleteSentence(buffer.trim(), options)) {
         sentences.push(buffer.trim());
         buffer = '';
       }
     }
-    
+
     // Add any remaining text
     const remaining = text.substring(matches.join('').length).trim();
     if (remaining) {
@@ -120,7 +150,7 @@ export class TextProcessing {
     } else if (buffer) {
       sentences.push(buffer.trim());
     }
-    
+
     return sentences;
   }
 
@@ -138,7 +168,7 @@ export class TextProcessing {
     if (options.respectAbbreviations) {
       const words = text.trim().split(/\s+/);
       const lastWord = words[words.length - 1];
-      
+
       if (lastWord) {
         const withoutPunctuation = lastWord.replace(/[.!?]$/, '');
         if (this.COMMON_ABBREVIATIONS.has(withoutPunctuation)) {
@@ -150,50 +180,52 @@ export class TextProcessing {
     return true;
   }
 
-  extractWords(text: string, options: { 
-    minLength?: number; 
-    maxLength?: number; 
-    includeNumbers?: boolean;
-    toLowerCase?: boolean;
-  } = {}): string[] {
+  extractWords(
+    text: string,
+    options: {
+      minLength?: number;
+      maxLength?: number;
+      includeNumbers?: boolean;
+      toLowerCase?: boolean;
+    } = {}
+  ): string[] {
     const {
       minLength = 1,
       maxLength = Infinity,
       includeNumbers = true,
-      toLowerCase = true
+      toLowerCase = true,
     } = options;
 
     // Extract word-like tokens
     const pattern = includeNumbers ? /\b\w+\b/g : /\b[a-zA-Z]+\b/g;
     const matches = text.match(pattern) || [];
-    
+
     return matches
-      .map(word => toLowerCase ? word.toLowerCase() : word)
-      .filter(word => word.length >= minLength && word.length <= maxLength);
+      .map((word) => (toLowerCase ? word.toLowerCase() : word))
+      .filter((word) => word.length >= minLength && word.length <= maxLength);
   }
 
-  extractPhrases(text: string, options: {
-    minWords?: number;
-    maxWords?: number;
-    includePunctuation?: boolean;
-  } = {}): string[] {
-    const {
-      minWords = 2,
-      maxWords = 5,
-      includePunctuation = false
-    } = options;
+  extractPhrases(
+    text: string,
+    options: {
+      minWords?: number;
+      maxWords?: number;
+      includePunctuation?: boolean;
+    } = {}
+  ): string[] {
+    const { minWords = 2, maxWords = 5, includePunctuation = false } = options;
 
     const sentences = this.splitIntoSentences(text);
     const phrases: string[] = [];
 
     for (const sentence of sentences) {
       const words = sentence.split(/\s+/);
-      
+
       // Extract n-grams
       for (let n = minWords; n <= Math.min(maxWords, words.length); n++) {
         for (let i = 0; i <= words.length - n; i++) {
           const phrase = words.slice(i, i + n).join(' ');
-          
+
           if (!includePunctuation) {
             const cleaned = phrase.replace(/[^\w\s]/g, '').trim();
             if (cleaned && cleaned.split(/\s+/).length === n) {
@@ -219,8 +251,8 @@ export class TextProcessing {
 
   normalizeWhitespace(text: string): string {
     return text
-      .replace(/\s+/g, ' ')  // Multiple spaces to single space
-      .replace(/\n\s*\n/g, '\n\n')  // Multiple newlines to double newline
+      .replace(/\s+/g, ' ') // Multiple spaces to single space
+      .replace(/\n\s*\n/g, '\n\n') // Multiple newlines to double newline
       .trim();
   }
 
@@ -229,24 +261,26 @@ export class TextProcessing {
   }
 
   removeMarkdown(text: string): string {
-    return text
-      // Remove headers
-      .replace(/^#{1,6}\s+/gm, '')
-      // Remove bold and italic
-      .replace(/\*\*([^*]+)\*\*/g, '$1')
-      .replace(/\*([^*]+)\*/g, '$1')
-      .replace(/__([^_]+)__/g, '$1')
-      .replace(/_([^_]+)_/g, '$1')
-      // Remove links
-      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-      // Remove code blocks
-      .replace(/```[\s\S]*?```/g, '')
-      .replace(/`([^`]+)`/g, '$1')
-      // Remove horizontal rules
-      .replace(/^---+$/gm, '')
-      // Remove list markers
-      .replace(/^[\s]*[-*+]\s+/gm, '')
-      .replace(/^[\s]*\d+\.\s+/gm, '');
+    return (
+      text
+        // Remove headers
+        .replace(/^#{1,6}\s+/gm, '')
+        // Remove bold and italic
+        .replace(/\*\*([^*]+)\*\*/g, '$1')
+        .replace(/\*([^*]+)\*/g, '$1')
+        .replace(/__([^_]+)__/g, '$1')
+        .replace(/_([^_]+)_/g, '$1')
+        // Remove links
+        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+        // Remove code blocks
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/`([^`]+)`/g, '$1')
+        // Remove horizontal rules
+        .replace(/^---+$/gm, '')
+        // Remove list markers
+        .replace(/^[\s]*[-*+]\s+/gm, '')
+        .replace(/^[\s]*\d+\.\s+/gm, '')
+    );
   }
 
   countWords(text: string): number {
@@ -259,7 +293,7 @@ export class TextProcessing {
   }
 
   countParagraphs(text: string): number {
-    const paragraphs = text.split(/\n\n+/).filter(p => p.trim().length > 0);
+    const paragraphs = text.split(/\n\n+/).filter((p) => p.trim().length > 0);
     return paragraphs.length;
   }
 
@@ -291,7 +325,7 @@ export class TextProcessing {
     // Try to truncate at word boundary
     const truncated = text.substring(0, maxLength - ellipsis.length);
     const lastSpace = truncated.lastIndexOf(' ');
-    
+
     if (lastSpace > maxLength * 0.8) {
       return truncated.substring(0, lastSpace) + ellipsis;
     }

@@ -2,9 +2,9 @@ import { GenerationParams } from '../../../types/ai';
 import { UserPersona } from '../../../types/persona';
 
 export interface DeepExplanationParams extends GenerationParams {
-  chunks: Array<{ 
-    id: string; 
-    content: string; 
+  chunks: Array<{
+    id: string;
+    content: string;
     metadata?: {
       chunkIndex: number;
       contentType: string;
@@ -77,4 +77,4 @@ export interface QuizResult {
     answer: string;
     explanation: string;
   }>;
-} 
+}

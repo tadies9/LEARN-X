@@ -42,7 +42,7 @@ export class SearchAccuracyService {
    */
   async searchWithIntent(query: string, userId: string, options: any = {}): Promise<any> {
     const searchStartTime = Date.now();
-    
+
     // Analyze query intent
     const intent = await this.analyzeQueryIntent(query);
 
@@ -65,7 +65,7 @@ export class SearchAccuracyService {
 
     // Calculate metrics using AccuracyMetrics
     const metrics = this.metrics.calculateSearchMetrics(improvedResults, intent);
-    
+
     // Add performance metrics
     const enhancedMetrics = this.metrics.addPerformanceMetrics(
       metrics,
@@ -151,8 +151,9 @@ export class SearchAccuracyService {
   async runAccuracyTests(): Promise<any> {
     const testCases = this.testing.generateTestCases();
     this.testing.createTestSuite('default', 'Default accuracy test suite', testCases);
-    
-    const testResults = await this.testing.executeTestSuite('default', 
+
+    const testResults = await this.testing.executeTestSuite(
+      'default',
       (query: string, userId: string) => this.searchWithIntent(query, userId)
     );
 
@@ -169,13 +170,7 @@ export class SearchAccuracyService {
     metrics: SearchMetrics,
     customThresholds?: any
   ): Promise<any> {
-    return this.validation.validateSearchResults(
-      results,
-      query,
-      intent,
-      metrics,
-      customThresholds
-    );
+    return this.validation.validateSearchResults(results, query, intent, metrics, customThresholds);
   }
 
   /**
@@ -188,15 +183,15 @@ export class SearchAccuracyService {
     // Filter by time range if provided
     let filteredHistory = searchHistory;
     if (timeRange) {
-      filteredHistory = searchHistory.filter(search => {
+      filteredHistory = searchHistory.filter((search) => {
         const searchDate = new Date(search.timestamp);
         return searchDate >= timeRange.start && searchDate <= timeRange.end;
       });
     }
 
     // Extract metrics and validation results
-    const searchMetrics = filteredHistory.map(search => search.metrics).filter(Boolean);
-    const validationResults = filteredHistory.map(search => search.validation).filter(Boolean);
+    const searchMetrics = filteredHistory.map((search) => search.metrics).filter(Boolean);
+    const validationResults = filteredHistory.map((search) => search.validation).filter(Boolean);
 
     // Generate comprehensive report
     return this.reporting.generateComprehensiveReport(

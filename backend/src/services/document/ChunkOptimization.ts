@@ -88,17 +88,17 @@ export class ChunkOptimization {
 
     while (i < chunks.length) {
       const current = chunks[i];
-      
+
       // Check if current chunk is too small and can be merged
       if (current.content.length < options.minViableSize && i < chunks.length - 1) {
         const mergeCandidate = this.findBestMergeCandidate(current, chunks.slice(i + 1), options);
-        
+
         if (mergeCandidate) {
           const mergedChunk = this.mergeChunks(current, mergeCandidate.chunk);
           merged.push(mergedChunk);
-          
+
           // Skip the merged chunk
-          const skipIndex = chunks.findIndex(c => c.id === mergeCandidate.chunk.id);
+          const skipIndex = chunks.findIndex((c) => c.id === mergeCandidate.chunk.id);
           i = Math.max(i + 1, skipIndex + 1);
         } else {
           merged.push(current);
@@ -114,21 +114,20 @@ export class ChunkOptimization {
   }
 
   private findBestMergeCandidate(
-    chunk: Chunk, 
-    candidates: Chunk[], 
+    chunk: Chunk,
+    candidates: Chunk[],
     options: OptimizationOptions
   ): MergeCandidate | null {
     const mergeable = candidates
-      .filter(candidate => {
+      .filter((candidate) => {
         const mergedSize = chunk.content.length + candidate.content.length;
-        return mergedSize <= options.maxMergeSize &&
-               this.canMergeChunks(chunk, candidate);
+        return mergedSize <= options.maxMergeSize && this.canMergeChunks(chunk, candidate);
       })
-      .map(candidate => ({
+      .map((candidate) => ({
         chunk,
         nextChunk: candidate,
         mergedSize: chunk.content.length + candidate.content.length,
-        similarity: this.calculateSimilarity(chunk, candidate)
+        similarity: this.calculateSimilarity(chunk, candidate),
       }))
       .sort((a, b) => b.similarity - a.similarity);
 
@@ -157,8 +156,8 @@ export class ChunkOptimization {
     const type2 = chunk2.metadata.type;
 
     if (type1 !== type2) {
-      const isCompatible = compatibleTypes.some(([t1, t2]) => 
-        (type1 === t1 && type2 === t2) || (type1 === t2 && type2 === t1)
+      const isCompatible = compatibleTypes.some(
+        ([t1, t2]) => (type1 === t1 && type2 === t2) || (type1 === t2 && type2 === t1)
       );
       if (!isCompatible) return false;
     }
@@ -182,9 +181,9 @@ export class ChunkOptimization {
     // Keyword overlap
     const keywords1 = new Set(chunk1.metadata.keywords || []);
     const keywords2 = new Set(chunk2.metadata.keywords || []);
-    const intersection = new Set([...keywords1].filter(k => keywords2.has(k)));
+    const intersection = new Set([...keywords1].filter((k) => keywords2.has(k)));
     const union = new Set([...keywords1, ...keywords2]);
-    
+
     if (union.size > 0) {
       similarity += 0.2 * (intersection.size / union.size);
     }
@@ -192,9 +191,9 @@ export class ChunkOptimization {
     // Concept overlap
     const concepts1 = new Set(chunk1.metadata.concepts || []);
     const concepts2 = new Set(chunk2.metadata.concepts || []);
-    const conceptIntersection = new Set([...concepts1].filter(c => concepts2.has(c)));
+    const conceptIntersection = new Set([...concepts1].filter((c) => concepts2.has(c)));
     const conceptUnion = new Set([...concepts1, ...concepts2]);
-    
+
     if (conceptUnion.size > 0) {
       similarity += 0.1 * (conceptIntersection.size / conceptUnion.size);
     }
@@ -204,23 +203,23 @@ export class ChunkOptimization {
 
   private mergeChunks(chunk1: Chunk, chunk2: Chunk): Chunk {
     const mergedContent = chunk1.content + '\n\n' + chunk2.content;
-    
+
     // Combine metadata intelligently
     const mergedKeywords = [
       ...(chunk1.metadata.keywords || []),
-      ...(chunk2.metadata.keywords || [])
+      ...(chunk2.metadata.keywords || []),
     ];
     const uniqueKeywords = [...new Set(mergedKeywords)].slice(0, 10);
 
     const mergedConcepts = [
       ...(chunk1.metadata.concepts || []),
-      ...(chunk2.metadata.concepts || [])
+      ...(chunk2.metadata.concepts || []),
     ];
     const uniqueConcepts = [...new Set(mergedConcepts)].slice(0, 10);
 
     const mergedReferences = [
       ...(chunk1.metadata.references || []),
-      ...(chunk2.metadata.references || [])
+      ...(chunk2.metadata.references || []),
     ];
     const uniqueReferences = [...new Set(mergedReferences)];
 
@@ -243,16 +242,19 @@ export class ChunkOptimization {
     };
   }
 
-  private extractOverlapText(content: string, overlapSize: number, position: 'start' | 'end'): string {
+  private extractOverlapText(
+    content: string,
+    overlapSize: number,
+    position: 'start' | 'end'
+  ): string {
     const words = content.split(/\s+/);
-    
+
     if (words.length <= overlapSize) {
       return content;
     }
 
-    const selectedWords = position === 'end' 
-      ? words.slice(-overlapSize)
-      : words.slice(0, overlapSize);
+    const selectedWords =
+      position === 'end' ? words.slice(-overlapSize) : words.slice(0, overlapSize);
 
     return selectedWords.join(' ');
   }
@@ -277,9 +279,12 @@ export class ChunkOptimization {
     const levels = { high: 3, medium: 2, low: 1 };
     const level1 = levels[importance1 || 'low'];
     const level2 = levels[importance2 || 'low'];
-    
+
     const maxLevel = Math.max(level1, level2);
-    return Object.keys(levels).find(key => levels[key as keyof typeof levels] === maxLevel) as 'high' | 'medium' | 'low';
+    return Object.keys(levels).find((key) => levels[key as keyof typeof levels] === maxLevel) as
+      | 'high'
+      | 'medium'
+      | 'low';
   }
 
   // Utility methods for chunk size analysis
@@ -293,7 +298,7 @@ export class ChunkOptimization {
       return { average: 0, min: 0, max: 0, distribution: {} };
     }
 
-    const sizes = chunks.map(chunk => chunk.content.length);
+    const sizes = chunks.map((chunk) => chunk.content.length);
     const average = sizes.reduce((sum, size) => sum + size, 0) / sizes.length;
     const min = Math.min(...sizes);
     const max = Math.max(...sizes);
@@ -307,7 +312,7 @@ export class ChunkOptimization {
       'xlarge (1501+)': 0,
     };
 
-    sizes.forEach(size => {
+    sizes.forEach((size) => {
       if (size <= 200) distribution['tiny (0-200)']++;
       else if (size <= 500) distribution['small (201-500)']++;
       else if (size <= 1000) distribution['medium (501-1000)']++;

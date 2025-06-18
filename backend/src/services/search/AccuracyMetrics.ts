@@ -1,5 +1,13 @@
 import { logger } from '../../utils/logger';
 import { AccuracyCalculator, QueryIntent } from './AccuracyCalculator';
+import { SearchResult, SearchResponse } from './types';
+
+// Extended search result with accuracy metrics
+export interface SearchResultWithMetrics extends SearchResult {
+  intentMatch?: boolean;
+  relevanceScore?: number;
+  conceptMatches?: number;
+}
 
 export interface SearchMetrics {
   precision: number;
@@ -35,8 +43,8 @@ export class AccuracyMetrics {
   /**
    * Calculate comprehensive search quality metrics
    */
-  calculateSearchMetrics(results: any, intent: QueryIntent): SearchMetrics {
-    const topResults = results.results.slice(0, 10);
+  calculateSearchMetrics(results: SearchResponse, intent: QueryIntent): SearchMetrics {
+    const topResults = results.results.slice(0, 10) as SearchResultWithMetrics[];
 
     // Core accuracy metrics
     const precision = this.calculatePrecision(topResults, intent);
@@ -66,9 +74,9 @@ export class AccuracyMetrics {
   /**
    * Calculate precision with intent-aware relevance
    */
-  private calculatePrecision(results: any[], intent: QueryIntent): number {
+  private calculatePrecision(results: SearchResultWithMetrics[], _intent: QueryIntent): number {
     const relevantCount = results.filter(
-      (r: any) => r.intentMatch || (r.relevanceScore && r.relevanceScore > 0.7)
+      (r: SearchResultWithMetrics) => r.intentMatch || (r.relevanceScore && r.relevanceScore > 0.7)
     ).length;
 
     return this.calculator.calculatePrecision(relevantCount, results.length);
@@ -77,19 +85,22 @@ export class AccuracyMetrics {
   /**
    * Calculate recall estimate based on expected results
    */
-  private calculateRecall(results: any[], _intent: QueryIntent): number {
+  private calculateRecall(results: SearchResultWithMetrics[], intent: QueryIntent): number {
     const relevantCount = results.filter(
-      (r: any) => r.intentMatch || (r.relevanceScore && r.relevanceScore > 0.7)
+      (r: SearchResultWithMetrics) => r.intentMatch || (r.relevanceScore && r.relevanceScore > 0.7)
     ).length;
 
-    const expectedResults = this.calculator.calculateExpectedResults(_intent);
+    const expectedResults = this.calculator.calculateExpectedResults(intent);
     return this.calculator.calculateRecall(relevantCount, expectedResults);
   }
 
   /**
    * Calculate detailed quality metrics
    */
-  private calculateQualityMetrics(results: any[], intent: QueryIntent): QualityMetrics {
+  private calculateQualityMetrics(
+    results: SearchResultWithMetrics[],
+    intent: QueryIntent
+  ): QualityMetrics {
     if (results.length === 0) {
       return {
         intentMatchRate: 0,
@@ -114,10 +125,9 @@ export class AccuracyMetrics {
     const contentTypeMatchRate = typeMatches / results.length;
 
     // Structure quality score (based on hierarchy levels)
-    const avgHierarchy = results.reduce(
-      (sum, r) => sum + (r.metadata.hierarchyLevel || 5),
-      0
-    ) / results.length;
+    const avgHierarchy =
+      results.reduce((sum, r) => sum + ((r.metadata as any).hierarchyLevel || 5), 0) /
+      results.length;
     const structureQualityScore = Math.max(0, (5 - avgHierarchy) / 5);
 
     return {
@@ -152,7 +162,10 @@ export class AccuracyMetrics {
   /**
    * Calculate metrics trend over time
    */
-  calculateMetricsTrend(currentMetrics: SearchMetrics, historicalMetrics: SearchMetrics[]): {
+  calculateMetricsTrend(
+    currentMetrics: SearchMetrics,
+    historicalMetrics: SearchMetrics[]
+  ): {
     precisionTrend: number;
     recallTrend: number;
     f1Trend: number;
@@ -182,7 +195,7 @@ export class AccuracyMetrics {
    */
   private calculateAverageMetrics(metrics: SearchMetrics[]): SearchMetrics {
     const count = metrics.length;
-    
+
     return {
       precision: metrics.reduce((sum, m) => sum + m.precision, 0) / count,
       recall: metrics.reduce((sum, m) => sum + m.recall, 0) / count,

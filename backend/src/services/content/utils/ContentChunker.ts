@@ -28,7 +28,7 @@ export class ContentChunker {
       chunks.push(currentChunk.trim());
     }
 
-    return chunks.filter(chunk => chunk.length > 0);
+    return chunks.filter((chunk) => chunk.length > 0);
   }
 
   /**
@@ -43,7 +43,7 @@ export class ContentChunker {
       chunks.push(chunk);
     }
 
-    return chunks.filter(chunk => chunk.length > 0);
+    return chunks.filter((chunk) => chunk.length > 0);
   }
 
   /**
@@ -51,11 +51,11 @@ export class ContentChunker {
    */
   static chunkByCharacters(content: string, charactersPerChunk: number = 200): string[] {
     const chunks: string[] = [];
-    
+
     for (let i = 0; i < content.length; i += charactersPerChunk) {
       chunks.push(content.slice(i, i + charactersPerChunk));
     }
 
-    return chunks.filter(chunk => chunk.length > 0);
+    return chunks.filter((chunk) => chunk.length > 0);
   }
-} 
+}

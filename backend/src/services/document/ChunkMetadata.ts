@@ -32,7 +32,7 @@ export class ChunkMetadataGenerator {
     content: string,
     section: Section,
     contentType: ContentType,
-    parentTitle: string | undefined,
+    _parentTitle: string | undefined,
     isStart: boolean,
     isEnd: boolean,
     options: Partial<MetadataGenerationOptions> = {}
@@ -94,11 +94,15 @@ export class ChunkMetadataGenerator {
     }));
   }
 
-  private extractKeywords(content: string, sectionKeywords: string[] = [], maxKeywords: number): string[] {
+  private extractKeywords(
+    content: string,
+    sectionKeywords: string[] = [],
+    maxKeywords: number
+  ): string[] {
     const keywords = new Set<string>();
 
     // Start with section keywords
-    sectionKeywords.forEach(keyword => keywords.add(keyword));
+    sectionKeywords.forEach((keyword) => keywords.add(keyword));
 
     // Extract from content using various methods
     const contentKeywords = [
@@ -108,7 +112,7 @@ export class ChunkMetadataGenerator {
       ...this.extractFrequentTerms(content),
     ];
 
-    contentKeywords.slice(0, maxKeywords - keywords.size).forEach(keyword => {
+    contentKeywords.slice(0, maxKeywords - keywords.size).forEach((keyword) => {
       if (keywords.size < maxKeywords) {
         keywords.add(keyword);
       }
@@ -120,26 +124,26 @@ export class ChunkMetadataGenerator {
   private extractCapitalizedTerms(content: string): string[] {
     // Extract proper nouns and important concepts (capitalized phrases)
     const capitalizedPhrases = content.match(/\b[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*\b/g) || [];
-    
+
     return capitalizedPhrases
-      .filter(phrase => phrase.length > 2 && phrase.length < 50)
-      .filter(phrase => !this.isCommonProperNoun(phrase))
+      .filter((phrase) => phrase.length > 2 && phrase.length < 50)
+      .filter((phrase) => !this.isCommonProperNoun(phrase))
       .slice(0, 5);
   }
 
   private extractQuotedTerms(content: string): string[] {
     const quotedTerms = content.match(/["']([^"']{2,30})["']/g) || [];
     return quotedTerms
-      .map(term => term.replace(/["']/g, ''))
-      .filter(term => term.length > 2)
+      .map((term) => term.replace(/["']/g, ''))
+      .filter((term) => term.length > 2)
       .slice(0, 3);
   }
 
   private extractParentheticalTerms(content: string): string[] {
     const parentheticalTerms = content.match(/\(([^)]{2,30})\)/g) || [];
     return parentheticalTerms
-      .map(term => term.replace(/[()]/g, ''))
-      .filter(term => term.length > 2 && !term.match(/^\d+$/))
+      .map((term) => term.replace(/[()]/g, ''))
+      .filter((term) => term.length > 2 && !term.match(/^\d+$/))
       .slice(0, 3);
   }
 
@@ -148,10 +152,10 @@ export class ChunkMetadataGenerator {
       .toLowerCase()
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
-      .filter(word => word.length > 3 && !this.isStopWord(word));
+      .filter((word) => word.length > 3 && !this.isStopWord(word));
 
     const frequency = new Map<string, number>();
-    words.forEach(word => {
+    words.forEach((word) => {
       frequency.set(word, (frequency.get(word) || 0) + 1);
     });
 
@@ -197,7 +201,7 @@ export class ChunkMetadataGenerator {
 
     // Remove duplicates and filter
     const uniqueConcepts = [...new Set(concepts)]
-      .filter(concept => concept.length > 2 && concept.length < 50)
+      .filter((concept) => concept.length > 2 && concept.length < 50)
       .slice(0, maxConcepts);
 
     return {
@@ -212,28 +216,31 @@ export class ChunkMetadataGenerator {
 
     // Technical terms in code or math contexts
     const technicalTerms = content.match(/\b[A-Z][a-zA-Z]*(?:[A-Z][a-z]*)*\b/g) || [];
-    concepts.push(...technicalTerms.filter(term => term.length > 3));
+    concepts.push(...technicalTerms.filter((term) => term.length > 3));
 
     // Terms following definition patterns
-    const definitionMatches = content.match(/(?:is called|known as|defined as|refers to)\s+([^.!?]{5,30})/gi) || [];
-    concepts.push(...definitionMatches.map(match => 
-      match.replace(/(?:is called|known as|defined as|refers to)\s+/i, '').trim()
-    ));
+    const definitionMatches =
+      content.match(/(?:is called|known as|defined as|refers to)\s+([^.!?]{5,30})/gi) || [];
+    concepts.push(
+      ...definitionMatches.map((match) =>
+        match.replace(/(?:is called|known as|defined as|refers to)\s+/i, '').trim()
+      )
+    );
 
     // Terms in emphasis (bold/italic in markdown)
     const emphasisTerms = content.match(/\*\*([^*]{3,20})\*\*|\*([^*]{3,20})\*/g) || [];
-    concepts.push(...emphasisTerms.map(term => term.replace(/\*/g, '')));
+    concepts.push(...emphasisTerms.map((term) => term.replace(/\*/g, '')));
 
     return concepts;
   }
 
   private extractConceptsByPosition(content: string): string[] {
-    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = content.split(/[.!?]+/).filter((s) => s.trim().length > 0);
     const concepts: string[] = [];
 
-    sentences.forEach(sentence => {
+    sentences.forEach((sentence) => {
       const words = sentence.trim().split(/\s+/);
-      
+
       // First few words of sentences (often introduce concepts)
       if (words.length >= 3) {
         const firstPhrase = words.slice(0, 3).join(' ');
@@ -259,10 +266,10 @@ export class ChunkMetadataGenerator {
       .toLowerCase()
       .replace(/[^\w\s]/g, ' ')
       .split(/\s+/)
-      .filter(word => word.length > 4 && !this.isStopWord(word));
+      .filter((word) => word.length > 4 && !this.isStopWord(word));
 
     const frequency = new Map<string, number>();
-    words.forEach(word => {
+    words.forEach((word) => {
       frequency.set(word, (frequency.get(word) || 0) + 1);
     });
 
@@ -286,7 +293,9 @@ export class ChunkMetadataGenerator {
 
     // URL references
     const urlRefs = content.match(/https?:\/\/[^\s]+/g) || [];
-    references.push(...urlRefs.map(url => url.length > 50 ? url.substring(0, 47) + '...' : url));
+    references.push(
+      ...urlRefs.map((url) => (url.length > 50 ? url.substring(0, 47) + '...' : url))
+    );
 
     // Page references
     const pageRefs = content.match(/\b(?:page|p\.|pp\.)\s+\d+(?:-\d+)?/gi) || [];
@@ -295,7 +304,10 @@ export class ChunkMetadataGenerator {
     return [...new Set(references)].slice(0, maxReferences);
   }
 
-  private calculateImportance(content: string, contentType: ContentType): 'high' | 'medium' | 'low' {
+  private calculateImportance(
+    content: string,
+    contentType: ContentType
+  ): 'high' | 'medium' | 'low' {
     let score = 0;
 
     // Base score by content type
@@ -333,8 +345,10 @@ export class ChunkMetadataGenerator {
       /\b(?:consider|assume|suppose|imagine|think)\b/i,
     ];
 
-    const highMatches = highImportancePatterns.filter(pattern => pattern.test(content)).length;
-    const mediumMatches = mediumImportancePatterns.filter(pattern => pattern.test(content)).length;
+    const highMatches = highImportancePatterns.filter((pattern) => pattern.test(content)).length;
+    const mediumMatches = mediumImportancePatterns.filter((pattern) =>
+      pattern.test(content)
+    ).length;
 
     score += highMatches * 2;
     score += mediumMatches * 1;
@@ -353,10 +367,39 @@ export class ChunkMetadataGenerator {
 
   private isCommonProperNoun(phrase: string): boolean {
     const commonProperNouns = new Set([
-      'The', 'This', 'That', 'These', 'Those', 'Here', 'There', 'When', 'Where',
-      'What', 'How', 'Why', 'Who', 'Which', 'Monday', 'Tuesday', 'Wednesday',
-      'Thursday', 'Friday', 'Saturday', 'Sunday', 'January', 'February', 'March',
-      'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'
+      'The',
+      'This',
+      'That',
+      'These',
+      'Those',
+      'Here',
+      'There',
+      'When',
+      'Where',
+      'What',
+      'How',
+      'Why',
+      'Who',
+      'Which',
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ]);
 
     return commonProperNouns.has(phrase);
@@ -370,21 +413,111 @@ export class ChunkMetadataGenerator {
       /^\d+/,
     ];
 
-    return !avoidPatterns.some(pattern => pattern.test(phrase.trim()));
+    return !avoidPatterns.some((pattern) => pattern.test(phrase.trim()));
   }
 
   private isStopWord(word: string): boolean {
     const stopWords = new Set([
-      'the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i', 'it', 'for',
-      'not', 'on', 'with', 'he', 'as', 'you', 'do', 'at', 'this', 'but', 'his',
-      'by', 'from', 'they', 'we', 'say', 'her', 'she', 'or', 'an', 'will', 'my',
-      'one', 'all', 'would', 'there', 'their', 'what', 'so', 'up', 'out', 'if',
-      'about', 'who', 'get', 'which', 'go', 'me', 'when', 'make', 'can', 'like',
-      'time', 'no', 'just', 'him', 'know', 'take', 'people', 'into', 'year',
-      'your', 'good', 'some', 'could', 'them', 'see', 'other', 'than', 'then',
-      'now', 'look', 'only', 'come', 'its', 'over', 'think', 'also', 'back',
-      'after', 'use', 'two', 'how', 'our', 'work', 'first', 'well', 'way',
-      'even', 'new', 'want', 'because', 'any', 'these', 'give', 'day', 'most', 'us'
+      'the',
+      'be',
+      'to',
+      'of',
+      'and',
+      'a',
+      'in',
+      'that',
+      'have',
+      'i',
+      'it',
+      'for',
+      'not',
+      'on',
+      'with',
+      'he',
+      'as',
+      'you',
+      'do',
+      'at',
+      'this',
+      'but',
+      'his',
+      'by',
+      'from',
+      'they',
+      'we',
+      'say',
+      'her',
+      'she',
+      'or',
+      'an',
+      'will',
+      'my',
+      'one',
+      'all',
+      'would',
+      'there',
+      'their',
+      'what',
+      'so',
+      'up',
+      'out',
+      'if',
+      'about',
+      'who',
+      'get',
+      'which',
+      'go',
+      'me',
+      'when',
+      'make',
+      'can',
+      'like',
+      'time',
+      'no',
+      'just',
+      'him',
+      'know',
+      'take',
+      'people',
+      'into',
+      'year',
+      'your',
+      'good',
+      'some',
+      'could',
+      'them',
+      'see',
+      'other',
+      'than',
+      'then',
+      'now',
+      'look',
+      'only',
+      'come',
+      'its',
+      'over',
+      'think',
+      'also',
+      'back',
+      'after',
+      'use',
+      'two',
+      'how',
+      'our',
+      'work',
+      'first',
+      'well',
+      'way',
+      'even',
+      'new',
+      'want',
+      'because',
+      'any',
+      'these',
+      'give',
+      'day',
+      'most',
+      'us',
     ]);
 
     return stopWords.has(word.toLowerCase());

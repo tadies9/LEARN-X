@@ -1,7 +1,13 @@
 import { AICache } from '../../cache/AICache';
 import { CostTracker } from '../../ai/CostTracker';
 import { UserPersona } from '../../../types/persona';
-import { PersonalizedContent, FlashcardParams, FlashcardResult, QuizParams, QuizResult } from './types';
+import {
+  PersonalizedContent,
+  FlashcardParams,
+  FlashcardResult,
+  QuizParams,
+  QuizResult,
+} from './types';
 
 // Import focused services
 import { QuizService } from './QuizService';
@@ -43,7 +49,11 @@ export class InteractiveOrchestrator {
   async generateAdaptiveQuiz(
     content: string,
     persona: UserPersona,
-    questionType: 'multiple_choice' | 'scenario_analysis' | 'problem_solving' | 'application' = 'application'
+    questionType:
+      | 'multiple_choice'
+      | 'scenario_analysis'
+      | 'problem_solving'
+      | 'application' = 'application'
   ): Promise<PersonalizedContent> {
     return this.quizService.generateAdaptiveQuiz(content, persona, questionType);
   }
@@ -72,4 +82,4 @@ export class InteractiveOrchestrator {
   async generateDeepQuiz(params: QuizParams): Promise<QuizResult> {
     return this.quizService.generateDeepQuiz(params);
   }
-} 
+}

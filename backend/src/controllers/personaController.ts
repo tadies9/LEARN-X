@@ -1,7 +1,17 @@
 import { Request, Response } from 'express';
-import { PersonaService } from '../services/personaService';
+import { PersonaService, PersonaSectionType } from '../services/personaService';
 import { AppError } from '../utils/errors';
 import { logger } from '../utils/logger';
+import {
+  PersonaRow,
+  ProfessionalContext,
+  PersonalInterests,
+  LearningStyle,
+  ContentPreferences,
+  CommunicationTone,
+} from '../types/persona';
+// Import express type extensions
+import '../types/express';
 
 export class PersonaController {
   private personaService: PersonaService;
@@ -36,7 +46,6 @@ export class PersonaController {
     try {
       const userId = req.user!.id;
       const personaData = req.body;
-
 
       // Validate persona data
       const validationError = this.validatePersonaData(personaData);
@@ -85,7 +94,11 @@ export class PersonaController {
         });
       }
 
-      const persona = await this.personaService.updateSection(userId, section, sectionData);
+      const persona = await this.personaService.updateSection(
+        userId,
+        section as PersonaSectionType,
+        sectionData
+      );
 
       res.json({
         success: true,
@@ -142,6 +155,9 @@ export class PersonaController {
         });
       }
 
+      // Type assert the persona to our PersonaRow interface
+      const typedPersona = persona as PersonaRow;
+
       if (format === 'json') {
         // Set headers for file download
         res.setHeader('Content-Type', 'application/json');
@@ -150,13 +166,13 @@ export class PersonaController {
         // Clean up the data for export
         const exportData = {
           exportDate: new Date().toISOString(),
-          version: persona.version || 1,
+          version: typedPersona.version || 1,
           profile: {
-            professional: persona.professional_context,
-            interests: persona.personal_interests,
-            learningStyle: persona.learning_style,
-            contentPreferences: persona.content_preferences,
-            communication: persona.communication_tone,
+            professional: typedPersona.professional_context,
+            interests: typedPersona.personal_interests,
+            learningStyle: typedPersona.learning_style,
+            contentPreferences: typedPersona.content_preferences,
+            communication: typedPersona.communication_tone,
           },
         };
 
@@ -166,7 +182,7 @@ export class PersonaController {
         res.setHeader('Content-Type', 'text/csv');
         res.setHeader('Content-Disposition', 'attachment; filename="learn-x-persona.csv"');
 
-        const csv = this.personaToCSV(persona);
+        const csv = this.personaToCSV(typedPersona);
         res.send(csv);
       } else {
         res.status(400).json({
@@ -180,10 +196,10 @@ export class PersonaController {
     }
   };
 
-  private validatePersonaData(data: any): string | null {
+  private validatePersonaData(data: Record<string, unknown>): string | null {
     // Handle both new and legacy structure
     const academicCareerData = data.academicCareer || data.professional;
-    
+
     if (
       !academicCareerData ||
       !data.interests ||
@@ -194,46 +210,50 @@ export class PersonaController {
       return 'All persona sections are required';
     }
 
+    // Type assert the JSONB fields to their proper types
+    const professionalContext = academicCareerData as ProfessionalContext;
+    const interests = data.interests as PersonalInterests;
+    const learningStyle = data.learningStyle as LearningStyle;
+    const contentPreferences = data.contentPreferences as ContentPreferences;
+    const communication = data.communication as CommunicationTone;
+
     // Validate academic/career context - handle both new and legacy field names
-    const hasCurrentStatus = academicCareerData.currentStatus || academicCareerData.role;
-    const hasIndustry = academicCareerData.aspiredIndustry || academicCareerData.industry;
-    
+    const hasCurrentStatus = professionalContext.currentStatus || professionalContext.role;
+    const hasIndustry = professionalContext.aspiredIndustry || professionalContext.industry;
+
     if (!hasCurrentStatus || !hasIndustry) {
       return 'Invalid professional context data';
     }
 
     // Validate interests
     if (
-      !Array.isArray(data.interests.primary) ||
-      data.interests.primary.length === 0 ||
-      !Array.isArray(data.interests.learningTopics) ||
-      data.interests.learningTopics.length === 0
+      !Array.isArray(interests.primary) ||
+      interests.primary.length === 0 ||
+      !Array.isArray(interests.learningTopics) ||
+      interests.learningTopics.length === 0
     ) {
       return 'Invalid interests data';
     }
 
     // Validate learning style
-    if (
-      !data.learningStyle.primary ||
-      typeof data.learningStyle.preferenceStrength !== 'number'
-    ) {
+    if (!learningStyle.primary || typeof learningStyle.preferenceStrength !== 'number') {
       return 'Invalid learning style data';
     }
 
     // Validate content preferences
     if (
-      !data.contentPreferences.density ||
-      !data.contentPreferences.detailTolerance ||
-      !data.contentPreferences.repetitionPreference
+      !contentPreferences.density ||
+      !contentPreferences.detailTolerance ||
+      !contentPreferences.repetitionPreference
     ) {
       return 'Invalid content preferences data';
     }
 
     // Validate communication
     if (
-      !data.communication.style ||
-      !data.communication.encouragementLevel ||
-      typeof data.communication.humorAppropriate !== 'boolean'
+      !communication.style ||
+      !communication.encouragementLevel ||
+      typeof communication.humorAppropriate !== 'boolean'
     ) {
       return 'Invalid communication data';
     }
@@ -241,57 +261,52 @@ export class PersonaController {
     return null;
   }
 
-  private personaToCSV(persona: any): string {
+  private personaToCSV(persona: PersonaRow): string {
     const rows: string[] = [];
 
     // Headers
     rows.push('Category,Field,Value');
 
     // Professional Context
-    rows.push(`Professional,Role,"${persona.professional_context.role}"`);
-    rows.push(`Professional,Industry,"${persona.professional_context.industry}"`);
-    rows.push(`Professional,Experience Years,${persona.professional_context.experienceYears}`);
-    rows.push(`Professional,Technical Level,"${persona.professional_context.technicalLevel}"`);
-    if (persona.professional_context.careerAspirations) {
-      rows.push(
-        `Professional,Career Aspirations,"${persona.professional_context.careerAspirations}"`
-      );
+    const professionalContext = persona.professional_context;
+    rows.push(`Professional,Role,"${professionalContext.role || ''}"`);
+    rows.push(`Professional,Industry,"${professionalContext.industry || ''}"`);
+    rows.push(`Professional,Experience Years,${professionalContext.experienceYears || 0}`);
+    rows.push(`Professional,Technical Level,"${professionalContext.technicalLevel || ''}"`);
+    if (professionalContext.careerAspirations) {
+      rows.push(`Professional,Career Aspirations,"${professionalContext.careerAspirations}"`);
     }
 
     // Interests
-    rows.push(`Interests,Primary Interests,"${persona.personal_interests.primary.join(', ')}"`);
-    if (persona.personal_interests.secondary?.length) {
-      rows.push(
-        `Interests,Secondary Interests,"${persona.personal_interests.secondary.join(', ')}"`
-      );
+    const interests = persona.personal_interests;
+    rows.push(`Interests,Primary Interests,"${interests.primary.join(', ')}"`);
+    if (interests.secondary?.length) {
+      rows.push(`Interests,Secondary Interests,"${interests.secondary.join(', ')}"`);
     }
-    rows.push(
-      `Interests,Learning Topics,"${persona.personal_interests.learningTopics.join(', ')}"`
-    );
+    rows.push(`Interests,Learning Topics,"${interests.learningTopics.join(', ')}"`);
 
     // Learning Style
-    rows.push(`Learning Style,Primary,"${persona.learning_style.primary}"`);
-    if (persona.learning_style.secondary) {
-      rows.push(`Learning Style,Secondary,"${persona.learning_style.secondary}"`);
+    const learningStyle = persona.learning_style;
+    rows.push(`Learning Style,Primary,"${learningStyle.primary}"`);
+    if (learningStyle.secondary) {
+      rows.push(`Learning Style,Secondary,"${learningStyle.secondary}"`);
     }
-    rows.push(`Learning Style,Preference Strength,${persona.learning_style.preferenceStrength}`);
+    rows.push(`Learning Style,Preference Strength,${learningStyle.preferenceStrength}`);
 
     // Content Preferences
-    rows.push(`Content,Density,"${persona.content_preferences.density}"`);
-    rows.push(`Content,Examples Per Concept,${persona.content_preferences.examplesPerConcept}`);
-    rows.push(`Content,Summary Style,"${persona.content_preferences.summaryStyle}"`);
-    rows.push(`Content,Detail Tolerance,"${persona.content_preferences.detailTolerance}"`);
-    rows.push(
-      `Content,Repetition Preference,"${persona.content_preferences.repetitionPreference}"`
-    );
+    const contentPreferences = persona.content_preferences;
+    rows.push(`Content,Density,"${contentPreferences.density}"`);
+    rows.push(`Content,Examples Per Concept,${contentPreferences.examplesPerConcept || 0}`);
+    rows.push(`Content,Summary Style,"${contentPreferences.summaryStyle || ''}"`);
+    rows.push(`Content,Detail Tolerance,"${contentPreferences.detailTolerance}"`);
+    rows.push(`Content,Repetition Preference,"${contentPreferences.repetitionPreference}"`);
 
     // Communication
-    rows.push(`Communication,Style,"${persona.communication_tone.style}"`);
-    rows.push(`Communication,Technical Comfort,${persona.communication_tone.technicalComfort}`);
-    rows.push(
-      `Communication,Encouragement Level,"${persona.communication_tone.encouragementLevel}"`
-    );
-    rows.push(`Communication,Humor Appropriate,${persona.communication_tone.humorAppropriate}`);
+    const communication = persona.communication_tone;
+    rows.push(`Communication,Style,"${communication.style}"`);
+    rows.push(`Communication,Technical Comfort,${communication.technicalComfort || 0}`);
+    rows.push(`Communication,Encouragement Level,"${communication.encouragementLevel}"`);
+    rows.push(`Communication,Humor Appropriate,${communication.humorAppropriate}`);
 
     // Metadata
     rows.push(`Metadata,Version,${persona.version || 1}`);

@@ -2,8 +2,8 @@ import pdf from 'pdf-parse';
 import mammoth from 'mammoth';
 import { supabase } from '../config/supabase';
 import { logger } from '../utils/logger';
-import { 
-  cleanChunkContent, 
+import {
+  cleanChunkContent,
   sanitizeForDatabase,
   extractSafeText,
 } from '../utils/unicode-safe-text-processing';

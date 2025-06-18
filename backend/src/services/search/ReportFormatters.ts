@@ -9,22 +9,24 @@ export class ReportFormatters {
    */
   formatAsText(report: AccuracyReport): string {
     const lines: string[] = [];
-    
+
     lines.push(`=== ${report.reportType.toUpperCase()} ACCURACY REPORT ===`);
     lines.push(`Generated: ${report.timestamp}`);
     lines.push('');
-    
+
     lines.push('SUMMARY:');
-    lines.push(`Overall Score: ${report.summary.overallScore.toFixed(1)}/100 (${report.summary.status.toUpperCase()})`);
+    lines.push(
+      `Overall Score: ${report.summary.overallScore.toFixed(1)}/100 (${report.summary.status.toUpperCase()})`
+    );
     lines.push(`Critical Issues: ${report.summary.criticalIssues}`);
     lines.push('');
-    
+
     lines.push('KEY METRICS:');
     Object.entries(report.summary.keyMetrics).forEach(([key, value]) => {
       lines.push(`  ${key}: ${typeof value === 'number' ? value.toFixed(2) : value}`);
     });
     lines.push('');
-    
+
     if (report.recommendations.length > 0) {
       lines.push('RECOMMENDATIONS:');
       report.recommendations.forEach((rec, index) => {
@@ -32,7 +34,7 @@ export class ReportFormatters {
       });
       lines.push('');
     }
-    
+
     return lines.join('\n');
   }
 
@@ -84,24 +86,32 @@ export class ReportFormatters {
     
     <div class="metrics">
         <h2>Key Metrics</h2>
-        ${Object.entries(report.summary.keyMetrics).map(([key, value]) => `
+        ${Object.entries(report.summary.keyMetrics)
+          .map(
+            ([key, value]) => `
             <div class="metric">
                 <strong>${key}:</strong> ${typeof value === 'number' ? value.toFixed(2) : value}
             </div>
-        `).join('')}
+        `
+          )
+          .join('')}
     </div>
     
-    ${report.recommendations.length > 0 ? `
+    ${
+      report.recommendations.length > 0
+        ? `
     <div class="recommendations">
         <h2>Recommendations</h2>
         <ol>
-            ${report.recommendations.map(rec => `<li>${rec}</li>`).join('')}
+            ${report.recommendations.map((rec) => `<li>${rec}</li>`).join('')}
         </ol>
     </div>
-    ` : ''}
+    `
+        : ''
+    }
 </body>
 </html>`;
-    
+
     return html;
   }
 
@@ -110,35 +120,37 @@ export class ReportFormatters {
    */
   formatAsCSV(report: AccuracyReport): string {
     const lines: string[] = [];
-    
+
     // Header
     lines.push('Report Type,Timestamp,Overall Score,Status,Critical Issues');
-    
+
     // Summary row
-    lines.push([
-      report.reportType,
-      report.timestamp,
-      report.summary.overallScore.toFixed(2),
-      report.summary.status,
-      report.summary.criticalIssues.toString()
-    ].join(','));
-    
+    lines.push(
+      [
+        report.reportType,
+        report.timestamp,
+        report.summary.overallScore.toFixed(2),
+        report.summary.status,
+        report.summary.criticalIssues.toString(),
+      ].join(',')
+    );
+
     // Metrics section
     lines.push('');
     lines.push('Metric,Value');
     Object.entries(report.summary.keyMetrics).forEach(([key, value]) => {
       lines.push(`${key},${typeof value === 'number' ? value.toFixed(2) : value}`);
     });
-    
+
     // Recommendations section
     if (report.recommendations.length > 0) {
       lines.push('');
       lines.push('Recommendations');
-      report.recommendations.forEach(rec => {
+      report.recommendations.forEach((rec) => {
         lines.push(`"${rec}"`);
       });
     }
-    
+
     return lines.join('\n');
   }
 
@@ -147,22 +159,24 @@ export class ReportFormatters {
    */
   formatAsMarkdown(report: AccuracyReport): string {
     const lines: string[] = [];
-    
+
     lines.push(`# ${report.reportType.toUpperCase()} Accuracy Report`);
     lines.push(`*Generated: ${new Date(report.timestamp).toLocaleString()}*`);
     lines.push('');
-    
+
     lines.push('## Summary');
-    lines.push(`**Overall Score:** ${report.summary.overallScore.toFixed(1)}/100 (${report.summary.status.toUpperCase()})`);
+    lines.push(
+      `**Overall Score:** ${report.summary.overallScore.toFixed(1)}/100 (${report.summary.status.toUpperCase()})`
+    );
     lines.push(`**Critical Issues:** ${report.summary.criticalIssues}`);
     lines.push('');
-    
+
     lines.push('## Key Metrics');
     Object.entries(report.summary.keyMetrics).forEach(([key, value]) => {
       lines.push(`- **${key}:** ${typeof value === 'number' ? value.toFixed(2) : value}`);
     });
     lines.push('');
-    
+
     if (report.recommendations.length > 0) {
       lines.push('## Recommendations');
       report.recommendations.forEach((rec, index) => {
@@ -170,7 +184,7 @@ export class ReportFormatters {
       });
       lines.push('');
     }
-    
+
     return lines.join('\n');
   }
 
@@ -184,10 +198,10 @@ export class ReportFormatters {
   /**
    * Format metrics for display in tables
    */
-  formatMetricsTable(report: AccuracyReport): Array<{key: string, value: string}> {
+  formatMetricsTable(report: AccuracyReport): Array<{ key: string; value: string }> {
     return Object.entries(report.summary.keyMetrics).map(([key, value]) => ({
-      key: key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
-      value: typeof value === 'number' ? value.toFixed(2) : String(value)
+      key: key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase()),
+      value: typeof value === 'number' ? value.toFixed(2) : String(value),
     }));
   }
 

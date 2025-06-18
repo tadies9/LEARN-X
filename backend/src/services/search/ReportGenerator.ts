@@ -59,11 +59,11 @@ export class ReportGenerator {
     testResults: TestResult[]
   ): AccuracyReport {
     const avgSearchScore = this.calculateAverageScore(
-      searchMetrics.map(m => (m.precision + m.recall + m.f1Score + m.relevanceScore) * 25)
+      searchMetrics.map((m) => (m.precision + m.recall + m.f1Score + m.relevanceScore) * 25)
     );
-    const avgValidationScore = this.calculateAverageScore(validationResults.map(v => v.score));
-    const avgTestScore = this.calculateAverageScore(testResults.map(t => t.score));
-    
+    const avgValidationScore = this.calculateAverageScore(validationResults.map((v) => v.score));
+    const avgTestScore = this.calculateAverageScore(testResults.map((t) => t.score));
+
     const overallScore = (avgSearchScore + avgValidationScore + avgTestScore) / 3;
 
     const summary: ReportSummary = {
@@ -76,12 +76,12 @@ export class ReportGenerator {
         totalAssessments: searchMetrics.length + validationResults.length + testResults.length,
       },
       criticalIssues: validationResults.reduce(
-        (sum, v) => sum + v.issues.filter(i => i.severity >= 8).length, 
+        (sum, v) => sum + v.issues.filter((i) => i.severity >= 8).length,
         0
       ),
       improvements: this.generateComprehensiveRecommendations(
-        searchMetrics, 
-        validationResults, 
+        searchMetrics,
+        validationResults,
         testResults
       ).slice(0, 5),
     };
@@ -123,7 +123,7 @@ export class ReportGenerator {
    */
   private analyzeSearchMetricsTrend(metrics: SearchMetrics[]): any {
     if (metrics.length === 0) return null;
-    
+
     const latest = metrics[metrics.length - 1];
     const avg = {
       precision: metrics.reduce((sum, m) => sum + m.precision, 0) / metrics.length,
@@ -131,7 +131,7 @@ export class ReportGenerator {
       f1Score: metrics.reduce((sum, m) => sum + m.f1Score, 0) / metrics.length,
       relevanceScore: metrics.reduce((sum, m) => sum + m.relevanceScore, 0) / metrics.length,
     };
-    
+
     return {
       trend: {
         precision: latest.precision - avg.precision,
@@ -149,11 +149,11 @@ export class ReportGenerator {
    */
   private analyzeValidationTrend(validationResults: ValidationResult[]): any {
     if (validationResults.length === 0) return null;
-    
-    const scores = validationResults.map(v => v.score);
+
+    const scores = validationResults.map((v) => v.score);
     const avgScore = scores.reduce((sum, s) => sum + s, 0) / scores.length;
     const latestScore = scores[scores.length - 1];
-    
+
     return {
       trend: latestScore - avgScore,
       average: avgScore,
@@ -167,10 +167,10 @@ export class ReportGenerator {
    */
   private analyzeTestingTrend(testResults: TestResult[]): any {
     if (testResults.length === 0) return null;
-    
-    const passRate = testResults.filter(r => r.passed).length / testResults.length * 100;
+
+    const passRate = (testResults.filter((r) => r.passed).length / testResults.length) * 100;
     const avgScore = testResults.reduce((sum, r) => sum + r.score, 0) / testResults.length;
-    
+
     return {
       passRate,
       avgScore,
@@ -183,13 +183,14 @@ export class ReportGenerator {
    * Find correlations between different metrics
    */
   private findMetricCorrelations(
-    searchMetrics: SearchMetrics[], 
+    searchMetrics: SearchMetrics[],
     validationResults: ValidationResult[]
   ): any {
     if (searchMetrics.length === 0 || validationResults.length === 0) return null;
-    
+
     return {
-      searchValidationCorrelation: 'Moderate positive correlation between search metrics and validation scores',
+      searchValidationCorrelation:
+        'Moderate positive correlation between search metrics and validation scores',
       keyInsights: [
         'Higher precision correlates with fewer validation issues',
         'Better relevance scores reduce critical validation errors',
@@ -203,8 +204,8 @@ export class ReportGenerator {
    */
   private extractCommonIssues(testResults: TestResult[]): string[] {
     const issueCount = new Map<string, number>();
-    testResults.forEach(result => {
-      result.issues.forEach(issue => {
+    testResults.forEach((result) => {
+      result.issues.forEach((issue) => {
         issueCount.set(issue, (issueCount.get(issue) || 0) + 1);
       });
     });
@@ -224,26 +225,27 @@ export class ReportGenerator {
     testResults: TestResult[]
   ): string[] {
     const recommendations = new Set<string>();
-    
+
     // From search metrics
-    searchMetrics.forEach(metrics => {
-      if (metrics.precision < 0.6) recommendations.add('Improve result precision through better ranking');
+    searchMetrics.forEach((metrics) => {
+      if (metrics.precision < 0.6)
+        recommendations.add('Improve result precision through better ranking');
       if (metrics.recall < 0.5) recommendations.add('Enhance recall by expanding search coverage');
       if (metrics.relevanceScore < 0.7) recommendations.add('Refine relevance scoring algorithm');
     });
-    
+
     // From validation results
-    validationResults.forEach(result => {
-      result.recommendations.slice(0, 2).forEach(rec => recommendations.add(rec));
+    validationResults.forEach((result) => {
+      result.recommendations.slice(0, 2).forEach((rec) => recommendations.add(rec));
     });
-    
+
     // From test results
     const commonTestIssues = this.extractCommonIssues(testResults);
-    commonTestIssues.slice(0, 2).forEach(issue => {
+    commonTestIssues.slice(0, 2).forEach((issue) => {
       if (issue.includes('intent')) recommendations.add('Improve query intent detection');
       if (issue.includes('relevance')) recommendations.add('Enhance relevance calculation');
     });
-    
+
     return Array.from(recommendations).slice(0, 8);
   }
 }

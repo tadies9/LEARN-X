@@ -1,8 +1,43 @@
 import { supabase } from '../config/supabase';
 import { logger } from '../utils/logger';
+import {
+  PersonaRow,
+  ProfessionalContext,
+  PersonalInterests,
+  LearningStyle,
+  ContentPreferences,
+  CommunicationTone,
+} from '../types/persona';
+
+// Interface for persona update data
+export interface PersonaUpdateData {
+  academicCareer?: ProfessionalContext;
+  professional?: ProfessionalContext;
+  interests?: PersonalInterests;
+  learningStyle?: LearningStyle;
+  contentPreferences?: ContentPreferences;
+  communication?: CommunicationTone;
+}
+
+// Union type for section names
+export type PersonaSectionType =
+  | 'professional'
+  | 'academicCareer'
+  | 'interests'
+  | 'learningStyle'
+  | 'contentPreferences'
+  | 'communication';
+
+// Union type for section data
+export type PersonaSectionData =
+  | ProfessionalContext
+  | PersonalInterests
+  | LearningStyle
+  | ContentPreferences
+  | CommunicationTone;
 
 export class PersonaService {
-  async getPersona(userId: string) {
+  async getPersona(userId: string): Promise<PersonaRow | null> {
     try {
       const { data, error } = await supabase
         .from('personas')
@@ -22,14 +57,13 @@ export class PersonaService {
     }
   }
 
-  async upsertPersona(userId: string, personaData: any) {
+  async upsertPersona(userId: string, personaData: PersonaUpdateData): Promise<PersonaRow> {
     try {
       // Check if persona exists
       const existing = await this.getPersona(userId);
 
       // Handle both new and legacy field names
       const professionalContext = personaData.academicCareer || personaData.professional;
-      
 
       const dataToSave = {
         user_id: userId,
@@ -41,7 +75,6 @@ export class PersonaService {
         version: existing ? (existing.version || 0) + 1 : 1,
         updated_at: new Date().toISOString(),
       };
-
 
       // If exists, create history entry first
       if (existing) {
@@ -67,7 +100,11 @@ export class PersonaService {
     }
   }
 
-  async updateSection(userId: string, section: string, sectionData: any) {
+  async updateSection(
+    userId: string,
+    section: PersonaSectionType,
+    sectionData: PersonaSectionData
+  ): Promise<PersonaRow> {
     try {
       const existing = await this.getPersona(userId);
 
@@ -79,7 +116,7 @@ export class PersonaService {
       await this.createHistoryEntry(existing);
 
       // Map section names to database columns
-      const sectionMap: Record<string, string> = {
+      const sectionMap: Record<PersonaSectionType, string> = {
         professional: 'professional_context',
         academicCareer: 'professional_context',
         interests: 'personal_interests',
@@ -92,7 +129,7 @@ export class PersonaService {
       if (!columnName) {
         throw new Error(`Invalid section name: ${section}`);
       }
-      
+
       const updateData = {
         [columnName]: sectionData,
         version: (existing.version || 0) + 1,
@@ -130,7 +167,7 @@ export class PersonaService {
     }
   }
 
-  async getPersonaHistory(userId: string) {
+  async getPersonaHistory(userId: string): Promise<PersonaRow[]> {
     try {
       const { data, error } = await supabase
         .from('persona_history')
@@ -148,7 +185,7 @@ export class PersonaService {
     }
   }
 
-  private async createHistoryEntry(persona: any) {
+  private async createHistoryEntry(persona: PersonaRow): Promise<void> {
     try {
       const historyEntry = {
         user_id: persona.user_id,

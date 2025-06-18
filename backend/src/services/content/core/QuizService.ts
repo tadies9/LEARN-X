@@ -4,7 +4,13 @@ import { AICache } from '../../cache/AICache';
 import { CostTracker } from '../../ai/CostTracker';
 import { logger } from '../../../utils/logger';
 import { UserPersona } from '../../../types/persona';
-import { PersonalizedContent, FlashcardParams, FlashcardResult, QuizParams, QuizResult } from './types';
+import {
+  PersonalizedContent,
+  FlashcardParams,
+  FlashcardResult,
+  QuizParams,
+  QuizResult,
+} from './types';
 
 /**
  * Quiz Service
@@ -26,7 +32,11 @@ export class QuizService {
   async generateAdaptiveQuiz(
     content: string,
     persona: UserPersona,
-    questionType: 'multiple_choice' | 'scenario_analysis' | 'problem_solving' | 'application' = 'application'
+    questionType:
+      | 'multiple_choice'
+      | 'scenario_analysis'
+      | 'problem_solving'
+      | 'application' = 'application'
   ): Promise<PersonalizedContent> {
     try {
       const interests = [
@@ -146,7 +156,7 @@ export class QuizService {
     difficulty: 'easy' | 'medium' | 'hard';
   }> {
     // Basic parsing - will be enhanced
-    const lines = content.split('\n').filter(line => line.includes('FRONT:'));
+    const lines = content.split('\n').filter((line) => line.includes('FRONT:'));
     return lines.slice(0, 10).map((_line, index) => ({
       front: `Question ${index + 1}`,
       back: `Answer ${index + 1}`,
@@ -157,7 +167,10 @@ export class QuizService {
   /**
    * Parse quiz questions from AI response
    */
-  private parseQuizQuestions(content: string, type: string): Array<{
+  private parseQuizQuestions(
+    content: string,
+    type: string
+  ): Array<{
     question: string;
     type: string;
     options?: string[];
@@ -165,7 +178,7 @@ export class QuizService {
     explanation: string;
   }> {
     // Basic parsing - will be enhanced
-    const questions = content.split('\n\n').filter(q => q.trim().length > 20);
+    const questions = content.split('\n\n').filter((q) => q.trim().length > 20);
     return questions.slice(0, 5).map((_q, index) => ({
       question: `Question ${index + 1}`,
       type,
@@ -173,4 +186,4 @@ export class QuizService {
       explanation: 'Sample explanation',
     }));
   }
-} 
+}

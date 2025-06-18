@@ -56,7 +56,12 @@ export class ExplanationOrchestrator {
     persona: UserPersona,
     currentLevel: 'foundation' | 'intermediate' | 'advanced' = 'foundation'
   ): Promise<PersonalizedContent> {
-    return this.streamingExplanationService.generateProgressiveExplanation(concept, content, persona, currentLevel);
+    return this.streamingExplanationService.generateProgressiveExplanation(
+      concept,
+      content,
+      persona,
+      currentLevel
+    );
   }
 
   /**
@@ -81,4 +86,4 @@ export class ExplanationOrchestrator {
   ): Promise<string[]> {
     return this.exampleService.generateContextualExamples(concept, persona, exampleType, count);
   }
-} 
+}

@@ -21,7 +21,7 @@ router.get('/health', (_req, res) => {
     timestamp: new Date().toISOString(),
     service: 'learn-x-api',
     version: process.env.npm_package_version || '1.0.0',
-    node_env: process.env.NODE_ENV || 'development'
+    node_env: process.env.NODE_ENV || 'development',
   });
 });
 
@@ -31,16 +31,16 @@ router.get('/health', (_req, res) => {
 router.get('/health/detailed', async (_req, res) => {
   try {
     const startTime = Date.now();
-    
+
     // Get comprehensive system health
     const systemHealth = await queueOrchestrator.getSystemHealth();
-    
+
     // Get detailed metrics
     const detailedMetrics = await queueOrchestrator.getDetailedMetrics();
-    
+
     const responseTime = Date.now() - startTime;
-    const statusCode = systemHealth.status === 'healthy' ? 200 : 
-                      systemHealth.status === 'degraded' ? 200 : 503;
+    const statusCode =
+      systemHealth.status === 'healthy' ? 200 : systemHealth.status === 'degraded' ? 200 : 503;
 
     res.status(statusCode).json({
       status: systemHealth.status,
@@ -49,17 +49,16 @@ router.get('/health/detailed', async (_req, res) => {
       service: 'learn-x-api',
       queues: systemHealth.queues,
       metrics: detailedMetrics,
-      worker_status: 'external' // Workers run separately
+      worker_status: 'external', // Workers run separately
     });
-
   } catch (error) {
     logger.error('[Health] Failed to get detailed health:', error);
-    
+
     res.status(503).json({
       status: 'unhealthy',
       timestamp: new Date().toISOString(),
       error: 'Health check failed',
-      service: 'learn-x-api'
+      service: 'learn-x-api',
     });
   }
 });
@@ -70,16 +69,14 @@ router.get('/health/detailed', async (_req, res) => {
 router.get('/health/queues', async (_req, res) => {
   try {
     const queueMetrics = await enhancedPGMQClient.getAllQueueMetrics();
-    
+
     const queueHealth = await Promise.all(
       Object.values(ENHANCED_QUEUE_NAMES).map(async (queueName) => {
-        const metrics = queueMetrics.find(m => m.queue_name === queueName);
+        const metrics = queueMetrics.find((m) => m.queue_name === queueName);
         return {
           name: queueName,
           metrics: metrics || null,
-          status: metrics ? 
-            (metrics.queue_length > 100 ? 'degraded' : 'healthy') : 
-            'unknown'
+          status: metrics ? (metrics.queue_length > 100 ? 'degraded' : 'healthy') : 'unknown',
         };
       })
     );
@@ -87,14 +84,13 @@ router.get('/health/queues', async (_req, res) => {
     res.json({
       timestamp: new Date().toISOString(),
       queues: queueHealth,
-      total_queues: queueHealth.length
+      total_queues: queueHealth.length,
     });
-
   } catch (error) {
     logger.error('[Health] Failed to get queue health:', error);
     res.status(500).json({
       error: 'Failed to get queue health',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -105,22 +101,22 @@ router.get('/health/queues', async (_req, res) => {
 router.get('/health/queues/:queueName', async (req, res) => {
   try {
     const { queueName } = req.params;
-    
+
     // Validate queue name
     if (!Object.values(ENHANCED_QUEUE_NAMES).includes(queueName as any)) {
       res.status(404).json({
         error: 'Queue not found',
-        available_queues: Object.values(ENHANCED_QUEUE_NAMES)
+        available_queues: Object.values(ENHANCED_QUEUE_NAMES),
       });
       return;
     }
 
     const metrics = await enhancedPGMQClient.getQueueMetrics(queueName as any);
-    
+
     if (!metrics) {
       res.status(404).json({
         error: 'Queue metrics not available',
-        queue_name: queueName
+        queue_name: queueName,
       });
       return;
     }
@@ -128,14 +124,13 @@ router.get('/health/queues/:queueName', async (req, res) => {
     res.json({
       queue_name: queueName,
       metrics,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-
   } catch (error) {
     logger.error(`[Health] Failed to get metrics for queue ${req.params.queueName}:`, error);
     res.status(500).json({
       error: 'Failed to get queue metrics',
-      queue_name: req.params.queueName
+      queue_name: req.params.queueName,
     });
   }
 });
@@ -147,10 +142,10 @@ router.get('/health/performance', async (_req, res) => {
   try {
     const memoryUsage = process.memoryUsage();
     const uptime = process.uptime();
-    
+
     // Get queue performance metrics
     const detailedMetrics = await queueOrchestrator.getDetailedMetrics();
-    
+
     res.json({
       timestamp: new Date().toISOString(),
       system: {
@@ -159,19 +154,18 @@ router.get('/health/performance', async (_req, res) => {
           heap_used_mb: Math.round(memoryUsage.heapUsed / 1024 / 1024),
           heap_total_mb: Math.round(memoryUsage.heapTotal / 1024 / 1024),
           external_mb: Math.round(memoryUsage.external / 1024 / 1024),
-          rss_mb: Math.round(memoryUsage.rss / 1024 / 1024)
+          rss_mb: Math.round(memoryUsage.rss / 1024 / 1024),
         },
         node_version: process.version,
-        platform: process.platform
+        platform: process.platform,
       },
-      queues: detailedMetrics
+      queues: detailedMetrics,
     });
-
   } catch (error) {
     logger.error('[Health] Failed to get performance metrics:', error);
     res.status(500).json({
       error: 'Failed to get performance metrics',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   }
 });
@@ -180,26 +174,24 @@ router.get('/health/performance', async (_req, res) => {
  * Queue management endpoints (development only)
  */
 if (process.env.NODE_ENV === 'development') {
-  
   /**
    * Emergency purge all queues (development only)
    */
   router.post('/health/queues/purge', async (_req, res) => {
     try {
       logger.warn('[Health] Emergency queue purge requested');
-      
+
       await queueOrchestrator.emergencyPurgeAllQueues();
-      
+
       res.json({
         message: 'All queues purged successfully',
         timestamp: new Date().toISOString(),
-        warning: 'This operation is only available in development'
+        warning: 'This operation is only available in development',
       });
-
     } catch (error) {
       logger.error('[Health] Failed to purge queues:', error);
       res.status(500).json({
-        error: error instanceof Error ? error.message : 'Failed to purge queues'
+        error: error instanceof Error ? error.message : 'Failed to purge queues',
       });
     }
   });
@@ -211,15 +203,14 @@ if (process.env.NODE_ENV === 'development') {
     try {
       const testFileId = 'test-' + Date.now();
       const testUserId = 'test-user';
-      
+
       logger.info('[Health] Testing queue functionality');
-      
+
       // Test file processing queue
-      const msgId = await queueOrchestrator.enqueueFileProcessing(
-        testFileId,
-        testUserId,
-        { priority: 'low', test: true }
-      );
+      const msgId = await queueOrchestrator.enqueueFileProcessing(testFileId, testUserId, {
+        priority: 'low',
+        test: true,
+      });
 
       // Test notification queue
       await queueOrchestrator.enqueueNotification(
@@ -235,13 +226,12 @@ if (process.env.NODE_ENV === 'development') {
         message: 'Test jobs enqueued successfully',
         test_file_message_id: msgId,
         timestamp: new Date().toISOString(),
-        warning: 'Test jobs may be processed by workers'
+        warning: 'Test jobs may be processed by workers',
       });
-
     } catch (error) {
       logger.error('[Health] Failed to test queues:', error);
       res.status(500).json({
-        error: error instanceof Error ? error.message : 'Failed to test queues'
+        error: error instanceof Error ? error.message : 'Failed to test queues',
       });
     }
   });

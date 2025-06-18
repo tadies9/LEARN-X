@@ -36,7 +36,7 @@ export class FileProcessingQueue {
     totalProcessed: 0,
     totalFailed: 0,
     averageProcessingTime: 0,
-    queueDepth: 0
+    queueDepth: 0,
   };
 
   constructor() {
@@ -50,10 +50,10 @@ export class FileProcessingQueue {
     try {
       // Ensure queue exists with proper configuration
       await this.client.createQueue(this.queueName);
-      
+
       this.isProcessing = true;
       this.processWithLongPolling();
-      
+
       logger.info('[FileProcessingQueue] Started with long-polling optimization');
     } catch (error) {
       logger.error('[FileProcessingQueue] Failed to start:', error);
@@ -65,8 +65,8 @@ export class FileProcessingQueue {
    * Enqueues a file for processing
    */
   async enqueue(
-    fileId: string, 
-    userId: string, 
+    fileId: string,
+    userId: string,
     options?: FileProcessingPayload['processingOptions']
   ): Promise<bigint> {
     try {
@@ -75,15 +75,15 @@ export class FileProcessingQueue {
         userId,
         processingOptions: options || {},
         queuedAt: new Date().toISOString(),
-        retryCount: 0
+        retryCount: 0,
       };
 
       const msgId = await this.client.send(this.queueName, payload);
-      
+
       logger.info(`[FileProcessingQueue] Enqueued file processing: ${fileId}`, {
         msgId: msgId.toString(),
         userId,
-        priority: options?.priority || mapPriorityToInteger('medium')
+        priority: options?.priority || mapPriorityToInteger('medium'),
       });
 
       return msgId;
@@ -97,21 +97,25 @@ export class FileProcessingQueue {
    * Enqueues multiple files for batch processing
    */
   async enqueueBatch(
-    files: Array<{ fileId: string; userId: string; options?: FileProcessingPayload['processingOptions'] }>
+    files: Array<{
+      fileId: string;
+      userId: string;
+      options?: FileProcessingPayload['processingOptions'];
+    }>
   ): Promise<bigint[]> {
     try {
-      const payloads: FileProcessingPayload[] = files.map(file => ({
+      const payloads: FileProcessingPayload[] = files.map((file) => ({
         fileId: file.fileId,
         userId: file.userId,
         processingOptions: file.options || {},
         queuedAt: new Date().toISOString(),
-        retryCount: 0
+        retryCount: 0,
       }));
 
       const msgIds = await this.client.sendBatch(this.queueName, payloads);
-      
+
       logger.info(`[FileProcessingQueue] Enqueued batch: ${files.length} files`, {
-        msgIds: msgIds.map(id => id.toString())
+        msgIds: msgIds.map((id) => id.toString()),
       });
 
       return msgIds;
@@ -127,7 +131,7 @@ export class FileProcessingQueue {
   async getMetrics(): Promise<FileProcessingMetrics> {
     try {
       const queueMetrics = await this.client.getQueueMetrics(this.queueName);
-      
+
       if (queueMetrics) {
         this.metrics.queueDepth = queueMetrics.queue_length;
       }
@@ -155,17 +159,16 @@ export class FileProcessingQueue {
       try {
         // Use long-polling to reduce database load
         const jobs = await this.client.readWithPoll(this.queueName, 30);
-        
+
         if (jobs.length > 0) {
           await this.processBatch(jobs as QueueJob<FileProcessingPayload>[]);
         }
-        
+
         // Small delay between poll cycles to prevent overwhelming
         await this.sleep(1000);
-        
       } catch (error) {
         logger.error('[FileProcessingQueue] Processing error:', error);
-        
+
         // Longer delay on error to allow recovery
         await this.sleep(5000);
       }
@@ -178,17 +181,15 @@ export class FileProcessingQueue {
   private async processBatch(jobs: QueueJob<FileProcessingPayload>[]): Promise<void> {
     logger.info(`[FileProcessingQueue] Processing batch: ${jobs.length} jobs`);
 
-    const results = await Promise.allSettled(
-      jobs.map(job => this.processJob(job))
-    );
+    const results = await Promise.allSettled(jobs.map((job) => this.processJob(job)));
 
     // Update metrics
-    const successful = results.filter(r => r.status === 'fulfilled').length;
-    const failed = results.filter(r => r.status === 'rejected').length;
-    
+    const successful = results.filter((r) => r.status === 'fulfilled').length;
+    const failed = results.filter((r) => r.status === 'rejected').length;
+
     this.metrics.totalProcessed += successful;
     this.metrics.totalFailed += failed;
-    
+
     logger.info(`[FileProcessingQueue] Batch complete: ${successful} success, ${failed} failed`);
   }
 
@@ -203,7 +204,7 @@ export class FileProcessingQueue {
       logger.info(`[FileProcessingQueue] Processing file: ${fileId}`, {
         msgId: job.msg_id.toString(),
         userId,
-        attempt: job.read_ct
+        attempt: job.read_ct,
       });
 
       // Mark job as started in enhanced job tracking
@@ -212,54 +213,53 @@ export class FileProcessingQueue {
       // Import dynamically to avoid circular dependencies
       const { FileProcessor } = await import('../processing/FileProcessor');
       const processor = new FileProcessor();
-      
+
       // Process the file
       await processor.processJob(job);
-      
+
       // Delete message on success
       await this.client.delete(this.queueName, job.msg_id);
-      
+
       // Mark job as completed in enhanced job tracking
       const processingTime = Date.now() - startTime;
       await this.markJobCompleted(job.msg_id, processingTime);
-      
+
       // Update metrics
       this.updateAverageProcessingTime(processingTime);
-      
+
       logger.info(`[FileProcessingQueue] File processed successfully: ${fileId}`, {
         processingTimeMs: processingTime,
-        msgId: job.msg_id.toString()
+        msgId: job.msg_id.toString(),
       });
-      
     } catch (error) {
       logger.error(`[FileProcessingQueue] Failed to process file ${fileId}:`, error);
-      
+
       // Check if we should retry or archive
       const shouldRetry = this.shouldRetryJob(job, error);
-      
+
       if (shouldRetry) {
         // Let the message become visible again for retry
         logger.warn(`[FileProcessingQueue] Job will retry: ${fileId}`, {
           attempt: job.read_ct,
-          msgId: job.msg_id.toString()
+          msgId: job.msg_id.toString(),
         });
       } else {
         // Mark job as failed in enhanced job tracking
         await this.markJobFailed(
-          job.msg_id, 
+          job.msg_id,
           error instanceof Error ? error.message : 'Unknown error'
         );
-        
+
         // Archive the failed job for analysis
         await this.client.archive(this.queueName, job.msg_id);
-        
+
         logger.error(`[FileProcessingQueue] Job archived after failure: ${fileId}`, {
           attempt: job.read_ct,
           msgId: job.msg_id.toString(),
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
-      
+
       throw error;
     }
   }
@@ -270,7 +270,7 @@ export class FileProcessingQueue {
   private shouldRetryJob(job: QueueJob<FileProcessingPayload>, error: any): boolean {
     const maxRetries = 3;
     const isRetryableError = this.isRetryableError(error);
-    
+
     return job.read_ct < maxRetries && isRetryableError;
   }
 
@@ -279,7 +279,7 @@ export class FileProcessingQueue {
    */
   private isRetryableError(error: any): boolean {
     const errorMessage = error instanceof Error ? error.message.toLowerCase() : '';
-    
+
     // Retryable errors (transient issues)
     const retryablePatterns = [
       'timeout',
@@ -287,28 +287,28 @@ export class FileProcessingQueue {
       'network',
       'rate limit',
       'temporarily unavailable',
-      'service unavailable'
+      'service unavailable',
     ];
-    
+
     // Non-retryable errors (permanent issues)
     const nonRetryablePatterns = [
       'file not found',
       'access denied',
       'invalid file format',
       'corrupted file',
-      'unsupported file type'
+      'unsupported file type',
     ];
-    
+
     // Check for non-retryable errors first
-    if (nonRetryablePatterns.some(pattern => errorMessage.includes(pattern))) {
+    if (nonRetryablePatterns.some((pattern) => errorMessage.includes(pattern))) {
       return false;
     }
-    
+
     // Check for retryable errors
-    if (retryablePatterns.some(pattern => errorMessage.includes(pattern))) {
+    if (retryablePatterns.some((pattern) => errorMessage.includes(pattern))) {
       return true;
     }
-    
+
     // Default to retryable for unknown errors
     return true;
   }
@@ -321,7 +321,7 @@ export class FileProcessingQueue {
     if (totalJobs === 0) {
       this.metrics.averageProcessingTime = newTime;
     } else {
-      this.metrics.averageProcessingTime = 
+      this.metrics.averageProcessingTime =
         (this.metrics.averageProcessingTime * (totalJobs - 1) + newTime) / totalJobs;
     }
   }
@@ -330,7 +330,7 @@ export class FileProcessingQueue {
    * Sleep utility for delays
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**
@@ -341,7 +341,7 @@ export class FileProcessingQueue {
       const workerId = process.env.WORKER_ID || `enhanced-pgmq-${process.pid}`;
       const { error } = await supabase.rpc('mark_enhanced_job_started', {
         p_message_id: messageId,
-        p_worker_id: workerId
+        p_worker_id: workerId,
       });
 
       if (error) {
@@ -359,7 +359,7 @@ export class FileProcessingQueue {
     try {
       const { error } = await supabase.rpc('mark_enhanced_job_completed', {
         p_message_id: messageId,
-        p_processing_time_ms: processingTimeMs
+        p_processing_time_ms: processingTimeMs,
       });
 
       if (error) {
@@ -378,7 +378,7 @@ export class FileProcessingQueue {
       const { error } = await supabase.rpc('mark_enhanced_job_failed', {
         p_message_id: messageId,
         p_error_message: errorMessage,
-        p_should_retry: true
+        p_should_retry: true,
       });
 
       if (error) {

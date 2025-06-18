@@ -125,7 +125,13 @@ router.post('/search/module/:moduleId', authenticateUser, async (req: Request, r
       .eq('id', moduleId)
       .single();
 
-    if (!module || (module as any).courses.user_id !== userId) {
+    interface ModuleWithCourse {
+      id: string;
+      courses: {
+        user_id: string;
+      };
+    }
+    if (!module || (module as unknown as ModuleWithCourse).courses.user_id !== userId) {
       res.status(403).json({
         success: false,
         error: 'Access denied to this module',
@@ -251,7 +257,7 @@ router.get('/search/filters', authenticateUser, async (req: Request, res: Respon
       success: true,
       data: {
         courses: courses.data || [],
-        fileTypes: fileTypes.data?.map((ft: any) => ft.mime_type) || [],
+        fileTypes: fileTypes.data?.map((ft: { mime_type: string }) => ft.mime_type) || [],
         contentTypes: contentTypes.data || [],
         importance: [
           { value: 'high', label: 'High Importance' },
@@ -340,7 +346,7 @@ if (process.env.NODE_ENV === 'development') {
         success: true,
         data: {
           courses: courses.data || [],
-          fileTypes: fileTypes.data?.map((ft: any) => ft.mime_type) || [],
+          fileTypes: fileTypes.data?.map((ft: { mime_type: string }) => ft.mime_type) || [],
           contentTypes: contentTypes.data || [],
           importance: [
             { value: 'high', label: 'High Importance' },

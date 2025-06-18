@@ -218,13 +218,15 @@ export class PGMQService {
   /**
    * Get queue health metrics
    */
-  async getQueueHealth(): Promise<Array<{
-    queue_name: string;
-    total_messages: number;
-    oldest_msg_age_sec?: number;
-    newest_msg_age_sec?: number;
-    total_messages_sent: number;
-  }>> {
+  async getQueueHealth(): Promise<
+    Array<{
+      queue_name: string;
+      total_messages: number;
+      oldest_msg_age_sec?: number;
+      newest_msg_age_sec?: number;
+      total_messages_sent: number;
+    }>
+  > {
     try {
       // Use the new wrapper function instead of direct view access
       const { data, error } = await supabase.rpc('get_queue_metrics');
@@ -362,7 +364,7 @@ export class PGMQService {
     }
   }
 
-  private async markJobCompleted(jobId: string, result?: any): Promise<void> {
+  private async markJobCompleted(jobId: string, result?: Record<string, unknown>): Promise<void> {
     const { error } = await supabase.rpc('mark_job_completed', {
       p_job_id: jobId,
       p_result: result,

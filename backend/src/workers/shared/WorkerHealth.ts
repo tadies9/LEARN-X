@@ -34,7 +34,7 @@ export class WorkerHealth {
    */
   async start(): Promise<void> {
     this.isMonitoring = true;
-    
+
     // Health check every 30 seconds
     this.healthCheckInterval = setInterval(() => {
       this.performHealthCheck();
@@ -52,7 +52,7 @@ export class WorkerHealth {
    */
   async stop(): Promise<void> {
     this.isMonitoring = false;
-    
+
     if (this.healthCheckInterval) {
       clearInterval(this.healthCheckInterval);
     }
@@ -89,7 +89,7 @@ export class WorkerHealth {
       memoryUsage,
       lastHealthCheck: new Date().toISOString(),
       errorCount: this.errorCount,
-      processedJobs: this.processedJobs
+      processedJobs: this.processedJobs,
     };
   }
 
@@ -100,14 +100,14 @@ export class WorkerHealth {
     if (!this.isMonitoring) return;
 
     const metrics = this.getMetrics();
-    
+
     // Log health status
     logger.info(`[WorkerHealth] Health check: ${this.workerId}`, {
       status: metrics.status,
       uptime: Math.round(metrics.uptime / 1000) + 's',
       memoryMB: Math.round(metrics.memoryUsage.heapUsed / 1024 / 1024),
       processedJobs: metrics.processedJobs,
-      errorCount: metrics.errorCount
+      errorCount: metrics.errorCount,
     });
 
     // Alert on unhealthy status

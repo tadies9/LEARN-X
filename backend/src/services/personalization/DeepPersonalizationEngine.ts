@@ -373,11 +373,14 @@ Create content that makes the learner think "This was written exactly for me" wi
       };
     }
 
-    const levelMap: Record<string, {
-      conceptualDepth: 'surface' | 'moderate' | 'deep';
-      technicalLanguage: 'minimal' | 'balanced' | 'extensive';
-      exampleSophistication: 'basic' | 'intermediate' | 'advanced';
-    }> = {
+    const levelMap: Record<
+      string,
+      {
+        conceptualDepth: 'surface' | 'moderate' | 'deep';
+        technicalLanguage: 'minimal' | 'balanced' | 'extensive';
+        exampleSophistication: 'basic' | 'intermediate' | 'advanced';
+      }
+    > = {
       beginner: {
         conceptualDepth: 'surface',
         technicalLanguage: 'minimal',

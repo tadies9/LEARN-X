@@ -16,6 +16,12 @@ import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism';
 import { Components } from 'react-markdown';
 import { ReactNode } from 'react';
 
+interface CodeComponentProps extends React.HTMLAttributes<HTMLElement> {
+  node?: import('hast').Element;
+  className?: string;
+  children?: ReactNode;
+}
+
 interface StudyChatProps {
   fileId: string;
   currentPage?: number;
@@ -118,17 +124,16 @@ export function StudyChat({ fileId, currentPage, selectedText, userPersona }: St
             <div className="prose prose-sm max-w-none">
               <ReactMarkdown
                 components={{
-                  code: (props: any) => {
-                    const { node, className, children, ...rest } = props;
-                    const inline = node?.position === undefined;
+                  code: ({ node, className, children, ...props }: CodeComponentProps) => {
+                    const inline = !className?.includes('language-');
                     const match = /language-(\w+)/.exec(className || '');
                     return !inline && match ? (
                       <div className="relative">
                         <SyntaxHighlighter
-                          style={oneDark as { [key: string]: React.CSSProperties }}
+                          style={oneDark}
                           language={match[1]}
                           PreTag="div"
-                          {...rest}
+                          customStyle={{}}
                         >
                           {String(children).replace(/\n$/, '')}
                         </SyntaxHighlighter>
@@ -142,7 +147,7 @@ export function StudyChat({ fileId, currentPage, selectedText, userPersona }: St
                         </Button>
                       </div>
                     ) : (
-                      <code className={className} {...rest}>
+                      <code className={className} {...props}>
                         {children}
                       </code>
                     );

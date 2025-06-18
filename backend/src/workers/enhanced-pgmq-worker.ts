@@ -35,7 +35,7 @@ class EnhancedPGMQWorker {
   async start(): Promise<void> {
     try {
       logger.info('[Enhanced PGMQ Worker] Starting all queue processors...');
-      
+
       this.isRunning = true;
 
       // Start all services in parallel
@@ -43,14 +43,13 @@ class EnhancedPGMQWorker {
         this.health.start(),
         this.fileQueue.start(),
         this.embeddingQueue.start(),
-        this.notificationQueue.start()
+        this.notificationQueue.start(),
       ]);
 
       logger.info('[Enhanced PGMQ Worker] All queue processors started successfully');
 
       // Setup graceful shutdown handlers
       this.setupShutdownHandlers();
-
     } catch (error) {
       logger.error('[Enhanced PGMQ Worker] Failed to start:', error);
       await this.stop();
@@ -74,11 +73,9 @@ class EnhancedPGMQWorker {
           this.fileQueue.stop(),
           this.embeddingQueue.stop(),
           this.notificationQueue.stop(),
-          this.health.stop()
+          this.health.stop(),
         ]),
-        new Promise((_, reject) => 
-          setTimeout(() => reject(new Error('Shutdown timeout')), 10000)
-        )
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Shutdown timeout')), 10000)),
       ]);
 
       logger.info('[Enhanced PGMQ Worker] Graceful shutdown completed');
@@ -121,13 +118,12 @@ class EnhancedPGMQWorker {
  */
 async function main(): Promise<void> {
   const worker = new EnhancedPGMQWorker();
-  
+
   try {
     await worker.start();
-    
+
     // Keep the process alive
     process.stdin.resume();
-    
   } catch (error) {
     logger.error('[Enhanced PGMQ Worker] Startup failed:', error);
     process.exit(1);

@@ -43,11 +43,11 @@ app.use('/api', rateLimiter);
 
 // Health check
 app.get('/health', (_, res) => {
-  res.json({ 
-    status: 'ok', 
+  res.json({
+    status: 'ok',
     timestamp: new Date().toISOString(),
     service: 'api-server',
-    workers: 'external'
+    workers: 'external',
   });
 });
 
@@ -55,21 +55,21 @@ app.get('/health', (_, res) => {
 app.get('/health/detailed', async (_req, res) => {
   try {
     const { enhancedPGMQClient } = await import('./services/queue/EnhancedPGMQClient');
-    
+
     const queueMetrics = await enhancedPGMQClient.getAllQueueMetrics();
-    
+
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
       service: 'api-server',
       queues: queueMetrics,
-      workers: 'external'
+      workers: 'external',
     });
   } catch (error) {
     res.status(503).json({
       status: 'degraded',
       error: 'Queue metrics unavailable',
-      service: 'api-server'
+      service: 'api-server',
     });
   }
 });

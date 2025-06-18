@@ -16,6 +16,7 @@ interface FileMetadata {
   documentType?: string;
   academicLevel?: string;
   contentDistribution?: Record<string, number>;
+  [key: string]: unknown;
 }
 
 export class EnhancedFileProcessingService {
@@ -53,7 +54,9 @@ export class EnhancedFileProcessingService {
 
       // Sanitize Unicode characters to prevent database insertion errors
       const sanitizedText = this.sanitizeUnicodeText(pdfData.text);
-      logger.info(`[FileProcessing] Text sanitized, final length: ${sanitizedText.length} characters`);
+      logger.info(
+        `[FileProcessing] Text sanitized, final length: ${sanitizedText.length} characters`
+      );
 
       return sanitizedText;
     } catch (error) {
@@ -90,7 +93,9 @@ export class EnhancedFileProcessingService {
 
       // Sanitize Unicode characters to prevent database insertion errors
       const sanitizedText = this.sanitizeUnicodeText(result.value);
-      logger.info(`[FileProcessing] Text sanitized, final length: ${sanitizedText.length} characters`);
+      logger.info(
+        `[FileProcessing] Text sanitized, final length: ${sanitizedText.length} characters`
+      );
 
       return sanitizedText;
     } catch (error) {
@@ -135,7 +140,7 @@ export class EnhancedFileProcessingService {
     try {
       // Start with basic null byte removal
       let sanitized = text.replace(/\0/g, '');
-      
+
       // ULTRA AGGRESSIVE: Remove ALL backslashes that aren't standard escapes
       // This will catch any backslash-u sequences that PostgreSQL might interpret
       sanitized = sanitized.replace(/\\/g, (match, offset, string) => {
@@ -147,22 +152,24 @@ export class EnhancedFileProcessingService {
         // Remove any other backslash sequences entirely
         return '';
       });
-      
+
       // Remove other problematic control characters (using character class ranges)
-      sanitized = sanitized.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '');
-      
+      // eslint-disable-next-line no-control-regex
+      sanitized = sanitized.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '');
+
       // Replace multiple whitespace with single space
       sanitized = sanitized.replace(/\s+/g, ' ');
-      
+
       // Normalize Unicode characters to canonical form
       sanitized = sanitized.normalize('NFC');
-      
+
       // Remove any remaining null bytes or non-printable characters
+      // eslint-disable-next-line no-control-regex
       sanitized = sanitized.replace(/[\u0000-\u001F\u007F-\u009F]/g, '');
-      
+
       // Final safety check - replace any remaining problematic sequences
       sanitized = sanitized.replace(/[\uFFFD]/g, ''); // Remove replacement characters
-      
+
       // Extra safety: JSON stringify and parse to ensure no problematic sequences
       try {
         const jsonTest = JSON.stringify(sanitized);
@@ -171,9 +178,11 @@ export class EnhancedFileProcessingService {
         logger.warn('[FileProcessing] JSON test failed, using fallback sanitization');
         sanitized = sanitized.replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, ' ');
       }
-      
-      logger.info(`[FileProcessing] Text sanitization completed. Original length: ${text.length}, Sanitized length: ${sanitized.length}`);
-      
+
+      logger.info(
+        `[FileProcessing] Text sanitization completed. Original length: ${text.length}, Sanitized length: ${sanitized.length}`
+      );
+
       return sanitized.trim();
     } catch (error) {
       logger.error('[FileProcessing] Error during text sanitization:', error);
@@ -207,13 +216,19 @@ export class EnhancedFileProcessingService {
     return metadata;
   }
 
-  async chunkContent(content: string, fileName: string, options?: ChunkOptions): Promise<Array<{
-    content: string;
-    metadata: Record<string, unknown>;
-    chunk_metadata: Record<string, unknown>;
-    chunk_type: string;
-    hierarchy_level: number;
-  }>> {
+  async chunkContent(
+    content: string,
+    fileName: string,
+    options?: ChunkOptions
+  ): Promise<
+    Array<{
+      content: string;
+      metadata: Record<string, unknown>;
+      chunk_metadata: Record<string, unknown>;
+      chunk_type: string;
+      hierarchy_level: number;
+    }>
+  > {
     logger.info('[FileProcessing] Starting semantic chunking');
 
     // Analyze document structure
@@ -322,13 +337,18 @@ export class EnhancedFileProcessingService {
     return this.extractMetadata(content, fileName);
   }
 
-  async chunkContentLegacy(content: string, chunkSize: number = 1000): Promise<Array<{
-    content: string;
-    metadata: {
-      startIndex: number;
-      endIndex: number;
-    };
-  }>> {
+  async chunkContentLegacy(
+    content: string,
+    chunkSize: number = 1000
+  ): Promise<
+    Array<{
+      content: string;
+      metadata: {
+        startIndex: number;
+        endIndex: number;
+      };
+    }>
+  > {
     // Use simple chunking for backward compatibility
     const chunks: Array<{
       content: string;

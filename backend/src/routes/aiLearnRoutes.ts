@@ -12,6 +12,8 @@ import { redisClient } from '../config/redis';
 interface AuthenticatedRequest extends Request {
   user: {
     id: string;
+    email: string;
+    role?: string;
   };
 }
 
@@ -27,12 +29,6 @@ interface FileChunk {
   chunk_index: number;
   content_type?: string;
   importance?: string;
-}
-
-interface CourseFile {
-  id: string;
-  filename: string;
-  chunks?: FileChunk[];
 }
 
 const router = Router();
@@ -189,10 +185,12 @@ Return a JSON object with a "topics" array containing objects with this structur
 
         // Ensure subtopics have proper IDs
         if (topic.subtopics) {
-          topic.subtopics = topic.subtopics.map((st: { id?: string; type: string; [key: string]: unknown }) => ({
-            ...st,
-            id: st.id || `${st.type}-${i + 1}`,
-          }));
+          topic.subtopics = topic.subtopics.map(
+            (st: { id?: string; type: string; [key: string]: unknown }) => ({
+              ...st,
+              id: st.id || `${st.type}-${i + 1}`,
+            })
+          );
         }
 
         sendSSE(res, 'message', { type: 'topic', data: topic });

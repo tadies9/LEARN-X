@@ -109,16 +109,14 @@ export class VectorEmbeddingService {
     // Process batches with simple concurrency control
     for (let i = 0; i < batches.length; i += this.maxConcurrent) {
       const concurrentBatches = batches.slice(i, i + this.maxConcurrent);
-      
+
       const promises = concurrentBatches.map(async (batch, idx) => {
         try {
           const texts = batch.map((chunk) => chunk.content);
           const embeddings = await this.generateEmbeddings(texts, userId);
           await this.storeEmbeddings(batch, embeddings);
 
-          logger.info(
-            `Processed batch ${i + idx + 1}/${batches.length}`
-          );
+          logger.info(`Processed batch ${i + idx + 1}/${batches.length}`);
         } catch (error) {
           logger.error(`Failed to process batch ${i + idx + 1}:`, error);
           throw error;

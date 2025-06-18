@@ -225,16 +225,16 @@ export class FileService {
     // Queue file for processing using Enhanced PGMQ
     try {
       const msgId = await queueOrchestrator.enqueueFileProcessing(
-        newFile.id, 
-        userId, 
-        data.processingOptions
+        newFile.id,
+        userId,
+        data.processingOptions as Record<string, unknown> | undefined
       );
       console.log('✅ File queued for processing:', newFile.id, 'Message ID:', msgId);
-      logger.info('File processing enqueued', { 
-        fileId: newFile.id, 
-        msgId, 
+      logger.info('File processing enqueued', {
+        fileId: newFile.id,
+        msgId,
         fileName: file.originalname,
-        options: data.processingOptions 
+        options: data.processingOptions,
       });
     } catch (queueError) {
       console.error('❌ Failed to queue file for processing:', queueError);

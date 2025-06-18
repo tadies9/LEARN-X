@@ -2,7 +2,8 @@ import { supabase } from '../../config/supabase';
 import { logger } from '../../utils/logger';
 import { promptTemplates } from '../ai/PromptTemplates';
 import { openAIService } from '../openai/OpenAIService';
-import { UserPersona, PersonaRow, UserPersonaRow, ContentFeedbackParams } from '../../types';
+import { UserPersona, PersonaRow, ContentFeedbackParams } from '../../types';
+import { UserPersonaRow } from '../../types/personalization';
 
 export interface PersonalizationParams {
   userId: string;
@@ -55,44 +56,56 @@ export class PersonalizationEngine {
     return {
       id: data.id,
       userId: data.user_id,
-      
+
       // Professional Context from JSONB
       currentRole: professional.role || 'Student',
       industry: professional.industry || 'General',
       experienceYears: professional.experienceYears || 0,
       careerGoals: professional.careerAspirations ? [professional.careerAspirations] : [],
-      technicalLevel: professional.technicalLevel || 'beginner',
-      
+      technicalLevel:
+        (professional.technicalLevel as 'beginner' | 'intermediate' | 'advanced' | 'expert') ||
+        'beginner',
+
       // Personal Interests from JSONB
       primaryInterests: interests.primary || [],
       secondaryInterests: interests.secondary || [],
-      hobbies: interests.hobbies || [],
-      
+      hobbies: interests.secondary || [],
+
       // Learning Style from JSONB
-      learningStyle: learningStyle.primary || 'visual',
+      learningStyle:
+        (learningStyle.primary as 'visual' | 'auditory' | 'reading' | 'kinesthetic' | 'mixed') ||
+        'visual',
       learningGoals: interests.learningTopics || [],
       preferredContentTypes: [],
       dailyLearningTime: 30, // Default as not in current structure
       preferredSessionLength: 15, // Default as not in current structure
-      
+
       // Content Preferences from JSONB
-      contentDensity: contentPrefs.density === 'balanced' ? 'comprehensive' : (contentPrefs.density || 'concise'),
+      contentDensity:
+        ((contentPrefs.density === 'balanced' ? 'comprehensive' : contentPrefs.density) as
+          | 'concise'
+          | 'comprehensive') || 'concise',
       explanationDepth: this.mapDetailTolerance(contentPrefs.detailTolerance),
       exampleFrequency: this.mapExampleFrequency(contentPrefs.examplesPerConcept),
       visualPreference: 'moderate', // Not in current structure, using default
-      
+
       // Communication Style from JSONB
-      communicationTone: communication.style === 'professional_friendly' ? 'friendly' : 
-                        (communication.style || 'friendly'),
+      communicationTone:
+        ((communication.style === 'professional_friendly' ? 'friendly' : communication.style) as
+          | 'formal'
+          | 'professional'
+          | 'friendly'
+          | 'casual'
+          | 'academic') || 'friendly',
       formalityLevel: this.mapTechnicalComfortToFormality(communication.technicalComfort),
-      encouragementLevel: communication.encouragementLevel || 'moderate',
+      encouragementLevel:
+        (communication.encouragementLevel as 'minimal' | 'moderate' | 'high') || 'moderate',
       humorAppreciation: communication.humorAppropriate ? 'moderate' : 'none',
-      
+
       createdAt: new Date(data.created_at),
       updatedAt: new Date(data.updated_at),
     };
   }
-
 
   private mapToUserPersona(data: UserPersonaRow): UserPersona {
     return {
@@ -318,10 +331,14 @@ export class PersonalizationEngine {
   private mapDetailTolerance(value?: string): 'surface' | 'moderate' | 'deep' {
     if (!value) return 'moderate';
     switch (value) {
-      case 'minimal': return 'surface';
-      case 'moderate': return 'moderate';
-      case 'extensive': return 'deep';
-      default: return 'moderate';
+      case 'minimal':
+        return 'surface';
+      case 'moderate':
+        return 'moderate';
+      case 'extensive':
+        return 'deep';
+      default:
+        return 'moderate';
     }
   }
 
@@ -348,7 +365,9 @@ export class PersonalizationEngine {
     return 'intermediate';
   }
 
-  private mapLearningStyle(value?: string): 'visual' | 'auditory' | 'reading' | 'kinesthetic' | 'mixed' {
+  private mapLearningStyle(
+    value?: string
+  ): 'visual' | 'auditory' | 'reading' | 'kinesthetic' | 'mixed' {
     if (!value) return 'mixed';
     const style = value.toLowerCase();
     if (['visual', 'auditory', 'reading', 'kinesthetic', 'mixed'].includes(style)) {
@@ -365,75 +384,112 @@ export class PersonalizationEngine {
   private mapExplanationDepth(value?: string): 'surface' | 'moderate' | 'deep' {
     if (!value) return 'moderate';
     switch (value.toLowerCase()) {
-      case 'surface': return 'surface';
-      case 'moderate': return 'moderate';
-      case 'deep': return 'deep';
-      default: return 'moderate';
+      case 'surface':
+        return 'surface';
+      case 'moderate':
+        return 'moderate';
+      case 'deep':
+        return 'deep';
+      default:
+        return 'moderate';
     }
   }
 
   private mapExampleFrequencyFromString(value?: string): 'low' | 'medium' | 'high' {
     if (!value) return 'medium';
     switch (value.toLowerCase()) {
-      case 'low': return 'low';
-      case 'medium': return 'medium';
-      case 'high': return 'high';
-      default: return 'medium';
+      case 'low':
+        return 'low';
+      case 'medium':
+        return 'medium';
+      case 'high':
+        return 'high';
+      default:
+        return 'medium';
     }
   }
 
-  private mapCommunicationTone(value?: string): 'casual' | 'academic' | 'formal' | 'friendly' | 'professional' {
+  private mapCommunicationTone(
+    value?: string
+  ): 'casual' | 'academic' | 'formal' | 'friendly' | 'professional' {
     if (!value) return 'friendly';
     switch (value.toLowerCase()) {
-      case 'casual': return 'casual';
-      case 'academic': return 'academic';
-      case 'formal': return 'formal';
-      case 'friendly': return 'friendly';
-      case 'professional': return 'professional';
-      default: return 'friendly';
+      case 'casual':
+        return 'casual';
+      case 'academic':
+        return 'academic';
+      case 'formal':
+        return 'formal';
+      case 'friendly':
+        return 'friendly';
+      case 'professional':
+        return 'professional';
+      default:
+        return 'friendly';
     }
   }
 
-  private mapFormalityLevel(value?: string): 'formal' | 'neutral' | 'informal' | 'very_formal' | 'very_informal' {
+  private mapFormalityLevel(
+    value?: string
+  ): 'formal' | 'neutral' | 'informal' | 'very_formal' | 'very_informal' {
     if (!value) return 'neutral';
     switch (value.toLowerCase()) {
-      case 'formal': return 'formal';
-      case 'neutral': return 'neutral';
-      case 'informal': return 'informal';
-      case 'very_formal': return 'very_formal';
-      case 'very_informal': return 'very_informal';
-      default: return 'neutral';
+      case 'formal':
+        return 'formal';
+      case 'neutral':
+        return 'neutral';
+      case 'informal':
+        return 'informal';
+      case 'very_formal':
+        return 'very_formal';
+      case 'very_informal':
+        return 'very_informal';
+      default:
+        return 'neutral';
     }
   }
 
   private mapEncouragementLevel(value?: string): 'minimal' | 'moderate' | 'high' {
     if (!value) return 'moderate';
     switch (value.toLowerCase()) {
-      case 'minimal': return 'minimal';
-      case 'moderate': return 'moderate';
-      case 'high': return 'high';
-      default: return 'moderate';
+      case 'minimal':
+        return 'minimal';
+      case 'moderate':
+        return 'moderate';
+      case 'high':
+        return 'high';
+      default:
+        return 'moderate';
     }
   }
 
   private mapHumorAppreciation(value?: string): 'moderate' | 'high' | 'none' | 'light' {
     if (!value) return 'none';
     switch (value.toLowerCase()) {
-      case 'moderate': return 'moderate';
-      case 'high': return 'high';
-      case 'none': return 'none';
-      case 'light': return 'light';
-      default: return 'none';
+      case 'moderate':
+        return 'moderate';
+      case 'high':
+        return 'high';
+      case 'none':
+        return 'none';
+      case 'light':
+        return 'light';
+      default:
+        return 'none';
     }
   }
 
   private mapVisualPreference(value?: string): 'minimal' | 'moderate' | 'heavy' {
     if (!value) return 'moderate';
     switch (value.toLowerCase()) {
-      case 'minimal': return 'minimal';
-      case 'moderate': return 'moderate';
-      case 'heavy': return 'heavy';
-      default: return 'moderate';
+      case 'minimal':
+        return 'minimal';
+      case 'moderate':
+        return 'moderate';
+      case 'heavy':
+        return 'heavy';
+      default:
+        return 'moderate';
     }
   }
 }

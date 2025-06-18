@@ -24,7 +24,11 @@ export class ResultProcessor {
     }
 
     // 3. Re-rank based on query-specific relevance using AccuracyCalculator
-    processedResults = await this.calculator.calculateRelevanceScores(processedResults, query, intent);
+    processedResults = await this.calculator.calculateRelevanceScores(
+      processedResults,
+      query,
+      intent
+    );
 
     // 4. Ensure diversity for broader queries
     if (intent.type === 'general' || intent.type === 'comparison') {
@@ -122,20 +126,20 @@ export class ResultProcessor {
     }
 
     const avgScore = results.reduce((sum, r) => sum + r.score, 0) / results.length;
-    const topScore = Math.max(...results.map(r => r.score));
-    const intentMatches = results.filter(r => r.intentMatch).length;
-    const conceptMatches = results.filter(r => r.conceptMatches && r.conceptMatches > 0).length;
+    const topScore = Math.max(...results.map((r) => r.score));
+    const intentMatches = results.filter((r) => r.intentMatch).length;
+    const conceptMatches = results.filter((r) => r.conceptMatches && r.conceptMatches > 0).length;
 
     // Content type distribution
     const contentTypeDistribution: Record<string, number> = {};
-    results.forEach(r => {
+    results.forEach((r) => {
       const type = r.metadata.contentType || 'unknown';
       contentTypeDistribution[type] = (contentTypeDistribution[type] || 0) + 1;
     });
 
     // Section distribution
     const sectionDistribution: Record<string, number> = {};
-    results.forEach(r => {
+    results.forEach((r) => {
       const section = r.metadata.sectionTitle || 'unknown';
       sectionDistribution[section] = (sectionDistribution[section] || 0) + 1;
     });
@@ -154,7 +158,7 @@ export class ResultProcessor {
    * Filter results by minimum quality threshold
    */
   filterByQualityThreshold(results: any[], minScore: number = 0.3): any[] {
-    return results.filter(result => result.score >= minScore);
+    return results.filter((result) => result.score >= minScore);
   }
 
   /**
@@ -162,27 +166,27 @@ export class ResultProcessor {
    */
   removeDuplicates(results: any[], similarityThreshold: number = 0.9): any[] {
     const filtered: any[] = [];
-    
+
     for (const result of results) {
       let isDuplicate = false;
-      
+
       for (const existing of filtered) {
         const similarity = this.calculator.calculateTextSimilarity(
           result.content,
           existing.content
         );
-        
+
         if (similarity >= similarityThreshold) {
           isDuplicate = true;
           break;
         }
       }
-      
+
       if (!isDuplicate) {
         filtered.push(result);
       }
     }
-    
+
     return filtered;
   }
 
@@ -190,9 +194,9 @@ export class ResultProcessor {
    * Promote high-quality results to top positions
    */
   promoteHighQualityResults(results: any[], qualityThreshold: number = 0.8): any[] {
-    const highQuality = results.filter(r => r.relevanceScore >= qualityThreshold);
-    const others = results.filter(r => r.relevanceScore < qualityThreshold);
-    
+    const highQuality = results.filter((r) => r.relevanceScore >= qualityThreshold);
+    const others = results.filter((r) => r.relevanceScore < qualityThreshold);
+
     return [...highQuality, ...others];
   }
 }

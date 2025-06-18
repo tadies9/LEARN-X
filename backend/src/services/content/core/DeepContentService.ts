@@ -20,4 +20,4 @@ export class DeepContentService extends ContentOrchestrator {
  */
 export const createDeepContentService = (redis: Redis) => {
   return new DeepContentService(redis);
-}; 
+};

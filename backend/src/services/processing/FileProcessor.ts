@@ -11,7 +11,6 @@ import { supabase } from '../../config/supabase';
 import { logger } from '../../utils/logger';
 import { QueueJob } from '../queue/EnhancedPGMQClient';
 
-
 export interface FileProcessingJob {
   fileId: string;
   userId: string;
@@ -40,26 +39,26 @@ export class FileProcessor {
    */
   async processJob(job: QueueJob<FileProcessingJob>): Promise<void> {
     const { fileId, userId, processingOptions } = job.message;
-    
+
     logger.info(`[FileProcessor] Processing file: ${fileId}`, {
       msgId: job.msg_id.toString(),
       userId,
       attempt: job.read_ct,
-      options: processingOptions
+      options: processingOptions,
     });
 
     try {
       // Get file details with ownership verification
       const file = await this.getFileWithValidation(fileId, userId);
-      
+
       // Update status to processing
       await this.updateFileStatus(fileId, 'processing', {
-        processing_started_at: new Date().toISOString()
+        processing_started_at: new Date().toISOString(),
       });
 
       // Extract content with retry logic
       const extractedContent = await this.extractContentWithRetry(file);
-      
+
       if (!extractedContent?.trim()) {
         throw new Error('No content could be extracted from file');
       }
@@ -68,8 +67,8 @@ export class FileProcessor {
 
       // Perform semantic chunking
       const chunks = await this.performSemanticChunking(
-        extractedContent, 
-        file.filename || file.original_name,
+        extractedContent,
+        file.filename || file.original_name || 'unknown',
         processingOptions
       );
 
@@ -77,15 +76,15 @@ export class FileProcessor {
 
       // Save chunks with batch insertion
       const savedChunks = await this.saveChunksBatch(fileId, chunks);
-      
+
       // Queue embeddings efficiently
       await this.embeddingQueue.enqueueBatch(
-        fileId, 
-        savedChunks.map(chunk => ({
+        fileId,
+        savedChunks.map((chunk) => ({
           id: chunk.id,
           content: chunk.content,
           position: chunk.chunk_index,
-          metadata: chunk.metadata || {}
+          metadata: chunk.metadata || {},
         })),
         userId
       );
@@ -97,32 +96,31 @@ export class FileProcessor {
           chunk_count: savedChunks.length,
           contentLength: extractedContent.length,
           chunkingComplete: true,
-          embeddingsQueued: true
-        }
+          embeddingsQueued: true,
+        },
       });
 
       // Send success notification
       await this.notificationQueue.enqueue(
         createFileProcessingNotification(
-          userId, 
-          fileId, 
-          file.filename || file.original_name, 
+          userId,
+          fileId,
+          file.filename || file.original_name || 'unknown',
           true
         )
       );
 
       logger.info(`[FileProcessor] Successfully processed file ${fileId}`, {
         chunkCount: savedChunks.length,
-        processingTimeMs: Date.now() - new Date(job.message.queuedAt).getTime()
+        processingTimeMs: Date.now() - new Date(job.message.queuedAt).getTime(),
       });
-
     } catch (error) {
       logger.error(`[FileProcessor] Failed to process file ${fileId}:`, error);
-      
+
       // Update file status to failed
       await this.updateFileStatus(fileId, 'failed', {
         error_message: error instanceof Error ? error.message : 'Unknown error',
-        failed_at: new Date().toISOString()
+        failed_at: new Date().toISOString(),
       });
 
       // Send failure notification
@@ -130,16 +128,16 @@ export class FileProcessor {
         const file = await this.getFileWithValidation(fileId, userId);
         await this.notificationQueue.enqueue(
           createFileProcessingNotification(
-            userId, 
-            fileId, 
-            file.filename || file.original_name, 
+            userId,
+            fileId,
+            file.filename || file.original_name || 'unknown',
             false
           )
         );
       } catch (notificationError) {
         logger.error('[FileProcessor] Failed to send failure notification:', notificationError);
       }
-      
+
       throw error;
     }
   }
@@ -147,7 +145,10 @@ export class FileProcessor {
   /**
    * Gets file details with ownership validation
    */
-  private async getFileWithValidation(fileId: string, userId: string): Promise<{
+  private async getFileWithValidation(
+    fileId: string,
+    userId: string
+  ): Promise<{
     id: string;
     filename?: string;
     original_name?: string;
@@ -161,7 +162,8 @@ export class FileProcessor {
   }> {
     const { data: file, error: fileError } = await supabase
       .from('course_files')
-      .select(`
+      .select(
+        `
         *,
         modules!inner(
           id,
@@ -172,7 +174,8 @@ export class FileProcessor {
             user_id
           )
         )
-      `)
+      `
+      )
       .eq('id', fileId)
       .single();
 
@@ -192,10 +195,13 @@ export class FileProcessor {
   /**
    * Extracts content with retry logic for transient failures
    */
-  private async extractContentWithRetry(file: {
-    mime_type?: string;
-    storage_path: string;
-  }, maxRetries = 3): Promise<string> {
+  private async extractContentWithRetry(
+    file: {
+      mime_type?: string;
+      storage_path: string;
+    },
+    maxRetries = 3
+  ): Promise<string> {
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         logger.info(`[FileProcessor] Extracting content (attempt ${attempt}): ${file.mime_type}`);
@@ -215,17 +221,17 @@ export class FileProcessor {
         if (attempt === maxRetries) {
           throw error;
         }
-        
+
         logger.warn(`[FileProcessor] Extraction attempt ${attempt} failed, retrying...`, {
           error: error instanceof Error ? error.message : 'Unknown error',
-          nextAttemptIn: `${attempt * 1000}ms`
+          nextAttemptIn: `${attempt * 1000}ms`,
         });
-        
+
         // Exponential backoff
         await this.sleep(1000 * attempt);
       }
     }
-    
+
     throw new Error('Content extraction failed after all retries');
   }
 
@@ -233,67 +239,74 @@ export class FileProcessor {
    * Performs semantic chunking with configuration
    */
   private async performSemanticChunking(
-    content: string, 
-    filename: string, 
+    content: string,
+    filename: string,
     options?: FileProcessingJob['processingOptions']
-  ): Promise<Array<{
-    content: string;
-    metadata?: {
-      type?: string;
-      importance?: string;
-      title?: string;
-      level?: number;
-      concepts?: string[];
-      [key: string]: unknown;
-    };
-  }>> {
+  ): Promise<
+    Array<{
+      content: string;
+      metadata?: {
+        type?: string;
+        importance?: string;
+        title?: string;
+        level?: number;
+        concepts?: string[];
+        [key: string]: unknown;
+      };
+    }>
+  > {
     return this.fileProcessingService.chunkContent(content, filename, {
       minChunkSize: 200,
       maxChunkSize: options?.chunkSize || 1500,
       preserveStructure: true,
       adaptiveSize: true,
       includeMetadata: true,
-      overlapSize: 50
+      overlapSize: 50,
     });
   }
 
   /**
    * Saves chunks to database with batch insertion and sanitization
    */
-  private async saveChunksBatch(fileId: string, chunks: Array<{
-    content: string;
-    metadata?: {
-      type?: string;
-      importance?: string;
-      title?: string;
-      level?: number;
-      concepts?: string[];
-      [key: string]: unknown;
-    };
-  }>): Promise<Array<{
-    id: string;
-    content: string;
-    chunk_index: number;
-    metadata?: Record<string, unknown>;
-  }>> {
+  private async saveChunksBatch(
+    fileId: string,
+    chunks: Array<{
+      content: string;
+      metadata?: {
+        type?: string;
+        importance?: string;
+        title?: string;
+        level?: number;
+        concepts?: string[];
+        [key: string]: unknown;
+      };
+    }>
+  ): Promise<
+    Array<{
+      id: string;
+      content: string;
+      chunk_index: number;
+      metadata?: Record<string, unknown>;
+    }>
+  > {
     // First, delete any existing chunks for this file to avoid duplicates
     const { error: deleteError } = await supabase
       .from('file_chunks')
       .delete()
       .eq('file_id', fileId);
-    
+
     if (deleteError) {
       logger.warn(`[FileProcessor] Failed to delete existing chunks:`, deleteError);
     }
     const chunksToInsert = chunks.map((chunk, index: number) => {
       // Sanitize all text content
       const sanitizedContent = this.fileProcessingService.sanitizeChunkContent(chunk.content);
-      const sanitizedSectionTitle = chunk.metadata?.title 
+      const sanitizedSectionTitle = chunk.metadata?.title
         ? this.fileProcessingService.sanitizeChunkContent(chunk.metadata.title)
         : null;
-      const sanitizedConcepts = Array.isArray(chunk.metadata?.concepts) 
-        ? chunk.metadata.concepts.map((concept) => 
-            typeof concept === 'string' 
+      const sanitizedConcepts = Array.isArray(chunk.metadata?.concepts)
+        ? chunk.metadata.concepts.map((concept) =>
+            typeof concept === 'string'
               ? this.fileProcessingService.sanitizeChunkContent(concept)
               : concept
           )
@@ -312,9 +325,9 @@ export class FileProcessor {
         metadata: {
           ...chunk.metadata,
           sanitized: true,
-          originalLength: chunk.content.length
+          originalLength: chunk.content.length,
         },
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
     });
 
@@ -340,20 +353,17 @@ export class FileProcessor {
    * Updates file status with additional metadata
    */
   private async updateFileStatus(
-    fileId: string, 
-    status: string, 
+    fileId: string,
+    status: string,
     additionalFields?: Record<string, unknown>
   ): Promise<void> {
     const updateData = {
       status,
       updated_at: new Date().toISOString(),
-      ...additionalFields
+      ...additionalFields,
     };
 
-    const { error } = await supabase
-      .from('course_files')
-      .update(updateData)
-      .eq('id', fileId);
+    const { error } = await supabase.from('course_files').update(updateData).eq('id', fileId);
 
     if (error) {
       logger.error(`[FileProcessor] Failed to update file status:`, error);
@@ -367,6 +377,6 @@ export class FileProcessor {
    * Sleep utility for delays
    */
   private sleep(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

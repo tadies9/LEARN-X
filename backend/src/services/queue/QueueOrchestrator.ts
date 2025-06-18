@@ -8,7 +8,11 @@ import { FileProcessingQueue } from './FileProcessingQueue';
 import { EmbeddingQueue } from './EmbeddingQueue';
 import { NotificationQueue } from './NotificationQueue';
 import { enhancedPGMQClient, QueueMetrics } from './EnhancedPGMQClient';
-import { ENHANCED_QUEUE_NAMES, PriorityLevel, mapPriorityToInteger } from '../../config/supabase-queue.config';
+import {
+  ENHANCED_QUEUE_NAMES,
+  PriorityLevel,
+  mapPriorityToInteger,
+} from '../../config/supabase-queue.config';
 import { logger } from '../../utils/logger';
 
 export interface QueueHealth {
@@ -53,17 +57,19 @@ export class QueueOrchestrator {
   ): Promise<string> {
     try {
       // Convert string priority to integer for the queue
-      const queueOptions = options ? {
-        ...options,
-        priority: mapPriorityToInteger(options.priority)
-      } : undefined;
-      
+      const queueOptions = options
+        ? {
+            ...options,
+            priority: mapPriorityToInteger(options.priority),
+          }
+        : undefined;
+
       const msgId = await this.fileQueue.enqueue(fileId, userId, queueOptions);
-      
+
       logger.info(`[QueueOrchestrator] File processing enqueued: ${fileId}`, {
         msgId: msgId.toString(),
         userId,
-        options
+        options,
       });
 
       return msgId.toString();
@@ -90,14 +96,14 @@ export class QueueOrchestrator {
   ): Promise<string[]> {
     try {
       const msgIds = await this.embeddingQueue.enqueueBatch(fileId, chunks, userId, model);
-      
+
       logger.info(`[QueueOrchestrator] Embedding generation enqueued: ${fileId}`, {
         chunkCount: chunks.length,
         batchCount: msgIds.length,
-        model
+        model,
       });
 
-      return msgIds.map(id => id.toString());
+      return msgIds.map((id) => id.toString());
     } catch (error) {
       logger.error(`[QueueOrchestrator] Failed to enqueue embedding generation:`, error);
       throw error;
@@ -122,7 +128,7 @@ export class QueueOrchestrator {
         title,
         message,
         data,
-        priority: mapPriorityToInteger(priority)
+        priority: mapPriorityToInteger(priority),
       });
 
       logger.debug(`[QueueOrchestrator] Notification enqueued: ${type} for ${userId}`);
@@ -140,9 +146,7 @@ export class QueueOrchestrator {
   async getSystemHealth(): Promise<SystemHealth> {
     try {
       const queueNames = Object.values(ENHANCED_QUEUE_NAMES);
-      const queueHealthPromises = queueNames.map(queueName => 
-        this.getQueueHealth(queueName)
-      );
+      const queueHealthPromises = queueNames.map((queueName) => this.getQueueHealth(queueName));
 
       const queueHealthResults = await Promise.allSettled(queueHealthPromises);
       const queues: QueueHealth[] = queueHealthResults.map((result, index) => {
@@ -153,14 +157,14 @@ export class QueueOrchestrator {
             name: queueNames[index],
             status: 'unhealthy',
             metrics: null,
-            lastCheck: new Date().toISOString()
+            lastCheck: new Date().toISOString(),
           };
         }
       });
 
       // Calculate overall system status
-      const unhealthyCount = queues.filter(q => q.status === 'unhealthy').length;
-      const degradedCount = queues.filter(q => q.status === 'degraded').length;
+      const unhealthyCount = queues.filter((q) => q.status === 'unhealthy').length;
+      const degradedCount = queues.filter((q) => q.status === 'degraded').length;
 
       let systemStatus: 'healthy' | 'degraded' | 'unhealthy';
       if (unhealthyCount > 0) {
@@ -174,15 +178,14 @@ export class QueueOrchestrator {
       return {
         status: systemStatus,
         queues,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-
     } catch (error) {
       logger.error('[QueueOrchestrator] Failed to get system health:', error);
       return {
         status: 'unhealthy',
         queues: [],
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
   }
@@ -192,20 +195,20 @@ export class QueueOrchestrator {
    */
   private async getQueueHealth(queueName: string): Promise<QueueHealth> {
     try {
-      const metrics = await enhancedPGMQClient.getQueueMetrics(queueName as keyof typeof ENHANCED_QUEUE_NAMES);
-      
+      const metrics = await enhancedPGMQClient.getQueueMetrics(queueName as any);
+
       if (!metrics) {
         return {
           name: queueName,
           status: 'unhealthy',
           metrics: null,
-          lastCheck: new Date().toISOString()
+          lastCheck: new Date().toISOString(),
         };
       }
 
       // Determine health based on queue metrics
       let status: 'healthy' | 'degraded' | 'unhealthy' = 'healthy';
-      
+
       // Queue depth thresholds
       if (metrics.queue_length > 1000) {
         status = 'unhealthy';
@@ -214,9 +217,11 @@ export class QueueOrchestrator {
       }
 
       // Age thresholds (messages sitting too long)
-      if (metrics.oldest_msg_age_sec && metrics.oldest_msg_age_sec > 3600) { // 1 hour
+      if (metrics.oldest_msg_age_sec && metrics.oldest_msg_age_sec > 3600) {
+        // 1 hour
         status = 'unhealthy';
-      } else if (metrics.oldest_msg_age_sec && metrics.oldest_msg_age_sec > 600) { // 10 minutes
+      } else if (metrics.oldest_msg_age_sec && metrics.oldest_msg_age_sec > 600) {
+        // 10 minutes
         status = 'degraded';
       }
 
@@ -224,16 +229,15 @@ export class QueueOrchestrator {
         name: queueName,
         status,
         metrics,
-        lastCheck: new Date().toISOString()
+        lastCheck: new Date().toISOString(),
       };
-
     } catch (error) {
       logger.error(`[QueueOrchestrator] Failed to get health for queue ${queueName}:`, error);
       return {
         name: queueName,
         status: 'unhealthy',
         metrics: null,
-        lastCheck: new Date().toISOString()
+        lastCheck: new Date().toISOString(),
       };
     }
   }
@@ -249,7 +253,7 @@ export class QueueOrchestrator {
     try {
       const [fileMetrics, embeddingMetrics] = await Promise.all([
         this.fileQueue.getMetrics(),
-        this.embeddingQueue.getMetrics()
+        this.embeddingQueue.getMetrics(),
       ]);
 
       return {
@@ -257,10 +261,9 @@ export class QueueOrchestrator {
         embeddings: embeddingMetrics,
         notifications: {
           // Notification queue doesn't have complex metrics
-          status: 'active'
-        }
+          status: 'active',
+        },
       };
-
     } catch (error) {
       logger.error('[QueueOrchestrator] Failed to get detailed metrics:', error);
       throw error;
@@ -280,14 +283,14 @@ export class QueueOrchestrator {
 
     const queueNames = Object.values(ENHANCED_QUEUE_NAMES);
     const purgeResults = await Promise.allSettled(
-      queueNames.map(queueName => 
-        enhancedPGMQClient.purge(queueName as keyof typeof ENHANCED_QUEUE_NAMES)
-      )
+      queueNames.map((queueName) => enhancedPGMQClient.purge(queueName as any))
     );
 
     purgeResults.forEach((result, index) => {
       if (result.status === 'fulfilled') {
-        logger.info(`[QueueOrchestrator] Purged ${result.value} messages from ${queueNames[index]}`);
+        logger.info(
+          `[QueueOrchestrator] Purged ${result.value} messages from ${queueNames[index]}`
+        );
       } else {
         logger.error(`[QueueOrchestrator] Failed to purge ${queueNames[index]}:`, result.reason);
       }

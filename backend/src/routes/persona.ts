@@ -5,7 +5,6 @@ import { PersonaController } from '../controllers/personaController';
 const router = Router();
 const personaController = new PersonaController();
 
-
 // All routes require authentication
 router.use(authenticateUser);
 

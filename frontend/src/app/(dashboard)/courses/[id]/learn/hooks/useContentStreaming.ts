@@ -1,14 +1,14 @@
 import { useState, useRef, useCallback } from 'react';
 import { AIApiService } from '@/lib/api/ai';
 import { contentCache, CacheOptions } from '@/lib/cache/ContentCache';
-import { StudyMode, Topic, UserProfile } from '../types/study';
+import { StudyMode, Topic, UserProfile, SupabaseSession } from '../types/study';
 
 interface UseContentStreamingOptions {
   fileId: string | null;
   selectedTopic: string | null;
   selectedSubtopic: string | null;
   activeMode: StudyMode;
-  session: any;
+  session: SupabaseSession | null;
   fileVersion: string;
   profile: UserProfile | null;
   outline: Topic[];
@@ -97,7 +97,7 @@ export function useContentStreaming({
         topicId: selectedTopic!,
         subtopic: selectedSubtopic!,
         mode: activeMode,
-        token: session.access_token,
+        token: session?.access_token || '',
       });
 
       if (!response.body) {

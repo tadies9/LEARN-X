@@ -80,7 +80,14 @@ if (process.env.NODE_ENV === 'development') {
         return res.json({ error: 'File not found', details: error });
       }
 
-      const ownerUserId = (file as any).modules.courses.user_id;
+      interface FileWithOwner {
+        modules: {
+          courses: {
+            user_id: string;
+          };
+        };
+      }
+      const ownerUserId = (file as FileWithOwner).modules.courses.user_id;
       logger.debug('✅ File found');
       logger.debug('📄 File details:', {
         id: file.id,
@@ -200,7 +207,7 @@ if (process.env.NODE_ENV === 'development') {
         success: true,
         data: {
           courses: courses.data || [],
-          fileTypes: fileTypes.data?.map((ft: any) => ft.mime_type) || [],
+          fileTypes: fileTypes.data?.map((ft: { mime_type: string }) => ft.mime_type) || [],
           contentTypes: contentTypes.data || [],
           importance: [
             { value: 'high', label: 'High Importance' },

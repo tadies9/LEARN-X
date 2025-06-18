@@ -83,7 +83,7 @@ export interface FormattingConfig {
 export const DEFAULT_SANITIZE_CONFIG: Required<SanitizeOptions> = {
   allowedTags: DEFAULT_ALLOWED_TAGS,
   allowedAttributes: DEFAULT_ALLOWED_ATTRIBUTES,
-  transformTag: undefined as unknown as Required<SanitizeOptions>['transformTag'],
+  transformTag: (() => null) as Required<SanitizeOptions>['transformTag'],
   preserveWhitespace: false,
   allowMermaidDiagrams: true,
   autoFixFormatting: true,

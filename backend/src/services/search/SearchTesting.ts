@@ -201,16 +201,20 @@ export class SearchTesting {
 
       // Check result count
       if (results.length < testCase.expectedResultCount * 0.8) {
-        issues.push(`Expected at least ${testCase.expectedResultCount * 0.8} results, got ${results.length}`);
+        issues.push(
+          `Expected at least ${testCase.expectedResultCount * 0.8} results, got ${results.length}`
+        );
         score -= 15;
       }
 
       // Check content types
-      const hasExpectedContentTypes = testCase.expectedContentTypes.some(type =>
+      const hasExpectedContentTypes = testCase.expectedContentTypes.some((type) =>
         results.some((r: any) => r.metadata.contentType === type)
       );
       if (!hasExpectedContentTypes) {
-        issues.push(`No results with expected content types: ${testCase.expectedContentTypes.join(', ')}`);
+        issues.push(
+          `No results with expected content types: ${testCase.expectedContentTypes.join(', ')}`
+        );
         score -= 20;
       }
 
@@ -225,7 +229,9 @@ export class SearchTesting {
 
       // Check relevance score
       if (metrics.relevanceScore < testCase.minRelevanceScore) {
-        issues.push(`Relevance score ${metrics.relevanceScore.toFixed(2)} below minimum ${testCase.minRelevanceScore}`);
+        issues.push(
+          `Relevance score ${metrics.relevanceScore.toFixed(2)} below minimum ${testCase.minRelevanceScore}`
+        );
         score -= 20;
       }
 
@@ -246,10 +252,9 @@ export class SearchTesting {
         issues,
         score: Math.max(0, score),
       };
-
     } catch (error) {
       logger.error(`[SearchTesting] Test case failed: ${testCase.id}`, error);
-      
+
       return {
         testCase,
         passed: false,
@@ -274,16 +279,18 @@ export class SearchTesting {
       throw new Error(`Test suite not found: ${suiteName}`);
     }
 
-    logger.info(`[SearchTesting] Executing test suite: ${suiteName} (${suite.testCases.length} cases)`);
+    logger.info(
+      `[SearchTesting] Executing test suite: ${suiteName} (${suite.testCases.length} cases)`
+    );
 
     const results: TestResult[] = [];
-    
+
     for (const testCase of suite.testCases) {
       const result = await this.executeTestCase(testCase, searchFunction);
       results.push(result);
-      
+
       // Small delay between tests to avoid overwhelming the system
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     return results;
@@ -294,7 +301,7 @@ export class SearchTesting {
    */
   generateTestCaseFromQuery(query: string, expectedIntent?: QueryIntent['type']): TestCase {
     const id = `generated-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
+
     // Analyze query to determine expected values
     const lowerQuery = query.toLowerCase();
     let intent: QueryIntent['type'] = expectedIntent || 'general';
@@ -334,9 +341,15 @@ export class SearchTesting {
     }
 
     // Extract likely concepts (simplified)
-    const _words = query.toLowerCase().split(/\s+/);
-    const technicalTerms = ['machine learning', 'neural network', 'deep learning', 'algorithm', 'classification', 'regression'];
-    expectedConcepts = technicalTerms.filter(term => query.toLowerCase().includes(term));
+    const technicalTerms = [
+      'machine learning',
+      'neural network',
+      'deep learning',
+      'algorithm',
+      'classification',
+      'regression',
+    ];
+    expectedConcepts = technicalTerms.filter((term) => query.toLowerCase().includes(term));
 
     return {
       id,
@@ -376,15 +389,16 @@ export class SearchTesting {
     commonIssues: string[];
   } {
     const totalTests = results.length;
-    const passedTests = results.filter(r => r.passed).length;
+    const passedTests = results.filter((r) => r.passed).length;
     const failedTests = totalTests - passedTests;
     const passRate = totalTests > 0 ? (passedTests / totalTests) * 100 : 0;
-    const averageScore = totalTests > 0 ? results.reduce((sum, r) => sum + r.score, 0) / totalTests : 0;
+    const averageScore =
+      totalTests > 0 ? results.reduce((sum, r) => sum + r.score, 0) / totalTests : 0;
 
     // Count common issues
     const issueCount = new Map<string, number>();
-    results.forEach(result => {
-      result.issues.forEach(issue => {
+    results.forEach((result) => {
+      result.issues.forEach((issue) => {
         issueCount.set(issue, (issueCount.get(issue) || 0) + 1);
       });
     });

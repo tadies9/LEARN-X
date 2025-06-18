@@ -61,7 +61,7 @@ class SessionController {
   async getLatestSession(req: Request, res: Response): Promise<void> {
     try {
       const { fileId } = req.params;
-      const userId = (req as any).user.id;
+      const userId = req.user!.id;
 
       const { data: session, error } = await supabase
         .from('study_sessions')
@@ -93,7 +93,7 @@ class SessionController {
   async saveSession(req: Request, res: Response): Promise<void> {
     try {
       const sessionData = sessionSchema.parse(req.body);
-      const userId = (req as any).user.id;
+      const userId = req.user!.id;
 
       // End any active sessions
       await supabase
@@ -134,7 +134,7 @@ class SessionController {
   async updateProgress(req: Request, res: Response): Promise<void> {
     try {
       const progressData = progressSchema.parse(req.body);
-      const userId = (req as any).user.id;
+      const userId = req.user!.id;
 
       const { data: progress, error } = await supabase
         .from('study_progress')
@@ -168,7 +168,7 @@ class SessionController {
   async getAnnotations(req: Request, res: Response): Promise<void> {
     try {
       const { fileId } = req.params;
-      const userId = (req as any).user.id;
+      const userId = req.user!.id;
 
       const { data: annotations, error } = await supabase
         .from('annotations')
@@ -195,7 +195,7 @@ class SessionController {
   async createAnnotation(req: Request, res: Response): Promise<void> {
     try {
       const annotationData = annotationSchema.parse(req.body);
-      const userId = (req as any).user.id;
+      const userId = req.user!.id;
 
       const { data: annotation, error } = await supabase
         .from('annotations')
@@ -225,7 +225,7 @@ class SessionController {
     try {
       const { id } = req.params;
       const updateData = annotationSchema.partial().parse(req.body);
-      const userId = (req as any).user.id;
+      const userId = req.user!.id;
 
       const { data: annotation, error } = await supabase
         .from('annotations')
@@ -261,7 +261,7 @@ class SessionController {
   async deleteAnnotation(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-      const userId = (req as any).user.id;
+      const userId = req.user!.id;
 
       const { error } = await supabase
         .from('annotations')

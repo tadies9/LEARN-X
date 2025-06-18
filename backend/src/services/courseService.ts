@@ -11,19 +11,6 @@ interface CourseModule {
   files?: Array<{ count: number }>;
 }
 
-interface Course {
-  id: string;
-  user_id: string;
-  title: string;
-  description?: string;
-  is_public: boolean;
-  is_archived: boolean;
-  settings?: Record<string, unknown>;
-  created_at: string;
-  updated_at: string;
-  modules?: CourseModule[];
-}
-
 interface CourseFile {
   id: string;
   file_type?: string;
@@ -189,13 +176,16 @@ export class CourseService {
     }
   }
 
-  async updateCourse(courseId: string, updateData: {
-    title?: string;
-    description?: string;
-    isPublic?: boolean;
-    isArchived?: boolean;
-    settings?: Record<string, unknown>;
-  }) {
+  async updateCourse(
+    courseId: string,
+    updateData: {
+      title?: string;
+      description?: string;
+      isPublic?: boolean;
+      isArchived?: boolean;
+      settings?: Record<string, unknown>;
+    }
+  ) {
     try {
       const { data: course, error } = await supabase
         .from('courses')
