@@ -24,7 +24,7 @@ export function useThemeEffects({
     if (!mounted) return;
 
     const cleanup = applyThemeToDOM(resolvedTheme, enableTransitions);
-    applyAccessibilityEnhancements(resolvedTheme);
+    applyAccessibilityEnhancements();
 
     return cleanup;
   }, [resolvedTheme, mounted, enableTransitions]);

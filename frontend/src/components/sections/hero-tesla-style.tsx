@@ -14,8 +14,8 @@ export function HeroTeslaStyle() {
   const handleVideoPlay = () => {
     setShowVideo(true);
     // Analytics tracking as specified
-    if (typeof window !== 'undefined' && (window as unknown as { gtag?: Function }).gtag) {
-      (window as unknown as { gtag: Function }).gtag('event', 'video_play', {
+    if (typeof window !== 'undefined' && (window as unknown as { gtag?: (...args: unknown[]) => void }).gtag) {
+      (window as unknown as { gtag: (...args: unknown[]) => void }).gtag('event', 'video_play', {
         event_category: 'Hero Demo',
         event_label: 'Demo Video Started',
         value: 1,
@@ -25,8 +25,8 @@ export function HeroTeslaStyle() {
 
   const handleVideoEnd = () => {
     // Analytics tracking as specified
-    if (typeof window !== 'undefined' && (window as unknown as { gtag?: Function }).gtag) {
-      (window as unknown as { gtag: Function }).gtag('event', 'video_complete', {
+    if (typeof window !== 'undefined' && (window as unknown as { gtag?: (...args: unknown[]) => void }).gtag) {
+      (window as unknown as { gtag: (...args: unknown[]) => void }).gtag('event', 'video_complete', {
         event_category: 'Hero Demo',
         event_label: 'Demo Video Completed',
         value: 1,

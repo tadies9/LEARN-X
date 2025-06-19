@@ -52,7 +52,10 @@ export function useAuth() {
       // Redirect to login page
       router.push('/login');
     } catch (error) {
-      console.error('Logout failed:', error);
+      // Log error in development only
+      if (process.env.NODE_ENV === 'development') {
+        console.error('Logout failed:', error);
+      }
       throw error;
     } finally {
       setLoading(false);

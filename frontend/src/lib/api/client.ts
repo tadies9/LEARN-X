@@ -38,15 +38,18 @@ API_CLIENT.interceptors.request.use(async (config) => {
 API_CLIENT.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.log('API Error:', {
-      status: error.response?.status,
-      url: error.config?.url,
-      method: error.config?.method,
-      message: error.response?.data?.message || error.message,
-    });
+    // Log API errors for debugging in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('API Error:', {
+        status: error.response?.status,
+        url: error.config?.url,
+        method: error.config?.method,
+        message: error.response?.data?.message || error.message,
+      });
+    }
 
     if (error.response?.status === 401) {
-      console.warn('Unauthorized request - redirecting to login');
+      // Unauthorized request - redirecting to login
       // Redirect to login on unauthorized (only on client side)
       if (typeof window !== 'undefined') {
         window.location.href = '/login';

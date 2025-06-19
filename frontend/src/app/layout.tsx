@@ -5,6 +5,9 @@ import { ThemeScript } from '@/components/ThemeScript';
 import { AppLayout } from '@/components/layouts/AppLayout';
 import { Toaster } from 'sonner';
 import MermaidProvider from '@/components/providers/MermaidProvider';
+import { ErrorBoundary } from '@/components/monitoring/ErrorBoundary';
+import { WebVitalsReporter } from '@/components/monitoring/WebVitalsReporter';
+import { PlausibleAnalytics } from '@/components/analytics/PlausibleAnalytics';
 import { cn } from '@/lib/utils';
 import './globals.css';
 
@@ -36,25 +39,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="theme-color" content="#ffffff" />
         <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
         <link rel="preload" as="image" href="/demo-thumbnail.svg" />
+        <PlausibleAnalytics />
       </head>
       <body className={cn('min-h-screen bg-background font-sans antialiased')}>
-        <QueryClientProvider>
-          <EnhancedThemeProvider
-            defaultTheme="system"
-            storageKey="learn-x-theme"
-            enableTransitions={true}
-          >
-            <MermaidProvider />
-            <AppLayout>{children}</AppLayout>
-            <Toaster
-              position="bottom-right"
-              visibleToasts={process.env.NODE_ENV === 'production' ? 3 : 1}
-              style={{
-                display: process.env.NODE_ENV === 'production' ? 'block' : 'none',
-              }}
-            />
-          </EnhancedThemeProvider>
-        </QueryClientProvider>
+        <ErrorBoundary>
+          <QueryClientProvider>
+            <EnhancedThemeProvider
+              defaultTheme="system"
+              storageKey="learn-x-theme"
+              enableTransitions={true}
+            >
+              <MermaidProvider />
+              <WebVitalsReporter />
+              <AppLayout>{children}</AppLayout>
+              <Toaster
+                position="bottom-right"
+                visibleToasts={process.env.NODE_ENV === 'production' ? 3 : 1}
+                style={{
+                  display: process.env.NODE_ENV === 'production' ? 'block' : 'none',
+                }}
+              />
+            </EnhancedThemeProvider>
+          </QueryClientProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

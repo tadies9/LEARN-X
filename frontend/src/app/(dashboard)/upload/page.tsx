@@ -103,9 +103,9 @@ export default function UploadPage() {
           file.id === fileId
             ? {
                 ...file,
-                status: update.status as any,
+                status: update.status as UploadedFile['status'],
                 progress: update.progress,
-                processingStage: update.stage as any,
+                processingStage: update.stage as UploadedFile['processingStage'],
                 chunkCount: update.chunksGenerated,
                 embeddingCount: update.embeddingsGenerated,
                 error: update.error,

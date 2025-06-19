@@ -10,7 +10,6 @@ import { courseApi } from '@/lib/api/course';
 import { dashboardApi } from '@/lib/api/DashboardApiService';
 import type { Course } from '@/lib/types/course';
 import type { DashboardStats } from '@/lib/types/dashboard';
-import type { DashboardStats as ApiDashboardStats } from '@/lib/api/DashboardApiService';
 
 interface DashboardData {
   stats: DashboardStats | null;
@@ -47,25 +46,25 @@ export function useDashboardData(): DashboardData {
         courses = allCoursesResponse;
       } else if (allCoursesResponse && typeof allCoursesResponse === 'object') {
         // Handle BaseApiService PaginatedResponse format
-        if ('data' in allCoursesResponse && Array.isArray((allCoursesResponse as any).data)) {
-          courses = (allCoursesResponse as any).data;
+        if ('data' in allCoursesResponse && Array.isArray((allCoursesResponse as { data: Course[] }).data)) {
+          courses = (allCoursesResponse as { data: Course[] }).data;
         }
         // Handle other potential formats
         else if (
           'items' in allCoursesResponse &&
-          Array.isArray((allCoursesResponse as any).items)
+          Array.isArray((allCoursesResponse as { items: Course[] }).items)
         ) {
-          courses = (allCoursesResponse as any).items;
+          courses = (allCoursesResponse as { items: Course[] }).items;
         }
         // Handle nested data structure
         else if (
           'data' in allCoursesResponse &&
-          typeof (allCoursesResponse as any).data === 'object' &&
-          (allCoursesResponse as any).data &&
-          'items' in (allCoursesResponse as any).data &&
-          Array.isArray((allCoursesResponse as any).data.items)
+          typeof (allCoursesResponse as unknown as { data: { items: Course[] } }).data === 'object' &&
+          (allCoursesResponse as unknown as { data: { items: Course[] } }).data &&
+          'items' in (allCoursesResponse as unknown as { data: { items: Course[] } }).data &&
+          Array.isArray((allCoursesResponse as unknown as { data: { items: Course[] } }).data.items)
         ) {
-          courses = (allCoursesResponse as any).data.items;
+          courses = (allCoursesResponse as unknown as { data: { items: Course[] } }).data.items;
         }
       }
 

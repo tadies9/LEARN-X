@@ -140,7 +140,6 @@ export function useProgressivePreload({
         persona,
       };
 
-      console.log('[Preload] Starting preload for:', { topicId, subtopic });
       await contentCache.preload(cacheOptions, () => fetchContent(topicId, subtopic));
     },
     [fileId, fileVersion, mode, persona, session?.user?.id, user?.id, fetchContent]
@@ -175,11 +174,10 @@ export function useProgressivePreload({
 
     // Strategy 1: If viewing a topic overview (no subtopic), preload all its subtopics
     if (!currentSubtopic && topic.subtopics.length > 0) {
-      console.log('[Preload] Strategy 1: Preloading all subtopics for topic', topic.id);
+      // Strategy 1: Preloading all subtopics for topic
       topic.subtopics.forEach((subtopic, index) => {
         const delay = index * 500; // Stagger by 500ms
         preloadTimersRef.current[`${topic.id}-${subtopic.id}`] = setTimeout(() => {
-          console.log('[Preload] Loading subtopic:', subtopic.id);
           preloadContent(topic.id, subtopic.id);
         }, delay);
       });
@@ -189,9 +187,8 @@ export function useProgressivePreload({
     // Strategy 2: If viewing a subtopic, preload next subtopic after 2s
     if (currentSubtopic && subtopicIndex < topic.subtopics.length - 1) {
       const nextSubtopic = topic.subtopics[subtopicIndex + 1];
-      console.log('[Preload] Strategy 2: Will preload next subtopic in 2s:', nextSubtopic.id);
+      // Strategy 2: Will preload next subtopic in 2s
       preloadTimersRef.current['next'] = setTimeout(() => {
-        console.log('[Preload] Loading next subtopic:', nextSubtopic.id);
         preloadContent(topic.id, nextSubtopic.id);
       }, 2000);
     }

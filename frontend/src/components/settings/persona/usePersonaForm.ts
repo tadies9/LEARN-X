@@ -57,7 +57,7 @@ export function usePersonaForm() {
     if (!editingSection) return;
 
     try {
-      await updatePersonaSection({ section: editingSection, data: editData });
+      await updatePersonaSection({ section: editingSection, data: editData as Record<string, unknown> });
       toast({
         title: 'Success',
         description: 'Your profile has been updated.',

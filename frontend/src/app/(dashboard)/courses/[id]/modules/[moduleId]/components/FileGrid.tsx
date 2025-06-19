@@ -113,16 +113,16 @@ export function FileGrid({ files, onUpdate }: FileGridProps) {
     return `${mb.toFixed(2)} MB`;
   };
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): 'default' | 'secondary' | 'destructive' | 'outline' => {
     switch (status) {
       case 'completed':
-        return 'success';
+        return 'default'; // Using default for success state
       case 'processing':
-        return 'default';
+        return 'secondary';
       case 'failed':
         return 'destructive';
       default:
-        return 'secondary';
+        return 'outline';
     }
   };
 
@@ -213,7 +213,7 @@ export function FileGrid({ files, onUpdate }: FileGridProps) {
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Status</span>
-                  <Badge variant={getStatusColor(file.status) as any} className="text-xs">
+                  <Badge variant={getStatusColor(file.status)} className="text-xs">
                     {file.status}
                   </Badge>
                 </div>

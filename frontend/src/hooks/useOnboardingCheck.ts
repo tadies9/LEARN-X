@@ -36,7 +36,7 @@ export function useOnboardingCheck() {
           setNeedsOnboarding(!persona);
         } catch (error: unknown) {
           // If 404, user needs onboarding
-          if ((error as any)?.response?.status === 404) {
+          if ((error as { response?: { status?: number } })?.response?.status === 404) {
             setNeedsOnboarding(true);
           }
         }
@@ -46,7 +46,7 @@ export function useOnboardingCheck() {
           router.push('/onboarding');
         }
       } catch (error) {
-        console.error('Error checking onboarding status:', error);
+        // Error checking onboarding status
       } finally {
         setIsChecking(false);
       }

@@ -13,7 +13,6 @@ import {
   Download,
   Timer,
   BarChart3,
-  Layers,
   Zap,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,7 +29,7 @@ export function StudyToolbar({
   studyMode,
   onModeChange,
   selectedText,
-  fileId,
+  fileId: _fileId,
   onToolAction,
 }: StudyToolbarProps) {
   const modes = [

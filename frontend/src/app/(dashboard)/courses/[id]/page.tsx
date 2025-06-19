@@ -49,18 +49,22 @@ export default function CoursePage() {
 
       setCourse(courseData);
       // Ensure modulesData is always an array, handling various API response formats
-      let processedModules = [];
+      let processedModules: Module[] = [];
       if (Array.isArray(modulesData)) {
         processedModules = modulesData;
-      } else if (modulesData && Array.isArray(modulesData.data)) {
+      } else if (modulesData && 'data' in modulesData && Array.isArray(modulesData.data)) {
         processedModules = modulesData.data;
-      } else if (modulesData && Array.isArray((modulesData as any).modules)) {
-        processedModules = (modulesData as any).modules;
+      } else if (
+        modulesData &&
+        'modules' in modulesData &&
+        Array.isArray((modulesData as { modules: Module[] }).modules)
+      ) {
+        processedModules = (modulesData as { modules: Module[] }).modules;
       }
       setModules(processedModules);
       setStats(statsData as CourseStats | null);
     } catch (error) {
-      console.error('Error loading course:', error);
+      // Error loading course, redirect to courses page
       router.push('/courses');
     } finally {
       setLoading(false);

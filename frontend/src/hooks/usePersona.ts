@@ -23,7 +23,6 @@ export function usePersona() {
         return response;
       } catch (error) {
         // If persona doesn't exist, return null instead of throwing
-        console.log('No persona found for user');
         return null;
       }
     },
@@ -33,14 +32,15 @@ export function usePersona() {
   });
 
   const updatePersona = useMutation({
-    mutationFn: (data: Partial<Persona>) => personaApi.upsertPersona(data as any),
+    mutationFn: (data: Omit<Persona, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'version'>) =>
+      personaApi.upsertPersona(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['persona', user?.id] });
     },
   });
 
   const updatePersonaSection = useMutation({
-    mutationFn: ({ section, data }: { section: string; data: any }) =>
+    mutationFn: ({ section, data }: { section: string; data: Record<string, unknown> }) =>
       personaApi.updateSection(section, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['persona', user?.id] });

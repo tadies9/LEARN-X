@@ -23,25 +23,14 @@ export function useModuleManagement(onUpdate: () => void) {
       newExpanded.add(moduleId);
       // Always reload files when expanding
       try {
-        console.log('Loading files for module:', moduleId);
         const files = await moduleApi.getModuleFiles(moduleId);
-        console.log('Files received from API:', files);
-        console.log('Files type:', typeof files);
-        console.log('Is array?', Array.isArray(files));
-        if (files && typeof files === 'object' && !Array.isArray(files)) {
-          console.log('Files object keys:', Object.keys(files));
-        }
         setModuleFiles((prev) => ({ ...prev, [moduleId]: files }));
       } catch (error) {
-        console.error('Error loading module files:', error);
-        // Try the test endpoint as fallback
-        try {
-          const response = await fetch(`/api/v1/test/module/${moduleId}/files`);
-          const data = await response.json();
-          console.log('Test endpoint response:', data);
-        } catch (e) {
-          console.error('Test endpoint also failed:', e);
-        }
+        toast({
+          title: 'Error',
+          description: 'Failed to load module files.',
+          variant: 'destructive',
+        });
       }
     }
 
@@ -102,7 +91,11 @@ export function useModuleManagement(onUpdate: () => void) {
       setUploadingToModule(null);
       onUpdate(); // Also refresh the module list to update file counts
     } catch (error) {
-      console.error('Error reloading module files:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to reload module files.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -149,7 +142,11 @@ export function useModuleManagement(onUpdate: () => void) {
     const courseIdIndex = pathSegments.indexOf('courses');
 
     if (courseIdIndex === -1 || courseIdIndex >= pathSegments.length - 1) {
-      console.error('Could not extract course ID from URL');
+      toast({
+        title: 'Error',
+        description: 'Could not extract course ID from URL.',
+        variant: 'destructive',
+      });
       return;
     }
 

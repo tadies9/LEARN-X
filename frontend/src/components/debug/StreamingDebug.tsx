@@ -5,21 +5,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  RefreshCw,
-  XCircle,
-  Activity,
-  Download,
-  Trash2,
-} from 'lucide-react';
+import { CheckCircle, Clock, XCircle, Activity, Download, Trash2 } from 'lucide-react';
 
 interface StreamEvent {
   timestamp: Date;
   type: 'start' | 'data' | 'error' | 'complete' | 'abort';
-  data?: any;
+  data?: unknown;
   size?: number;
   chunkIndex?: number;
 }
@@ -274,11 +265,14 @@ export function StreamingDebug({
                       <p className="text-muted-foreground">
                         {event.timestamp.toLocaleTimeString()}
                       </p>
-                      {event.data && (
+                      {event.data !== undefined && event.data !== null && (
                         <p className="font-mono text-xs mt-1 break-all">
                           {typeof event.data === 'string'
                             ? event.data.slice(0, 100)
                             : JSON.stringify(event.data).slice(0, 100)}
+                          {(typeof event.data === 'string'
+                            ? event.data.length
+                            : JSON.stringify(event.data).length) > 100 && '...'}
                         </p>
                       )}
                       {event.size && (

@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw, AlertCircle, CheckCircle, Clock } from 'lucide-react';
 import { FileApiService } from '@/lib/api/files';
+import type { FileProcessingStatus } from '@/lib/api/files';
 
 interface FileProcessingDebugProps {
   fileId: string;
@@ -13,8 +14,8 @@ interface FileProcessingDebugProps {
   currentStatus: string;
 }
 
-export function FileProcessingDebug({ fileId, fileName, currentStatus }: FileProcessingDebugProps) {
-  const [status, setStatus] = useState<any>(null);
+export function FileProcessingDebug({ fileId, currentStatus }: FileProcessingDebugProps) {
+  const [status, setStatus] = useState<FileProcessingStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

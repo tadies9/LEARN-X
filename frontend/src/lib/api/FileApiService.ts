@@ -42,7 +42,7 @@ class FileApiService extends BaseApiService {
   }
 
   // Get signed URL for file access
-  async getSignedUrl(fileId: string, expiresIn = 3600) {
+  async getSignedUrl(fileId: string) {
     const response = await this.customRequest<{ success: boolean; data: { url: string } }>(
       'get',
       `/files/${fileId}/working-signed-url`

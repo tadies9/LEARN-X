@@ -14,7 +14,6 @@ import {
 import { format } from 'date-fns';
 
 import { Card } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import type { UserActivity } from '@/lib/api/DashboardApiService';
 
 const iconMap = {
@@ -60,11 +59,11 @@ const getActivityDetails = (activity: UserActivity) => {
   let description = '';
   if (activity.metadata) {
     if (activity.metadata.courseName) {
-      description = activity.metadata.courseName;
+      description = String(activity.metadata.courseName);
     } else if (activity.metadata.fileName) {
-      description = activity.metadata.fileName;
+      description = String(activity.metadata.fileName);
     } else if (activity.metadata.duration) {
-      description = `${Math.round(activity.metadata.duration / 60)} minutes`;
+      description = `${Math.round(Number(activity.metadata.duration) / 60)} minutes`;
     } else if (activity.metadata.score) {
       description = `Score: ${activity.metadata.score}%`;
     }

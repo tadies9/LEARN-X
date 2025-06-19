@@ -89,20 +89,5 @@ export const useTheme = () => {
   return context;
 };
 
-/**
- * Hook to get theme-aware colors
- */
-export const useThemeColors = () => {
-  const { resolvedTheme } = useTheme();
-  const { useThemeColors: useColorsHook } = require('@/hooks/useThemeColors');
-  return useColorsHook(resolvedTheme);
-};
-
-/**
- * Hook to get theme-aware CSS classes
- */
-export const useThemeClasses = () => {
-  const { resolvedTheme } = useTheme();
-  const { useThemeClasses: useClassesHook } = require('@/hooks/useThemeColors');
-  return useClassesHook(resolvedTheme);
-};
+// Re-export hooks from useThemeColors
+export { useThemeColors, useThemeClasses } from '@/hooks/useThemeColors';

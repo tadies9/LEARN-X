@@ -45,7 +45,7 @@ export function LearningLayout({
   pdfUrl,
   modules = [],
   questions = [],
-  fileId,
+  fileId: _fileId,
   fileName,
   fileMimeType,
 }: LearningLayoutProps) {
@@ -154,8 +154,8 @@ export function LearningLayout({
                   <QuizComponent
                     title="Check Your Understanding"
                     questions={mockQuestions}
-                    onComplete={(score) => {
-                      console.log('Quiz completed with score:', score);
+                    onComplete={(_score) => {
+                      // Handle quiz completion - score is available if needed
                     }}
                   />
                 </div>

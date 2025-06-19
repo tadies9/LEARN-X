@@ -124,7 +124,7 @@ export const getAccessibleTheme = (userPreference: ThemePreference): ThemeMode =
 /**
  * Applies accessibility enhancements based on user preferences
  */
-export const applyAccessibilityEnhancements = (theme: ThemeMode) => {
+export const applyAccessibilityEnhancements = () => {
   const root = document.documentElement;
 
   // Apply reduced motion if preferred

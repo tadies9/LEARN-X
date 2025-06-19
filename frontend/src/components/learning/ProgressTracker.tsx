@@ -7,7 +7,6 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 
 interface Module {
   id: string;
@@ -37,7 +36,6 @@ export function ProgressTracker({
   onModuleSelect,
 }: ProgressTrackerProps) {
   const completedModules = modules.filter((m) => m.status === 'completed').length;
-  const totalLessons = modules.reduce((acc, m) => acc + m.lessons.length, 0);
   const completedLessons = modules.reduce(
     (acc, m) => acc + m.lessons.filter((l) => l.completed).length,
     0

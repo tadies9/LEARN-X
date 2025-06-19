@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { FileText, Grid, List } from 'lucide-react';
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 import { FileList } from '@/app/(dashboard)/courses/[id]/modules/[moduleId]/components/FileList';

@@ -37,7 +37,7 @@ export interface UserActivity {
     | 'achievement_earned'
     | 'quiz_completed'
     | 'flashcard_practiced';
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   timestamp: string;
 }
 
@@ -109,7 +109,7 @@ class DashboardApiService extends BaseApiService {
    */
   async logActivity(
     type: UserActivity['type'],
-    metadata?: Record<string, any>
+    metadata?: Record<string, unknown>
   ): Promise<UserActivity> {
     const response = await this.client.post<{ status: string; data: UserActivity }>(
       `${this.baseEndpoint}/activity`,

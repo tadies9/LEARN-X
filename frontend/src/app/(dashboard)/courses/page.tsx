@@ -16,6 +16,7 @@ import { EmptyState } from './components/EmptyState';
 import { CourseFilters } from './components/CourseFilters';
 
 import type { Course, CourseFilters as CourseFilterType } from '@/lib/types/course';
+import type { PaginatedData } from '@/lib/types/api';
 
 export default function CoursesPage() {
   const [courses, setCourses] = useState<Course[]>([]);
@@ -59,20 +60,25 @@ export default function CoursesPage() {
       if (response && typeof response === 'object') {
         if ('success' in response && 'data' in response) {
           // Handle ApiResponse structure
-          const responseData = (response as any).data;
+          const apiResponse = response as { success: boolean; data: PaginatedData<Course> | Course[] };
+          const responseData = apiResponse.data;
           if (Array.isArray(responseData)) {
             items = responseData;
           } else if (responseData && typeof responseData === 'object' && 'items' in responseData) {
             // Handle PaginatedData structure
-            items = Array.isArray(responseData.items) ? responseData.items : [];
-            if ('pagination' in responseData && responseData.pagination) {
-              paginationData = responseData.pagination;
+            const paginatedData = responseData as PaginatedData<Course>;
+            items = Array.isArray(paginatedData.items) ? paginatedData.items : [];
+            if ('pagination' in paginatedData && paginatedData.pagination) {
+              paginationData = paginatedData.pagination;
             }
           }
 
           // Handle pagination at response level
-          if ('pagination' in response && (response as any).pagination) {
-            paginationData = (response as any).pagination;
+          if (
+            'pagination' in response &&
+            (response as { pagination: typeof paginationData }).pagination
+          ) {
+            paginationData = (response as { pagination: typeof paginationData }).pagination;
           }
         } else if (Array.isArray(response)) {
           // Handle direct array response
@@ -83,7 +89,7 @@ export default function CoursesPage() {
       setCourses(Array.isArray(items) ? items : []);
       setPagination(paginationData);
     } catch (error) {
-      console.error('Error loading courses:', error);
+      // Error loading courses
       setCourses([]); // Ensure courses is always an array
     } finally {
       setLoading(false);

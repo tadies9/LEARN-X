@@ -1,28 +1,131 @@
 /** @type {import('next').NextConfig} */
+
+// Only load bundle analyzer in analyze mode
+const withBundleAnalyzer = require('@next/bundle-analyzer')({
+  enabled: process.env.ANALYZE === 'true',
+});
+
 const nextConfig = {
-  /* config options here */
   reactStrictMode: true,
   swcMinify: true,
   output: 'standalone',
   trailingSlash: false,
+  
+  // Experimental optimizations
   experimental: {
-    esmExternals: false,
+    optimizeCss: false,
+    optimizePackageImports: [
+      '@radix-ui/react-alert-dialog',
+      '@radix-ui/react-avatar',
+      '@radix-ui/react-checkbox',
+      '@radix-ui/react-dialog',
+      '@radix-ui/react-dropdown-menu',
+      '@radix-ui/react-label',
+      '@radix-ui/react-navigation-menu',
+      '@radix-ui/react-progress',
+      '@radix-ui/react-radio-group',
+      '@radix-ui/react-scroll-area',
+      '@radix-ui/react-select',
+      '@radix-ui/react-separator',
+      '@radix-ui/react-slider',
+      '@radix-ui/react-slot',
+      '@radix-ui/react-switch',
+      '@radix-ui/react-tabs',
+      '@radix-ui/react-toast',
+      '@radix-ui/react-toggle',
+      '@radix-ui/react-toggle-group',
+      '@radix-ui/react-tooltip',
+      'lucide-react',
+      'recharts',
+      'date-fns',
+      '@tanstack/react-query'
+    ],
   },
+
+  // Compiler optimizations
+  compiler: {
+    // Remove console logs in production
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+
+  // Module import optimizations
+  modularizeImports: {
+    'lucide-react': {
+      transform: 'lucide-react/dist/esm/icons/{{member}}',
+    },
+    'date-fns': {
+      transform: 'date-fns/{{member}}',
+    },
+  },
+
+  // ESLint configuration
   eslint: {
-    // Only run ESLint on these directories during production builds
-    dirs: ['pages', 'utils', 'src'],
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
+    dirs: ['src'],
+    ignoreDuringBuilds: true, // Temporarily ignore to allow build
   },
+
+  // TypeScript configuration
   typescript: {
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false, // Re-enable TypeScript checks
   },
-  webpack: (config, { isServer }) => {
-    // Temporarily disable problematic babel-loader for realtime-js
-    // We'll handle this differently if needed
+
+  // Webpack configuration
+  webpack: (config, { isServer, dev }) => {
+    // Optimize chunks
+    if (!dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        runtimeChunk: 'single',
+        splitChunks: {
+          chunks: 'all',
+          cacheGroups: {
+            default: false,
+            vendors: false,
+            // Vendor chunk
+            vendor: {
+              name: 'vendor',
+              chunks: 'all',
+              test: /node_modules/,
+              priority: 20,
+            },
+            // Common chunk
+            common: {
+              name: 'common',
+              minChunks: 2,
+              chunks: 'all',
+              priority: 10,
+              reuseExistingChunk: true,
+              enforce: true,
+            },
+            // Radix UI chunk
+            radix: {
+              name: 'radix',
+              test: /[\\/]node_modules[\\/]@radix-ui[\\/]/,
+              chunks: 'all',
+              priority: 30,
+            },
+            // PDF libraries chunk
+            pdf: {
+              name: 'pdf',
+              test: /[\\/]node_modules[\\/](pdfjs-dist|@react-pdf|react-pdf)[\\/]/,
+              chunks: 'all',
+              priority: 30,
+            },
+            // Rich text editor chunk
+            editor: {
+              name: 'editor',
+              test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
+              chunks: 'all',
+              priority: 30,
+            },
+          },
+        },
+      };
+    }
+
+    // Fallbacks
     config.resolve.fallback = {
       ...config.resolve.fallback,
       fs: false,
@@ -30,7 +133,7 @@ const nextConfig = {
       tls: false,
     };
 
-    // Configure PDF.js worker
+    // PDF.js worker configuration
     config.resolve.alias = {
       ...config.resolve.alias,
       'pdfjs-dist/build/pdf.worker.min.js': false,
@@ -39,7 +142,8 @@ const nextConfig = {
 
     return config;
   },
-  // Configure server to use port 3001
+
+  // Rewrites configuration
   async rewrites() {
     return [
       {
@@ -49,7 +153,7 @@ const nextConfig = {
     ];
   },
 
-  // Add headers for CORS and worker files
+  // Headers configuration
   async headers() {
     return [
       {
@@ -74,8 +178,35 @@ const nextConfig = {
           },
         ],
       },
+      // Performance headers
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      {
+        source: '/fonts/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
     ];
+  },
+
+  // Image optimization
+  images: {
+    domains: ['localhost', 'learn-x.com'],
+    formats: ['image/avif', 'image/webp'],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
 };
 
-module.exports = nextConfig;
+module.exports = withBundleAnalyzer(nextConfig);

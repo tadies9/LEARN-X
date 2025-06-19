@@ -1,11 +1,9 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { ThemePreference, ThemeMode } from '@/lib/types/theme';
 import {
   getSystemTheme,
   getTimeBasedTheme,
   resolveTheme,
-  applyThemeToDOM,
-  applyAccessibilityEnhancements,
   isValidThemePreference,
 } from '@/lib/utils/theme';
 
@@ -15,11 +13,7 @@ interface UseThemeInitializationProps {
   enableTransitions: boolean;
 }
 
-export function useThemeInitialization({
-  defaultTheme,
-  storageKey,
-  enableTransitions,
-}: UseThemeInitializationProps) {
+export function useThemeInitialization({ defaultTheme, storageKey }: UseThemeInitializationProps) {
   const [preference, setPreference] = useState<ThemePreference>(defaultTheme);
   const [systemTheme, setSystemTheme] = useState<ThemeMode | null>(null);
   const [mounted, setMounted] = useState(false);
@@ -40,7 +34,7 @@ export function useThemeInitialization({
         setPreference(saved);
       }
     } catch (error) {
-      console.warn('Failed to load theme preference from localStorage:', error);
+      // Failed to load theme preference from localStorage
     }
 
     setSystemTheme(getSystemTheme());

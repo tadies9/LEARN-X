@@ -9,7 +9,7 @@ interface GoogleAuthButtonProps {
   redirectTo?: string;
 }
 
-export function GoogleAuthButton({ mode, redirectTo }: GoogleAuthButtonProps) {
+export function GoogleAuthButton({ redirectTo }: GoogleAuthButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const supabase = createClient();

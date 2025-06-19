@@ -8,8 +8,7 @@
 import { useState, useEffect } from 'react';
 import { courseApi } from '@/lib/api/course';
 import { moduleApi } from '@/lib/api/module';
-import { fileApi } from '@/lib/api/file';
-import type { Course, Module, CourseFile } from '@/lib/types/course';
+import type { CourseFile } from '@/lib/types/course';
 
 interface StudyMaterial {
   id: string;
@@ -62,9 +61,9 @@ export function useStudyMaterials(): UseStudyMaterialsReturn {
           const modulesResponse = await moduleApi.getModules(course.id);
           const modules = Array.isArray(modulesResponse) ? modulesResponse : modulesResponse.data;
 
-          for (const module of modules) {
+          for (const moduleItem of modules) {
             try {
-              const files = await moduleApi.getModuleFiles(module.id);
+              const files = await moduleApi.getModuleFiles(moduleItem.id);
 
               // Transform files into study materials
               const moduleMaterials = files.map((file: CourseFile) => ({
@@ -80,22 +79,22 @@ export function useStudyMaterials(): UseStudyMaterialsReturn {
                 aiFeatures: getAiFeatures(file.mimeType),
                 status: file.status === 'completed' ? ('ready' as const) : ('in-progress' as const),
                 courseTitle: course.title,
-                moduleTitle: module.title,
+                moduleTitle: moduleItem.title,
               }));
 
               allMaterials.push(...moduleMaterials);
             } catch (moduleError) {
-              console.error(`Error loading files for module ${module.id}:`, moduleError);
+              // Error loading files for module, skip to next
             }
           }
         } catch (courseError) {
-          console.error(`Error loading modules for course ${course.id}:`, courseError);
+          // Error loading modules for course, skip to next
         }
       }
 
       setMaterials(allMaterials);
     } catch (err) {
-      console.error('Error fetching study materials:', err);
+      // Error fetching study materials
       setError(err instanceof Error ? err.message : 'Failed to load study materials');
     } finally {
       setLoading(false);

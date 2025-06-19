@@ -53,7 +53,7 @@ export interface AIUsageStats {
   dailySpend: number;
   dailyLimit: number;
   remainingBudget: number;
-  personalizationMetrics?: any;
+  personalizationMetrics?: Record<string, unknown>;
 }
 
 export class AIApiService {
@@ -239,7 +239,7 @@ export class AIApiService {
   /**
    * Get cost information
    */
-  static async getCosts(): Promise<any> {
+  static async getCosts(): Promise<Record<string, unknown>> {
     const response = await API_CLIENT.get('/ai/costs');
     return response.data.data;
   }

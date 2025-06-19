@@ -27,7 +27,7 @@ export function ThemeSettings() {
     mounted,
   } = useTheme();
 
-  const colors = useThemeColors();
+  const colors = useThemeColors(resolvedTheme);
 
   const themeOptions = [
     {
