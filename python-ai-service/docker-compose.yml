@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  python-ai:
+    build: .
+    container_name: learnx-python-ai
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+      - WORKER_COUNT=4
+      - MAX_CONCURRENT_JOBS=10
+    volumes:
+      - ./app:/app/app
+      - ./services:/app/services
+      - ./models:/app/models
+      - ./utils:/app/utils
+    networks:
+      - learnx-network
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: learnx-postgres-dev
+    environment:
+      - POSTGRES_USER=learnx
+      - POSTGRES_PASSWORD=learnx_dev
+      - POSTGRES_DB=learnx_dev
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - learnx-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U learnx"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: learnx-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - learnx-network
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  learnx-network:
+    driver: bridge
