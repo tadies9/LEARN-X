@@ -86,6 +86,48 @@ class JobProcessor:
         await asyncio.gather(*self._tasks, return_exceptions=True)
         
         logger.info("Job processor stopped")
+    
+    async def health_check(self) -> Dict[str, Any]:
+        """
+        Check health of the job processor and queues.
+        
+        Returns:
+            Health status dictionary
+        """
+        try:
+            # Check PGMQ connection
+            pgmq_healthy = await self.pgmq.health_check()
+            
+            # Check queue metrics
+            queue_status = {}
+            for queue_name in self.QUEUE_CONFIGS.keys():
+                try:
+                    metrics = await self.pgmq.get_metrics(queue_name)
+                    queue_status[queue_name] = {
+                        "status": "healthy",
+                        "metrics": metrics
+                    }
+                except Exception as e:
+                    queue_status[queue_name] = {
+                        "status": "error",
+                        "error": str(e)
+                    }
+            
+            return {
+                "status": "healthy" if pgmq_healthy else "unhealthy",
+                "pgmq_connection": "healthy" if pgmq_healthy else "unhealthy",
+                "queues": queue_status,
+                "active_tasks": len(self._tasks),
+                "shutdown": self._shutdown
+            }
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "active_tasks": len(self._tasks),
+                "shutdown": self._shutdown
+            }
         
     async def _process_queue(self, queue_name: str, config: Dict[str, Any]):
         """
@@ -125,12 +167,29 @@ class JobProcessor:
                 break
                 
             except Exception as e:
-                logger.error(
-                    f"Error processing queue: {queue_name}",
-                    error=str(e)
-                )
-                # Wait before retrying
-                await asyncio.sleep(5)
+                error_msg = str(e).lower()
+                if "connection" in error_msg or "timeout" in error_msg:
+                    logger.warning(
+                        f"Connection issue in queue: {queue_name}",
+                        error=str(e)
+                    )
+                    # Shorter wait for connection issues
+                    await asyncio.sleep(2)
+                elif "undefined function" in error_msg:
+                    logger.warning(
+                        f"PGMQ function not available for queue: {queue_name}",
+                        error=str(e)
+                    )
+                    # Longer wait for function issues
+                    await asyncio.sleep(10)
+                else:
+                    logger.error(
+                        f"Error processing queue: {queue_name}",
+                        error=str(e),
+                        error_type=type(e).__name__
+                    )
+                    # Standard wait for other errors
+                    await asyncio.sleep(5)
                 
     async def _process_messages(
         self,

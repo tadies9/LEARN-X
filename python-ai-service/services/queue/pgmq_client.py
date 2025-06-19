@@ -186,7 +186,8 @@ class PGMQClient:
         queue_name: str,
         vt: int = 30,
         qty: int = 10,
-        poll_timeout_s: int = 5
+        poll_timeout_s: int = 5,
+        poll_interval_ms: int = 100
     ) -> List[PGMQMessage]:
         """
         Read messages with long polling.
@@ -196,6 +197,7 @@ class PGMQClient:
             vt: Visibility timeout in seconds
             qty: Number of messages to read
             poll_timeout_s: Max time to wait for messages
+            poll_interval_ms: Polling interval in milliseconds
             
         Returns:
             List of messages
@@ -203,11 +205,12 @@ class PGMQClient:
         try:
             async with self.pool.acquire() as conn:
                 rows = await conn.fetch(
-                    "SELECT * FROM pgmq.read_with_poll($1, $2, $3, $4)",
+                    "SELECT * FROM pgmq.read_with_poll($1, $2, $3, $4, $5)",
                     queue_name,
                     vt,
                     qty,
-                    poll_timeout_s
+                    poll_timeout_s,
+                    poll_interval_ms
                 )
                 
                 messages = []
@@ -222,12 +225,32 @@ class PGMQClient:
                 
                 return messages
                 
+        except asyncpg.exceptions.UndefinedFunctionError as e:
+            # Fallback to regular read if poll function doesn't exist
+            logger.warning(
+                "read_with_poll function not available, falling back to regular read",
+                queue=queue_name,
+                error=str(e)
+            )
+            return await self.read(queue_name, vt, qty)
+        except asyncpg.exceptions.ConnectionDoesNotExistError as e:
+            logger.error(
+                "Database connection lost during polling",
+                queue=queue_name,
+                error=str(e)
+            )
+            # Return empty list instead of raising to allow retry
+            return []
         except Exception as e:
             logger.error(
                 "Failed to read with poll",
                 queue=queue_name,
-                error=str(e)
+                error=str(e),
+                error_type=type(e).__name__
             )
+            # Return empty list for non-critical errors to allow continuation
+            if "timeout" in str(e).lower() or "connection" in str(e).lower():
+                return []
             raise
     
     async def delete(self, queue_name: str, msg_id: int) -> bool:
@@ -342,6 +365,21 @@ class PGMQClient:
                 error=str(e)
             )
             raise
+    
+    async def health_check(self) -> bool:
+        """
+        Check if the connection pool is healthy.
+        
+        Returns:
+            True if healthy, False otherwise
+        """
+        try:
+            async with self.pool.acquire() as conn:
+                result = await conn.fetchval("SELECT 1")
+                return result == 1
+        except Exception as e:
+            logger.error("PGMQ health check failed", error=str(e))
+            return False
     
     def shutdown(self):
         """Signal shutdown to stop processing"""
