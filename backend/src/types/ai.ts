@@ -1,4 +1,37 @@
-export interface AIRequest {
+// AI-related type definitions
+
+export type AIRequestType = 
+  | 'chat-completion'
+  | 'embedding'
+  | 'moderation'
+  | 'fine-tuning'
+  | 'explain'
+  | 'summary'
+  | 'quiz'
+  | 'flashcard'
+  | 'practice'
+  | 'introduction';
+
+export interface CachedResponse {
+  content: string;
+  timestamp: number;
+  usage: {
+    promptTokens: number;
+    completionTokens: number;
+  };
+  metadata?: Record<string, any>;
+}
+
+export interface AIUsageMetrics {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  estimatedCost: number;
+  model: string;
+  cached: boolean;
+}
+
+export interface AIRequestLog {
   id: string;
   userId: string;
   requestType: AIRequestType;
@@ -11,56 +44,57 @@ export interface AIRequest {
   createdAt: Date;
 }
 
-export enum AIRequestType {
-  EXPLAIN = 'explain',
-  SUMMARIZE = 'summarize',
-  FLASHCARD = 'flashcard',
-  QUIZ = 'quiz',
-  ANALOGY = 'analogy',
-  EMBEDDING = 'embedding',
+export interface AIErrorLog {
+  id: string;
+  userId: string;
+  requestType: AIRequestType;
+  error: string;
+  errorCode?: string;
+  timestamp: Date;
 }
 
-export interface AIResponse<T = any> {
-  success: boolean;
-  data?: T;
-  error?: string;
-  usage?: {
-    promptTokens: number;
-    completionTokens: number;
-    totalTokens: number;
-    estimatedCost: number;
-  };
+export interface BatchProcessingOptions {
+  maxBatchSize?: number;
+  maxWaitTime?: number;
+  priorityGroups?: boolean;
+  retryFailures?: boolean;
+  costLimit?: number;
+}
+
+export interface CircuitBreakerConfig {
+  failureThreshold: number;
+  resetTimeout: number;
+  monitoringPeriod: number;
+  halfOpenRequests: number;
+}
+
+export interface AIResponse {
+  content: string;
+  usage: AIUsageMetrics;
+  cached: boolean;
+  metadata?: Record<string, any>;
 }
 
 export interface GenerationParams {
-  model?: string;
-  temperature?: number;
-  maxTokens?: number;
+  model: string;
+  temperature: number;
+  maxTokens: number;
+  topP?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  stop?: string[];
   stream?: boolean;
 }
 
-export interface CachedResponse {
-  content: string;
-  timestamp: number;
-  usage: {
-    promptTokens: number;
-    completionTokens: number;
-  };
+export interface ExplanationParams extends GenerationParams {
+  topic: string;
+  context?: string;
+  level?: 'beginner' | 'intermediate' | 'advanced';
+  style?: 'simple' | 'detailed' | 'academic';
 }
 
-export interface ContentFeedback {
-  id: string;
-  userId: string;
-  contentId: string;
-  helpful: boolean;
-  rating?: number;
-  comments?: string;
-  createdAt: Date;
-}
-
-export interface SearchResult {
-  chunkId: string;
+export interface SummaryParams extends GenerationParams {
   content: string;
-  score: number;
-  metadata?: Record<string, any>;
+  type?: 'brief' | 'detailed' | 'key-points';
+  length?: 'short' | 'medium' | 'long';
 }

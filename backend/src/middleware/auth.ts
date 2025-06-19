@@ -1,7 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { supabase } from '../config/supabase';
 import { AppError } from '../utils/errors';
-import { logger } from '../utils/logger';
+import { logger, requestContext } from '../utils/logger';
+import * as Sentry from '@sentry/node';
 
 export const authenticateUser = async (
   req: Request,
@@ -69,6 +70,18 @@ export const authenticateUser = async (
         role: 'user',
       };
     }
+
+    // Update request context with user ID
+    const context = requestContext.getStore();
+    if (context) {
+      context.userId = req.user.id;
+    }
+
+    // Set Sentry user context
+    Sentry.setUser({
+      id: req.user.id,
+      email: req.user.email,
+    });
 
     next();
   } catch (error) {

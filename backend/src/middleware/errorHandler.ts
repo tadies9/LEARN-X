@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '../utils/logger';
 import { ZodError } from 'zod';
+import * as Sentry from '@sentry/node';
 
 export class AppError extends Error {
   constructor(
@@ -20,11 +21,26 @@ export const errorHandler = (
   res: Response,
   _: NextFunction
 ) => {
+  const correlationId = req.headers['x-correlation-id'] as string;
+  
+  // Capture error in Sentry
+  Sentry.captureException(err, {
+    tags: {
+      correlation_id: correlationId,
+    },
+    extra: {
+      request_url: req.url,
+      request_method: req.method,
+      user_id: (req as any).user?.id,
+    },
+  });
+
   logger.error({
     error: err,
     request: req.url,
     method: req.method,
     ip: req.ip,
+    correlationId,
   });
 
   // Zod validation errors
@@ -35,7 +51,7 @@ export const errorHandler = (
         message: 'Invalid input data',
         details: err.errors,
         timestamp: new Date().toISOString(),
-        requestId: req.headers['x-request-id'],
+        requestId: correlationId,
       },
     });
   }
@@ -47,7 +63,7 @@ export const errorHandler = (
         code: err.code || 'APP_ERROR',
         message: err.message,
         timestamp: new Date().toISOString(),
-        requestId: req.headers['x-request-id'],
+        requestId: correlationId,
       },
     });
   }

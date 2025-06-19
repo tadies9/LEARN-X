@@ -8,38 +8,42 @@ import { FileService } from '../services/fileService';
 export function createOwnershipMiddleware<
   T extends { checkOwnership: (id: string, userId: string) => Promise<boolean> },
 >(service: T, paramName = 'id', action = 'access this resource') {
-  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           message: 'Authentication required',
         });
+        return;
       }
 
       const resourceId = req.params[paramName];
       if (!resourceId) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           message: `${paramName} parameter is required`,
         });
+        return;
       }
 
       const hasOwnership = await service.checkOwnership(resourceId, userId);
       if (!hasOwnership) {
-        return res.status(403).json({
+        res.status(403).json({
           success: false,
           message: `You do not have permission to ${action}`,
         });
+        return;
       }
 
       next();
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message: 'Failed to verify permissions',
       });
+      return;
     }
   };
 }
@@ -52,7 +56,10 @@ export class PermissionMiddleware {
 
   // Course permissions
   static requireCourseOwnership = createOwnershipMiddleware(
-    this.courseService,
+    {
+      checkOwnership: (id: string, userId: string) => 
+        PermissionMiddleware.courseService.checkCourseOwnership(id, userId)
+    },
     'id',
     'modify this course'
   );
@@ -61,46 +68,53 @@ export class PermissionMiddleware {
     req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
-  ) => {
+  ): Promise<void> => {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           message: 'Authentication required',
         });
+        return;
       }
 
       const courseId = req.params.id || req.params.courseId;
       if (!courseId) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           message: 'Course ID is required',
         });
+        return;
       }
 
-      const course = await this.courseService.getCourse(courseId, userId);
+      const course = await PermissionMiddleware.courseService.getCourse(courseId, userId);
       if (!course) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           message: 'Course not found or access denied',
         });
+        return;
       }
 
       // Attach course to request for later use
       req.course = course;
       next();
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message: 'Failed to verify course access',
       });
+      return;
     }
   };
 
   // Module permissions
   static requireModuleOwnership = createOwnershipMiddleware(
-    this.moduleService,
+    {
+      checkOwnership: (id: string, userId: string) => 
+        PermissionMiddleware.moduleService.checkModuleOwnership(id, userId)
+    },
     'id',
     'modify this module'
   );
@@ -109,27 +123,29 @@ export class PermissionMiddleware {
     req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
-  ) => {
+  ): Promise<void> => {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           message: 'Authentication required',
         });
+        return;
       }
 
       const moduleId = req.params.id || req.params.moduleId;
       if (!moduleId) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           message: 'Module ID is required',
         });
+        return;
       }
 
-      const module = await this.moduleService.getModule(moduleId, userId);
+      const module = await PermissionMiddleware.moduleService.getModule(moduleId, userId);
       if (!module) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           message: 'Module not found or access denied',
         });
@@ -139,16 +155,20 @@ export class PermissionMiddleware {
       req.module = module;
       next();
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message: 'Failed to verify module access',
       });
+      return;
     }
   };
 
   // File permissions
   static requireFileOwnership = createOwnershipMiddleware(
-    this.fileService,
+    {
+      checkOwnership: (id: string, userId: string) => 
+        PermissionMiddleware.fileService.checkFileOwnership(id, userId)
+    },
     'id',
     'modify this file'
   );
@@ -157,53 +177,58 @@ export class PermissionMiddleware {
     req: AuthenticatedRequest,
     res: Response,
     next: NextFunction
-  ) => {
+  ): Promise<void> => {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           message: 'Authentication required',
         });
+        return;
       }
 
       const fileId = req.params.id || req.params.fileId;
       if (!fileId) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           message: 'File ID is required',
         });
+        return;
       }
 
-      const file = await this.fileService.getFile(fileId, userId);
+      const file = await PermissionMiddleware.fileService.getFile(fileId, userId);
       if (!file) {
-        return res.status(404).json({
+        res.status(404).json({
           success: false,
           message: 'File not found or access denied',
         });
+        return;
       }
 
       // Attach file to request for later use
       req.file = file;
       next();
     } catch (error) {
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message: 'Failed to verify file access',
       });
+      return;
     }
   };
 
   // Role-based permissions
   static requireRole(allowedRoles: string[]) {
-    return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+    return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
       const userRole = req.user?.role;
 
       if (!userRole || !allowedRoles.includes(userRole)) {
-        return res.status(403).json({
+        res.status(403).json({
           success: false,
           message: 'Insufficient permissions',
         });
+        return;
       }
 
       next();
