@@ -1,0 +1,56 @@
+{
+  "timestamp": "2025-06-18T23:05:05.377Z",
+  "checks": [
+    {
+      "name": "Python AI Client Integration",
+      "status": "PASS",
+      "details": "PythonAIClient.ts found"
+    },
+    {
+      "name": "Python Client API Completeness",
+      "status": "PASS",
+      "details": "All essential methods present"
+    },
+    {
+      "name": "Python Content Generation Service",
+      "status": "PASS",
+      "details": "PythonContentGenerationService.ts found"
+    },
+    {
+      "name": "Content Generation Feature Parity",
+      "status": "PASS",
+      "details": "5/5 content types implemented"
+    },
+    {
+      "name": "Legacy OpenAI Usage Scan",
+      "status": "PARTIAL",
+      "details": "3 direct OpenAI calls found in 2 files",
+      "legacyFiles": [
+        {
+          "file": "services/openai/OpenAIService.ts",
+          "matches": 1
+        },
+        {
+          "file": "services/batch/BatchProcessingService.ts",
+          "matches": 2
+        }
+      ]
+    },
+    {
+      "name": "Python Service Configuration",
+      "status": "PARTIAL",
+      "details": "No configuration found"
+    },
+    {
+      "name": "Migration Services Implementation",
+      "status": "PASS",
+      "details": "2/2 migration services found: PythonBatchService.ts, PythonOutlineService.ts"
+    }
+  ],
+  "summary": {
+    "pythonServiceIntegrated": false,
+    "legacyCodeRemaining": 3,
+    "migrationComplete": false,
+    "migrationPercentage": 71.42857142857143
+  }
+}

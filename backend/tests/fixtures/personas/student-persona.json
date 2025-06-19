@@ -1,0 +1,18 @@
+{
+  "learning_style": "visual",
+  "communication_style": "casual",
+  "technical_level": "beginner",
+  "interests": ["technology", "artificial intelligence", "programming"],
+  "academic_level": "undergraduate",
+  "career_focus": "software development",
+  "content_preferences": {
+    "format": "interactive",
+    "complexity": "simplified",
+    "examples": "practical"
+  },
+  "personality_traits": {
+    "curiosity_level": "high",
+    "patience_level": "medium",
+    "detail_preference": "overview_first"
+  }
+}

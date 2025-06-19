@@ -1,0 +1,302 @@
+{
+  "timestamp": "2025-06-18T22:44:26.399Z",
+  "duration": 45,
+  "overall": {
+    "status": "healthy",
+    "score": 25,
+    "total": 26,
+    "color": "green",
+    "percentage": 96
+  },
+  "summary": {
+    "services": 3,
+    "databases": 1,
+    "apis": 8,
+    "monitoring": 2
+  },
+  "details": {
+    "services": {
+      "backend": {
+        "tests": {
+          "Health Check": {
+            "status": "pass",
+            "response": {
+              "status": "healthy",
+              "timestamp": "2025-06-18T22:44:26.362Z",
+              "service": "backend",
+              "version": "1.0.0-health-check",
+              "uptime_seconds": 151
+            }
+          },
+          "API Status": {
+            "status": "pass",
+            "response": {
+              "status": "healthy",
+              "api_version": "v1",
+              "endpoints": {
+                "health": "operational",
+                "admin": "operational",
+                "ai": "operational",
+                "files": "operational",
+                "courses": "operational"
+              },
+              "timestamp": "2025-06-18T22:44:26.365Z"
+            }
+          },
+          "Database Status": {
+            "status": "pass",
+            "response": {
+              "status": "healthy",
+              "database": {
+                "type": "postgresql",
+                "status": "connected",
+                "latency_ms": 45
+              },
+              "timestamp": "2025-06-18T22:44:26.367Z"
+            }
+          },
+          "Queue Status": {
+            "status": "pass",
+            "response": {
+              "status": "healthy",
+              "queues": {
+                "file_processing": {
+                  "status": "ready",
+                  "pending": 0,
+                  "active": 0
+                },
+                "embedding_generation": {
+                  "status": "ready",
+                  "pending": 0,
+                  "active": 0
+                },
+                "notification": {
+                  "status": "ready",
+                  "pending": 0,
+                  "active": 0
+                }
+              },
+              "queue_system": "pgmq",
+              "timestamp": "2025-06-18T22:44:26.368Z"
+            }
+          },
+          "Performance Metrics": {
+            "status": "pass",
+            "response": {
+              "status": "healthy",
+              "performance": {
+                "memory_usage_mb": 8,
+                "cpu_usage_percent": 15,
+                "response_time_avg_ms": 120,
+                "requests_per_minute": 85
+              },
+              "timestamp": "2025-06-18T22:44:26.368Z"
+            }
+          }
+        },
+        "overall": "healthy"
+      },
+      "pythonAI": {
+        "tests": {
+          "Health Check": {
+            "status": "pass",
+            "response": {
+              "status": "healthy",
+              "timestamp": "2025-06-18T17:44:26.365551",
+              "service": "python-ai-service",
+              "version": "1.0.0",
+              "checks_performed": 4
+            }
+          },
+          "AI Health": {
+            "status": "pass",
+            "response": {
+              "status": "healthy",
+              "ai_providers": {
+                "openai": {
+                  "status": "configured",
+                  "available": true
+                },
+                "local": {
+                  "status": "disabled",
+                  "available": false
+                }
+              },
+              "models": {
+                "embedding": "text-embedding-3-small",
+                "chat": "gpt-4"
+              },
+              "timestamp": "2025-06-18T17:44:26.367560"
+            }
+          },
+          "Queue Health": {
+            "status": "pass",
+            "response": {
+              "status": "healthy",
+              "queue_system": "pgmq",
+              "queues": {
+                "file_processing": {
+                  "status": "ready",
+                  "pending": 0
+                },
+                "embedding_generation": {
+                  "status": "ready",
+                  "pending": 0
+                }
+              },
+              "timestamp": "2025-06-18T17:44:26.368454"
+            }
+          },
+          "Embeddings Health": {
+            "status": "pass",
+            "response": {
+              "status": "healthy",
+              "embedding_service": {
+                "provider": "openai",
+                "model": "text-embedding-3-small",
+                "dimensions": 1536,
+                "status": "ready"
+              },
+              "cache": {
+                "status": "enabled",
+                "hit_rate": 0.85
+              },
+              "timestamp": "2025-06-18T17:44:26.369839"
+            }
+          }
+        },
+        "overall": "healthy"
+      },
+      "communication": {
+        "backendToPython": {
+          "status": "pass",
+          "response": {
+            "status": "healthy",
+            "python_ai_service": {
+              "reachable": true,
+              "status": "healthy",
+              "response_time_ms": 45
+            },
+            "communication": "successful",
+            "timestamp": "2025-06-18T22:44:26.393Z"
+          }
+        }
+      }
+    },
+    "databases": {
+      "supabase": {
+        "status": "fail",
+        "error": "Missing Supabase configuration"
+      }
+    },
+    "cache": {
+      "redis": {
+        "status": "pass",
+        "ping": "success",
+        "operations": "success"
+      }
+    },
+    "queues": {
+      "pgmq": {
+        "status": "pass",
+        "queueStatus": {
+          "file_processing": {
+            "status": "ready",
+            "pending": 0,
+            "active": 0
+          },
+          "embedding_generation": {
+            "status": "ready",
+            "pending": 0,
+            "active": 0
+          },
+          "notification": {
+            "status": "ready",
+            "pending": 0,
+            "active": 0
+          }
+        }
+      }
+    },
+    "apis": {
+      "admin": {
+        "Dashboard Stats": {
+          "status": "pass",
+          "httpStatus": 200
+        },
+        "System Health": {
+          "status": "pass",
+          "httpStatus": 200
+        }
+      },
+      "ai": {
+        "AI Health": {
+          "status": "pass",
+          "httpStatus": 200
+        },
+        "Content Generation Status": {
+          "status": "pass",
+          "httpStatus": 200
+        }
+      },
+      "search": {
+        "Search Health": {
+          "status": "pass",
+          "httpStatus": 200
+        },
+        "Vector Status": {
+          "status": "pass",
+          "httpStatus": 200
+        }
+      },
+      "core": {
+        "Course API": {
+          "status": "pass",
+          "httpStatus": 200
+        },
+        "File API": {
+          "status": "pass",
+          "httpStatus": 200
+        }
+      }
+    },
+    "frontend": {
+      "configuration": {
+        "packageJson": "pass",
+        "nextConfig": "pass",
+        "sentryConfig": "pass"
+      },
+      "overall": "healthy"
+    },
+    "monitoring": {
+      "apm": {
+        "status": "pass",
+        "data": {
+          "status": "healthy",
+          "apm": {
+            "provider": "sentry",
+            "collecting_metrics": true,
+            "error_tracking": true
+          },
+          "metrics": {
+            "errors_last_hour": 2,
+            "response_time_p95": "250ms",
+            "throughput_rpm": 450
+          },
+          "timestamp": "2025-06-18T22:44:26.399Z"
+        }
+      },
+      "sentry": {
+        "configExists": "pass"
+      },
+      "overall": "healthy"
+    },
+    "overall": {
+      "status": "healthy",
+      "score": 25,
+      "total": 26,
+      "color": "green",
+      "percentage": 96
+    }
+  }
+}

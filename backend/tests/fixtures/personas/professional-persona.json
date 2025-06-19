@@ -1,0 +1,18 @@
+{
+  "learning_style": "analytical",
+  "communication_style": "professional",
+  "technical_level": "advanced",
+  "interests": ["machine learning", "data science", "business strategy"],
+  "academic_level": "graduate",
+  "career_focus": "data science",
+  "content_preferences": {
+    "format": "structured",
+    "complexity": "detailed",
+    "examples": "industry_specific"
+  },
+  "personality_traits": {
+    "curiosity_level": "high",
+    "patience_level": "high",
+    "detail_preference": "comprehensive"
+  }
+}

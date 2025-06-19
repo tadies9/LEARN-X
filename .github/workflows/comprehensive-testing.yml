@@ -1,0 +1,631 @@
+name: Comprehensive Testing Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+
+env:
+  NODE_VERSION: '20.x'
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  # Pre-flight checks
+  pre-flight:
+    name: Pre-flight Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      backend-changed: ${{ steps.changes.outputs.backend }}
+      frontend-changed: ${{ steps.changes.outputs.frontend }}
+      python-changed: ${{ steps.changes.outputs.python }}
+      
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'shared/**'
+            frontend:
+              - 'frontend/**'
+              - 'shared/**'
+            python:
+              - 'python-ai-service/**'
+              - 'python-service/**'
+
+      - name: Check file line counts
+        run: |
+          echo "Checking for files exceeding 500 lines..."
+          find . -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" -o -name "*.py" | \
+          while read file; do
+            lines=$(wc -l < "$file")
+            if [ $lines -gt 500 ]; then
+              echo "❌ $file has $lines lines (exceeds 500 line limit)"
+              exit 1
+            fi
+          done
+          echo "✅ All files are within the 500 line limit"
+
+  # Static Analysis
+  static-analysis:
+    name: Static Analysis
+    runs-on: ubuntu-latest
+    needs: pre-flight
+    if: needs.pre-flight.outputs.backend-changed == 'true' || needs.pre-flight.outputs.frontend-changed == 'true'
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install backend dependencies
+        if: needs.pre-flight.outputs.backend-changed == 'true'
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        if: needs.pre-flight.outputs.frontend-changed == 'true'
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run ESLint (Backend)
+        if: needs.pre-flight.outputs.backend-changed == 'true'
+        working-directory: ./backend
+        run: npm run lint
+
+      - name: Run ESLint (Frontend)
+        if: needs.pre-flight.outputs.frontend-changed == 'true'
+        working-directory: ./frontend
+        run: npm run lint
+
+      - name: TypeScript type checking (Backend)
+        if: needs.pre-flight.outputs.backend-changed == 'true'
+        working-directory: ./backend
+        run: npm run type-check
+
+      - name: TypeScript type checking (Frontend)
+        if: needs.pre-flight.outputs.frontend-changed == 'true'
+        working-directory: ./frontend
+        run: npm run type-check
+
+  # Unit Tests
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: [pre-flight, static-analysis]
+    if: always() && needs.pre-flight.outputs.backend-changed == 'true'
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run unit tests
+        working-directory: ./backend
+        run: npm run test -- --coverage --maxWorkers=2
+        env:
+          NODE_ENV: test
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./backend/coverage/lcov.info
+          flags: unittests
+          name: backend-unit-tests
+
+  # Integration Tests
+  integration-tests:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [pre-flight, static-analysis]
+    if: always() && needs.pre-flight.outputs.backend-changed == 'true'
+    timeout-minutes: 45
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: learnx_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Setup test database
+        run: |
+          PGPASSWORD=test_password psql -h localhost -U test_user -d learnx_test -c "
+            CREATE EXTENSION IF NOT EXISTS vector;
+            CREATE EXTENSION IF NOT EXISTS pgcrypto;
+          "
+
+      - name: Run database migrations
+        working-directory: ./backend
+        run: npm run migrate:test
+        env:
+          TEST_DATABASE_URL: postgresql://test_user:test_password@localhost:5432/learnx_test
+
+      - name: Run integration tests
+        working-directory: ./backend
+        run: npm run test:integration
+        env:
+          NODE_ENV: test
+          TEST_DATABASE_URL: postgresql://test_user:test_password@localhost:5432/learnx_test
+          TEST_REDIS_URL: redis://localhost:6379
+          TEST_SUPABASE_URL: http://localhost:54321
+          TEST_SUPABASE_SERVICE_KEY: test-service-key
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: integration-test-results
+          path: |
+            backend/test-results/
+            backend/coverage/
+
+  # Performance Tests
+  performance-tests:
+    name: Performance Tests
+    runs-on: ubuntu-latest
+    needs: [pre-flight, integration-tests]
+    if: always() && (github.event_name == 'schedule' || contains(github.event.head_commit.message, '[perf]'))
+    timeout-minutes: 60
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: learnx_perf
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Setup performance test database
+        run: |
+          PGPASSWORD=test_password psql -h localhost -U test_user -d learnx_perf -c "
+            CREATE EXTENSION IF NOT EXISTS vector;
+            CREATE EXTENSION IF NOT EXISTS pgcrypto;
+          "
+
+      - name: Load baseline performance metrics
+        run: |
+          mkdir -p ./backend/performance-baselines
+          if [ -f "./backend/performance-baselines/baseline.json" ]; then
+            echo "Using existing baseline metrics"
+          else
+            echo "Creating initial baseline metrics"
+            echo '{"version": "1.0.0", "metrics": {}}' > ./backend/performance-baselines/baseline.json
+          fi
+
+      - name: Run performance regression tests
+        working-directory: ./backend
+        run: npm run test:performance
+        env:
+          NODE_ENV: test
+          TEST_DATABASE_URL: postgresql://test_user:test_password@localhost:5432/learnx_perf
+          TEST_REDIS_URL: redis://localhost:6379
+
+      - name: Generate performance report
+        working-directory: ./backend
+        run: |
+          mkdir -p performance-reports
+          npm run generate:performance-report
+        
+      - name: Upload performance results
+        uses: actions/upload-artifact@v3
+        with:
+          name: performance-test-results
+          path: |
+            backend/performance-reports/
+            backend/performance-baselines/
+
+      - name: Comment performance results on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            const path = './backend/performance-reports/summary.json';
+            
+            if (fs.existsSync(path)) {
+              const report = JSON.parse(fs.readFileSync(path, 'utf8'));
+              
+              const comment = `## 🚀 Performance Test Results
+              
+              ### Summary
+              - **Total Tests**: ${report.total_tests}
+              - **Regressions**: ${report.regressions}
+              - **Improvements**: ${report.improvements}
+              - **Overall Status**: ${report.status}
+              
+              ### Key Metrics
+              ${report.key_metrics.map(metric => `- **${metric.name}**: ${metric.value} (${metric.change})`).join('\n')}
+              
+              ${report.regressions > 0 ? '⚠️ **Performance regressions detected!** Please review the detailed report.' : '✅ No performance regressions detected.'}
+              `;
+              
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: comment
+              });
+            }
+
+  # Load Tests
+  load-tests:
+    name: Load Tests
+    runs-on: ubuntu-latest
+    needs: [pre-flight, integration-tests]
+    if: always() && (github.event_name == 'schedule' || contains(github.event.head_commit.message, '[load]'))
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup K6
+        run: |
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Start application services
+        working-directory: ./backend
+        run: |
+          docker-compose -f docker-compose.test.yml up -d
+          sleep 30 # Wait for services to be ready
+
+      - name: Run load tests
+        working-directory: ./backend/load-testing
+        run: |
+          chmod +x run_k6_tests.sh
+          ./run_k6_tests.sh
+
+      - name: Upload load test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: load-test-results
+          path: backend/load-testing/results/
+
+  # AI/ML Tests
+  ai-ml-tests:
+    name: AI/ML Quality Tests
+    runs-on: ubuntu-latest
+    needs: [pre-flight, static-analysis]
+    if: always() && (needs.pre-flight.outputs.python-changed == 'true' || contains(github.event.head_commit.message, '[ai]'))
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+          cache-dependency-path: python-ai-service/requirements.txt
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install Python dependencies
+        working-directory: ./python-ai-service
+        run: |
+          pip install -r requirements.txt
+          pip install pytest pytest-cov
+
+      - name: Install Node.js dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run AI/ML quality tests
+        working-directory: ./backend
+        run: npm run test:ai-ml
+        env:
+          NODE_ENV: test
+          PYTHON_AI_SERVICE_URL: http://localhost:8001
+
+      - name: Run embedding quality validation
+        working-directory: ./backend
+        run: npm run test:embeddings
+        env:
+          NODE_ENV: test
+
+      - name: Generate AI quality report
+        working-directory: ./backend
+        run: npm run generate:ai-quality-report
+
+      - name: Upload AI test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: ai-ml-test-results
+          path: |
+            backend/ai-test-results/
+            python-ai-service/test-results/
+
+  # Security Tests
+  security-tests:
+    name: Security Tests
+    runs-on: ubuntu-latest
+    needs: [pre-flight, static-analysis]
+    if: always() && needs.pre-flight.outputs.backend-changed == 'true'
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+      - name: Run npm audit
+        working-directory: ./backend
+        run: |
+          npm audit --audit-level=moderate
+          npm audit --json > npm-audit-results.json
+        continue-on-error: true
+
+      - name: Upload security results
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-test-results
+          path: |
+            trivy-results.sarif
+            backend/npm-audit-results.json
+
+  # End-to-End Tests
+  e2e-tests:
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    needs: [pre-flight, integration-tests]
+    if: always() && (needs.pre-flight.outputs.frontend-changed == 'true' || needs.pre-flight.outputs.backend-changed == 'true')
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            frontend/package-lock.json
+            backend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd frontend && npm ci
+          cd ../backend && npm ci
+
+      - name: Start application stack
+        run: |
+          docker-compose -f docker-compose.test.yml up -d
+          sleep 60 # Wait for all services to be ready
+
+      - name: Install Playwright
+        working-directory: ./frontend
+        run: npx playwright install --with-deps
+
+      - name: Run E2E tests
+        working-directory: ./frontend
+        run: npx playwright test
+        env:
+          BASE_URL: http://localhost:3000
+
+      - name: Upload E2E test results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: e2e-test-results
+          path: |
+            frontend/test-results/
+            frontend/playwright-report/
+
+  # Test Summary
+  test-summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, integration-tests, performance-tests, load-tests, ai-ml-tests, security-tests, e2e-tests]
+    if: always()
+    timeout-minutes: 10
+
+    steps:
+      - name: Download all test artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate comprehensive test report
+        run: |
+          mkdir -p final-report
+          
+          echo "# LEARN-X Comprehensive Test Report" > final-report/README.md
+          echo "Generated on: $(date)" >> final-report/README.md
+          echo "" >> final-report/README.md
+          
+          echo "## Test Results Summary" >> final-report/README.md
+          echo "- Unit Tests: ${{ needs.unit-tests.result }}" >> final-report/README.md
+          echo "- Integration Tests: ${{ needs.integration-tests.result }}" >> final-report/README.md
+          echo "- Performance Tests: ${{ needs.performance-tests.result }}" >> final-report/README.md
+          echo "- Load Tests: ${{ needs.load-tests.result }}" >> final-report/README.md
+          echo "- AI/ML Tests: ${{ needs.ai-ml-tests.result }}" >> final-report/README.md
+          echo "- Security Tests: ${{ needs.security-tests.result }}" >> final-report/README.md
+          echo "- E2E Tests: ${{ needs.e2e-tests.result }}" >> final-report/README.md
+          
+          # Determine overall status
+          if [[ "${{ needs.unit-tests.result }}" == "success" && 
+                "${{ needs.integration-tests.result }}" == "success" && 
+                "${{ needs.security-tests.result }}" == "success" ]]; then
+            echo "## ✅ Overall Status: PASSED" >> final-report/README.md
+          else
+            echo "## ❌ Overall Status: FAILED" >> final-report/README.md
+          fi
+
+      - name: Upload final test report
+        uses: actions/upload-artifact@v3
+        with:
+          name: comprehensive-test-report
+          path: final-report/
+
+      - name: Update commit status
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const overallSuccess = 
+              '${{ needs.unit-tests.result }}' === 'success' &&
+              '${{ needs.integration-tests.result }}' === 'success' &&
+              '${{ needs.security-tests.result }}' === 'success';
+            
+            github.rest.repos.createCommitStatus({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              sha: context.sha,
+              state: overallSuccess ? 'success' : 'failure',
+              description: overallSuccess ? 'All critical tests passed' : 'Some critical tests failed',
+              context: 'comprehensive-testing-suite'
+            });
+
+  # Cleanup
+  cleanup:
+    name: Cleanup
+    runs-on: ubuntu-latest
+    needs: [test-summary]
+    if: always()
+    timeout-minutes: 5
+
+    steps:
+      - name: Cleanup test artifacts older than 30 days
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const cutoffDate = new Date();
+            cutoffDate.setDate(cutoffDate.getDate() - 30);
+            
+            const artifacts = await github.rest.actions.listArtifactsForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 100
+            });
+            
+            for (const artifact of artifacts.data.artifacts) {
+              const createdAt = new Date(artifact.created_at);
+              if (createdAt < cutoffDate) {
+                await github.rest.actions.deleteArtifact({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  artifact_id: artifact.id
+                });
+                console.log(`Deleted artifact: ${artifact.name}`);
+              }
+            }
