@@ -8,5 +8,8 @@
     "startCommand": "cd backend && npm start",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 60
+  },
+  "environmentVariables": {
+    "PYTHON_FILE_PROCESSING": "true"
   }
 }

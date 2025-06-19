@@ -11,6 +11,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_URL= # Let it use REDIS_HOST/PORT instead
+      - PYTHON_FILE_PROCESSING=true # Enable Python service for file processing
     env_file:
       - ./backend/.env
     volumes:
@@ -37,6 +38,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_URL= # Let it use REDIS_HOST/PORT instead
+      - PYTHON_FILE_PROCESSING=true # Enable Python service for file processing
     env_file:
       - ./backend/.env
     volumes:
@@ -51,6 +53,32 @@ services:
       backend:
         condition: service_healthy
     command: npm run start:worker
+
+  python-ai:
+    build:
+      context: ./python-ai-service
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8001:8001"
+    environment:
+      - ENVIRONMENT=development
+      - PYTHONUNBUFFERED=1
+    env_file:
+      - ./python-ai-service/.env
+    volumes:
+      - ./python-ai-service:/app
+      - /app/.venv # Exclude virtual environment
+    networks:
+      - learn-x-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8001/api/v1/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   redis:
     image: redis:7-alpine
