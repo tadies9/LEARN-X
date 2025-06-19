@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
 // Test configuration for database helpers
 
 export interface TestUser {
@@ -37,13 +38,18 @@ export interface TestFile {
 
 export class DatabaseHelpers {
   private static supabase: SupabaseClient;
-  private static testPrefix = 'test_';
+  private static createdTestIds: string[] = [];
 
   static initialize(): void {
-    this.supabase = createClient(
-      process.env.TEST_SUPABASE_URL || 'http://localhost:54321',
-      process.env.TEST_SUPABASE_SERVICE_KEY || 'test-service-key'
-    );
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.TEST_SUPABASE_URL;
+    const supabaseServiceKey =
+      process.env.SUPABASE_SERVICE_KEY || process.env.TEST_SUPABASE_SERVICE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase credentials not found in environment variables');
+    }
+
+    this.supabase = createClient(supabaseUrl, supabaseServiceKey);
   }
 
   static getClient(): SupabaseClient {
@@ -56,42 +62,53 @@ export class DatabaseHelpers {
   // User helpers
   static async createTestUser(overrides: Partial<TestUser> = {}): Promise<TestUser> {
     const timestamp = Date.now();
-    const testUser: TestUser = {
-      id: `${this.testPrefix}user_${timestamp}`,
-      email: `test_${timestamp}@example.com`,
-      full_name: `Test User ${timestamp}`,
-      created_at: new Date().toISOString(),
-      ...overrides,
-    };
+    const email = overrides.email || `test_${timestamp}@example.com`;
+    const password = 'TestPassword123!';
 
-    const { error } = await this.supabase
-      .from('users')
-      .insert(testUser);
+    // First create the user in auth.users
+    const { data: authData, error: authError } = await this.supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+    });
 
-    if (error) {
-      throw new Error(`Failed to create test user: ${error.message}`);
+    if (authError) {
+      throw new Error(`Failed to create auth user: ${authError.message}`);
     }
 
+    const testUser: TestUser = {
+      id: authData.user.id,
+      email,
+      full_name: overrides.full_name || `Test User ${timestamp}`,
+      created_at: overrides.created_at || new Date().toISOString(),
+    };
+
+    const { error } = await this.supabase.from('users').insert(testUser);
+
+    if (error) {
+      // Clean up auth user if profile creation fails
+      await this.supabase.auth.admin.deleteUser(authData.user.id);
+      throw new Error(`Failed to create test user profile: ${error.message}`);
+    }
+
+    this.createdTestIds.push(testUser.id);
     return testUser;
   }
 
   static async createTestCourse(
-    userId: string, 
+    userId: string,
     overrides: Partial<TestCourse> = {}
   ): Promise<TestCourse> {
     const timestamp = Date.now();
     const testCourse: TestCourse = {
-      id: `${this.testPrefix}course_${timestamp}`,
+      id: overrides.id || uuidv4(),
       user_id: userId,
-      title: `Test Course ${timestamp}`,
-      description: `Test course description ${timestamp}`,
-      created_at: new Date().toISOString(),
-      ...overrides,
+      title: overrides.title || `Test Course ${timestamp}`,
+      description: overrides.description || `Test course description ${timestamp}`,
+      created_at: overrides.created_at || new Date().toISOString(),
     };
 
-    const { error } = await this.supabase
-      .from('courses')
-      .insert(testCourse);
+    const { error } = await this.supabase.from('courses').insert(testCourse);
 
     if (error) {
       throw new Error(`Failed to create test course: ${error.message}`);
@@ -106,17 +123,14 @@ export class DatabaseHelpers {
   ): Promise<TestModule> {
     const timestamp = Date.now();
     const testModule: TestModule = {
-      id: `${this.testPrefix}module_${timestamp}`,
+      id: overrides.id || uuidv4(),
       course_id: courseId,
-      title: `Test Module ${timestamp}`,
-      description: `Test module description ${timestamp}`,
-      created_at: new Date().toISOString(),
-      ...overrides,
+      title: overrides.title || `Test Module ${timestamp}`,
+      description: overrides.description || `Test module description ${timestamp}`,
+      created_at: overrides.created_at || new Date().toISOString(),
     };
 
-    const { error } = await this.supabase
-      .from('modules')
-      .insert(testModule);
+    const { error } = await this.supabase.from('modules').insert(testModule);
 
     if (error) {
       throw new Error(`Failed to create test module: ${error.message}`);
@@ -131,20 +145,17 @@ export class DatabaseHelpers {
   ): Promise<TestFile> {
     const timestamp = Date.now();
     const testFile: TestFile = {
-      id: `${this.testPrefix}file_${timestamp}`,
+      id: overrides.id || uuidv4(),
       module_id: moduleId,
-      filename: `test_file_${timestamp}.txt`,
-      file_path: `/test/path/test_file_${timestamp}.txt`,
-      file_size: 1024,
-      mime_type: 'text/plain',
-      processing_status: 'pending',
-      created_at: new Date().toISOString(),
-      ...overrides,
+      filename: overrides.filename || `test_file_${timestamp}.txt`,
+      file_path: overrides.file_path || `/test/path/test_file_${timestamp}.txt`,
+      file_size: overrides.file_size || 1024,
+      mime_type: overrides.mime_type || 'text/plain',
+      processing_status: overrides.processing_status || 'pending',
+      created_at: overrides.created_at || new Date().toISOString(),
     };
 
-    const { error } = await this.supabase
-      .from('files')
-      .insert(testFile);
+    const { error } = await this.supabase.from('files').insert(testFile);
 
     if (error) {
       throw new Error(`Failed to create test file: ${error.message}`);
@@ -155,9 +166,8 @@ export class DatabaseHelpers {
 
   // Persona helpers
   static async createTestPersona(userId: string, personaData: any): Promise<any> {
-    const timestamp = Date.now();
     const testPersona = {
-      id: `${this.testPrefix}persona_${timestamp}`,
+      id: personaData.id || uuidv4(),
       user_id: userId,
       learning_style: personaData.learning_style || 'visual',
       communication_style: personaData.communication_style || 'casual',
@@ -170,9 +180,7 @@ export class DatabaseHelpers {
       created_at: new Date().toISOString(),
     };
 
-    const { error } = await this.supabase
-      .from('user_personas')
-      .insert(testPersona);
+    const { error } = await this.supabase.from('user_personas').insert(testPersona);
 
     if (error) {
       throw new Error(`Failed to create test persona: ${error.message}`);
@@ -182,26 +190,24 @@ export class DatabaseHelpers {
   }
 
   // Embedding helpers
-  static async createTestEmbedding(
-    chunkId: string,
-    embedding: number[] = []
-  ): Promise<any> {
-    const timestamp = Date.now();
-    
+  static async createTestEmbedding(chunkId: string, embedding: number[] = []): Promise<any> {
     // Create a mock embedding vector if none provided
-    const mockEmbedding = embedding.length > 0 ? embedding : Array(1536).fill(0).map(() => Math.random());
+    const mockEmbedding =
+      embedding.length > 0
+        ? embedding
+        : Array(1536)
+            .fill(0)
+            .map(() => Math.random());
 
     const testEmbedding = {
-      id: `${this.testPrefix}embedding_${timestamp}`,
+      id: uuidv4(),
       chunk_id: chunkId,
       embedding: mockEmbedding,
       model: 'text-embedding-ada-002',
       created_at: new Date().toISOString(),
     };
 
-    const { error } = await this.supabase
-      .from('embeddings')
-      .insert(testEmbedding);
+    const { error } = await this.supabase.from('embeddings').insert(testEmbedding);
 
     if (error) {
       throw new Error(`Failed to create test embedding: ${error.message}`);
@@ -215,9 +221,8 @@ export class DatabaseHelpers {
     content: string = 'Test chunk content',
     overrides: any = {}
   ): Promise<any> {
-    const timestamp = Date.now();
     const testChunk = {
-      id: `${this.testPrefix}chunk_${timestamp}`,
+      id: overrides.id || uuidv4(),
       file_id: fileId,
       content,
       chunk_index: 0,
@@ -229,9 +234,7 @@ export class DatabaseHelpers {
       ...overrides,
     };
 
-    const { error } = await this.supabase
-      .from('chunks')
-      .insert(testChunk);
+    const { error } = await this.supabase.from('chunks').insert(testChunk);
 
     if (error) {
       throw new Error(`Failed to create test chunk: ${error.message}`);
@@ -247,9 +250,8 @@ export class DatabaseHelpers {
     content: any,
     overrides: any = {}
   ): Promise<any> {
-    const timestamp = Date.now();
     const testAIContent = {
-      id: `${this.testPrefix}ai_content_${timestamp}`,
+      id: overrides.id || uuidv4(),
       file_id: fileId,
       content_type: contentType,
       content: typeof content === 'object' ? content : { text: content },
@@ -262,9 +264,7 @@ export class DatabaseHelpers {
       ...overrides,
     };
 
-    const { error } = await this.supabase
-      .from('ai_content')
-      .insert(testAIContent);
+    const { error } = await this.supabase.from('ai_content').insert(testAIContent);
 
     if (error) {
       throw new Error(`Failed to create test AI content: ${error.message}`);
@@ -275,6 +275,16 @@ export class DatabaseHelpers {
 
   // Cleanup helpers
   static async cleanupTestData(): Promise<void> {
+    if (this.createdTestIds.length === 0) return;
+
+    // First get all user IDs that need auth cleanup
+    const { data: users } = await this.supabase
+      .from('users')
+      .select('id')
+      .in('id', this.createdTestIds);
+
+    const userIds = users?.map((u) => u.id) || [];
+
     const tables = [
       'ai_content',
       'embeddings',
@@ -288,20 +298,29 @@ export class DatabaseHelpers {
 
     for (const table of tables) {
       try {
-        await this.supabase
-          .from(table)
-          .delete()
-          .like('id', `${this.testPrefix}%`);
+        await this.supabase.from(table).delete().in('id', this.createdTestIds);
       } catch (error) {
         console.warn(`Warning: Failed to cleanup table ${table}:`, error);
       }
     }
+
+    // Clean up auth users
+    for (const userId of userIds) {
+      try {
+        await this.supabase.auth.admin.deleteUser(userId);
+      } catch (error) {
+        console.warn(`Warning: Failed to cleanup auth user ${userId}:`, error);
+      }
+    }
+
+    // Clear the tracked IDs after cleanup
+    this.createdTestIds = [];
   }
 
   static async cleanupTestDataById(ids: string[]): Promise<void> {
     const tables = [
       'ai_content',
-      'embeddings', 
+      'embeddings',
       'chunks',
       'files',
       'modules',
@@ -312,10 +331,7 @@ export class DatabaseHelpers {
 
     for (const table of tables) {
       try {
-        await this.supabase
-          .from(table)
-          .delete()
-          .in('id', ids);
+        await this.supabase.from(table).delete().in('id', ids);
       } catch (error) {
         console.warn(`Warning: Failed to cleanup table ${table}:`, error);
       }
@@ -324,11 +340,7 @@ export class DatabaseHelpers {
 
   // Query helpers
   static async getTestUser(userId: string): Promise<TestUser | null> {
-    const { data, error } = await this.supabase
-      .from('users')
-      .select('*')
-      .eq('id', userId)
-      .single();
+    const { data, error } = await this.supabase.from('users').select('*').eq('id', userId).single();
 
     if (error) {
       return null;
@@ -357,31 +369,28 @@ export class DatabaseHelpers {
     timeoutMs: number = 30000
   ): Promise<boolean> {
     const startTime = Date.now();
-    
+
     while (Date.now() - startTime < timeoutMs) {
       const status = await this.getFileProcessingStatus(fileId);
-      
+
       if (status === expectedStatus) {
         return true;
       }
-      
+
       if (status === 'failed') {
         throw new Error(`File processing failed for file ${fileId}`);
       }
-      
-      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     }
-    
+
     return false;
   }
 
   // Database health checks
   static async checkDatabaseConnection(): Promise<boolean> {
     try {
-      const { error } = await this.supabase
-        .from('users')
-        .select('count')
-        .limit(1);
+      const { error } = await this.supabase.from('users').select('count').limit(1);
 
       return !error;
     } catch {

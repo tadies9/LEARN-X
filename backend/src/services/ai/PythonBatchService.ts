@@ -4,7 +4,12 @@
  */
 
 import { logger } from '../../utils/logger';
-import { pythonAIClient, PythonAIClient, ContentGenerationRequest, CompletionRequest } from './PythonAIClient';
+import {
+  pythonAIClient,
+  PythonAIClient,
+  ContentGenerationRequest,
+  CompletionRequest,
+} from './PythonAIClient';
 import { AIRequestType } from '../../types/ai';
 import { UserPersona } from '../../types/persona';
 import { CostTracker } from './CostTracker';
@@ -38,6 +43,16 @@ interface PythonBatchOptions {
   useStreaming?: boolean;
 }
 
+// Type guard for usage object
+function hasTokenUsage(usage: unknown): usage is { total_tokens: number } {
+  return (
+    typeof usage === 'object' &&
+    usage !== null &&
+    'total_tokens' in usage &&
+    typeof (usage as any).total_tokens === 'number'
+  );
+}
+
 export class PythonBatchService {
   private client: PythonAIClient;
   private costTracker: CostTracker;
@@ -59,44 +74,45 @@ export class PythonBatchService {
     const startTime = Date.now();
     logger.info('Python batch processing started', {
       requestCount: requests.length,
-      types: requests.map(r => r.type)
+      types: requests.map((r) => r.type),
     });
 
     try {
       // Group requests by type for optimal processing
       const grouped = this.groupRequestsByType(requests);
       const results: PythonBatchResult<T>[] = [];
-      
+
       for (const [type, group] of grouped.entries()) {
         const batchResults = await this.processTypedBatch(type, group, options);
         results.push(...batchResults);
       }
 
       // Sort results back to original order
-      const sortedResults = requests.map(req => 
-        results.find(result => result.id === req.id) || {
-          id: req.id,
-          success: false,
-          error: 'Result not found'
-        }
+      const sortedResults = requests.map(
+        (req) =>
+          results.find((result) => result.id === req.id) || {
+            id: req.id,
+            success: false,
+            error: 'Result not found',
+          }
       );
 
       const processingTime = Date.now() - startTime;
       logger.info('Python batch processing completed', {
         requestCount: requests.length,
-        successCount: sortedResults.filter(r => r.success).length,
-        processingTime
+        successCount: sortedResults.filter((r) => r.success).length,
+        processingTime,
       });
 
       return sortedResults;
     } catch (error) {
       logger.error('Python batch processing error:', error);
-      
+
       // Return error results for all requests
-      return requests.map(req => ({
+      return requests.map((req) => ({
         id: req.id,
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       }));
     }
   }
@@ -114,17 +130,17 @@ export class PythonBatchService {
     switch (type) {
       case 'chat-completion':
         return this.processChatCompletionBatch(requests as PythonBatchRequest<any>[], options);
-      
+
       case 'explain':
         return this.processContentGenerationBatch(requests as PythonBatchRequest<any>[], options);
-      
+
       case 'embedding':
         return this.processEmbeddingBatch(requests as PythonBatchRequest<any>[], options);
-      
+
       case 'summary':
         return this.processOutlineGenerationBatch(requests as PythonBatchRequest<any>[], options);
-      
-      default:
+
+      default: {
         // Process sequentially for unsupported types
         const results: PythonBatchResult<T>[] = [];
         for (const request of requests) {
@@ -132,6 +148,7 @@ export class PythonBatchService {
           results.push(result);
         }
         return results;
+      }
     }
   }
 
@@ -153,7 +170,7 @@ export class PythonBatchService {
             model: request.params.model,
             temperature: request.params.temperature || 0.7,
             stream: options.useStreaming || false,
-            user_id: request.userId
+            user_id: request.userId,
           };
 
           let content = '';
@@ -165,7 +182,7 @@ export class PythonBatchService {
               if (chunk.content) {
                 content += chunk.content;
               }
-              if (chunk.metadata?.usage) {
+              if (chunk.metadata?.usage && hasTokenUsage(chunk.metadata.usage)) {
                 totalTokens = chunk.metadata.usage.total_tokens || 0;
               }
             }
@@ -176,7 +193,7 @@ export class PythonBatchService {
               if (chunk.content) {
                 content += chunk.content;
               }
-              if (chunk.metadata?.usage) {
+              if (chunk.metadata?.usage && hasTokenUsage(chunk.metadata.usage)) {
                 totalTokens = chunk.metadata.usage.total_tokens || 0;
               }
             }
@@ -188,15 +205,14 @@ export class PythonBatchService {
             data: content,
             usage: {
               promptTokens: Math.floor(totalTokens * 0.7), // Estimated split
-              completionTokens: Math.floor(totalTokens * 0.3)
-            }
+              completionTokens: Math.floor(totalTokens * 0.3),
+            },
           });
-
         } catch (error) {
           results.push({
             id: request.id,
             success: false,
-            error: error instanceof Error ? error.message : 'Unknown error'
+            error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
       }
@@ -204,10 +220,10 @@ export class PythonBatchService {
       return results;
     } catch (error) {
       logger.error('Chat completion batch error:', error);
-      return requests.map(req => ({
+      return requests.map((req) => ({
         id: req.id,
         success: false,
-        error: error instanceof Error ? error.message : 'Batch processing failed'
+        error: error instanceof Error ? error.message : 'Batch processing failed',
       }));
     }
   }
@@ -236,7 +252,7 @@ export class PythonBatchService {
           difficulty: (request.params.difficulty as any) || 'intermediate',
           persona: request.params.persona,
           stream: options.useStreaming || false,
-          user_id: request.userId
+          user_id: request.userId,
         };
 
         let generatedContent = '';
@@ -252,15 +268,14 @@ export class PythonBatchService {
           data: generatedContent,
           usage: {
             promptTokens: Math.floor(request.params.content.length / 4), // Rough estimate
-            completionTokens: Math.floor(generatedContent.length / 4)
-          }
+            completionTokens: Math.floor(generatedContent.length / 4),
+          },
         });
-
       } catch (error) {
         results.push({
           id: request.id,
           success: false,
-          error: error instanceof Error ? error.message : 'Content generation failed'
+          error: error instanceof Error ? error.message : 'Content generation failed',
         });
       }
     }
@@ -279,15 +294,15 @@ export class PythonBatchService {
       // Collect all texts for batch processing
       const batchItems = [];
       for (const request of requests) {
-        const texts = Array.isArray(request.params.texts) 
-          ? request.params.texts 
+        const texts = Array.isArray(request.params.texts)
+          ? request.params.texts
           : [request.params.texts];
-        
+
         for (let i = 0; i < texts.length; i++) {
           batchItems.push({
             id: `${request.id}_${i}`,
             text: texts[i],
-            metadata: { originalRequestId: request.id, index: i }
+            metadata: { originalRequestId: request.id, index: i },
           });
         }
       }
@@ -297,7 +312,7 @@ export class PythonBatchService {
         items: batchItems,
         model: requests[0]?.params.model,
         batch_size: Math.min(50, batchItems.length),
-        user_id: requests[0]?.userId
+        user_id: requests[0]?.userId,
       });
 
       // Map results back to original requests
@@ -305,11 +320,13 @@ export class PythonBatchService {
       const embeddingsByRequest = new Map<string, any[]>();
 
       for (const embedding of batchResponse.embeddings) {
-        const originalRequestId = embedding.metadata.originalRequestId;
-        if (!embeddingsByRequest.has(originalRequestId)) {
+        const originalRequestId = embedding.metadata?.originalRequestId as string;
+        if (originalRequestId && !embeddingsByRequest.has(originalRequestId)) {
           embeddingsByRequest.set(originalRequestId, []);
         }
-        embeddingsByRequest.get(originalRequestId)!.push(embedding.embedding);
+        if (originalRequestId) {
+          embeddingsByRequest.get(originalRequestId)!.push(embedding.embedding);
+        }
       }
 
       for (const request of requests) {
@@ -320,19 +337,18 @@ export class PythonBatchService {
           data: embeddings,
           usage: {
             promptTokens: Math.floor(JSON.stringify(request.params.texts).length / 4),
-            completionTokens: 0
-          }
+            completionTokens: 0,
+          },
         });
       }
 
       return results;
-
     } catch (error) {
       logger.error('Embedding batch error:', error);
-      return requests.map(req => ({
+      return requests.map((req) => ({
         id: req.id,
         success: false,
-        error: error instanceof Error ? error.message : 'Embedding batch failed'
+        error: error instanceof Error ? error.message : 'Embedding batch failed',
       }));
     }
   }
@@ -359,7 +375,7 @@ export class PythonBatchService {
           difficulty: 'intermediate',
           persona: request.params.persona,
           stream: false, // Outlines don't need streaming
-          user_id: request.userId
+          user_id: request.userId,
         };
 
         let outline = '';
@@ -384,15 +400,14 @@ export class PythonBatchService {
           data: structuredOutline,
           usage: {
             promptTokens: Math.floor(request.params.content.length / 4),
-            completionTokens: Math.floor(outline.length / 4)
-          }
+            completionTokens: Math.floor(outline.length / 4),
+          },
         });
-
       } catch (error) {
         results.push({
           id: request.id,
           success: false,
-          error: error instanceof Error ? error.message : 'Outline generation failed'
+          error: error instanceof Error ? error.message : 'Outline generation failed',
         });
       }
     }
@@ -407,8 +422,10 @@ export class PythonBatchService {
     request: PythonBatchRequest<T>,
     _options: PythonBatchOptions
   ): Promise<PythonBatchResult<T>> {
-    logger.warn(`Single request processing for type ${request.type} - consider implementing batch optimization`);
-    
+    logger.warn(
+      `Single request processing for type ${request.type} - consider implementing batch optimization`
+    );
+
     try {
       // Basic fallback - treat as content generation
       const params = request.params as any;
@@ -420,7 +437,7 @@ export class PythonBatchService {
           difficulty: params.difficulty || 'intermediate',
           persona: params.persona,
           stream: false,
-          user_id: request.userId
+          user_id: request.userId,
         };
 
         let content = '';
@@ -436,22 +453,21 @@ export class PythonBatchService {
           data: content as T,
           usage: {
             promptTokens: Math.floor(params.content.length / 4),
-            completionTokens: Math.floor(content.length / 4)
-          }
+            completionTokens: Math.floor(content.length / 4),
+          },
         };
       }
 
       return {
         id: request.id,
         success: false,
-        error: `Unsupported request type: ${request.type}`
+        error: `Unsupported request type: ${request.type}`,
       };
-
     } catch (error) {
       return {
         id: request.id,
         success: false,
-        error: error instanceof Error ? error.message : 'Single request failed'
+        error: error instanceof Error ? error.message : 'Single request failed',
       };
     }
   }
@@ -463,14 +479,14 @@ export class PythonBatchService {
     requests: PythonBatchRequest<T>[]
   ): Map<AIRequestType, PythonBatchRequest<T>[]> {
     const grouped = new Map<AIRequestType, PythonBatchRequest<T>[]>();
-    
+
     for (const request of requests) {
       if (!grouped.has(request.type)) {
         grouped.set(request.type, []);
       }
       grouped.get(request.type)!.push(request);
     }
-    
+
     return grouped;
   }
 
@@ -493,15 +509,15 @@ export class PythonBatchService {
     try {
       const pythonStats = await this.client.getStats();
       const costStats = await this.costTracker.getStats();
-      
+
       return {
         pythonService: pythonStats,
         costs: costStats,
         queueStatus: {
           activeQueues: this.queues.size,
-          processingQueues: this.processing.size
+          processingQueues: this.processing.size,
         },
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     } catch (error) {
       logger.error('Failed to get batch service stats:', error);

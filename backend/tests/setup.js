@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable no-undef */
 // Test setup for LEARN-X integration tests
 const dotenv = require('dotenv');
 
@@ -5,8 +7,10 @@ const dotenv = require('dotenv');
 dotenv.config({ path: '.env.test' });
 
 // Test utilities
+const { v4: uuidv4 } = require('uuid');
+
 const generateUUID = () => {
-  return 'test-' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+  return uuidv4();
 };
 
 const generateTestUser = () => ({

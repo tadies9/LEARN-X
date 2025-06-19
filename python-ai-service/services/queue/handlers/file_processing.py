@@ -4,6 +4,7 @@ Processes files with better extraction and chunking.
 """
 
 import os
+import json
 from typing import Dict, Any, List
 from datetime import datetime
 
@@ -68,8 +69,7 @@ class FileProcessingHandler:
             
             # Download file from storage
             local_path = await download_from_storage(
-                file_info['storage_path'],
-                file_info['bucket']
+                file_info['storage_path']
             )
             
             # Extract content
@@ -95,6 +95,19 @@ class FileProcessingHandler:
             await self._queue_embeddings(file_id, saved_chunks, user_id)
             
             # Update file status
+            # Sanitize metadata - remove null bytes and non-serializable data
+            sanitized_metadata = {}
+            if extraction_result.metadata:
+                for key, value in extraction_result.metadata.items():
+                    if isinstance(value, str):
+                        # Remove null bytes
+                        sanitized_metadata[key] = value.replace('\x00', '')
+                    elif isinstance(value, (int, float, bool, list, dict)):
+                        sanitized_metadata[key] = value
+                    else:
+                        # Convert other types to string
+                        sanitized_metadata[key] = str(value)
+            
             await self._update_file_status(
                 file_id,
                 'completed',
@@ -102,7 +115,7 @@ class FileProcessingHandler:
                     'processed_at': datetime.utcnow().isoformat(),
                     'chunk_count': len(saved_chunks),
                     'content_length': len(extraction_result.text),
-                    'metadata': extraction_result.metadata
+                    'extraction_metadata': sanitized_metadata
                 }
             )
             
@@ -189,6 +202,22 @@ class FileProcessingHandler:
             # Insert new chunks
             saved_chunks = []
             for idx, chunk in enumerate(chunks):
+                # Sanitize content - remove null bytes
+                clean_content = chunk.content.replace('\x00', '') if chunk.content else ''
+                
+                # Sanitize metadata
+                clean_metadata = {}
+                if chunk.metadata:
+                    for key, value in chunk.metadata.items():
+                        if isinstance(value, str):
+                            clean_metadata[key] = value.replace('\x00', '')
+                        elif isinstance(value, (list, dict)):
+                            # For complex types, convert to JSON string and clean
+                            clean_metadata[key] = json.dumps(value).replace('\x00', '')
+                            clean_metadata[key] = json.loads(clean_metadata[key])
+                        else:
+                            clean_metadata[key] = value
+                
                 result = await conn.fetchrow(
                     """
                     INSERT INTO file_chunks (
@@ -202,14 +231,14 @@ class FileProcessingHandler:
                     """,
                     file_id,
                     idx,
-                    chunk.content,
-                    len(chunk.content),
-                    chunk.metadata.get('type', 'text'),
-                    chunk.metadata.get('importance', 'medium'),
-                    chunk.metadata.get('title'),
-                    chunk.metadata.get('level', 0),
-                    chunk.metadata.get('concepts', []),
-                    chunk.metadata,
+                    clean_content,
+                    len(clean_content),
+                    clean_metadata.get('type', 'text'),
+                    clean_metadata.get('importance', 'medium'),
+                    clean_metadata.get('title', '').replace('\x00', '') if clean_metadata.get('title') else None,
+                    clean_metadata.get('level', 0),
+                    json.dumps(clean_metadata.get('concepts', [])),
+                    json.dumps(clean_metadata) if clean_metadata else '{}',
                     datetime.utcnow()
                 )
                 
@@ -235,10 +264,10 @@ class FileProcessingHandler:
         for chunk in chunks:
             job = {
                 'job_type': 'generate_embedding',
-                'file_id': file_id,
-                'chunk_id': chunk['id'],
+                'file_id': str(file_id),
+                'chunk_id': str(chunk['id']),
                 'content': chunk['content'],
-                'user_id': user_id,
+                'user_id': str(user_id),
                 'metadata': chunk['metadata']
             }
             embedding_jobs.append(job)
@@ -260,9 +289,10 @@ class FileProcessingHandler:
         async with self.db_pool.acquire() as conn:
             result = await conn.fetchrow(
                 """
-                SELECT f.*, m.courses->>'user_id' as user_id
+                SELECT f.*, c.user_id
                 FROM course_files f
                 JOIN modules m ON f.module_id = m.id
+                JOIN courses c ON m.course_id = c.id
                 WHERE f.id = $1
                 """,
                 file_id
@@ -289,8 +319,8 @@ class FileProcessingHandler:
             
             if additional_fields:
                 # Add metadata field update
-                query += ", metadata = COALESCE(metadata, '{}'::jsonb) || $3"
-                params.append(additional_fields)
+                query += ", metadata = COALESCE(metadata, '{}'::jsonb) || $3::jsonb"
+                params.append(json.dumps(additional_fields))
                 
             query += " WHERE id = $" + str(len(params) + 1)
             params.append(file_id)

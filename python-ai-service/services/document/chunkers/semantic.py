@@ -46,6 +46,10 @@ class SemanticChunker(BaseChunker):
             subprocess.run(["python", "-m", "spacy", "download", model_name])
             self.nlp = spacy.load(model_name)
         
+        # Increase max_length for processing large documents
+        # Default is 1,000,000 characters, we'll set it to 10,000,000
+        self.nlp.max_length = 10_000_000
+        
         # Add sentencizer for better sentence boundary detection
         if 'sentencizer' not in self.nlp.pipe_names:
             self.nlp.add_pipe('sentencizer')
@@ -65,6 +69,13 @@ class SemanticChunker(BaseChunker):
         Returns:
             List of semantic chunks
         """
+        # Check if text is too large for single processing
+        if len(text) > self.nlp.max_length:
+            logger.info(
+                f"Text too large ({len(text)} chars), processing in sections"
+            )
+            return await self._chunk_large_text(text, options)
+        
         # Process text with spaCy
         doc = self.nlp(text)
         
@@ -325,5 +336,112 @@ class SemanticChunker(BaseChunker):
         for chunk in chunks:
             chunk.metadata['document_entities'] = doc_entities[:5]
             chunk.metadata['document_concepts'] = [c[0] for c in top_concepts[:5]]
+        
+        return chunks
+    
+    async def _chunk_large_text(
+        self,
+        text: str,
+        options: ChunkingOptions
+    ) -> List[Chunk]:
+        """
+        Handle texts that exceed spaCy's max_length by processing in sections.
+        """
+        chunks = []
+        
+        # Split text into manageable sections
+        # Use a safe size that's well below the max_length
+        safe_size = int(self.nlp.max_length * 0.8)  # 80% of max_length
+        
+        # Find paragraph boundaries for clean splits
+        paragraphs = self._split_paragraphs(text)
+        
+        current_section = ""
+        current_start = 0
+        section_paragraphs = []
+        
+        for para_start, para_end, para_text in paragraphs:
+            # Check if adding this paragraph would exceed safe size
+            if len(current_section) + len(para_text) > safe_size and current_section:
+                # Process current section
+                section_chunks = await self._process_section(
+                    current_section,
+                    section_paragraphs,
+                    options
+                )
+                chunks.extend(section_chunks)
+                
+                # Start new section
+                current_section = para_text
+                current_start = para_start
+                section_paragraphs = [(para_start, para_end, para_text)]
+            else:
+                # Add to current section
+                if current_section:
+                    current_section += "\n\n" + para_text
+                else:
+                    current_section = para_text
+                    current_start = para_start
+                section_paragraphs.append((para_start, para_end, para_text))
+        
+        # Process final section
+        if current_section:
+            section_chunks = await self._process_section(
+                current_section,
+                section_paragraphs,
+                options
+            )
+            chunks.extend(section_chunks)
+        
+        # Renumber chunks sequentially
+        for idx, chunk in enumerate(chunks):
+            chunk.metadata['chunk_index'] = idx
+        
+        return chunks
+    
+    async def _process_section(
+        self,
+        section_text: str,
+        section_paragraphs: List[Tuple[int, int, str]],
+        options: ChunkingOptions
+    ) -> List[Chunk]:
+        """
+        Process a section of text that fits within spaCy's limits.
+        """
+        # Process with spaCy
+        doc = self.nlp(section_text)
+        
+        # Extract semantic units for this section
+        units = []
+        offset = section_paragraphs[0][0] if section_paragraphs else 0
+        
+        for para_idx, (para_start, para_end, para_text) in enumerate(section_paragraphs):
+            # Process paragraph with spaCy
+            para_doc = self.nlp(para_text)
+            
+            # Extract sentences within paragraph
+            for sent in para_doc.sents:
+                # Get entities in sentence
+                entities = [ent.text for ent in sent.ents]
+                
+                # Calculate sentence importance
+                importance = self._calculate_importance(sent)
+                
+                unit = SemanticUnit(
+                    text=sent.text.strip(),
+                    start_idx=para_start + sent.start_char,
+                    end_idx=para_start + sent.end_char,
+                    unit_type='sentence',
+                    importance=importance,
+                    entities=entities
+                )
+                units.append(unit)
+        
+        # Group units into chunks
+        chunks = self._group_into_chunks(units, options)
+        
+        # Add basic metadata (full document metadata will be limited)
+        for chunk in chunks:
+            chunk.metadata['section_processed'] = True
         
         return chunks

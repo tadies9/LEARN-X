@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import Redis from 'ioredis';
 import { readFileSync, existsSync } from 'fs';
 import path from 'path';
+import { v4 as uuidv4 } from 'uuid';
 import { testConfig } from '../config/test.config';
 
 // Database helpers
@@ -9,36 +10,57 @@ export class TestDatabase {
   private supabase: any;
 
   constructor() {
-    this.supabase = createClient(
-      process.env.TEST_SUPABASE_URL || 'http://localhost:54321',
-      process.env.TEST_SUPABASE_SERVICE_KEY || 'test-service-key'
-    );
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.TEST_SUPABASE_URL;
+    const supabaseServiceKey =
+      process.env.SUPABASE_SERVICE_KEY || process.env.TEST_SUPABASE_SERVICE_KEY;
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      throw new Error('Supabase credentials not found in environment variables');
+    }
+
+    this.supabase = createClient(supabaseUrl, supabaseServiceKey);
   }
 
   async cleanup() {
     // Clean up test data
     const tables = ['files', 'chunks', 'embeddings', 'ai_content', 'modules', 'courses', 'users'];
-    
+
     for (const table of tables) {
-      await this.supabase
-        .from(table)
-        .delete()
-        .like('id', 'test-%');
+      await this.supabase.from(table).delete().like('id', 'test-%');
     }
   }
 
   async seed() {
     // Seed test data
-    const userId = 'test-user-' + Date.now();
-    const courseId = 'test-course-' + Date.now();
-    const moduleId = 'test-module-' + Date.now();
+    const timestamp = Date.now();
+    const email = `test-${timestamp}@example.com`;
 
-    // Create test user
-    await this.supabase.from('users').insert({
+    // Create auth user first
+    const { data: authData, error: authError } = await this.supabase.auth.admin.createUser({
+      email,
+      password: 'TestPassword123!',
+      email_confirm: true,
+    });
+
+    if (authError) {
+      throw new Error(`Failed to create auth user: ${authError.message}`);
+    }
+
+    const userId = authData.user.id;
+    const courseId = uuidv4();
+    const moduleId = uuidv4();
+
+    // Create test user profile
+    const { error: userError } = await this.supabase.from('users').insert({
       id: userId,
-      email: `test-${Date.now()}@example.com`,
+      email,
       full_name: 'Test User',
     });
+
+    if (userError) {
+      await this.supabase.auth.admin.deleteUser(userId);
+      throw new Error(`Failed to create user profile: ${userError.message}`);
+    }
 
     // Create test course
     await this.supabase.from('courses').insert({
@@ -132,7 +154,7 @@ export class TestAPI {
     return fetch(`${this.baseUrl}/api/v1/files/upload`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${authToken}`,
+        Authorization: `Bearer ${authToken}`,
       },
       body: formData,
     });
@@ -141,7 +163,7 @@ export class TestAPI {
   async getFileProcessingStatus(fileId: string, authToken: string): Promise<Response> {
     return fetch(`${this.baseUrl}/api/v1/files/${fileId}/status`, {
       headers: {
-        'Authorization': `Bearer ${authToken}`,
+        Authorization: `Bearer ${authToken}`,
       },
     });
   }
@@ -166,7 +188,7 @@ export class PerformanceTracker {
     if (!times || times.length === 0) {
       throw new Error(`No start time found for ${name}`);
     }
-    
+
     const duration = Date.now() - times[0];
     times.push(Date.now());
     return duration;
@@ -174,7 +196,7 @@ export class PerformanceTracker {
 
   getReport(): Record<string, { duration: number; start: number; end: number }> {
     const report: Record<string, { duration: number; start: number; end: number }> = {};
-    
+
     this.measurements.forEach((times, name) => {
       if (times.length >= 2) {
         report[name] = {
@@ -184,7 +206,7 @@ export class PerformanceTracker {
         };
       }
     });
-    
+
     return report;
   }
 }
@@ -201,9 +223,15 @@ export class MockAIResponses {
 
   static getFlashcards(): Array<{ front: string; back: string }> {
     return [
-      { front: 'What is machine learning?', back: 'A subset of AI that enables systems to learn from data' },
+      {
+        front: 'What is machine learning?',
+        back: 'A subset of AI that enables systems to learn from data',
+      },
       { front: 'Define supervised learning', back: 'Learning from labeled training data' },
-      { front: 'What is a neural network?', back: 'A computing system inspired by biological neural networks' },
+      {
+        front: 'What is a neural network?',
+        back: 'A computing system inspired by biological neural networks',
+      },
     ];
   }
 
@@ -236,14 +264,14 @@ export async function waitForCondition(
   interval: number = 100
 ): Promise<void> {
   const startTime = Date.now();
-  
+
   while (Date.now() - startTime < timeout) {
     if (await condition()) {
       return;
     }
-    await new Promise(resolve => setTimeout(resolve, interval));
+    await new Promise((resolve) => setTimeout(resolve, interval));
   }
-  
+
   throw new Error('Timeout waiting for condition');
 }
 
@@ -253,17 +281,17 @@ export async function retry<T>(
   delay: number = 1000
 ): Promise<T> {
   let lastError: Error;
-  
+
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error as Error;
       if (attempt < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, delay * attempt));
+        await new Promise((resolve) => setTimeout(resolve, delay * attempt));
       }
     }
   }
-  
+
   throw lastError!;
 }

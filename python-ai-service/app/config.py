@@ -9,6 +9,10 @@ from pydantic import Field, validator
 import os
 from enum import Enum
 
+# Load .env file early
+from dotenv import load_dotenv
+load_dotenv()
+
 
 class Environment(str, Enum):
     """Application environment types"""
@@ -50,10 +54,25 @@ class Settings(BaseSettings):
     
     # Database
     database_url: str = Field(
+        default="postgresql://postgres:password@localhost:5432/postgres",
         description="PostgreSQL connection URL"
     )
     database_pool_size: int = Field(default=10)
     database_max_overflow: int = Field(default=20)
+    
+    # Supabase
+    supabase_url: str = Field(
+        default="https://your-project.supabase.co",
+        description="Supabase project URL"
+    )
+    supabase_anon_key: Optional[str] = Field(
+        default=None,
+        description="Supabase anonymous key"
+    )
+    supabase_service_key: Optional[str] = Field(
+        default=None,
+        description="Supabase service role key"
+    )
     
     # Queue Configuration
     pgmq_poll_interval: int = Field(

@@ -3,24 +3,24 @@ import { DatabaseHelpers } from '../../utils/database-helpers';
 import { PerformanceHelpers } from '../../utils/performance-helpers';
 import { AITestHelpers } from '../../utils/ai-test-helpers';
 import { TestRedis } from '../../utils/test-helpers';
-import { testConfig } from '../../config/test.config';
+// import { testConfig } from '../../config/test.config'; // Unused import
 
 describe('Advanced Cache Scenarios Integration Tests', () => {
-  let testUser: any;
-  let testCourse: any;
-  let testModule: any;
+  let testUser: unknown;
+  let testCourse: unknown;
+  let testModule: unknown;
   let redis: TestRedis;
-  let createdIds: string[] = [];
+  const createdIds: string[] = [];
 
   beforeAll(async () => {
     DatabaseHelpers.initialize();
     redis = new TestRedis();
-    
+
     // Create test data
     testUser = await DatabaseHelpers.createTestUser();
     testCourse = await DatabaseHelpers.createTestCourse(testUser.id);
     testModule = await DatabaseHelpers.createTestModule(testCourse.id);
-    
+
     createdIds.push(testUser.id, testCourse.id, testModule.id);
   });
 
@@ -39,55 +39,49 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
   describe('Multi-Level Cache Hierarchies', () => {
     test('should implement L1 (memory) and L2 (Redis) cache layers', async () => {
       const cacheKey = 'multi_level_test';
-      const testData = { 
+      const _testData = {
         content: 'Test content for multi-level caching',
-        generated_at: new Date().toISOString()
+        generated_at: new Date().toISOString(),
       };
 
       // Simulate L1 cache miss, L2 cache miss (fresh generation)
-      const firstRequest = await PerformanceHelpers.measureAsync(
-        'l1_l2_miss',
-        async () => {
-          // Check L1 (memory) cache - miss
-          let result = getL1Cache(cacheKey);
-          if (result) return { source: 'l1', data: result };
+      const firstRequest = await PerformanceHelpers.measureAsync('l1_l2_miss', async () => {
+        // Check L1 (memory) cache - miss
+        let result = getL1Cache(cacheKey);
+        if (result) return { source: 'l1', data: result };
 
-          // Check L2 (Redis) cache - miss
-          result = await getL2Cache(cacheKey);
-          if (result) {
-            setL1Cache(cacheKey, result, 60); // Cache in L1 for 60 seconds
-            return { source: 'l2', data: result };
-          }
-
-          // Generate new content
-          result = await generateContent();
-          
-          // Store in both L1 and L2
-          setL1Cache(cacheKey, result, 60);
-          await setL2Cache(cacheKey, result, 300); // L2 has longer TTL
-          
-          return { source: 'generated', data: result };
+        // Check L2 (Redis) cache - miss
+        result = await getL2Cache(cacheKey);
+        if (result) {
+          setL1Cache(cacheKey, result, 60); // Cache in L1 for 60 seconds
+          return { source: 'l2', data: result };
         }
-      );
+
+        // Generate new content
+        result = await generateContent();
+
+        // Store in both L1 and L2
+        setL1Cache(cacheKey, result, 60);
+        await setL2Cache(cacheKey, result, 300); // L2 has longer TTL
+
+        return { source: 'generated', data: result };
+      });
 
       expect(firstRequest.result.source).toBe('generated');
 
       // Second request should hit L1 cache
-      const secondRequest = await PerformanceHelpers.measureAsync(
-        'l1_hit',
-        async () => {
-          let result = getL1Cache(cacheKey);
-          if (result) return { source: 'l1', data: result };
+      const secondRequest = await PerformanceHelpers.measureAsync('l1_hit', async () => {
+        let result = getL1Cache(cacheKey);
+        if (result) return { source: 'l1', data: result };
 
-          result = await getL2Cache(cacheKey);
-          if (result) {
-            setL1Cache(cacheKey, result, 60);
-            return { source: 'l2', data: result };
-          }
-
-          return { source: 'generated', data: await generateContent() };
+        result = await getL2Cache(cacheKey);
+        if (result) {
+          setL1Cache(cacheKey, result, 60);
+          return { source: 'l2', data: result };
         }
-      );
+
+        return { source: 'generated', data: await generateContent() };
+      });
 
       expect(secondRequest.result.source).toBe('l1');
       expect(secondRequest.metrics.duration).toBeLessThan(firstRequest.metrics.duration * 0.05);
@@ -95,21 +89,18 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
       // Clear L1 cache, third request should hit L2
       clearL1Cache(cacheKey);
 
-      const thirdRequest = await PerformanceHelpers.measureAsync(
-        'l2_hit',
-        async () => {
-          let result = getL1Cache(cacheKey);
-          if (result) return { source: 'l1', data: result };
+      const thirdRequest = await PerformanceHelpers.measureAsync('l2_hit', async () => {
+        let result = getL1Cache(cacheKey);
+        if (result) return { source: 'l1', data: result };
 
-          result = await getL2Cache(cacheKey);
-          if (result) {
-            setL1Cache(cacheKey, result, 60);
-            return { source: 'l2', data: result };
-          }
-
-          return { source: 'generated', data: await generateContent() };
+        result = await getL2Cache(cacheKey);
+        if (result) {
+          setL1Cache(cacheKey, result, 60);
+          return { source: 'l2', data: result };
         }
-      );
+
+        return { source: 'generated', data: await generateContent() };
+      });
 
       expect(thirdRequest.result.source).toBe('l2');
       expect(thirdRequest.metrics.duration).toBeLessThan(firstRequest.metrics.duration * 0.1);
@@ -127,12 +118,9 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
       const accessResults = [];
 
       for (let i = 0; i < accessCount; i++) {
-        const result = await PerformanceHelpers.measureAsync(
-          `access_${i}`,
-          async () => {
-            return await accessWithPromotion(hotKey);
-          }
-        );
+        const result = await PerformanceHelpers.measureAsync(`access_${i}`, async () => {
+          return await accessWithPromotion(hotKey);
+        });
         accessResults.push(result);
       }
 
@@ -142,12 +130,9 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
       expect(l1Data.access_count).toBeGreaterThan(testData.access_count);
 
       // Subsequent access should be very fast (L1 hit)
-      const fastAccess = await PerformanceHelpers.measureAsync(
-        'promoted_access',
-        async () => {
-          return getL1Cache(hotKey);
-        }
-      );
+      const fastAccess = await PerformanceHelpers.measureAsync('promoted_access', async () => {
+        return getL1Cache(hotKey);
+      });
 
       expect(fastAccess.metrics.duration).toBeLessThan(1); // Sub-millisecond
     });
@@ -175,7 +160,7 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
       }
 
       // Verify all instances have consistent data
-      instances.forEach(instance => {
+      instances.forEach((instance) => {
         const cached = getInstanceCache(instanceCaches, instance, sharedKey);
         expect(cached.version).toBe(1);
       });
@@ -193,7 +178,7 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
       for (const instance of instances) {
         const data = await getL2Cache(sharedKey);
         setInstanceCache(instanceCaches, instance, sharedKey, data);
-        
+
         const cached = getInstanceCache(instanceCaches, instance, sharedKey);
         expect(cached.version).toBe(2);
       }
@@ -204,26 +189,25 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
       const concurrentUpdates = 10;
 
       // Simulate concurrent updates to the same cache key
-      const updatePromises = Array(concurrentUpdates).fill(null).map(async (_, index) => {
-        const data = { 
-          update_id: index, 
-          timestamp: Date.now(),
-          content: `Update ${index}`
-        };
+      const updatePromises = Array(concurrentUpdates)
+        .fill(null)
+        .map(async (_, index) => {
+          const data = {
+            update_id: index,
+            timestamp: Date.now(),
+            content: `Update ${index}`,
+          };
 
-        return await PerformanceHelpers.measureAsync(
-          `concurrent_update_${index}`,
-          async () => {
+          return await PerformanceHelpers.measureAsync(`concurrent_update_${index}`, async () => {
             // Simulate atomic update with version checking
             return await atomicCacheUpdate(raceKey, data);
-          }
-        );
-      });
+          });
+        });
 
       const updateResults = await Promise.all(updatePromises);
 
       // All updates should complete without corruption
-      updateResults.forEach(result => {
+      updateResults.forEach((result) => {
         expect(result.result.success).toBe(true);
       });
 
@@ -246,7 +230,7 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
       for (let i = 0; i < totalItems; i++) {
         const key = `shard_test_item_${i}`;
         const shard = getShardForKey(key, shardCount);
-        
+
         if (!distributionMap.has(shard)) {
           distributionMap.set(shard, []);
         }
@@ -257,7 +241,7 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
       }
 
       // Verify distribution is relatively even
-      distributionMap.forEach((items, shard) => {
+      distributionMap.forEach((items, _shard) => {
         expect(items.length).toBeGreaterThan(itemsPerShard * 0.8); // Allow 20% variance
         expect(items.length).toBeLessThan(itemsPerShard * 1.2);
       });
@@ -267,7 +251,7 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
         const key = `shard_test_item_${i}`;
         const expectedShard = getShardForKey(key, shardCount);
         const data = await getShardedCache(key, expectedShard);
-        
+
         expect(data).toBeDefined();
         expect(data.id).toBe(i);
       }
@@ -286,7 +270,7 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
       if (originalShard === failedShard) {
         // Simulate failover to backup shard
         const backupShard = (originalShard + 1) % activeShards.length;
-        
+
         try {
           await getShardedCache(testKey, originalShard);
         } catch (error) {
@@ -311,15 +295,16 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
       const compressionKey = 'compression_test';
 
       // Store with compression
-      const storeResult = await PerformanceHelpers.measureAsync(
-        'compressed_store',
-        async () => {
-          return await setCompressedCache(compressionKey, { 
+      const storeResult = await PerformanceHelpers.measureAsync('compressed_store', async () => {
+        return await setCompressedCache(
+          compressionKey,
+          {
             content: largeContent,
-            metadata: { size: largeContent.length }
-          }, 300);
-        }
-      );
+            metadata: { size: largeContent.length },
+          },
+          300
+        );
+      });
 
       // Retrieve and decompress
       const retrieveResult = await PerformanceHelpers.measureAsync(
@@ -352,7 +337,7 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
 
       // Access some items to make them "hot"
       const hotItems = ['lru_test_0', 'lru_test_5', 'lru_test_9'];
-      hotItems.forEach(key => {
+      hotItems.forEach((key) => {
         cache.get(key); // Simulate access
         accessCounts.set(key, accessCounts.get(key) + 10);
       });
@@ -361,20 +346,20 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
       const newItems = 5;
       for (let i = 0; i < newItems; i++) {
         const newKey = `new_item_${i}`;
-        
+
         // Implement LRU with access frequency consideration
         if (cache.size >= maxCacheSize) {
           const evictionKey = selectEvictionCandidate(cache, accessCounts);
           cache.delete(evictionKey);
           accessCounts.delete(evictionKey);
         }
-        
+
         cache.set(newKey, { data: `New content ${i}`, created: Date.now() });
         accessCounts.set(newKey, 1);
       }
 
       // Hot items should still be in cache
-      hotItems.forEach(key => {
+      hotItems.forEach((key) => {
         expect(cache.has(key)).toBe(true);
       });
 
@@ -394,7 +379,7 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
 
       // Simulate predictive warming based on user patterns
       const warmingCandidates = await identifyWarmingCandidates(userId, userPattern);
-      
+
       const warmingResults = await PerformanceHelpers.measureAsync(
         'predictive_warming',
         async () => {
@@ -403,26 +388,23 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
             await setL2Cache(candidate.key, content, 1800); // 30 min TTL
             return { key: candidate.key, warmed: true };
           });
-          
+
           return await Promise.all(warmPromises);
         }
       );
 
       // Verify warming completed successfully
       expect(warmingResults.result.length).toBeGreaterThan(0);
-      warmingResults.result.forEach(result => {
+      warmingResults.result.forEach((result) => {
         expect(result.warmed).toBe(true);
       });
 
       // Subsequent access should be very fast
       for (const candidate of warmingCandidates) {
-        const accessResult = await PerformanceHelpers.measureAsync(
-          'warmed_access',
-          async () => {
-            return await getL2Cache(candidate.key);
-          }
-        );
-        
+        const accessResult = await PerformanceHelpers.measureAsync('warmed_access', async () => {
+          return await getL2Cache(candidate.key);
+        });
+
         expect(accessResult.result).toBeDefined();
         expect(accessResult.metrics.duration).toBeLessThan(10); // Very fast access
       }
@@ -437,35 +419,35 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
 
       // Generate warming strategy from analytics
       const warmingStrategy = generateWarmingStrategy(analyticsData);
-      
+
       const batchWarmingResult = await PerformanceHelpers.measureAsync(
         'analytics_based_warming',
         async () => {
           const warmPromises = warmingStrategy.map(async (strategy) => {
             const content = await generatePersonalizedContent(
-              strategy.topic, 
-              strategy.content_type, 
+              strategy.topic,
+              strategy.content_type,
               strategy.user_segment
             );
-            
+
             const cacheKey = `trend:${strategy.topic}:${strategy.content_type}:${strategy.user_segment}`;
             await setL2Cache(cacheKey, content, 900); // 15 min TTL for trending
-            
+
             return { strategy, cached: true };
           });
-          
+
           return await Promise.all(warmPromises);
         }
       );
 
       // Verify trending content is cached
       expect(batchWarmingResult.result.length).toBeGreaterThan(0);
-      
+
       // Test access to warmed content
       for (const result of batchWarmingResult.result) {
         const { strategy } = result;
         const cacheKey = `trend:${strategy.topic}:${strategy.content_type}:${strategy.user_segment}`;
-        
+
         const cachedContent = await getL2Cache(cacheKey);
         expect(cachedContent).toBeDefined();
         expect(cachedContent.topic).toBe(strategy.topic);
@@ -490,10 +472,10 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
 
       for (const activity of activities) {
         const startTime = Date.now();
-        
+
         // Simulate cache operation
         await simulateCacheOperation(activity);
-        
+
         const duration = Date.now() - startTime;
         metrics.record(activity.operation, duration, activity.hit !== false);
       }
@@ -515,7 +497,7 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
 
     test('should detect cache performance anomalies', async () => {
       const anomalyDetector = new CacheAnomalyDetector();
-      
+
       // Generate normal operations
       for (let i = 0; i < 100; i++) {
         const normalLatency = 5 + Math.random() * 10; // 5-15ms normal range
@@ -524,14 +506,14 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
 
       // Introduce anomalous operations
       const anomalousLatencies = [100, 200, 150, 300]; // Much higher latencies
-      anomalousLatencies.forEach(latency => {
+      anomalousLatencies.forEach((latency) => {
         anomalyDetector.recordOperation('get', latency, true);
       });
 
       const anomalies = anomalyDetector.detectAnomalies();
 
       expect(anomalies.length).toBeGreaterThan(0);
-      anomalies.forEach(anomaly => {
+      anomalies.forEach((anomaly) => {
         expect(anomaly.latency).toBeGreaterThan(50); // Significantly higher than normal
         expect(anomaly.severity).toMatch(/medium|high/);
       });
@@ -544,11 +526,11 @@ describe('Advanced Cache Scenarios Integration Tests', () => {
 // Multi-level cache implementation
 const l1Cache = new Map();
 
-function getL1Cache(key: string): any {
+function getL1Cache(key: string): unknown {
   return l1Cache.get(key) || null;
 }
 
-function setL1Cache(key: string, value: any, ttlSeconds: number): void {
+function setL1Cache(key: string, value: unknown, _ttlSeconds: number): void {
   l1Cache.set(key, value);
   // In real implementation, would set TTL
 }
@@ -557,23 +539,23 @@ function clearL1Cache(key: string): void {
   l1Cache.delete(key);
 }
 
-async function getL2Cache(key: string): Promise<any> {
+async function getL2Cache(key: string): Promise<unknown> {
   // Simulate Redis access
-  await new Promise(resolve => setTimeout(resolve, 2));
+  await new Promise((resolve) => setTimeout(resolve, 2));
   return mockRedisCache.get(key) || null;
 }
 
-async function setL2Cache(key: string, value: any, ttlSeconds: number): Promise<void> {
+async function setL2Cache(key: string, value: unknown, _ttlSeconds: number): Promise<void> {
   // Simulate Redis storage
-  await new Promise(resolve => setTimeout(resolve, 1));
+  await new Promise((resolve) => setTimeout(resolve, 1));
   mockRedisCache.set(key, value);
 }
 
 // Mock Redis cache for testing
 const mockRedisCache = new Map();
 
-async function generateContent(type?: string): Promise<any> {
-  await new Promise(resolve => setTimeout(resolve, 100));
+async function generateContent(type?: string): Promise<unknown> {
+  await new Promise((resolve) => setTimeout(resolve, 100));
   return {
     type: type || 'default',
     content: 'Generated content',
@@ -581,7 +563,7 @@ async function generateContent(type?: string): Promise<any> {
   };
 }
 
-async function accessWithPromotion(key: string): Promise<any> {
+async function accessWithPromotion(key: string): Promise<unknown> {
   let data = getL1Cache(key);
   if (data) {
     data.access_count = (data.access_count || 0) + 1;
@@ -591,12 +573,12 @@ async function accessWithPromotion(key: string): Promise<any> {
   data = await getL2Cache(key);
   if (data) {
     data.access_count = (data.access_count || 0) + 1;
-    
+
     // Promote to L1 if accessed frequently
     if (data.access_count > 3) {
       setL1Cache(key, data, 60);
     }
-    
+
     await setL2Cache(key, data, 300);
     return data;
   }
@@ -605,26 +587,42 @@ async function accessWithPromotion(key: string): Promise<any> {
 }
 
 // Instance cache simulation
-function setInstanceCache(instanceCaches: Map<string, Map<string, any>>, instance: string, key: string, value: any): void {
+function setInstanceCache(
+  instanceCaches: Map<string, Map<string, unknown>>,
+  instance: string,
+  key: string,
+  value: unknown
+): void {
   instanceCaches.get(instance)?.set(key, value);
 }
 
-function getInstanceCache(instanceCaches: Map<string, Map<string, any>>, instance: string, key: string): any {
+function getInstanceCache(
+  instanceCaches: Map<string, Map<string, unknown>>,
+  instance: string,
+  key: string
+): unknown {
   return instanceCaches.get(instance)?.get(key);
 }
 
-function invalidateInstanceCache(instanceCaches: Map<string, Map<string, any>>, instance: string, key: string): void {
+function invalidateInstanceCache(
+  instanceCaches: Map<string, Map<string, unknown>>,
+  instance: string,
+  key: string
+): void {
   instanceCaches.get(instance)?.delete(key);
 }
 
 // Atomic cache update simulation
-async function atomicCacheUpdate(key: string, data: any): Promise<{ success: boolean; version?: number }> {
-  await new Promise(resolve => setTimeout(resolve, Math.random() * 10));
-  
+async function atomicCacheUpdate(
+  key: string,
+  data: unknown
+): Promise<{ success: boolean; version?: number }> {
+  await new Promise((resolve) => setTimeout(resolve, Math.random() * 10));
+
   // Simulate version-based atomic update
   const existing = mockRedisCache.get(key);
   const newVersion = (existing?.version || 0) + 1;
-  
+
   mockRedisCache.set(key, { ...data, version: newVersion });
   return { success: true, version: newVersion };
 }
@@ -640,27 +638,36 @@ function getShardForKey(key: string, shardCount: number): number {
 
 const shardCaches = new Map();
 
-async function setShardedCache(key: string, value: any, shard: number, ttl: number): Promise<void> {
+async function setShardedCache(
+  key: string,
+  value: unknown,
+  shard: number,
+  _ttl: number
+): Promise<void> {
   if (!shardCaches.has(shard)) {
     shardCaches.set(shard, new Map());
   }
   shardCaches.get(shard).set(key, value);
 }
 
-async function getShardedCache(key: string, shard: number): Promise<any> {
+async function getShardedCache(key: string, shard: number): Promise<unknown> {
   return shardCaches.get(shard)?.get(key) || null;
 }
 
 // Compression simulation
-async function setCompressedCache(key: string, value: any, ttl: number): Promise<{ compressionRatio: number }> {
+async function setCompressedCache(
+  key: string,
+  value: unknown,
+  ttl: number
+): Promise<{ compressionRatio: number }> {
   const original = JSON.stringify(value);
   const compressed = compressString(original);
   await setL2Cache(key, { compressed: true, data: compressed }, ttl);
-  
+
   return { compressionRatio: compressed.length / original.length };
 }
 
-async function getCompressedCache(key: string): Promise<any> {
+async function getCompressedCache(key: string): Promise<unknown> {
   const cached = await getL2Cache(key);
   if (cached?.compressed) {
     const decompressed = decompressString(cached.data);
@@ -675,7 +682,7 @@ function compressString(str: string): string {
 }
 
 function decompressString(compressed: string): string {
-  // Simple decompression simulation  
+  // Simple decompression simulation
   return compressed.replace(/(.)\d+/g, (match, char) => {
     const count = parseInt(match.slice(1));
     return char.repeat(count);
@@ -683,11 +690,14 @@ function decompressString(compressed: string): string {
 }
 
 // Cache eviction
-function selectEvictionCandidate(cache: Map<string, any>, accessCounts: Map<string, number>): string {
+function selectEvictionCandidate(
+  cache: Map<string, unknown>,
+  accessCounts: Map<string, number>
+): string {
   let candidate = '';
   let lowestScore = Infinity;
 
-  for (const [key, data] of cache) {
+  for (const [key, data] of Array.from(cache)) {
     const accessCount = accessCounts.get(key) || 0;
     const age = Date.now() - data.created;
     const score = accessCount / (age / 1000); // Access frequency per second
@@ -702,24 +712,29 @@ function selectEvictionCandidate(cache: Map<string, any>, accessCounts: Map<stri
 }
 
 // Warming strategies
-async function identifyWarmingCandidates(userId: string, pattern: any): Promise<Array<{ key: string; type: string }>> {
+async function identifyWarmingCandidates(
+  userId: string,
+  pattern: unknown
+): Promise<Array<{ key: string; type: string }>> {
   const candidates = [];
-  
+
   for (const contentType of pattern.commonly_accessed) {
     for (const topic of pattern.content_types) {
       candidates.push({
         key: `user:${userId}:${topic}:${contentType}`,
-        type: contentType
+        type: contentType,
       });
     }
   }
-  
+
   return candidates;
 }
 
-function generateWarmingStrategy(analytics: any): Array<{ topic: string; content_type: string; user_segment: string }> {
+function generateWarmingStrategy(
+  analytics: unknown
+): Array<{ topic: string; content_type: string; user_segment: string }> {
   const strategies = [];
-  
+
   for (const topic of analytics.trending_topics) {
     for (const contentType of analytics.popular_content_types) {
       for (const segment of analytics.user_segments) {
@@ -727,12 +742,16 @@ function generateWarmingStrategy(analytics: any): Array<{ topic: string; content
       }
     }
   }
-  
+
   return strategies.slice(0, 10); // Limit to top 10 strategies
 }
 
-async function generatePersonalizedContent(topic: string, contentType: string, userSegment: string): Promise<any> {
-  await new Promise(resolve => setTimeout(resolve, 50));
+async function generatePersonalizedContent(
+  topic: string,
+  contentType: string,
+  userSegment: string
+): Promise<unknown> {
+  await new Promise((resolve) => setTimeout(resolve, 50));
   return {
     topic,
     content_type: contentType,
@@ -744,7 +763,8 @@ async function generatePersonalizedContent(topic: string, contentType: string, u
 
 // Metrics and monitoring
 class CacheMetricsCollector {
-  private operations: Array<{ type: string; duration: number; hit: boolean; timestamp: number }> = [];
+  private operations: Array<{ type: string; duration: number; hit: boolean; timestamp: number }> =
+    [];
 
   record(operation: string, duration: number, hit: boolean): void {
     this.operations.push({
@@ -755,20 +775,23 @@ class CacheMetricsCollector {
     });
   }
 
-  generateReport(): any {
+  generateReport(): unknown {
     const total = this.operations.length;
-    const hits = this.operations.filter(op => op.hit).length;
-    const durations = this.operations.map(op => op.duration).sort((a, b) => a - b);
+    const hits = this.operations.filter((op) => op.hit).length;
+    const durations = this.operations.map((op) => op.duration).sort((a, b) => a - b);
 
     return {
       total_operations: total,
       hit_rate: hits / total,
       miss_rate: (total - hits) / total,
       average_latency: durations.reduce((sum, d) => sum + d, 0) / total,
-      operations_by_type: this.operations.reduce((acc, op) => {
-        acc[op.type] = (acc[op.type] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>),
+      operations_by_type: this.operations.reduce(
+        (acc, op) => {
+          acc[op.type] = (acc[op.type] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
       performance_percentiles: {
         p50: durations[Math.floor(durations.length * 0.5)],
         p95: durations[Math.floor(durations.length * 0.95)],
@@ -781,7 +804,7 @@ class CacheMetricsCollector {
 class CacheAnomalyDetector {
   private operations: Array<{ type: string; latency: number; timestamp: number }> = [];
 
-  recordOperation(type: string, latency: number, hit: boolean): void {
+  recordOperation(type: string, latency: number, _hit: boolean): void {
     this.operations.push({
       type,
       latency,
@@ -790,15 +813,17 @@ class CacheAnomalyDetector {
   }
 
   detectAnomalies(): Array<{ latency: number; severity: string; timestamp: number }> {
-    const latencies = this.operations.map(op => op.latency);
+    const latencies = this.operations.map((op) => op.latency);
     const mean = latencies.reduce((sum, l) => sum + l, 0) / latencies.length;
-    const stdDev = Math.sqrt(latencies.reduce((sum, l) => sum + Math.pow(l - mean, 2), 0) / latencies.length);
+    const stdDev = Math.sqrt(
+      latencies.reduce((sum, l) => sum + Math.pow(l - mean, 2), 0) / latencies.length
+    );
 
     const anomalies = [];
-    
+
     for (const op of this.operations) {
       const zScore = Math.abs(op.latency - mean) / stdDev;
-      
+
       if (zScore > 3) {
         anomalies.push({
           latency: op.latency,
@@ -812,6 +837,6 @@ class CacheAnomalyDetector {
   }
 }
 
-async function simulateCacheOperation(activity: any): Promise<void> {
-  await new Promise(resolve => setTimeout(resolve, Math.random() * 5));
+async function simulateCacheOperation(_activity: unknown): Promise<void> {
+  await new Promise((resolve) => setTimeout(resolve, Math.random() * 5));
 }

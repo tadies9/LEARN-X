@@ -58,6 +58,14 @@ if settings.enable_metrics:
 # Include routers
 app.include_router(health.router, prefix=settings.api_prefix, tags=["health"])
 
+# Include AI routes even in minimal mode
+try:
+    from api.routes import ai
+    app.include_router(ai.router, prefix=f"{settings.api_prefix}/ai", tags=["ai"])
+    logger.info("AI routes loaded in minimal mode")
+except Exception as e:
+    logger.warning(f"Could not load AI routes: {e}")
+
 # Middleware for request logging
 @app.middleware("http")
 async def log_requests(request: Request, call_next):

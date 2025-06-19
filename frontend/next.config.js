@@ -10,7 +10,7 @@ const nextConfig = {
   swcMinify: true,
   output: 'standalone',
   trailingSlash: false,
-  
+
   // Experimental optimizations
   experimental: {
     optimizeCss: false,
@@ -38,16 +38,19 @@ const nextConfig = {
       'lucide-react',
       'recharts',
       'date-fns',
-      '@tanstack/react-query'
+      '@tanstack/react-query',
     ],
   },
 
   // Compiler optimizations
   compiler: {
     // Remove console logs in production
-    removeConsole: process.env.NODE_ENV === 'production' ? {
-      exclude: ['error', 'warn'],
-    } : false,
+    removeConsole:
+      process.env.NODE_ENV === 'production'
+        ? {
+            exclude: ['error', 'warn'],
+          }
+        : false,
   },
 
   // Module import optimizations
@@ -73,6 +76,12 @@ const nextConfig = {
 
   // Webpack configuration
   webpack: (config, { isServer, dev }) => {
+    // Ignore known warnings
+    config.ignoreWarnings = [
+      { module: /@supabase\/realtime-js/ },
+      { module: /require-in-the-middle/ },
+    ];
+
     // Optimize chunks
     if (!dev && !isServer) {
       config.optimization = {

@@ -16,7 +16,14 @@ export interface PythonAIConfig {
 
 export interface ContentGenerationRequest {
   content: string;
-  content_type: 'explanation' | 'summary' | 'quiz' | 'flashcards' | 'outline' | 'examples' | 'practice';
+  content_type:
+    | 'explanation'
+    | 'summary'
+    | 'quiz'
+    | 'flashcards'
+    | 'outline'
+    | 'examples'
+    | 'practice';
   topic?: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   persona?: UserPersona;
@@ -38,7 +45,7 @@ export interface BatchEmbeddingRequest {
   items: Array<{
     id?: string;
     text: string;
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }>;
   model?: string;
   dimensions?: number;
@@ -68,7 +75,7 @@ export interface StreamingChunk {
   type?: string;
   done?: boolean;
   error?: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export class PythonAIClient {
@@ -79,7 +86,7 @@ export class PythonAIClient {
       baseUrl: process.env.PYTHON_AI_SERVICE_URL || 'http://localhost:8001',
       timeout: 60000,
       maxRetries: 3,
-      ...config
+      ...config,
     };
   }
 
@@ -90,15 +97,15 @@ export class PythonAIClient {
     request: ContentGenerationRequest
   ): AsyncGenerator<StreamingChunk, void, unknown> {
     const url = `${this.config.baseUrl}/api/v1/ai/generate-content`;
-    
+
     try {
       const response = await this.makeRequest(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` })
+          ...(this.config.apiKey && { Authorization: `Bearer ${this.config.apiKey}` }),
         },
-        body: JSON.stringify(request)
+        body: JSON.stringify(request),
       });
 
       if (!response.ok) {
@@ -108,17 +115,17 @@ export class PythonAIClient {
       if (request.stream) {
         yield* this.parseStreamingResponse(response);
       } else {
-        const data = await response.json() as { content: string };
+        const data = (await response.json()) as { content: string };
         yield {
           content: data.content,
           type: request.content_type,
-          done: true
+          done: true,
         };
       }
     } catch (error) {
       logger.error('Python AI content generation error:', error);
       yield {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -132,22 +139,22 @@ export class PythonAIClient {
     usage: Record<string, number>;
   }> {
     const url = `${this.config.baseUrl}/api/v1/ai/embeddings`;
-    
+
     try {
       const response = await this.makeRequest(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` })
+          ...(this.config.apiKey && { Authorization: `Bearer ${this.config.apiKey}` }),
         },
-        body: JSON.stringify(request)
+        body: JSON.stringify(request),
       });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      return await response.json() as {
+      return (await response.json()) as {
         embeddings: number[][];
         model: string;
         usage: Record<string, number>;
@@ -165,32 +172,32 @@ export class PythonAIClient {
     embeddings: Array<{
       id: string;
       embedding: number[];
-      metadata: Record<string, any>;
+      metadata: Record<string, unknown>;
     }>;
     model: string;
     total_items: number;
   }> {
     const url = `${this.config.baseUrl}/api/v1/ai/embeddings/batch`;
-    
+
     try {
       const response = await this.makeRequest(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` })
+          ...(this.config.apiKey && { Authorization: `Bearer ${this.config.apiKey}` }),
         },
-        body: JSON.stringify(request)
+        body: JSON.stringify(request),
       });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      return await response.json() as {
+      return (await response.json()) as {
         embeddings: Array<{
           id: string;
           embedding: number[];
-          metadata: Record<string, any>;
+          metadata: Record<string, unknown>;
         }>;
         model: string;
         total_items: number;
@@ -204,19 +211,17 @@ export class PythonAIClient {
   /**
    * Generate completions with provider fallback
    */
-  async *complete(
-    request: CompletionRequest
-  ): AsyncGenerator<StreamingChunk, void, unknown> {
+  async *complete(request: CompletionRequest): AsyncGenerator<StreamingChunk, void, unknown> {
     const url = `${this.config.baseUrl}/api/v1/ai/complete`;
-    
+
     try {
       const response = await this.makeRequest(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` })
+          ...(this.config.apiKey && { Authorization: `Bearer ${this.config.apiKey}` }),
         },
-        body: JSON.stringify(request)
+        body: JSON.stringify(request),
       });
 
       if (!response.ok) {
@@ -226,20 +231,24 @@ export class PythonAIClient {
       if (request.stream) {
         yield* this.parseStreamingResponse(response);
       } else {
-        const data = await response.json() as { content: string; model: string; usage: any };
+        const data = (await response.json()) as {
+          content: string;
+          model: string;
+          usage: Record<string, number>;
+        };
         yield {
           content: data.content,
           done: true,
           metadata: {
             model: data.model,
-            usage: data.usage
-          }
+            usage: data.usage,
+          },
         };
       }
     } catch (error) {
       logger.error('Python AI completion error:', error);
       yield {
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -247,22 +256,42 @@ export class PythonAIClient {
   /**
    * Get available models and their capabilities
    */
-  async getModels(): Promise<Record<string, any>> {
+  async getModels(): Promise<
+    Record<
+      string,
+      {
+        id: string;
+        name: string;
+        description?: string;
+        capabilities?: string[];
+        pricing?: Record<string, number>;
+      }
+    >
+  > {
     const url = `${this.config.baseUrl}/api/v1/ai/models`;
-    
+
     try {
       const response = await this.makeRequest(url, {
         method: 'GET',
         headers: {
-          ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` })
-        }
+          ...(this.config.apiKey && { Authorization: `Bearer ${this.config.apiKey}` }),
+        },
       });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      return await response.json() as Record<string, any>;
+      return (await response.json()) as Record<
+        string,
+        {
+          id: string;
+          name: string;
+          description?: string;
+          capabilities?: string[];
+          pricing?: Record<string, number>;
+        }
+      >;
     } catch (error) {
       logger.error('Python AI models error:', error);
       throw error;
@@ -272,22 +301,46 @@ export class PythonAIClient {
   /**
    * Get AI service statistics
    */
-  async getStats(): Promise<Record<string, any>> {
+  async getStats(): Promise<
+    Record<
+      string,
+      {
+        total_requests?: number;
+        total_tokens?: number;
+        cache_hits?: number;
+        cache_misses?: number;
+        average_latency?: number;
+        error_rate?: number;
+        [key: string]: unknown;
+      }
+    >
+  > {
     const url = `${this.config.baseUrl}/api/v1/ai/stats`;
-    
+
     try {
       const response = await this.makeRequest(url, {
         method: 'GET',
         headers: {
-          ...(this.config.apiKey && { 'Authorization': `Bearer ${this.config.apiKey}` })
-        }
+          ...(this.config.apiKey && { Authorization: `Bearer ${this.config.apiKey}` }),
+        },
       });
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      return await response.json() as Record<string, any>;
+      return (await response.json()) as Record<
+        string,
+        {
+          total_requests?: number;
+          total_tokens?: number;
+          cache_hits?: number;
+          cache_misses?: number;
+          average_latency?: number;
+          error_rate?: number;
+          [key: string]: unknown;
+        }
+      >;
     } catch (error) {
       logger.error('Python AI stats error:', error);
       throw error;
@@ -299,16 +352,16 @@ export class PythonAIClient {
    */
   async healthCheck(): Promise<boolean> {
     const url = `${this.config.baseUrl}/api/v1/health`;
-    
+
     try {
       const response = await this.makeRequest(url, {
         method: 'GET',
-        timeout: 5000 // Shorter timeout for health checks
+        timeout: 5000, // Shorter timeout for health checks
       });
 
       return response.ok;
     } catch (error) {
-      logger.warning('Python AI service health check failed:', error);
+      logger.warn('Python AI service health check failed:', error);
       return false;
     }
   }
@@ -330,19 +383,19 @@ export class PythonAIClient {
     try {
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) break;
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
-        
+
         // Keep the last incomplete line in the buffer
         buffer = lines.pop() || '';
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
             const data = line.slice(6);
-            
+
             if (data === '[DONE]') {
               return;
             }
@@ -366,11 +419,11 @@ export class PythonAIClient {
    * Make HTTP request with retry logic
    */
   private async makeRequest(
-    url: string, 
+    url: string,
     options: RequestInit & { timeout?: number }
   ): Promise<Response> {
     const { timeout = this.config.timeout, ...fetchOptions } = options;
-    
+
     for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
       try {
         const controller = new AbortController();
@@ -378,12 +431,11 @@ export class PythonAIClient {
 
         const response = await fetch(url, {
           ...fetchOptions,
-          signal: controller.signal
+          signal: controller.signal,
         });
 
         clearTimeout(timeoutId);
         return response;
-
       } catch (error) {
         if (attempt === this.config.maxRetries) {
           throw error;
@@ -391,11 +443,11 @@ export class PythonAIClient {
 
         // Exponential backoff
         const delay = Math.pow(2, attempt - 1) * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        
-        logger.warning(`Python AI request retry ${attempt}/${this.config.maxRetries}`, {
+        await new Promise((resolve) => setTimeout(resolve, delay));
+
+        logger.warn(`Python AI request retry ${attempt}/${this.config.maxRetries}`, {
           url,
-          error: error instanceof Error ? error.message : 'Unknown error'
+          error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
     }

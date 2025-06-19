@@ -10,15 +10,16 @@ import { logger } from '../../utils/logger';
 import { supabase } from '../../config/supabase';
 
 export interface FileProcessingPayload {
-  fileId: string;
-  userId: string;
-  processingOptions?: {
+  file_id: string;
+  user_id: string;
+  job_type?: string;
+  processing_options?: {
     chunkSize?: number;
     priority?: number; // Use integer priorities
-    [key: string]: any;
+    [key: string]: unknown;
   };
-  queuedAt: string;
-  retryCount?: number;
+  queued_at: string;
+  retry_count?: number;
 }
 
 export interface FileProcessingMetrics {
@@ -67,15 +68,16 @@ export class FileProcessingQueue {
   async enqueue(
     fileId: string,
     userId: string,
-    options?: FileProcessingPayload['processingOptions']
+    options?: FileProcessingPayload['processing_options']
   ): Promise<bigint> {
     try {
       const payload: FileProcessingPayload = {
-        fileId,
-        userId,
-        processingOptions: options || {},
-        queuedAt: new Date().toISOString(),
-        retryCount: 0,
+        file_id: fileId,
+        user_id: userId,
+        job_type: 'process_file',
+        processing_options: options || {},
+        queued_at: new Date().toISOString(),
+        retry_count: 0,
       };
 
       const msgId = await this.client.send(this.queueName, payload);
@@ -100,16 +102,17 @@ export class FileProcessingQueue {
     files: Array<{
       fileId: string;
       userId: string;
-      options?: FileProcessingPayload['processingOptions'];
+      options?: FileProcessingPayload['processing_options'];
     }>
   ): Promise<bigint[]> {
     try {
       const payloads: FileProcessingPayload[] = files.map((file) => ({
-        fileId: file.fileId,
-        userId: file.userId,
-        processingOptions: file.options || {},
-        queuedAt: new Date().toISOString(),
-        retryCount: 0,
+        file_id: file.fileId,
+        user_id: file.userId,
+        job_type: 'process_file',
+        processing_options: file.options || {},
+        queued_at: new Date().toISOString(),
+        retry_count: 0,
       }));
 
       const msgIds = await this.client.sendBatch(this.queueName, payloads);
@@ -198,12 +201,12 @@ export class FileProcessingQueue {
    */
   private async processJob(job: QueueJob<FileProcessingPayload>): Promise<void> {
     const startTime = Date.now();
-    const { fileId, userId } = job.message;
+    const { file_id, user_id } = job.message;
 
     try {
-      logger.info(`[FileProcessingQueue] Processing file: ${fileId}`, {
+      logger.info(`[FileProcessingQueue] Processing file: ${file_id}`, {
         msgId: job.msg_id.toString(),
-        userId,
+        userId: user_id,
         attempt: job.read_ct,
       });
 
@@ -227,19 +230,19 @@ export class FileProcessingQueue {
       // Update metrics
       this.updateAverageProcessingTime(processingTime);
 
-      logger.info(`[FileProcessingQueue] File processed successfully: ${fileId}`, {
+      logger.info(`[FileProcessingQueue] File processed successfully: ${file_id}`, {
         processingTimeMs: processingTime,
         msgId: job.msg_id.toString(),
       });
     } catch (error) {
-      logger.error(`[FileProcessingQueue] Failed to process file ${fileId}:`, error);
+      logger.error(`[FileProcessingQueue] Failed to process file ${file_id}:`, error);
 
       // Check if we should retry or archive
       const shouldRetry = this.shouldRetryJob(job, error);
 
       if (shouldRetry) {
         // Let the message become visible again for retry
-        logger.warn(`[FileProcessingQueue] Job will retry: ${fileId}`, {
+        logger.warn(`[FileProcessingQueue] Job will retry: ${file_id}`, {
           attempt: job.read_ct,
           msgId: job.msg_id.toString(),
         });
@@ -253,7 +256,7 @@ export class FileProcessingQueue {
         // Archive the failed job for analysis
         await this.client.archive(this.queueName, job.msg_id);
 
-        logger.error(`[FileProcessingQueue] Job archived after failure: ${fileId}`, {
+        logger.error(`[FileProcessingQueue] Job archived after failure: ${file_id}`, {
           attempt: job.read_ct,
           msgId: job.msg_id.toString(),
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -267,7 +270,7 @@ export class FileProcessingQueue {
   /**
    * Determines if a job should be retried based on error type and attempt count
    */
-  private shouldRetryJob(job: QueueJob<FileProcessingPayload>, error: any): boolean {
+  private shouldRetryJob(job: QueueJob<FileProcessingPayload>, error: unknown): boolean {
     const maxRetries = 3;
     const isRetryableError = this.isRetryableError(error);
 
@@ -277,7 +280,7 @@ export class FileProcessingQueue {
   /**
    * Checks if an error is retryable (transient vs permanent)
    */
-  private isRetryableError(error: any): boolean {
+  private isRetryableError(error: unknown): boolean {
     const errorMessage = error instanceof Error ? error.message.toLowerCase() : '';
 
     // Retryable errors (transient issues)

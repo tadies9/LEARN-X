@@ -12,15 +12,16 @@ import { logger } from '../../utils/logger';
 import { QueueJob } from '../queue/EnhancedPGMQClient';
 
 export interface FileProcessingJob {
-  fileId: string;
-  userId: string;
-  processingOptions?: {
+  file_id: string;
+  user_id: string;
+  job_type?: string;
+  processing_options?: {
     chunkSize?: number;
     priority?: number; // Use integer priorities
     [key: string]: unknown;
   };
-  queuedAt: string;
-  retryCount?: number;
+  queued_at: string;
+  retry_count?: number;
 }
 
 export class FileProcessor {
@@ -38,21 +39,21 @@ export class FileProcessor {
    * Processes a file processing job from the queue
    */
   async processJob(job: QueueJob<FileProcessingJob>): Promise<void> {
-    const { fileId, userId, processingOptions } = job.message;
+    const { file_id, user_id, processing_options } = job.message;
 
-    logger.info(`[FileProcessor] Processing file: ${fileId}`, {
+    logger.info(`[FileProcessor] Processing file: ${file_id}`, {
       msgId: job.msg_id.toString(),
-      userId,
+      userId: user_id,
       attempt: job.read_ct,
-      options: processingOptions,
+      options: processing_options,
     });
 
     try {
       // Get file details with ownership verification
-      const file = await this.getFileWithValidation(fileId, userId);
+      const file = await this.getFileWithValidation(file_id, user_id);
 
       // Update status to processing
-      await this.updateFileStatus(fileId, 'processing', {
+      await this.updateFileStatus(file_id, 'processing', {
         processing_started_at: new Date().toISOString(),
       });
 
@@ -69,28 +70,28 @@ export class FileProcessor {
       const chunks = await this.performSemanticChunking(
         extractedContent,
         file.filename || file.original_name || 'unknown',
-        processingOptions
+        processing_options
       );
 
       logger.info(`[FileProcessor] Created ${chunks.length} semantic chunks`);
 
       // Save chunks with batch insertion
-      const savedChunks = await this.saveChunksBatch(fileId, chunks);
+      const savedChunks = await this.saveChunksBatch(file_id, chunks);
 
       // Queue embeddings efficiently
       await this.embeddingQueue.enqueueBatch(
-        fileId,
+        file_id,
         savedChunks.map((chunk) => ({
           id: chunk.id,
           content: chunk.content,
           position: chunk.chunk_index,
           metadata: chunk.metadata || {},
         })),
-        userId
+        user_id
       );
 
       // Update file status to completed
-      await this.updateFileStatus(fileId, 'completed', {
+      await this.updateFileStatus(file_id, 'completed', {
         metadata: {
           processed_at: new Date().toISOString(),
           chunk_count: savedChunks.length,
@@ -103,33 +104,33 @@ export class FileProcessor {
       // Send success notification
       await this.notificationQueue.enqueue(
         createFileProcessingNotification(
-          userId,
-          fileId,
+          user_id,
+          file_id,
           file.filename || file.original_name || 'unknown',
           true
         )
       );
 
-      logger.info(`[FileProcessor] Successfully processed file ${fileId}`, {
+      logger.info(`[FileProcessor] Successfully processed file ${file_id}`, {
         chunkCount: savedChunks.length,
-        processingTimeMs: Date.now() - new Date(job.message.queuedAt).getTime(),
+        processingTimeMs: Date.now() - new Date(job.message.queued_at).getTime(),
       });
     } catch (error) {
-      logger.error(`[FileProcessor] Failed to process file ${fileId}:`, error);
+      logger.error(`[FileProcessor] Failed to process file ${file_id}:`, error);
 
       // Update file status to failed
-      await this.updateFileStatus(fileId, 'failed', {
+      await this.updateFileStatus(file_id, 'failed', {
         error_message: error instanceof Error ? error.message : 'Unknown error',
         failed_at: new Date().toISOString(),
       });
 
       // Send failure notification
       try {
-        const file = await this.getFileWithValidation(fileId, userId);
+        const file = await this.getFileWithValidation(file_id, user_id);
         await this.notificationQueue.enqueue(
           createFileProcessingNotification(
-            userId,
-            fileId,
+            user_id,
+            file_id,
             file.filename || file.original_name || 'unknown',
             false
           )
@@ -146,8 +147,8 @@ export class FileProcessor {
    * Gets file details with ownership validation
    */
   private async getFileWithValidation(
-    fileId: string,
-    userId: string
+    file_id: string,
+    user_id: string
   ): Promise<{
     id: string;
     filename?: string;
@@ -176,17 +177,17 @@ export class FileProcessor {
         )
       `
       )
-      .eq('id', fileId)
+      .eq('id', file_id)
       .single();
 
     if (fileError || !file) {
-      throw new Error(`File not found: ${fileId}`);
+      throw new Error(`File not found: ${file_id}`);
     }
 
     // Verify ownership
     const fileOwner = file.modules.courses.user_id;
-    if (fileOwner !== userId) {
-      throw new Error(`Access denied: User ${userId} cannot access file ${fileId}`);
+    if (fileOwner !== user_id) {
+      throw new Error(`Access denied: User ${user_id} cannot access file ${file_id}`);
     }
 
     return file;
@@ -241,7 +242,7 @@ export class FileProcessor {
   private async performSemanticChunking(
     content: string,
     filename: string,
-    options?: FileProcessingJob['processingOptions']
+    options?: FileProcessingJob['processing_options']
   ): Promise<
     Array<{
       content: string;

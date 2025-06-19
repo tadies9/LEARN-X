@@ -7,7 +7,7 @@ import { supabase } from '../../config/supabase';
 import { getQueueConfig, QueueName } from '../../config/supabase-queue.config';
 import { logger } from '../../utils/logger';
 
-export interface QueueJob<T = any> {
+export interface QueueJob<T = unknown> {
   msg_id: bigint;
   read_ct: number;
   enqueued_at: string;

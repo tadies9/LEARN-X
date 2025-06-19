@@ -7,6 +7,16 @@ import { logger } from '../../utils/logger';
 import { pythonAIClient, PythonAIClient, ContentGenerationRequest } from './PythonAIClient';
 import { UserPersona } from '../../types/persona';
 
+// Type guard for usage object
+function hasTokenUsage(usage: unknown): usage is { total_tokens: number } {
+  return (
+    typeof usage === 'object' &&
+    usage !== null &&
+    'total_tokens' in usage &&
+    typeof (usage as any).total_tokens === 'number'
+  );
+}
+
 export interface OutlineSection {
   id: string;
   title: string;
@@ -48,11 +58,11 @@ export class PythonOutlineService {
    */
   async generateOutline(params: OutlineGenerationParams): Promise<OutlineResult> {
     const startTime = Date.now();
-    
+
     logger.info('Generating outline via Python AI service', {
       contentLength: params.content.length,
       sectionCount: params.sectionCount || 4,
-      userId: params.userId
+      userId: params.userId,
     });
 
     try {
@@ -69,7 +79,7 @@ export class PythonOutlineService {
         temperature: 0.3, // Lower temperature for more consistent structure
         max_tokens: 2000,
         stream: false, // Outlines are better as complete responses
-        user_id: params.userId
+        user_id: params.userId,
       };
 
       let outlineContent = '';
@@ -79,52 +89,57 @@ export class PythonOutlineService {
         if (chunk.error) {
           throw new Error(chunk.error);
         }
-        
+
         if (chunk.content) {
           outlineContent += chunk.content;
         }
 
         // Extract token usage if available
-        if (chunk.metadata?.usage) {
+        if (chunk.metadata?.usage && hasTokenUsage(chunk.metadata.usage)) {
           tokensUsed = chunk.metadata.usage.total_tokens || 0;
         }
       }
 
       // Parse the outline response
       const sections = this.parseOutlineResponse(outlineContent, params);
-      
+
       const processingTime = Date.now() - startTime;
-      
+
       logger.info('Outline generation completed', {
         sectionsGenerated: sections.length,
         tokensUsed,
         processingTime,
-        userId: params.userId
+        userId: params.userId,
       });
 
       return {
         sections,
         generatedAt: new Date(),
         tokensUsed,
-        processingTime
+        processingTime,
       };
-
     } catch (error) {
       logger.error('Python outline generation failed:', error);
-      throw new Error(`Outline generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Outline generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
   /**
    * Generate outline with streaming for real-time updates
    */
-  async *generateOutlineStream(params: OutlineGenerationParams): AsyncGenerator<{
-    type: 'section' | 'complete' | 'error';
-    data?: OutlineSection | OutlineResult;
-    error?: string;
-  }, void, unknown> {
+  async *generateOutlineStream(params: OutlineGenerationParams): AsyncGenerator<
+    {
+      type: 'section' | 'complete' | 'error';
+      data?: OutlineSection | OutlineResult;
+      error?: string;
+    },
+    void,
+    unknown
+  > {
     const startTime = Date.now();
-    
+
     try {
       const userPrompt = this.buildUserPrompt(params);
 
@@ -138,7 +153,7 @@ export class PythonOutlineService {
         temperature: 0.3,
         max_tokens: 2000,
         stream: true,
-        user_id: params.userId
+        user_id: params.userId,
       };
 
       let accumulatedContent = '';
@@ -149,10 +164,10 @@ export class PythonOutlineService {
           yield { type: 'error', error: chunk.error };
           return;
         }
-        
+
         if (chunk.content) {
           accumulatedContent += chunk.content;
-          
+
           // Try to parse partial outline and yield complete sections
           const partialSections = this.tryParsePartialOutline(accumulatedContent);
           for (const section of partialSections) {
@@ -160,7 +175,7 @@ export class PythonOutlineService {
           }
         }
 
-        if (chunk.metadata?.usage) {
+        if (chunk.metadata?.usage && hasTokenUsage(chunk.metadata.usage)) {
           tokensUsed = chunk.metadata.usage.total_tokens || 0;
         }
       }
@@ -175,15 +190,14 @@ export class PythonOutlineService {
           sections: finalSections,
           generatedAt: new Date(),
           tokensUsed,
-          processingTime
-        }
+          processingTime,
+        },
       };
-
     } catch (error) {
       logger.error('Streaming outline generation failed:', error);
       yield {
         type: 'error',
-        error: error instanceof Error ? error.message : 'Unknown error'
+        error: error instanceof Error ? error.message : 'Unknown error',
       };
     }
   }
@@ -215,7 +229,7 @@ export class PythonOutlineService {
   //   }
 
   //   prompt += `\n\nCreate ${_params.sectionCount || 4}-6 main sections that progressively build understanding.`;
-    
+
   //   if (_params.includePageNumbers) {
   //     prompt += ` Include estimated page ranges based on content distribution.`;
   //   }
@@ -228,13 +242,14 @@ export class PythonOutlineService {
    */
   private buildUserPrompt(params: OutlineGenerationParams): string {
     let prompt = `Analyze this document and create a learning outline:\n\n`;
-    
+
     // Limit content length for API constraints
     const maxContentLength = 6000;
-    const content = params.content.length > maxContentLength 
-      ? params.content.substring(0, maxContentLength) + '\n\n[Content truncated for analysis...]'
-      : params.content;
-    
+    const content =
+      params.content.length > maxContentLength
+        ? params.content.substring(0, maxContentLength) + '\n\n[Content truncated for analysis...]'
+        : params.content;
+
     prompt += content;
 
     prompt += `\n\nFor each section, provide:
@@ -288,13 +303,12 @@ Return a JSON object with this exact structure:
         topics: Array.isArray(section.topics) ? section.topics : [],
         chunkIds: [], // Will be populated by caller
         chunkCount: section.chunkCount || Math.ceil(params.content.length / sections.length / 1000),
-        startPage: section.startPage || (index * 10 + 1),
-        endPage: section.endPage || ((index + 1) * 10)
+        startPage: section.startPage || index * 10 + 1,
+        endPage: section.endPage || (index + 1) * 10,
       }));
-
     } catch (error) {
       logger.error('Failed to parse outline response:', error);
-      
+
       // Fallback: create basic sections from content analysis
       return this.createFallbackOutline(params);
     }
@@ -310,7 +324,7 @@ Return a JSON object with this exact structure:
       if (!sectionMatches) return [];
 
       const completeSections: OutlineSection[] = [];
-      
+
       for (const match of sectionMatches) {
         try {
           const section = JSON.parse(match);
@@ -323,7 +337,7 @@ Return a JSON object with this exact structure:
               chunkIds: [],
               chunkCount: section.chunkCount || 1,
               startPage: section.startPage,
-              endPage: section.endPage
+              endPage: section.endPage,
             });
           }
         } catch {
@@ -346,7 +360,7 @@ Return a JSON object with this exact structure:
     const wordsPerSection = Math.ceil(contentLength / sectionCount / 5); // Rough words estimate
 
     const sections: OutlineSection[] = [];
-    
+
     for (let i = 0; i < sectionCount; i++) {
       sections.push({
         id: `section-${i + 1}`,
@@ -356,13 +370,13 @@ Return a JSON object with this exact structure:
         chunkIds: [],
         chunkCount: Math.ceil(wordsPerSection / 200), // Rough chunk estimate
         startPage: i * 10 + 1,
-        endPage: (i + 1) * 10
+        endPage: (i + 1) * 10,
       });
     }
 
     logger.warn('Using fallback outline structure', {
       sectionCount: sections.length,
-      contentLength
+      contentLength,
     });
 
     return sections;

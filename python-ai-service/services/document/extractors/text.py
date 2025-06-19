@@ -15,6 +15,10 @@ class TextExtractor(BaseExtractor):
     Stub extractor for text documents (TXT, MD, etc.).
     """
     
+    def can_handle(self, mime_type: str) -> bool:
+        """Check if this extractor can handle text files."""
+        return mime_type in ['text/plain', 'text/csv', 'text/markdown']
+    
     async def extract(self, file_path: str) -> ExtractionResult:
         """
         Extract text from text file.
@@ -41,6 +45,10 @@ class TextExtractor(BaseExtractor):
                     'char_count': len(text),
                     'line_count': text.count('\n') + 1
                 },
+                pages=[{
+                    'page_number': 1,
+                    'text': text
+                }],
                 error=None
             )
         except Exception as e:
@@ -53,5 +61,9 @@ class TextExtractor(BaseExtractor):
                     'extractor': 'text_stub',
                     'file_path': file_path
                 },
+                pages=[{
+                    'page_number': 1,
+                    'text': f"Stub extracted text from text file: {file_path}"
+                }],
                 error=None
             )

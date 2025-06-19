@@ -22,6 +22,43 @@ interface AuthenticatedRequest extends Request {
   };
 }
 
+interface BatchRequestResult {
+  id: string;
+  success: boolean;
+  result?: {
+    content?: string;
+    embeddings?: number[][];
+    model?: string;
+    usage?: Record<string, number>;
+    metadata?: {
+      usage?: {
+        promptTokens: number;
+        completionTokens: number;
+      };
+      [key: string]: unknown;
+    };
+  };
+  error?: string;
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+  };
+}
+
+interface PythonServiceResult {
+  content?: string;
+  embeddings?: number[][];
+  model?: string;
+  usage?: Record<string, number>;
+  metadata?: {
+    usage?: {
+      promptTokens: number;
+      completionTokens: number;
+    };
+    [key: string]: unknown;
+  };
+}
+
 const router = Router();
 
 // Initialize services
@@ -31,63 +68,59 @@ const enhancedAICache = new EnhancedAICache(redisClient, costTracker);
 /**
  * Save user feedback for content improvement
  */
-router.post(
-  '/feedback',
-  authenticateUser,
-  async (req: Request, res: Response): Promise<void> => {
-    const { contentId, reaction, note, metadata } = req.body;
-    const userId = (req as AuthenticatedRequest).user.id;
+router.post('/feedback', authenticateUser, async (req: Request, res: Response): Promise<void> => {
+  const { contentId, reaction, note, metadata } = req.body;
+  const userId = (req as AuthenticatedRequest).user.id;
 
-    logger.info('[AI Learn Feedback] Received feedback:', {
-      userId,
-      contentId,
+  logger.info('[AI Learn Feedback] Received feedback:', {
+    userId,
+    contentId,
+    reaction,
+    hasNote: !!note,
+  });
+
+  try {
+    // Store feedback in database
+    const { error } = await supabase.from('learning_feedback').insert({
+      user_id: userId,
+      content_id: contentId,
       reaction,
-      hasNote: !!note,
+      note,
+      metadata: metadata || {},
+      created_at: new Date().toISOString(),
     });
 
-    try {
-      // Store feedback in database
-      const { error } = await supabase.from('learning_feedback').insert({
-        user_id: userId,
-        content_id: contentId,
+    if (error) {
+      // If table doesn't exist, log structured feedback
+      logger.info('[AI Learn Feedback] Structured feedback logged:', {
+        userId,
+        contentId,
         reaction,
         note,
-        metadata: metadata || {},
-        created_at: new Date().toISOString(),
+        metadata,
+        timestamp: new Date().toISOString(),
       });
-
-      if (error) {
-        // If table doesn't exist, log structured feedback
-        logger.info('[AI Learn Feedback] Structured feedback logged:', {
-          userId,
-          contentId,
-          reaction,
-          note,
-          metadata,
-          timestamp: new Date().toISOString(),
-        });
-      }
-
-      // If negative feedback, log it for potential cache invalidation
-      if (reaction === 'thumbs-down' || reaction === 'negative') {
-        logger.info('[AI Learn Feedback] Negative feedback received, consider cache cleanup:', {
-          contentId,
-          userId,
-          reaction
-        });
-      }
-
-      res.json({ 
-        success: true,
-        message: 'Feedback saved successfully',
-        feedbackProcessed: true,
-      });
-    } catch (error) {
-      logger.error('[AI Learn Feedback] Error saving feedback:', error);
-      res.status(500).json({ error: 'Failed to save feedback' });
     }
+
+    // If negative feedback, log it for potential cache invalidation
+    if (reaction === 'thumbs-down' || reaction === 'negative') {
+      logger.info('[AI Learn Feedback] Negative feedback received, consider cache cleanup:', {
+        contentId,
+        userId,
+        reaction,
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Feedback saved successfully',
+      feedbackProcessed: true,
+    });
+  } catch (error) {
+    logger.error('[AI Learn Feedback] Error saving feedback:', error);
+    res.status(500).json({ error: 'Failed to save feedback' });
   }
-);
+});
 
 /**
  * Get user feedback history
@@ -174,7 +207,7 @@ router.post(
       logger.info('[AI Learn Cache] Cache clear requested but not implemented:', {
         userId,
         tags,
-        keys
+        keys,
       });
 
       logger.info('[AI Learn Cache] User cache cleared:', {
@@ -221,32 +254,32 @@ router.post(
       logger.info('[AI Learn Batch] Processing batch requests:', {
         userId,
         count: requests.length,
-        types: requests.map(r => r.type),
+        types: requests.map((r) => r.type),
       });
 
       // Process requests through Python service when possible
-      const pythonRequests = requests.filter(r => 
+      const pythonRequests = requests.filter((r) =>
         ['generate-content', 'embeddings', 'complete'].includes(r.type)
       );
-      
-      const legacyRequests = requests.filter(r => 
-        !['generate-content', 'embeddings', 'complete'].includes(r.type)
+
+      const legacyRequests = requests.filter(
+        (r) => !['generate-content', 'embeddings', 'complete'].includes(r.type)
       );
 
-      const results = [];
+      const results: BatchRequestResult[] = [];
 
       // Process Python service requests
       for (const request of pythonRequests) {
         try {
-          let result;
-          
+          let result: PythonServiceResult | undefined;
+
           if (request.type === 'generate-content') {
             const generator = pythonAIClient.generateContent({
               ...request.params,
               user_id: userId,
               stream: false,
             });
-            
+
             for await (const chunk of generator) {
               if (chunk.error) {
                 throw new Error(chunk.error);
@@ -267,7 +300,7 @@ router.post(
               user_id: userId,
               stream: false,
             });
-            
+
             for await (const chunk of generator) {
               if (chunk.error) {
                 throw new Error(chunk.error);
@@ -283,7 +316,12 @@ router.post(
             id: request.id,
             success: true,
             result,
-            usage: (result && 'metadata' in result && result.metadata?.usage) || { promptTokens: 0, completionTokens: 0 },
+            usage:
+              (result && 'metadata' in result && result.metadata?.usage) ||
+              ({
+                promptTokens: 0,
+                completionTokens: 0,
+              } as { promptTokens: number; completionTokens: number }),
           });
         } catch (error) {
           results.push({
@@ -297,7 +335,7 @@ router.post(
       // Process legacy requests through Python batch service
       if (legacyRequests.length > 0) {
         const legacyResults = await pythonBatchService.batchProcess(
-          legacyRequests.map(r => ({
+          legacyRequests.map((r) => ({
             ...r,
             userId,
             id: r.id || `${userId}-${Date.now()}-${Math.random()}`,
@@ -309,7 +347,7 @@ router.post(
             ...options,
           }
         );
-        
+
         results.push(...legacyResults);
       }
 
@@ -323,8 +361,8 @@ router.post(
 
       logger.info('[AI Learn Batch] Batch processing completed:', {
         userId,
-        successCount: results.filter(r => r.success).length,
-        failureCount: results.filter(r => !r.success).length,
+        successCount: results.filter((r) => r.success).length,
+        failureCount: results.filter((r) => !r.success).length,
         totalTokens,
         pythonRequests: pythonRequests.length,
         legacyRequests: legacyRequests.length,
@@ -335,8 +373,8 @@ router.post(
         results,
         summary: {
           total: results.length,
-          successful: results.filter(r => r.success).length,
-          failed: results.filter(r => !r.success).length,
+          successful: results.filter((r) => r.success).length,
+          failed: results.filter((r) => !r.success).length,
           totalTokens,
           pythonProcessed: pythonRequests.length,
         },
@@ -351,97 +389,92 @@ router.post(
 /**
  * Get AI usage statistics and costs
  */
-router.get(
-  '/stats/costs',
-  authenticateUser,
-  async (req: Request, res: Response): Promise<void> => {
-    const userId = (req as AuthenticatedRequest).user.id;
-    const isAdmin = (req as AuthenticatedRequest).user.role === 'admin';
+router.get('/stats/costs', authenticateUser, async (req: Request, res: Response): Promise<void> => {
+  const userId = (req as AuthenticatedRequest).user.id;
+  const isAdmin = (req as AuthenticatedRequest).user.role === 'admin';
 
+  try {
+    // Get cost statistics
+    const costStats = await costTracker.getDashboardStats(isAdmin ? undefined : userId);
+
+    // Get cache statistics (simplified)
+    const cacheStats = {
+      hits: 0,
+      misses: 0,
+      hitRate: 0,
+      message: 'Cache stats not fully implemented',
+    };
+
+    // Get Python AI service stats
+    let pythonStats;
     try {
-      // Get cost statistics
-      const costStats = await costTracker.getDashboardStats(isAdmin ? undefined : userId);
-      
-      // Get cache statistics (simplified)
-      const cacheStats = {
-        hits: 0,
-        misses: 0,
-        hitRate: 0,
-        message: 'Cache stats not fully implemented'
-      };
-      
-      // Get Python AI service stats
-      let pythonStats;
-      try {
-        pythonStats = await pythonAIClient.getStats();
-      } catch (error) {
-        logger.warning('[AI Learn Stats] Python service stats unavailable:', error);
-        pythonStats = { available: false, error: 'Service unavailable' };
-      }
-      
-      // Get detailed metrics for admins (simplified)
-      let detailedMetrics;
-      if (isAdmin) {
-        detailedMetrics = {
-          message: 'Detailed metrics not fully implemented'
-        };
-      }
-
-      res.json({
-        costs: {
-          ...costStats,
-          userSpecific: !isAdmin ? { 
-            message: 'User-specific costs require additional implementation' 
-          } : undefined,
-        },
-        cache: cacheStats,
-        python: pythonStats,
-        detailed: detailedMetrics,
-        timestamp: new Date().toISOString(),
-      });
+      pythonStats = await pythonAIClient.getStats();
     } catch (error) {
-      logger.error('[AI Learn Stats] Error getting stats:', error);
-      res.status(500).json({ error: 'Failed to get statistics' });
+      logger.warn('[AI Learn Stats] Python service stats unavailable:', error);
+      pythonStats = { available: false, error: 'Service unavailable' } as Record<string, unknown>;
     }
+
+    // Get detailed metrics for admins (simplified)
+    let detailedMetrics: { message: string } | undefined;
+    if (isAdmin) {
+      detailedMetrics = {
+        message: 'Detailed metrics not fully implemented',
+      };
+    }
+
+    res.json({
+      costs: {
+        ...costStats,
+        userSpecific: !isAdmin
+          ? {
+              message: 'User-specific costs require additional implementation',
+            }
+          : undefined,
+      },
+      cache: cacheStats,
+      python: pythonStats,
+      detailed: detailedMetrics,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('[AI Learn Stats] Error getting stats:', error);
+    res.status(500).json({ error: 'Failed to get statistics' });
   }
-);
+});
 
 /**
  * Health check for AI services
  */
-router.get(
-  '/health',
-  async (_req: Request, res: Response): Promise<void> => {
-    try {
-      // Check Python AI service
-      const pythonHealthy = await pythonAIClient.healthCheck();
-      
-      // Check cache connection
-      const cacheHealthy = await redisClient.ping() === 'PONG';
-      
-      // Check cost tracker
-      const costTrackerHealthy = await costTracker.getDashboardStats() !== null;
+router.get('/health', async (_req: Request, res: Response): Promise<void> => {
+  try {
+    // Check Python AI service
+    const pythonHealthy = await pythonAIClient.healthCheck();
 
-      const overall = pythonHealthy && cacheHealthy && costTrackerHealthy;
+    // Check cache connection
+    const cacheHealthy = (await redisClient.ping()) === 'PONG';
 
-      res.status(overall ? 200 : 503).json({
-        status: overall ? 'healthy' : 'degraded',
-        services: {
-          pythonAI: pythonHealthy ? 'healthy' : 'unhealthy',
-          cache: cacheHealthy ? 'healthy' : 'unhealthy',
-          costTracker: costTrackerHealthy ? 'healthy' : 'unhealthy',
-        },
-        timestamp: new Date().toISOString(),
-      });
-    } catch (error) {
-      logger.error('[AI Learn Health] Health check error:', error);
-      res.status(503).json({
-        status: 'error',
-        error: 'Health check failed',
-        timestamp: new Date().toISOString(),
-      });
-    }
+    // Check cost tracker
+    const costTrackerHealthy = (await costTracker.getDashboardStats()) !== null;
+
+    const overall = pythonHealthy && cacheHealthy && costTrackerHealthy;
+
+    res.status(overall ? 200 : 503).json({
+      status: overall ? 'healthy' : 'degraded',
+      services: {
+        pythonAI: pythonHealthy ? 'healthy' : 'unhealthy',
+        cache: cacheHealthy ? 'healthy' : 'unhealthy',
+        costTracker: costTrackerHealthy ? 'healthy' : 'unhealthy',
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    logger.error('[AI Learn Health] Health check error:', error);
+    res.status(503).json({
+      status: 'error',
+      error: 'Health check failed',
+      timestamp: new Date().toISOString(),
+    });
   }
-);
+});
 
 export default router;

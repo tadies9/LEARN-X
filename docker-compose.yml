@@ -63,6 +63,8 @@ services:
     environment:
       - ENVIRONMENT=development
       - PYTHONUNBUFFERED=1
+      - DOCKER_CLIENT_TIMEOUT=120
+      - COMPOSE_HTTP_TIMEOUT=120
     env_file:
       - ./python-ai-service/.env
     volumes:
@@ -70,6 +72,9 @@ services:
       - /app/.venv # Exclude virtual environment
     networks:
       - learn-x-network
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     depends_on:
       redis:
         condition: service_healthy

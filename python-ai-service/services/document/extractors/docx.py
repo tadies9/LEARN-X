@@ -15,6 +15,13 @@ class DocxExtractor(BaseExtractor):
     Stub extractor for DOCX documents.
     """
     
+    def can_handle(self, mime_type: str) -> bool:
+        """Check if this extractor can handle DOCX files."""
+        return mime_type in [
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'application/msword'
+        ]
+    
     async def extract(self, file_path: str) -> ExtractionResult:
         """
         Extract text from DOCX file.
@@ -37,5 +44,9 @@ class DocxExtractor(BaseExtractor):
                 'page_count': 1,
                 'word_count': 10
             },
+            pages=[{
+                'page_number': 1,
+                'text': f"Stub extracted text from DOCX file: {file_path}"
+            }],
             error=None
         )
