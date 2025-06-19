@@ -33,6 +33,14 @@ export class TokenCounter {
     }
   }
 
+  /**
+   * Estimate tokens for a text input
+   * Alias for countTokens for backward compatibility
+   */
+  static estimateTokens(text: string, model: string = 'gpt-4o'): number {
+    return this.countTokens(text, model);
+  }
+
   static estimateCost(
     promptTokens: number,
     completionTokens: number,

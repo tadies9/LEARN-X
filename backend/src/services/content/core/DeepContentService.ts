@@ -9,8 +9,9 @@ export { DeepExplanationParams, DeepSummaryParams, PersonalizedContent } from '.
  * @deprecated Use ContentOrchestrator directly for new code
  */
 export class DeepContentService extends ContentOrchestrator {
-  constructor(redis: Redis) {
-    super(redis);
+  constructor(_redis?: Redis) {
+    super();
+    // Redis parameter ignored for backward compatibility
   }
 }
 

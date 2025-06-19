@@ -1,7 +1,7 @@
-import { AICache } from '../../cache/AICache';
+import { getEnhancedAICache, EnhancedAICache } from '../../cache/EnhancedAICache';
 import { CostTracker } from '../../ai/CostTracker';
 import { UserPersona } from '../../../types/persona';
-import Redis from 'ioredis';
+import { redisClient } from '../../../config/redis';
 import {
   DeepExplanationParams,
   DeepSummaryParams,
@@ -33,16 +33,16 @@ export {
  * Delegates to specialized orchestrators based on content type
  */
 export class ContentOrchestrator {
-  private cache: AICache;
+  private cache: EnhancedAICache;
   private costTracker: CostTracker;
   private explanationOrchestrator: ExplanationOrchestrator;
   private summaryOrchestrator: SummaryOrchestrator;
   private interactiveOrchestrator: InteractiveOrchestrator;
   private chatOrchestrator: ChatOrchestrator;
 
-  constructor(redis: Redis) {
-    this.cache = new AICache(redis);
+  constructor() {
     this.costTracker = new CostTracker();
+    this.cache = getEnhancedAICache(redisClient, this.costTracker);
 
     // Initialize specialized orchestrators
     this.explanationOrchestrator = new ExplanationOrchestrator(this.cache, this.costTracker);

@@ -1,6 +1,6 @@
 import { openAIService } from '../../openai/OpenAIService';
 import { deepPersonalizationEngine } from '../../personalization/DeepPersonalizationEngine';
-import { AICache } from '../../cache/AICache';
+import { EnhancedAICache } from '../../cache/EnhancedAICache';
 import { CostTracker } from '../../ai/CostTracker';
 import { logger } from '../../../utils/logger';
 import { UserPersona } from '../../../types/persona';
@@ -252,13 +252,9 @@ Remember: Each student is unique. Adapt your explanations to feel personally cra
  */
 export class StreamingExplanationService {
   constructor(
-    private cache: AICache,
-    private costTracker: CostTracker
-  ) {
-    // Services initialized for future caching and cost tracking
-    void this.cache;
-    void this.costTracker;
-  }
+    _cache: EnhancedAICache,
+    _costTracker: CostTracker
+  ) {}
 
   /**
    * Generate deeply personalized explanation with streaming

@@ -34,8 +34,9 @@ export interface PersonalizedContent {
  * @deprecated Use ContentOrchestrator directly for new code
  */
 export class DeepContentGenerationService extends ContentOrchestrator {
-  constructor(redis: Redis) {
-    super(redis);
+  constructor(_redis?: Redis) {
+    super();
+    // Redis parameter ignored for backward compatibility
   }
 }
 
@@ -43,6 +44,6 @@ export class DeepContentGenerationService extends ContentOrchestrator {
  * Create a new instance of DeepContentGenerationService
  * @deprecated Use ContentOrchestrator directly for new code
  */
-export const createDeepContentGenerationService = (redis: Redis) => {
-  return new DeepContentGenerationService(redis);
+export const createDeepContentGenerationService = (_redis: Redis) => {
+  return new DeepContentGenerationService(_redis);
 };

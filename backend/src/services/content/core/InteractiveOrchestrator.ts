@@ -1,4 +1,4 @@
-import { AICache } from '../../cache/AICache';
+import { EnhancedAICache } from '../../cache/EnhancedAICache';
 import { CostTracker } from '../../ai/CostTracker';
 import { UserPersona } from '../../../types/persona';
 import {
@@ -22,7 +22,7 @@ export class InteractiveOrchestrator {
   private practiceService: PracticeService;
 
   constructor(
-    private cache: AICache,
+    private cache: EnhancedAICache,
     private costTracker: CostTracker
   ) {
     this.quizService = new QuizService(cache, costTracker);

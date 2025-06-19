@@ -1,4 +1,4 @@
-import { AICache } from '../../cache/AICache';
+import { EnhancedAICache } from '../../cache/EnhancedAICache';
 import { CostTracker } from '../../ai/CostTracker';
 import { openAIService } from '../../openai/OpenAIService';
 import { logger } from '../../../utils/logger';
@@ -10,7 +10,7 @@ import { ChatParams } from './types';
  */
 export class ChatOrchestrator {
   constructor(
-    private cache: AICache,
+    private cache: EnhancedAICache,
     private costTracker: CostTracker
   ) {
     // Services initialized for future caching and cost tracking

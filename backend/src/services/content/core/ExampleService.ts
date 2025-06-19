@@ -1,5 +1,5 @@
 import { openAIService } from '../../openai/OpenAIService';
-import { AICache } from '../../cache/AICache';
+import { EnhancedAICache } from '../../cache/EnhancedAICache';
 import { CostTracker } from '../../ai/CostTracker';
 import { logger } from '../../../utils/logger';
 import { UserPersona } from '../../../types/persona';
@@ -10,7 +10,7 @@ import { UserPersona } from '../../../types/persona';
  */
 export class ExampleService {
   constructor(
-    private cache: AICache,
+    private cache: EnhancedAICache,
     private costTracker: CostTracker
   ) {
     // Services initialized for future caching and cost tracking

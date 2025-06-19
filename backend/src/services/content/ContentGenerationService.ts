@@ -1,12 +1,13 @@
 import { openAIService } from '../openai/OpenAIService';
 import { promptTemplates, QuizType } from '../ai/PromptTemplates';
-import { AICache } from '../cache/AICache';
+import { getEnhancedAICache, EnhancedAICache } from '../cache/EnhancedAICache';
 import { CostTracker } from '../ai/CostTracker';
 import { TokenCounter } from '../ai/TokenCounter';
 import { logger } from '../../utils/logger';
 import { AIRequestType, GenerationParams } from '../../types/ai';
 import { UserPersona } from '../../types/persona';
-import Redis from 'ioredis';
+import { redisClient } from '../../config/redis';
+import crypto from 'crypto';
 
 export interface ExplanationParams extends GenerationParams {
   chunks: Array<{ id: string; content: string }>;
@@ -23,21 +24,23 @@ export interface SummaryParams extends GenerationParams {
 export interface FlashcardParams extends GenerationParams {
   content: string;
   count?: number;
+  userId?: string;
 }
 
 export interface QuizParams extends GenerationParams {
   content: string;
   type: QuizType;
   count?: number;
+  userId?: string;
 }
 
 export class ContentGenerationService {
-  private cache: AICache;
+  private cache: EnhancedAICache;
   private costTracker: CostTracker;
 
-  constructor(redis: Redis) {
-    this.cache = new AICache(redis);
+  constructor() {
     this.costTracker = new CostTracker();
+    this.cache = getEnhancedAICache(redisClient, this.costTracker);
   }
 
   async *generateExplanation(params: ExplanationParams): AsyncGenerator<string> {
@@ -86,20 +89,37 @@ export class ContentGenerationService {
       // Track cost
       await this.costTracker.trackRequest({
         userId: params.persona.userId,
-        requestType: AIRequestType.EXPLAIN,
+        requestType: 'explain' as AIRequestType,
         model: params.model || 'gpt-4o',
         promptTokens,
         completionTokens,
         responseTimeMs: Date.now() - startTime,
       });
 
-      // Cache the result
-      await this.cache.setCachedExplanation(
-        params.chunks[0].id, // Use first chunk ID as reference
-        params.topic,
-        params.persona.userId,
+      // Cache the result with personalization
+      const contentHash = crypto.createHash('sha256')
+        .update(params.chunks.map(c => c.content).join('\n'))
+        .digest('hex')
+        .substring(0, 16);
+
+      await this.cache.set(
+        {
+          service: 'explain',
+          userId: params.persona.userId,
+          contentHash,
+          persona: params.persona,
+          context: {
+            moduleId: params.chunks[0]?.id,
+            difficulty: 'intermediate',
+            format: 'explanation'
+          }
+        },
         fullContent,
-        { promptTokens, completionTokens }
+        { promptTokens, completionTokens },
+        {
+          topic: params.topic,
+          chunkCount: params.chunks.length
+        }
       );
     } catch (error) {
       logger.error('Failed to generate explanation:', error);
@@ -111,12 +131,22 @@ export class ContentGenerationService {
     const startTime = Date.now();
 
     try {
-      // Check cache first
-      const cached = await this.cache.getCachedSummary(
-        params.content.substring(0, 50), // Use content hash
-        params.format,
-        params.persona.userId
-      );
+      // Check cache first with enhanced personalization
+      const contentHash = crypto.createHash('sha256')
+        .update(params.content)
+        .digest('hex')
+        .substring(0, 16);
+
+      const cached = await this.cache.get({
+        service: 'summary',
+        userId: params.persona.userId,
+        contentHash,
+        persona: params.persona,
+        context: {
+          format: params.format,
+          difficulty: 'basic'
+        }
+      });
 
       if (cached) {
         return cached.content;
@@ -149,20 +179,31 @@ export class ContentGenerationService {
       // Track cost
       await this.costTracker.trackRequest({
         userId: params.persona.userId,
-        requestType: AIRequestType.SUMMARIZE,
+        requestType: 'summary' as AIRequestType,
         model: params.model || 'gpt-4o',
         promptTokens,
         completionTokens,
         responseTimeMs: Date.now() - startTime,
       });
 
-      // Cache result
-      await this.cache.setCachedSummary(
-        params.content.substring(0, 50),
-        params.format,
-        params.persona.userId,
+      // Cache result with enhanced personalization
+      await this.cache.set(
+        {
+          service: 'summary',
+          userId: params.persona.userId,
+          contentHash,
+          persona: params.persona,
+          context: {
+            format: params.format,
+            difficulty: 'basic'
+          }
+        },
         summary,
-        { promptTokens, completionTokens }
+        { promptTokens, completionTokens },
+        {
+          format: params.format,
+          contentLength: params.content.length
+        }
       );
 
       return summary;
@@ -207,15 +248,41 @@ export class ContentGenerationService {
       // Parse flashcards from response
       const flashcards = this.parseFlashcards(content);
 
-      // Track cost (using a placeholder user ID for now)
+      // Track cost
       await this.costTracker.trackRequest({
-        userId: 'system', // TODO: Pass userId in params
-        requestType: AIRequestType.FLASHCARD,
+        userId: params.userId || 'system',
+        requestType: 'flashcard' as AIRequestType,
         model: params.model || 'gpt-4o',
         promptTokens,
         completionTokens,
         responseTimeMs: Date.now() - startTime,
       });
+
+      // Cache flashcards for future use
+      if (params.userId) {
+        const contentHash = crypto.createHash('sha256')
+          .update(params.content)
+          .digest('hex')
+          .substring(0, 16);
+
+        await this.cache.set(
+          {
+            service: 'flashcard',
+            userId: params.userId,
+            contentHash,
+            context: {
+              difficulty: 'intermediate',
+              format: `count_${params.count || 5}`
+            }
+          },
+          JSON.stringify(flashcards),
+          { promptTokens, completionTokens },
+          {
+            count: flashcards.length,
+            avgDifficulty: this.calculateAvgDifficulty(flashcards)
+          }
+        );
+      }
 
       return flashcards;
     } catch (error) {
@@ -263,19 +330,57 @@ export class ContentGenerationService {
 
       // Track cost
       await this.costTracker.trackRequest({
-        userId: 'system', // TODO: Pass userId in params
-        requestType: AIRequestType.QUIZ,
+        userId: params.userId || 'system',
+        requestType: 'quiz' as AIRequestType,
         model: params.model || 'gpt-4o',
         promptTokens,
         completionTokens,
         responseTimeMs: Date.now() - startTime,
       });
 
+      // Cache quiz for future use
+      if (params.userId) {
+        const contentHash = crypto.createHash('sha256')
+          .update(params.content)
+          .digest('hex')
+          .substring(0, 16);
+
+        await this.cache.set(
+          {
+            service: 'quiz',
+            userId: params.userId,
+            contentHash,
+            context: {
+              difficulty: 'intermediate',
+              format: `${params.type}_count_${params.count || 5}`
+            }
+          },
+          JSON.stringify(questions),
+          { promptTokens, completionTokens },
+          {
+            type: params.type,
+            count: questions.length
+          }
+        );
+      }
+
       return questions;
     } catch (error) {
       logger.error('Failed to generate quiz:', error);
       throw error;
     }
+  }
+
+  private calculateAvgDifficulty(flashcards: Array<{ difficulty: string }>): string {
+    const difficultyScores: Record<string, number> = { easy: 1, medium: 2, hard: 3 };
+    const totalScore = flashcards.reduce((sum, card) => {
+      return sum + (difficultyScores[card.difficulty] || 2);
+    }, 0);
+    const avgScore = totalScore / flashcards.length;
+    
+    if (avgScore <= 1.5) return 'easy';
+    if (avgScore <= 2.5) return 'medium';
+    return 'hard';
   }
 
   private parseFlashcards(content: string): Array<{

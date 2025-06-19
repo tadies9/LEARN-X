@@ -1,6 +1,6 @@
 import { openAIService } from '../../openai/OpenAIService';
 import { deepPersonalizationEngine } from '../../personalization/DeepPersonalizationEngine';
-import { AICache } from '../../cache/AICache';
+import { EnhancedAICache } from '../../cache/EnhancedAICache';
 import { CostTracker } from '../../ai/CostTracker';
 import { logger } from '../../../utils/logger';
 import { UserPersona } from '../../../types/persona';
@@ -11,6 +11,7 @@ import {
   QuizParams,
   QuizResult,
 } from './types';
+import crypto from 'crypto';
 
 /**
  * Quiz Service
@@ -18,13 +19,9 @@ import {
  */
 export class QuizService {
   constructor(
-    private cache: AICache,
+    private cache: EnhancedAICache,
     private costTracker: CostTracker
-  ) {
-    // Services initialized for future caching and cost tracking
-    void this.cache;
-    void this.costTracker;
-  }
+  ) {}
 
   /**
    * Generate adaptive quiz based on persona and content
@@ -38,7 +35,40 @@ export class QuizService {
       | 'problem_solving'
       | 'application' = 'application'
   ): Promise<PersonalizedContent> {
+    const startTime = Date.now();
+    
     try {
+      // Check cache first
+      const contentHash = crypto.createHash('sha256')
+        .update(content + questionType)
+        .digest('hex')
+        .substring(0, 16);
+
+      const cached = await this.cache.get({
+        service: 'quiz',
+        userId: persona.userId,
+        contentHash,
+        persona,
+        context: {
+          difficulty: 'adaptive',
+          format: questionType
+        }
+      });
+
+      if (cached) {
+        return {
+          content: cached.content,
+          personalizationScore: cached.metadata?.personalizationScore || 0.8,
+          qualityMetrics: {
+            naturalIntegration: 0.7,
+            educationalIntegrity: 0.9,
+            relevanceEngagement: 0.8,
+            flowReadability: 0.8,
+          },
+          cached: true,
+        };
+      }
+
       const interests = [
         ...(persona.primaryInterests || []),
         ...(persona.secondaryInterests || []),
@@ -59,6 +89,42 @@ export class QuizService {
 
       const quiz = response.choices[0].message.content || '';
       const validation = deepPersonalizationEngine.validatePersonalization(quiz, persona);
+      
+      const usage = {
+        promptTokens: response.usage?.prompt_tokens || 0,
+        completionTokens: response.usage?.completion_tokens || 0
+      };
+
+      // Track cost
+      await this.costTracker.trackRequest({
+        userId: persona.userId,
+        requestType: 'QUIZ' as any,
+        model: 'gpt-4o',
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+        responseTimeMs: Date.now() - startTime,
+      });
+
+      // Cache result
+      await this.cache.set(
+        {
+          service: 'quiz',
+          userId: persona.userId,
+          contentHash,
+          persona,
+          context: {
+            difficulty: 'adaptive',
+            format: questionType
+          }
+        },
+        quiz,
+        usage,
+        {
+          questionType,
+          personalizationScore: validation.score,
+          contentLength: content.length
+        }
+      );
 
       return {
         content: quiz,
@@ -81,7 +147,31 @@ export class QuizService {
    * Generate deep flashcards with personalized examples
    */
   async generateDeepFlashcards(params: FlashcardParams): Promise<FlashcardResult> {
+    const startTime = Date.now();
+    
     try {
+      // Check cache first
+      const contentHash = crypto.createHash('sha256')
+        .update(params.content + (params.contextualExamples ? 'contextual' : 'basic'))
+        .digest('hex')
+        .substring(0, 16);
+
+      const cached = await this.cache.get({
+        service: 'flashcard',
+        userId: params.persona.userId,
+        contentHash,
+        persona: params.persona,
+        context: {
+          difficulty: 'adaptive',
+          format: params.contextualExamples ? 'contextual' : 'basic'
+        }
+      });
+
+      if (cached) {
+        const flashcards = JSON.parse(cached.content);
+        return { flashcards };
+      }
+
       const interests = [
         ...(params.persona.primaryInterests || []),
         ...(params.persona.secondaryInterests || []),
@@ -105,6 +195,41 @@ export class QuizService {
 
       const content = response.choices[0].message.content || '';
       const flashcards = this.parseFlashcards(content);
+      
+      const usage = {
+        promptTokens: response.usage?.prompt_tokens || 0,
+        completionTokens: response.usage?.completion_tokens || 0
+      };
+
+      // Track cost
+      await this.costTracker.trackRequest({
+        userId: params.persona.userId,
+        requestType: 'FLASHCARD' as any,
+        model: params.model || 'gpt-4o',
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+        responseTimeMs: Date.now() - startTime,
+      });
+
+      // Cache result
+      await this.cache.set(
+        {
+          service: 'flashcard',
+          userId: params.persona.userId,
+          contentHash,
+          persona: params.persona,
+          context: {
+            difficulty: 'adaptive',
+            format: params.contextualExamples ? 'contextual' : 'basic'
+          }
+        },
+        JSON.stringify(flashcards),
+        usage,
+        {
+          count: flashcards.length,
+          contextualExamples: params.contextualExamples || false
+        }
+      );
 
       return { flashcards };
     } catch (error) {
@@ -117,7 +242,31 @@ export class QuizService {
    * Generate deep quiz with adaptive difficulty
    */
   async generateDeepQuiz(params: QuizParams): Promise<QuizResult> {
+    const startTime = Date.now();
+    
     try {
+      // Check cache first
+      const contentHash = crypto.createHash('sha256')
+        .update(params.content + params.type)
+        .digest('hex')
+        .substring(0, 16);
+
+      const cached = await this.cache.get({
+        service: 'quiz',
+        userId: params.persona.userId,
+        contentHash,
+        persona: params.persona,
+        context: {
+          difficulty: 'deep',
+          format: params.type
+        }
+      });
+
+      if (cached) {
+        const questions = JSON.parse(cached.content);
+        return { questions };
+      }
+
       const interests = [
         ...(params.persona.primaryInterests || []),
         ...(params.persona.secondaryInterests || []),
@@ -139,6 +288,41 @@ export class QuizService {
 
       const content = response.choices[0].message.content || '';
       const questions = this.parseQuizQuestions(content, params.type);
+      
+      const usage = {
+        promptTokens: response.usage?.prompt_tokens || 0,
+        completionTokens: response.usage?.completion_tokens || 0
+      };
+
+      // Track cost
+      await this.costTracker.trackRequest({
+        userId: params.persona.userId,
+        requestType: 'QUIZ' as any,
+        model: params.model || 'gpt-4o',
+        promptTokens: usage.promptTokens,
+        completionTokens: usage.completionTokens,
+        responseTimeMs: Date.now() - startTime,
+      });
+
+      // Cache result
+      await this.cache.set(
+        {
+          service: 'quiz',
+          userId: params.persona.userId,
+          contentHash,
+          persona: params.persona,
+          context: {
+            difficulty: 'deep',
+            format: params.type
+          }
+        },
+        JSON.stringify(questions),
+        usage,
+        {
+          type: params.type,
+          count: questions.length
+        }
+      );
 
       return { questions };
     } catch (error) {

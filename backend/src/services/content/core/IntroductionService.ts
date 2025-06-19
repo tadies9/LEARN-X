@@ -1,6 +1,6 @@
 import { openAIService } from '../../openai/OpenAIService';
 import { deepPersonalizationEngine } from '../../personalization/DeepPersonalizationEngine';
-import { AICache } from '../../cache/AICache';
+import { EnhancedAICache } from '../../cache/EnhancedAICache';
 import { CostTracker } from '../../ai/CostTracker';
 import { logger } from '../../../utils/logger';
 import { UserPersona } from '../../../types/persona';
@@ -12,7 +12,7 @@ import { PersonalizedContent } from './types';
  */
 export class IntroductionService {
   constructor(
-    private cache: AICache,
+    private cache: EnhancedAICache,
     private costTracker: CostTracker
   ) {
     // Services initialized for future caching and cost tracking

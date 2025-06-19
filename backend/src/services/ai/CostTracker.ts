@@ -144,6 +144,23 @@ export class CostTracker {
     return { allowed, totalSpend, remainingBudget };
   }
 
+  /**
+   * Alias for getDashboardStats for backward compatibility
+   */
+  async getStats(userId?: string): Promise<{
+    today: {
+      requests: number;
+      cost: number;
+      tokens: number;
+      cacheHitRate: number;
+    };
+    byModel: Record<string, { requests: number; cost: number }>;
+    byType: Record<string, { requests: number; cost: number }>;
+    hourly: Array<{ hour: number; requests: number; cost: number }>;
+  }> {
+    return this.getDashboardStats(userId);
+  }
+
   async getDashboardStats(userId?: string): Promise<{
     today: {
       requests: number;

@@ -1,6 +1,6 @@
 import { openAIService } from '../../openai/OpenAIService';
 import { deepPersonalizationEngine } from '../../personalization/DeepPersonalizationEngine';
-import { AICache } from '../../cache/AICache';
+import { EnhancedAICache } from '../../cache/EnhancedAICache';
 import { CostTracker } from '../../ai/CostTracker';
 import { logger } from '../../../utils/logger';
 import { UserPersona } from '../../../types/persona';
@@ -12,13 +12,9 @@ import { PersonalizedContent } from './types';
  */
 export class PracticeService {
   constructor(
-    private cache: AICache,
-    private costTracker: CostTracker
-  ) {
-    // Services initialized for future caching and cost tracking
-    void this.cache;
-    void this.costTracker;
-  }
+    _cache: EnhancedAICache,
+    _costTracker: CostTracker
+  ) {}
 
   /**
    * Generate personalized practice exercises

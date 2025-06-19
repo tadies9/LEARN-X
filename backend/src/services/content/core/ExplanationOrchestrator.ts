@@ -1,4 +1,4 @@
-import { AICache } from '../../cache/AICache';
+import { EnhancedAICache } from '../../cache/EnhancedAICache';
 import { CostTracker } from '../../ai/CostTracker';
 import { UserPersona } from '../../../types/persona';
 import { DeepExplanationParams, PersonalizedContent } from './types';
@@ -18,7 +18,7 @@ export class ExplanationOrchestrator {
   private streamingExplanationService: StreamingExplanationService;
 
   constructor(
-    private cache: AICache,
+    private cache: EnhancedAICache,
     private costTracker: CostTracker
   ) {
     this.introductionService = new IntroductionService(cache, costTracker);
