@@ -87,6 +87,10 @@ export function FileGrid({ files, onUpdate }: FileGridProps) {
 
   const getFileIcon = (mimeType: string) => {
     const iconClass = 'h-12 w-12';
+    
+    if (!mimeType) {
+      return <FileText className={`${iconClass} text-gray-500`} />;
+    }
 
     if (mimeType.includes('pdf')) {
       return <FileText className={`${iconClass} text-red-500`} />;
@@ -127,6 +131,7 @@ export function FileGrid({ files, onUpdate }: FileGridProps) {
   };
 
   const getFileTypeLabel = (mimeType: string) => {
+    if (!mimeType) return 'File';
     if (mimeType.includes('pdf')) return 'PDF';
     if (mimeType.includes('image')) return 'Image';
     if (mimeType.includes('video')) return 'Video';

@@ -46,7 +46,7 @@ export function UploadFileDialog({
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const newFiles = acceptedFiles.map((file) => {
       return Object.assign(file, {
-        preview: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
+        preview: file.type && file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined,
       });
     });
 
@@ -224,7 +224,7 @@ export function UploadFileDialog({
                   <div key={`${file.name}-${index}`} className="border rounded-lg p-4">
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0">
-                        {file.type.startsWith('image/') && file.preview ? (
+                        {file.type && file.type.startsWith('image/') && file.preview ? (
                           <img
                             src={file.preview}
                             alt={file.name}

@@ -1,6 +1,7 @@
 import { FileText, Image, Video, FileCode } from 'lucide-react';
 
 export function getFileIcon(type: string) {
+  if (!type || typeof type !== 'string') return FileText;
   if (type.startsWith('image/')) return Image;
   if (type.startsWith('video/')) return Video;
   if (type.includes('code') || type.includes('javascript') || type.includes('typescript'))

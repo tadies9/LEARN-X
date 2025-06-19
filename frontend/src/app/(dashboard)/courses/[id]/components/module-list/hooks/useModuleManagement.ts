@@ -31,7 +31,14 @@ export function useModuleManagement(onUpdate: () => void) {
         if (files && typeof files === 'object' && !Array.isArray(files)) {
           console.log('Files object keys:', Object.keys(files));
         }
-        setModuleFiles((prev) => ({ ...prev, [moduleId]: files }));
+        // Ensure all files have valid mimeType to prevent runtime errors
+        const sanitizedFiles = Array.isArray(files) 
+          ? files.map(file => ({
+              ...file,
+              mimeType: file.mimeType || 'application/octet-stream'
+            }))
+          : [];
+        setModuleFiles((prev) => ({ ...prev, [moduleId]: sanitizedFiles }));
       } catch (error) {
         console.error('Error loading module files:', error);
         // Try the test endpoint as fallback

@@ -56,6 +56,7 @@ export function ModuleCard({
   onViewModeChange,
 }: ModuleCardProps) {
   const getFileIcon = (mimeType: string) => {
+    if (!mimeType) return <FileText className="h-4 w-4" />;
     if (mimeType.startsWith('image/')) return <FileImage className="h-4 w-4" />;
     if (mimeType.startsWith('video/')) return <Video className="h-4 w-4" />;
     return <FileText className="h-4 w-4" />;
@@ -67,7 +68,10 @@ export function ModuleCard({
   };
 
   const renderFileList = () => {
-    if (!files || files.length === 0) {
+    // Ensure files is an array
+    const fileList = Array.isArray(files) ? files : [];
+    
+    if (!fileList || fileList.length === 0) {
       return (
         <div className="text-center py-6 text-muted-foreground col-span-full">
           <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
@@ -80,14 +84,17 @@ export function ModuleCard({
       );
     }
 
-    return files.map((file) => {
+    return fileList.map((file) => {
+      // Ensure file has required properties
+      const safeMimeType = file.mimeType || 'application/octet-stream';
+      
       if (viewMode === 'grid') {
         return (
           <Card key={file.id} className="group hover:shadow-md transition-all">
             <CardContent className="p-4">
               <div className="flex flex-col items-center text-center space-y-3">
                 <div className="p-3 rounded-lg bg-muted/50 text-muted-foreground">
-                  {getFileIcon(file.mimeType)}
+                  {getFileIcon(safeMimeType)}
                 </div>
 
                 <div className="w-full space-y-2">
@@ -149,7 +156,7 @@ export function ModuleCard({
           key={file.id}
           className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors"
         >
-          <div className="text-muted-foreground">{getFileIcon(file.mimeType)}</div>
+          <div className="text-muted-foreground">{getFileIcon(safeMimeType)}</div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
@@ -328,7 +335,7 @@ export function ModuleCard({
       {isExpanded && (
         <CardContent className="pt-0 ml-11">
           {/* View Mode Toggle */}
-          {files.length > 0 && (
+          {Array.isArray(files) && files.length > 0 && (
             <div className="flex justify-between items-center mb-4">
               <div className="text-sm text-muted-foreground">
                 {files.length} {files.length === 1 ? 'file' : 'files'}

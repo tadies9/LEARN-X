@@ -115,6 +115,7 @@ export function useStudyMaterials(): UseStudyMaterialsReturn {
 }
 
 function getFileType(mimeType: string): string {
+  if (!mimeType) return 'Document';
   if (mimeType.includes('pdf')) return 'PDF Document';
   if (mimeType.includes('presentation')) return 'Presentation';
   if (mimeType.includes('document')) return 'Document';
@@ -135,6 +136,8 @@ function estimateReadingTime(fileSize: number): string {
 
 function getAiFeatures(mimeType: string): string[] {
   const baseFeatures = ['AI Summarization', 'Key Points Extraction'];
+  
+  if (!mimeType) return baseFeatures;
 
   if (mimeType.includes('pdf')) {
     return [...baseFeatures, 'Visual Diagrams', 'Interactive Reading'];
