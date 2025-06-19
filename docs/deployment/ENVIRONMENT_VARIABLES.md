@@ -50,6 +50,28 @@ This document lists all environment variables required for deploying LEARN-X.
 - `QUEUE_PROCESSING_INTERVAL` - Queue processing interval in ms (default: 5000)
 - `WORKER_CONCURRENCY` - Number of concurrent workers (default: 5)
 
+#### Monitoring & Observability
+- `SENTRY_DSN` - Sentry DSN for backend error tracking
+- `SENTRY_ENABLED` - Enable Sentry (default: true in production)
+- `SENTRY_TRACES_SAMPLE_RATE` - Backend traces sample rate (default: 0.1)
+- `SENTRY_PROFILES_SAMPLE_RATE` - Backend profiles sample rate (default: 0.1)
+- `LOG_LEVEL` - Logging level (default: info)
+
+#### APM (Application Performance Monitoring)
+- `APM_ENABLED` - Enable APM (default: false)
+- `APM_PROVIDER` - APM provider: newrelic, datadog, elastic, or none (default: none)
+- `APM_SERVICE_NAME` - Service name for APM (default: learn-x-api)
+- `NEW_RELIC_LICENSE_KEY` - New Relic license key (if using New Relic)
+- `NEW_RELIC_APP_NAME` - New Relic app name
+- `DD_API_KEY` - Datadog API key (if using Datadog)
+- `ELASTIC_APM_SECRET_TOKEN` - Elastic APM secret token (if using Elastic)
+- `ELASTIC_APM_SERVER_URL` - Elastic APM server URL
+
+#### Rate Limiting
+- `RATE_LIMIT_WINDOW_MS` - Rate limit window in milliseconds (default: 900000 - 15 minutes)
+- `RATE_LIMIT_MAX_REQUESTS` - Max requests per window (default: 100)
+- `AI_RATE_LIMIT_PER_HOUR` - AI endpoint rate limit per hour (default: 100)
+
 ## Frontend Environment Variables (Vercel)
 
 ### Required Variables
@@ -75,6 +97,11 @@ This document lists all environment variables required for deploying LEARN-X.
 
 #### Error Tracking
 - `NEXT_PUBLIC_SENTRY_DSN` - Sentry DSN for error tracking
+- `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` - Sentry traces sample rate (default: 0.1)
+- `NEXT_PUBLIC_SENTRY_REPLAY_SAMPLE_RATE` - Sentry session replay sample rate (default: 0.1)
+- `SENTRY_ORG` - Sentry organization slug (for source map uploads)
+- `SENTRY_PROJECT` - Sentry project slug
+- `SENTRY_AUTH_TOKEN` - Sentry auth token for source map uploads
 
 ## Generating Secrets
 

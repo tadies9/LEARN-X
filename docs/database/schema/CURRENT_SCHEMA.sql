@@ -1,9 +1,9 @@
 -- ============================================================================
--- LEARN-X DATABASE SCHEMA (CURRENT STATE)
+-- LEARN-X DATABASE SCHEMA (UPDATED)
 -- ============================================================================
--- Generated from actual Supabase database after cleanup
--- Date: June 15, 2025
--- Total Tables: 19 active tables (including persona_history)
+-- Generated from actual Supabase database after dashboard fixes
+-- Date: June 19, 2025
+-- Total Tables: 22 active tables (including dashboard tables)
 -- Total Storage: ~45 MB
 -- 
 -- This file represents the ACTUAL current state of the database
@@ -66,10 +66,61 @@ CREATE TABLE IF NOT EXISTS persona_history (
 CREATE INDEX idx_persona_history_user_created ON persona_history(user_id, created_at DESC);
 
 -- ============================================================================
+-- DASHBOARD & ACTIVITY TRACKING
+-- ============================================================================
+
+-- User activities for dashboard tracking
+CREATE TABLE IF NOT EXISTS user_activities (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  metadata JSONB DEFAULT '{}',
+  timestamp TIMESTAMPTZ DEFAULT NOW(),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- User preferences for personalization
+CREATE TABLE IF NOT EXISTS user_preferences (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  weekly_goal_minutes INTEGER DEFAULT 300, -- 5 hours default
+  daily_reminder_enabled BOOLEAN DEFAULT true,
+  reminder_time TIME DEFAULT '09:00:00',
+  theme TEXT DEFAULT 'system' CHECK (theme IN ('light', 'dark', 'system')),
+  language TEXT DEFAULT 'en',
+  email_notifications BOOLEAN DEFAULT true,
+  push_notifications BOOLEAN DEFAULT true,
+  study_reminders BOOLEAN DEFAULT true,
+  streak_notifications BOOLEAN DEFAULT true,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- User progress tracking for learning analytics
+CREATE TABLE IF NOT EXISTS user_progress (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  course_id UUID REFERENCES courses(id) ON DELETE CASCADE,
+  module_id UUID REFERENCES modules(id) ON DELETE CASCADE,
+  file_id UUID REFERENCES course_files(id) ON DELETE CASCADE,
+  concept_name TEXT,
+  mastery_level INTEGER DEFAULT 0 CHECK (mastery_level >= 0 AND mastery_level <= 100),
+  attempts INTEGER DEFAULT 0,
+  correct_answers INTEGER DEFAULT 0,
+  total_questions INTEGER DEFAULT 0,
+  last_practiced_at TIMESTAMPTZ,
+  mastered_at TIMESTAMPTZ,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- ============================================================================
 -- COURSE MANAGEMENT SYSTEM
 -- ============================================================================
 
--- Courses
+-- Courses (UPDATED: Added status column)
 CREATE TABLE IF NOT EXISTS courses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id),
@@ -77,6 +128,7 @@ CREATE TABLE IF NOT EXISTS courses (
     description TEXT,
     color VARCHAR DEFAULT '#6366F1' CHECK (color ~ '^#[0-9A-Fa-f]{6}$'),
     icon VARCHAR DEFAULT 'book',
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'completed', 'archived')),
     is_archived BOOLEAN DEFAULT false,
     is_public BOOLEAN DEFAULT false,
     thumbnail_url TEXT,
@@ -86,7 +138,7 @@ CREATE TABLE IF NOT EXISTS courses (
     updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
 );
 
--- Course modules
+-- Course modules (UPDATED: Added completion_status column)
 CREATE TABLE IF NOT EXISTS modules (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     course_id UUID NOT NULL REFERENCES courses(id),
@@ -94,6 +146,7 @@ CREATE TABLE IF NOT EXISTS modules (
     description TEXT,
     order_index INTEGER NOT NULL CHECK (order_index >= 0),
     position INTEGER,
+    completion_status TEXT DEFAULT 'not_started' CHECK (completion_status IN ('not_started', 'in_progress', 'completed')),
     is_published BOOLEAN DEFAULT false,
     estimated_duration INTEGER,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
@@ -365,6 +418,24 @@ CREATE INDEX IF NOT EXISTS idx_study_sessions_user_file ON study_sessions(user_i
 CREATE INDEX IF NOT EXISTS idx_annotations_user_file ON annotations(user_id, file_id);
 CREATE INDEX IF NOT EXISTS idx_study_progress_user_file ON study_progress(user_id, file_id);
 
+-- Dashboard and activity tracking indexes
+CREATE INDEX IF NOT EXISTS idx_user_activities_user_id ON user_activities(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_activities_timestamp ON user_activities(timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_user_activities_type ON user_activities(type);
+CREATE INDEX IF NOT EXISTS idx_user_activities_user_timestamp ON user_activities(user_id, timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_user_preferences_user_id ON user_preferences(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_progress_user_id ON user_progress(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_progress_course_id ON user_progress(course_id);
+CREATE INDEX IF NOT EXISTS idx_user_progress_module_id ON user_progress(module_id);
+CREATE INDEX IF NOT EXISTS idx_user_progress_mastery ON user_progress(user_id, mastery_level);
+CREATE INDEX IF NOT EXISTS idx_user_progress_mastered_at ON user_progress(mastered_at) WHERE mastered_at IS NOT NULL;
+
+-- Course and module status indexes
+CREATE INDEX IF NOT EXISTS idx_courses_status ON courses(status);
+CREATE INDEX IF NOT EXISTS idx_courses_user_status ON courses(user_id, status);
+CREATE INDEX IF NOT EXISTS idx_modules_completion_status ON modules(completion_status);
+CREATE INDEX IF NOT EXISTS idx_modules_course_completion ON modules(course_id, completion_status);
+
 -- ============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ============================================================================
@@ -383,12 +454,25 @@ ALTER TABLE study_progress ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE onboarding_analytics ENABLE ROW LEVEL SECURITY;
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_progress ENABLE ROW LEVEL SECURITY;
 
 -- Basic RLS policies (users can only access their own data)
 CREATE POLICY "Users can view own data" ON users FOR SELECT USING (auth.uid() = id);
 CREATE POLICY "Users can view own personas" ON personas FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can view own courses" ON courses FOR SELECT USING (auth.uid() = user_id);
 CREATE POLICY "Users can view own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
+
+-- Dashboard table policies
+CREATE POLICY "Users can view their own activities" ON user_activities FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can create their own activities" ON user_activities FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view their own preferences" ON user_preferences FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update their own preferences" ON user_preferences FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can create their own preferences" ON user_preferences FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view their own progress" ON user_progress FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update their own progress" ON user_progress FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can create their own progress" ON user_progress FOR INSERT WITH CHECK (auth.uid() = user_id);
 
 -- ============================================================================
 -- STORAGE BUCKETS
@@ -415,7 +499,7 @@ CREATE POLICY "Users can view their own files" ON storage.objects
 -- ============================================================================
 -- SUMMARY
 -- ============================================================================
--- Total Tables: 19
+-- Total Tables: 22
 -- Total Size: ~45 MB
 -- Key Tables:
 --   - file_embeddings: 30 MB (vector search)
