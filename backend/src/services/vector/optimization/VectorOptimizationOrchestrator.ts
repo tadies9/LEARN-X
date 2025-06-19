@@ -4,8 +4,13 @@ import { VectorSearchCache } from './VectorSearchCache';
 import { VectorQuantization, createOptimalQuantizer } from './VectorQuantization';
 import { HybridSearchOptimizer } from './HybridSearchOptimizer';
 import { VectorSearchResult, VectorSearchOptions } from '../interfaces/IVectorStore';
-import { VectorEmbeddingService } from '../../embeddings/VectorEmbeddingService';
 import { logger } from '../../../utils/logger';
+
+// Interface for embedding services
+interface IEmbeddingService {
+  generateEmbedding(text: string, userId?: string): Promise<number[]>;
+  generateBatchEmbeddings?(chunks: Array<{ id: string; content: string }>, userId?: string): Promise<Array<{ chunkId: string; embedding: number[] }>>;
+}
 
 export interface OptimizationConfig {
   enableCaching: boolean;
@@ -46,11 +51,11 @@ export class VectorOptimizationOrchestrator {
   private cache: VectorSearchCache;
   private quantizer?: VectorQuantization;
   private hybridOptimizer: HybridSearchOptimizer;
-  private embeddingService: VectorEmbeddingService;
+  private embeddingService: IEmbeddingService;
   private config: OptimizationConfig;
 
   constructor(
-    embeddingService: VectorEmbeddingService,
+    embeddingService: IEmbeddingService,
     config: Partial<OptimizationConfig> = {}
   ) {
     this.embeddingService = embeddingService;
@@ -533,7 +538,7 @@ export class VectorOptimizationOrchestrator {
 
 // Export factory function for creating optimized instances
 export function createOptimizedVectorService(
-  embeddingService: VectorEmbeddingService,
+  embeddingService: IEmbeddingService,
   config?: Partial<OptimizationConfig>
 ): VectorOptimizationOrchestrator {
   return new VectorOptimizationOrchestrator(embeddingService, config);

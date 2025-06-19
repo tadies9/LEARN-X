@@ -5,7 +5,7 @@ import { validateRequest } from '../middleware/validateRequest';
 import { vectorDashboard } from '../services/vector/monitoring/VectorMonitoringDashboard';
 import { vectorSearchCache } from '../services/vector/optimization/VectorSearchCache';
 import { createOptimizedVectorService } from '../services/vector/optimization/VectorOptimizationOrchestrator';
-import { VectorEmbeddingService } from '../services/embeddings/VectorEmbeddingService';
+import { pythonEmbeddingService } from '../services/embeddings/PythonEmbeddingService';
 import { runDefaultBenchmarks } from '../services/vector/benchmarks/VectorBenchmark';
 import { z } from 'zod';
 import { logger } from '../utils/logger';
@@ -13,8 +13,7 @@ import { logger } from '../utils/logger';
 const router = Router();
 
 // Initialize services
-const embeddingService = new VectorEmbeddingService();
-const optimizedVectorService = createOptimizedVectorService(embeddingService, {
+const optimizedVectorService = createOptimizedVectorService(pythonEmbeddingService, {
   enableCaching: true,
   enableHybridSearch: true,
   enableMonitoring: true,

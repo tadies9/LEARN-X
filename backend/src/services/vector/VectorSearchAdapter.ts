@@ -1,7 +1,11 @@
 import { IVectorStore, VectorSearchOptions, VectorSearchResult } from './interfaces/IVectorStore';
 import { VectorStoreFactory, VectorStoreConfig } from './VectorStoreFactory';
-import { VectorEmbeddingService } from '../embeddings/VectorEmbeddingService';
 import { logger } from '../../utils/logger';
+
+// Interface for embedding services
+interface IEmbeddingService {
+  generateEmbedding(text: string, userId?: string): Promise<number[]>;
+}
 
 export interface AdaptedSearchOptions extends VectorSearchOptions {
   fileIdFilter?: string;
@@ -20,12 +24,12 @@ export interface AdaptedSearchResult extends VectorSearchResult {
  */
 export class VectorSearchAdapter {
   private vectorStore: IVectorStore | null = null;
-  private embeddingService: VectorEmbeddingService;
+  private embeddingService: IEmbeddingService;
   private storeConfig: VectorStoreConfig;
   private initialized: boolean = false;
 
   constructor(
-    embeddingService: VectorEmbeddingService,
+    embeddingService: IEmbeddingService,
     storeConfig: VectorStoreConfig = { provider: 'pgvector' }
   ) {
     this.embeddingService = embeddingService;
@@ -224,7 +228,7 @@ export class VectorSearchAdapter {
 let adapterInstance: VectorSearchAdapter | null = null;
 
 export function getVectorSearchAdapter(
-  embeddingService?: VectorEmbeddingService,
+  embeddingService?: IEmbeddingService,
   config?: VectorStoreConfig
 ): VectorSearchAdapter {
   if (!adapterInstance) {

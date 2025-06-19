@@ -1,13 +1,13 @@
 import { supabase } from '../../config/supabase';
 import { logger } from '../../utils/logger';
-import { VectorEmbeddingService } from '../embeddings/VectorEmbeddingService';
+import { pythonEmbeddingService } from '../embeddings/PythonEmbeddingService';
 import { AdvancedSearchOperations } from './AdvancedSearchOperations';
 import { FacetManager } from './FacetManager';
 import { SearchCacheManager, QueryProcessor, SearchRanker } from './SearchUtilities';
 import { SearchOptions, SearchFilters, SearchResult, SearchResponse } from './types';
 
 export class HybridSearchService {
-  private embeddingService: VectorEmbeddingService;
+  private embeddingService = pythonEmbeddingService;
   private advancedOps: AdvancedSearchOperations;
   private facetManager: FacetManager;
   private cacheManager: SearchCacheManager;
@@ -15,7 +15,6 @@ export class HybridSearchService {
   private searchRanker: SearchRanker;
 
   constructor() {
-    this.embeddingService = new VectorEmbeddingService();
     this.advancedOps = new AdvancedSearchOperations();
     this.facetManager = new FacetManager();
     this.cacheManager = new SearchCacheManager();

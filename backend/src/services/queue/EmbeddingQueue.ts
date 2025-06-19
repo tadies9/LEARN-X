@@ -244,15 +244,14 @@ export class EmbeddingQueue {
       });
 
       // Import dynamically to avoid circular dependencies
-      const { VectorEmbeddingService } = await import('../embeddings/VectorEmbeddingService');
-      const embeddingService = new VectorEmbeddingService();
+      const { pythonEmbeddingService } = await import('../embeddings/PythonEmbeddingService');
 
       // Process embeddings for the chunks - add fileId to each chunk
       const chunksWithFileId = chunks.map((chunk) => ({
         ...chunk,
         fileId,
       }));
-      await embeddingService.processBatch(chunksWithFileId, job.message.userId);
+      await pythonEmbeddingService.processBatch(chunksWithFileId, job.message.userId);
 
       // Delete message on success
       await this.client.delete(this.queueName, job.msg_id);

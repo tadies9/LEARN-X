@@ -1,6 +1,6 @@
 import { supabase } from '../../config/supabase';
 import { logger } from '../../utils/logger';
-import { VectorEmbeddingService } from '../embeddings/VectorEmbeddingService';
+import { pythonEmbeddingService } from '../embeddings/PythonEmbeddingService';
 import { SearchOptions, SearchResult } from './types';
 
 interface UserInteraction {
@@ -41,10 +41,10 @@ interface ScoredResult extends VectorSearchResult {
 }
 
 export class AdvancedSearchOperations {
-  private embeddingService: VectorEmbeddingService;
+  private embeddingService = pythonEmbeddingService;
 
   constructor() {
-    this.embeddingService = new VectorEmbeddingService();
+    // Using singleton instance of pythonEmbeddingService
   }
 
   async getSuggestions(query: string, userId: string, limit: number = 5): Promise<string[]> {

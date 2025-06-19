@@ -6,7 +6,7 @@
  */
 
 import { createOptimizedVectorService } from '../services/vector/optimization/VectorOptimizationOrchestrator';
-import { VectorEmbeddingService } from '../services/embeddings/VectorEmbeddingService';
+import { pythonEmbeddingService } from '../services/embeddings/PythonEmbeddingService';
 import { vectorDashboard } from '../services/vector/monitoring/VectorMonitoringDashboard';
 import { vectorSearchCache } from '../services/vector/optimization/VectorSearchCache';
 // Removed unused import '../services/vector/benchmarks/VectorBenchmark';
@@ -17,8 +17,7 @@ async function vectorOptimizationExample() {
 
   try {
     // 1. Initialize the optimized vector service
-    const embeddingService = new VectorEmbeddingService();
-    const optimizedService = createOptimizedVectorService(embeddingService, {
+    const optimizedService = createOptimizedVectorService(pythonEmbeddingService, {
       enableCaching: true,
       enableHybridSearch: true,
       enableMonitoring: true,
