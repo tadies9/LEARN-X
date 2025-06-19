@@ -1,0 +1,925 @@
+{
+  "title": "LEARN-X Application Performance Dashboard",
+  "description": "Comprehensive monitoring dashboard for LEARN-X application with business metrics and alerting",
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "notify_list": [],
+  "reflow_type": "fixed",
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "title": "Application Health Overview",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 2,
+            "definition": {
+              "title": "Service Health Score",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "avg:trace.web.request.hits{service:learn-x-api}.as_rate()",
+                  "aggregator": "avg",
+                  "conditional_formats": [
+                    {
+                      "comparator": ">",
+                      "value": 100,
+                      "palette": "green_on_white"
+                    },
+                    {
+                      "comparator": "<=",
+                      "value": 50,
+                      "palette": "red_on_white"
+                    },
+                    {
+                      "comparator": "<=",
+                      "value": 100,
+                      "palette": "yellow_on_white"
+                    }
+                  ]
+                }
+              ],
+              "autoscale": true,
+              "precision": 0,
+              "text_align": "center"
+            }
+          },
+          {
+            "id": 3,
+            "definition": {
+              "title": "Response Time P95",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "p95:trace.web.request.duration{service:learn-x-api}",
+                  "aggregator": "avg",
+                  "conditional_formats": [
+                    {
+                      "comparator": "<",
+                      "value": 200,
+                      "palette": "green_on_white"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 500,
+                      "palette": "red_on_white"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 200,
+                      "palette": "yellow_on_white"
+                    }
+                  ]
+                }
+              ],
+              "autoscale": false,
+              "precision": 0,
+              "text_align": "center",
+              "custom_unit": "ms"
+            }
+          },
+          {
+            "id": 4,
+            "definition": {
+              "title": "Error Rate",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "sum:trace.web.request.errors{service:learn-x-api}.as_rate() / sum:trace.web.request.hits{service:learn-x-api}.as_rate() * 100",
+                  "aggregator": "avg",
+                  "conditional_formats": [
+                    {
+                      "comparator": "<",
+                      "value": 1,
+                      "palette": "green_on_white"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 5,
+                      "palette": "red_on_white"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 1,
+                      "palette": "yellow_on_white"
+                    }
+                  ]
+                }
+              ],
+              "autoscale": false,
+              "precision": 2,
+              "text_align": "center",
+              "custom_unit": "%"
+            }
+          },
+          {
+            "id": 5,
+            "definition": {
+              "title": "Active Users (Last Hour)",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "sum:business.user.activity{service:learn-x-api}",
+                  "aggregator": "avg"
+                }
+              ],
+              "autoscale": true,
+              "precision": 0,
+              "text_align": "center"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "title": "Application Performance",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 7,
+            "definition": {
+              "title": "Request Throughput",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:trace.web.request.hits{service:learn-x-api}.as_rate()",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "4h"
+              }
+            }
+          },
+          {
+            "id": 8,
+            "definition": {
+              "title": "Response Time Distribution",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:trace.web.request.duration{service:learn-x-api}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "blue",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "alias": "Average"
+                },
+                {
+                  "q": "p95:trace.web.request.duration{service:learn-x-api}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "orange",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "alias": "P95"
+                },
+                {
+                  "q": "p99:trace.web.request.duration{service:learn-x-api}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "red",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "alias": "P99"
+                }
+              ],
+              "yaxis": {
+                "label": "Duration (ms)",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "4h"
+              }
+            }
+          },
+          {
+            "id": 9,
+            "definition": {
+              "title": "Top Endpoints by Response Time",
+              "type": "toplist",
+              "requests": [
+                {
+                  "q": "top(avg:trace.web.request.duration{service:learn-x-api} by {resource_name}, 10, 'mean', 'desc')"
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "definition": {
+        "title": "Business Metrics",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 11,
+            "definition": {
+              "title": "Files Processed",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:business.files.processed{service:learn-x-api}.as_rate()",
+                  "display_type": "bars",
+                  "style": {
+                    "palette": "green",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "Files/min",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "24h"
+              }
+            }
+          },
+          {
+            "id": 12,
+            "definition": {
+              "title": "AI Token Usage",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:business.ai.tokens.total{service:learn-x-api} by {operation}",
+                  "display_type": "area",
+                  "style": {
+                    "palette": "cool"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "Tokens",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "24h"
+              }
+            }
+          },
+          {
+            "id": 13,
+            "definition": {
+              "title": "AI Cost Tracking",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "sum:business.ai.cost{service:learn-x-api}",
+                  "aggregator": "sum",
+                  "conditional_formats": [
+                    {
+                      "comparator": "<",
+                      "value": 5,
+                      "palette": "green_on_white"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 20,
+                      "palette": "red_on_white"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 5,
+                      "palette": "yellow_on_white"
+                    }
+                  ]
+                }
+              ],
+              "autoscale": false,
+              "precision": 2,
+              "text_align": "center",
+              "custom_unit": "$"
+            }
+          },
+          {
+            "id": 14,
+            "definition": {
+              "title": "Feature Usage Distribution",
+              "type": "sunburst",
+              "requests": [
+                {
+                  "q": "sum:business.user.activity{service:learn-x-api} by {activity}"
+                }
+              ],
+              "time": {
+                "live_span": "24h"
+              }
+            }
+          },
+          {
+            "id": 15,
+            "definition": {
+              "title": "Search Performance",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:business.search.duration{service:learn-x-api} by {search_type}",
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "Duration (ms)",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "6h"
+              }
+            }
+          },
+          {
+            "id": 16,
+            "definition": {
+              "title": "Course Engagement",
+              "type": "query_table",
+              "requests": [
+                {
+                  "q": "sum:business.course.activity{service:learn-x-api} by {course_id,activity}",
+                  "aggregator": "sum",
+                  "limit": 20,
+                  "order": "desc"
+                }
+              ],
+              "time": {
+                "live_span": "7d"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 17,
+      "definition": {
+        "title": "Queue Processing",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 18,
+            "definition": {
+              "title": "Queue Depth",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:queue.enqueue{service:learn-x-api} by {queue} - avg:queue.process{service:learn-x-api} by {queue}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "purple"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "Jobs in Queue",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "6h"
+              }
+            }
+          },
+          {
+            "id": 19,
+            "definition": {
+              "title": "Job Processing Time",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:queue.process{service:learn-x-api} by {job_type}",
+                  "display_type": "line"
+                },
+                {
+                  "q": "p95:queue.process{service:learn-x-api} by {job_type}",
+                  "display_type": "line",
+                  "style": {
+                    "line_type": "dashed"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "Processing Time (ms)",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "6h"
+              }
+            }
+          },
+          {
+            "id": 20,
+            "definition": {
+              "title": "Queue Error Rate",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "sum:queue.error{service:learn-x-api}.as_rate() / sum:queue.process{service:learn-x-api}.as_rate() * 100",
+                  "aggregator": "avg",
+                  "conditional_formats": [
+                    {
+                      "comparator": "<",
+                      "value": 2,
+                      "palette": "green_on_white"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 10,
+                      "palette": "red_on_white"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 2,
+                      "palette": "yellow_on_white"
+                    }
+                  ]
+                }
+              ],
+              "autoscale": false,
+              "precision": 2,
+              "text_align": "center",
+              "custom_unit": "%"
+            }
+          },
+          {
+            "id": 21,
+            "definition": {
+              "title": "Processing Rate by Job Type",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:queue.process{service:learn-x-api}.as_rate() by {job_type}",
+                  "display_type": "area",
+                  "style": {
+                    "palette": "warm"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "Jobs/min",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "6h"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 22,
+      "definition": {
+        "title": "Database Performance",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 23,
+            "definition": {
+              "title": "Database Query Performance",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:postgres.query.duration{service:learn-x-api}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "blue"
+                  },
+                  "alias": "Average"
+                },
+                {
+                  "q": "p95:postgres.query.duration{service:learn-x-api}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "orange"
+                  },
+                  "alias": "P95"
+                }
+              ],
+              "yaxis": {
+                "label": "Duration (ms)",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "6h"
+              }
+            }
+          },
+          {
+            "id": 24,
+            "definition": {
+              "title": "Slow Queries",
+              "type": "query_table",
+              "requests": [
+                {
+                  "q": "avg:postgres.query.duration{service:learn-x-api,duration:>1000} by {query_signature}",
+                  "aggregator": "avg",
+                  "limit": 20,
+                  "order": "desc"
+                }
+              ],
+              "time": {
+                "live_span": "1h"
+              }
+            }
+          },
+          {
+            "id": 25,
+            "definition": {
+              "title": "Database Connections",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:postgres.connections.active{service:learn-x-api}",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "green"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "Active Connections",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "6h"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 26,
+      "definition": {
+        "title": "AI Service Monitoring",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 27,
+            "definition": {
+              "title": "AI Response Time by Model",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:business.ai.duration{service:learn-x-api} by {model}",
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "Duration (ms)",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "6h"
+              }
+            }
+          },
+          {
+            "id": 28,
+            "definition": {
+              "title": "Token Usage by Operation",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:business.ai.tokens.total{service:learn-x-api} by {operation,model}",
+                  "display_type": "bars",
+                  "style": {
+                    "palette": "cool"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "Tokens",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "24h"
+              }
+            }
+          },
+          {
+            "id": 29,
+            "definition": {
+              "title": "Cost per User (Top 50)",
+              "type": "query_table",
+              "requests": [
+                {
+                  "q": "sum:business.user.cost{service:learn-x-api} by {user_id}",
+                  "aggregator": "sum",
+                  "limit": 50,
+                  "order": "desc"
+                }
+              ],
+              "time": {
+                "live_span": "24h"
+              }
+            }
+          },
+          {
+            "id": 30,
+            "definition": {
+              "title": "AI Service Errors",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:trace.web.request.errors{service:learn-x-api,resource_name:*ai*}.as_rate()",
+                  "display_type": "bars",
+                  "style": {
+                    "palette": "red"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "Errors/min",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "6h"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 31,
+      "definition": {
+        "title": "Cache Performance",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 32,
+            "definition": {
+              "title": "Cache Hit Rate",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "sum:cache.hit{service:learn-x-api}.as_rate() / (sum:cache.hit{service:learn-x-api}.as_rate() + sum:cache.miss{service:learn-x-api}.as_rate()) * 100",
+                  "aggregator": "avg",
+                  "conditional_formats": [
+                    {
+                      "comparator": ">",
+                      "value": 90,
+                      "palette": "green_on_white"
+                    },
+                    {
+                      "comparator": "<=",
+                      "value": 70,
+                      "palette": "red_on_white"
+                    },
+                    {
+                      "comparator": "<=",
+                      "value": 90,
+                      "palette": "yellow_on_white"
+                    }
+                  ]
+                }
+              ],
+              "autoscale": false,
+              "precision": 1,
+              "text_align": "center",
+              "custom_unit": "%"
+            }
+          },
+          {
+            "id": 33,
+            "definition": {
+              "title": "Cache Operations",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:cache.hit{service:learn-x-api}.as_rate()",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "green"
+                  },
+                  "alias": "Hits"
+                },
+                {
+                  "q": "sum:cache.miss{service:learn-x-api}.as_rate()",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "red"
+                  },
+                  "alias": "Misses"
+                },
+                {
+                  "q": "sum:cache.set{service:learn-x-api}.as_rate()",
+                  "display_type": "line",
+                  "style": {
+                    "palette": "blue"
+                  },
+                  "alias": "Sets"
+                }
+              ],
+              "yaxis": {
+                "label": "Operations/min",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "6h"
+              }
+            }
+          },
+          {
+            "id": 34,
+            "definition": {
+              "title": "Cache Operation Duration",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "avg:cache.operation.duration{service:learn-x-api} by {operation}",
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "Duration (ms)",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "6h"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 35,
+      "definition": {
+        "title": "Error Analysis",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 36,
+            "definition": {
+              "title": "Error Summary",
+              "type": "query_table",
+              "requests": [
+                {
+                  "q": "sum:trace.web.request.errors{service:learn-x-api} by {error.message}",
+                  "aggregator": "sum",
+                  "limit": 20,
+                  "order": "desc"
+                }
+              ],
+              "time": {
+                "live_span": "6h"
+              }
+            }
+          },
+          {
+            "id": 37,
+            "definition": {
+              "title": "Error Trend",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:trace.web.request.errors{service:learn-x-api}.as_rate() by {error.type}",
+                  "display_type": "area",
+                  "style": {
+                    "palette": "red"
+                  }
+                }
+              ],
+              "yaxis": {
+                "label": "Errors/min",
+                "scale": "linear",
+                "min": "auto",
+                "max": "auto",
+                "include_zero": true
+              },
+              "time": {
+                "live_span": "24h"
+              }
+            }
+          },
+          {
+            "id": 38,
+            "definition": {
+              "title": "Error Distribution by Endpoint",
+              "type": "toplist",
+              "requests": [
+                {
+                  "q": "top(sum:trace.web.request.errors{service:learn-x-api} by {resource_name}, 20, 'sum', 'desc')"
+                }
+              ],
+              "time": {
+                "live_span": "6h"
+              }
+            }
+          },
+          {
+            "id": 39,
+            "definition": {
+              "title": "Error Impact by User",
+              "type": "query_table",
+              "requests": [
+                {
+                  "q": "sum:trace.web.request.errors{service:learn-x-api} by {user.id}",
+                  "aggregator": "sum",
+                  "limit": 20,
+                  "order": "desc"
+                }
+              ],
+              "time": {
+                "live_span": "24h"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "service",
+      "default": "learn-x-api",
+      "prefix": "service"
+    },
+    {
+      "name": "env",
+      "default": "*",
+      "prefix": "env"
+    },
+    {
+      "name": "user_id",
+      "default": "*",
+      "prefix": "user_id"
+    }
+  ]
+}

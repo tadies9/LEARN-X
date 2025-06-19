@@ -1,0 +1,409 @@
+{
+  "name": "LEARN-X Application Performance Dashboard",
+  "description": "Comprehensive monitoring dashboard for LEARN-X application",
+  "permissions": "PUBLIC_READ_WRITE",
+  "pages": [
+    {
+      "name": "Overview",
+      "description": "High-level application health and performance metrics",
+      "widgets": [
+        {
+          "title": "Application Health Score",
+          "visualization": "billboard",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT percentage(count(*), WHERE error IS false) AS 'Health Score' FROM Transaction WHERE appName = 'learn-x-api' SINCE 30 minutes ago"
+              }
+            ],
+            "thresholds": {
+              "critical": 95,
+              "warning": 98
+            }
+          }
+        },
+        {
+          "title": "Response Time",
+          "visualization": "line",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT average(duration) AS 'Avg Response Time', percentile(duration, 95) AS 'P95', percentile(duration, 99) AS 'P99' FROM Transaction WHERE appName = 'learn-x-api' TIMESERIES SINCE 6 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Throughput",
+          "visualization": "line",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT rate(count(*), 1 minute) AS 'Requests/min' FROM Transaction WHERE appName = 'learn-x-api' TIMESERIES SINCE 6 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Error Rate",
+          "visualization": "line",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT percentage(count(*), WHERE error IS true) AS 'Error Rate' FROM Transaction WHERE appName = 'learn-x-api' TIMESERIES SINCE 6 hours ago"
+              }
+            ],
+            "yAxisLeft": {
+              "max": 5
+            }
+          }
+        },
+        {
+          "title": "Top Transactions by Time",
+          "visualization": "bar",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT average(duration) FROM Transaction WHERE appName = 'learn-x-api' FACET name LIMIT 10 SINCE 1 hour ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Active Users",
+          "visualization": "billboard",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT uniqueCount(user.id) AS 'Active Users' FROM Transaction WHERE appName = 'learn-x-api' SINCE 30 minutes ago"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Business Metrics",
+      "description": "Key business metrics and KPIs",
+      "widgets": [
+        {
+          "title": "Files Processed",
+          "visualization": "line",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT sum(Custom/files.processed) AS 'Files Processed' FROM Metric WHERE appName = 'learn-x-api' TIMESERIES SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "AI Token Usage",
+          "visualization": "stacked-bar",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT sum(Custom/ai.tokens.total) FROM Metric WHERE appName = 'learn-x-api' FACET operation TIMESERIES SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "AI Cost Tracking",
+          "visualization": "billboard",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT sum(Custom/ai.cost) AS 'Total Cost (USD)' FROM Metric WHERE appName = 'learn-x-api' SINCE 24 hours ago"
+              }
+            ],
+            "dataFormat": {
+              "format": "currency",
+              "precision": 2
+            }
+          }
+        },
+        {
+          "title": "User Activity",
+          "visualization": "pie",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT count(*) FROM CustomEvent WHERE eventType = 'FeatureUsage' AND appName = 'learn-x-api' FACET feature SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Course Engagement",
+          "visualization": "table",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT count(Custom/course.activity) AS 'Activities', uniqueCount(user_id) AS 'Unique Users' FROM Metric WHERE appName = 'learn-x-api' FACET course_id LIMIT 20 SINCE 7 days ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Search Performance",
+          "visualization": "line",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT average(Custom/search.duration) AS 'Avg Duration', count(Custom/search.queries) AS 'Query Count' FROM Metric WHERE appName = 'learn-x-api' TIMESERIES SINCE 6 hours ago"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Queue Processing",
+      "description": "Queue health and processing metrics",
+      "widgets": [
+        {
+          "title": "Queue Depth",
+          "visualization": "line",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT latest(Custom/queue.depth) FROM Metric WHERE appName = 'learn-x-api' FACET queue TIMESERIES SINCE 6 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Job Processing Time",
+          "visualization": "line",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT average(Custom/queue.process) AS 'Avg Time', percentile(Custom/queue.process, 95) AS 'P95' FROM Metric WHERE appName = 'learn-x-api' FACET job_type TIMESERIES SINCE 6 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Queue Error Rate",
+          "visualization": "billboard",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT percentage(count(Custom/queue.error), count(Custom/queue.process)) AS 'Error Rate' FROM Metric WHERE appName = 'learn-x-api' SINCE 1 hour ago"
+              }
+            ],
+            "thresholds": {
+              "critical": 5,
+              "warning": 2
+            }
+          }
+        },
+        {
+          "title": "Processing Rate by Job Type",
+          "visualization": "stacked-area",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT rate(count(Custom/queue.process), 1 minute) FROM Metric WHERE appName = 'learn-x-api' FACET job_type TIMESERIES SINCE 6 hours ago"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Database Performance",
+      "description": "Database query performance and optimization",
+      "widgets": [
+        {
+          "title": "Query Performance",
+          "visualization": "line",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT average(duration) AS 'Avg Duration', percentile(duration, 95) AS 'P95' FROM DatabaseQuery WHERE appName = 'learn-x-api' TIMESERIES SINCE 6 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Slow Queries",
+          "visualization": "table",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT average(duration), count(*) FROM DatabaseQuery WHERE appName = 'learn-x-api' AND duration > 1000 FACET query LIMIT 20 SINCE 1 hour ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Query Types",
+          "visualization": "pie",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT count(*) FROM DatabaseQuery WHERE appName = 'learn-x-api' FACET operation SINCE 1 hour ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Database Connections",
+          "visualization": "line",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT average(newrelic.timeslice.value) AS 'Active Connections' FROM Metric WHERE metricTimesliceName = 'Datastore/PostgreSQL/allOther' AND appName = 'learn-x-api' TIMESERIES SINCE 6 hours ago"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Service Monitoring",
+      "description": "AI service performance and cost tracking",
+      "widgets": [
+        {
+          "title": "AI Response Time by Model",
+          "visualization": "line",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT average(Custom/ai.duration) FROM Metric WHERE appName = 'learn-x-api' FACET model TIMESERIES SINCE 6 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Token Usage by Operation",
+          "visualization": "stacked-bar",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT sum(Custom/ai.tokens) FROM Metric WHERE appName = 'learn-x-api' FACET operation, model TIMESERIES SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Cost per User",
+          "visualization": "table",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT sum(Custom/ai.cost) AS 'Total Cost', count(DISTINCT user_id) AS 'Requests' FROM Metric WHERE appName = 'learn-x-api' FACET user_id LIMIT 50 SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "AI Service Errors",
+          "visualization": "line",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT count(*) FROM TransactionError WHERE appName = 'learn-x-api' AND error.message LIKE '%OpenAI%' OR error.message LIKE '%AI%' TIMESERIES SINCE 6 hours ago"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cache Performance",
+      "description": "Cache hit rates and performance metrics",
+      "widgets": [
+        {
+          "title": "Cache Hit Rate",
+          "visualization": "billboard",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT percentage(count(Custom/cache.hit), count(Custom/cache.hit) + count(Custom/cache.miss)) AS 'Hit Rate' FROM Metric WHERE appName = 'learn-x-api' SINCE 1 hour ago"
+              }
+            ],
+            "thresholds": {
+              "critical": 80,
+              "warning": 90
+            }
+          }
+        },
+        {
+          "title": "Cache Operations",
+          "visualization": "line",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT count(Custom/cache.hit) AS 'Hits', count(Custom/cache.miss) AS 'Misses', count(Custom/cache.set) AS 'Sets' FROM Metric WHERE appName = 'learn-x-api' TIMESERIES SINCE 6 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Cache Operation Duration",
+          "visualization": "line",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT average(Custom/cache.operation.duration) FROM Metric WHERE appName = 'learn-x-api' FACET operation TIMESERIES SINCE 6 hours ago"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Analysis",
+      "description": "Error tracking and root cause analysis",
+      "widgets": [
+        {
+          "title": "Error Summary",
+          "visualization": "table",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT count(*), latest(timestamp) FROM TransactionError WHERE appName = 'learn-x-api' FACET error.message LIMIT 20 SINCE 6 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Error Trend",
+          "visualization": "area",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT count(*) FROM TransactionError WHERE appName = 'learn-x-api' FACET error.class TIMESERIES SINCE 24 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Error Distribution by Endpoint",
+          "visualization": "bar",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT count(*) FROM TransactionError WHERE appName = 'learn-x-api' FACET request.uri LIMIT 20 SINCE 6 hours ago"
+              }
+            ]
+          }
+        },
+        {
+          "title": "Error Impact by User",
+          "visualization": "table",
+          "configuration": {
+            "nrqlQueries": [
+              {
+                "query": "SELECT count(*) AS 'Error Count', uniqueCount(error.message) AS 'Unique Errors' FROM TransactionError WHERE appName = 'learn-x-api' FACET user.id LIMIT 20 SINCE 24 hours ago"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
