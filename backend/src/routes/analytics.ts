@@ -17,4 +17,10 @@ router.get('/onboarding/stats', analyticsController.getOnboardingStats);
 // Get persona insights (admin only)
 router.get('/persona/insights', analyticsController.getPersonaInsights);
 
+// Get aggregated analytics with direct Postgres
+router.get('/aggregated', analyticsController.getAggregatedAnalytics);
+
+// Bulk track events for performance
+router.post('/bulk', analyticsController.bulkTrackEvents);
+
 export default router;

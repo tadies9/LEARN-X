@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { dashboardService } from '../services/dashboardService';
+import { dashboardService } from '../services/dashboard/DashboardService';
 import { AppError } from '../utils/errors';
 import { logger } from '../utils/logger';
 
@@ -109,8 +109,7 @@ class DashboardController {
         throw new AppError('Activity type is required', 400);
       }
 
-      const activity = await dashboardService.logActivity({
-        userId,
+      const activity = await dashboardService.logActivity(userId, {
         type,
         metadata,
       });

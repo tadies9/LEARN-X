@@ -282,6 +282,35 @@ export class FileService {
     return transformCourseFile(updatedFile);
   }
 
+  async checkFileOwnership(fileId: string, userId: string): Promise<boolean> {
+    try {
+      const { data: file, error } = await supabase
+        .from('course_files')
+        .select(
+          `
+          id,
+          modules!inner(
+            courses!inner(
+              user_id
+            )
+          )
+        `
+        )
+        .eq('id', fileId)
+        .single();
+
+      if (error || !file) {
+        return false;
+      }
+
+      const course = (file as any).modules.courses;
+      return course.user_id === userId;
+    } catch (error) {
+      logger.error('Error checking file ownership:', error);
+      return false;
+    }
+  }
+
   async deleteFile(fileId: string, userId: string): Promise<void> {
     console.log('=== deleteFile called ===');
     console.log('File ID:', fileId);

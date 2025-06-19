@@ -35,16 +35,29 @@ class EnhancedPGMQWorker {
   async start(): Promise<void> {
     try {
       logger.info('[Enhanced PGMQ Worker] Starting all queue processors...');
+      
+      // Check if Python service should handle file processing
+      const pythonFileProcessing = process.env.PYTHON_FILE_PROCESSING === 'true';
+      
+      if (pythonFileProcessing) {
+        logger.info('[Enhanced PGMQ Worker] File processing delegated to Python service');
+      }
 
       this.isRunning = true;
 
-      // Start all services in parallel
-      await Promise.all([
+      // Start services based on configuration
+      const servicesToStart = [
         this.health.start(),
-        this.fileQueue.start(),
         this.embeddingQueue.start(),
         this.notificationQueue.start(),
-      ]);
+      ];
+      
+      // Only start file processing if Python isn't handling it
+      if (!pythonFileProcessing) {
+        servicesToStart.push(this.fileQueue.start());
+      }
+      
+      await Promise.all(servicesToStart);
 
       logger.info('[Enhanced PGMQ Worker] All queue processors started successfully');
 

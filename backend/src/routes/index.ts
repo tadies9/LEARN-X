@@ -15,6 +15,9 @@ import searchRoutes from './searchRoutes';
 import savedContentRoutes from './savedContentRoutes';
 import { healthRoutes } from './healthRoutes';
 import dashboardRoutes from './dashboard';
+import adminRoutes from './admin';
+import vectorOptimizationRoutes from './vectorOptimization';
+import { requireAdmin } from '../middleware/adminAuth';
 
 const router = Router();
 
@@ -67,7 +70,9 @@ router.use('/learn', aiLearnRoutes); // AI learning routes with advanced persona
 router.use('/sessions', sessionRoutes);
 router.use('/search', searchRoutes); // Vector search routes
 router.use('/saved', savedContentRoutes); // Saved content routes
+router.use('/vector-optimization', vectorOptimizationRoutes); // Vector optimization and monitoring routes
 router.use('/dashboard', dashboardRoutes); // Dashboard statistics and activity routes
+router.use('/admin', requireAdmin, adminRoutes); // Admin routes with authentication
 router.use('/', healthRoutes); // Health and monitoring routes
 router.use('/', fileRoutes); // File routes are mixed between /files and /modules - mount last
 
@@ -85,6 +90,8 @@ router.get('/', (_, res) => {
       files: '/files',
       learn: '/learn',
       dashboard: '/dashboard',
+      vectorOptimization: '/vector-optimization',
+      admin: '/admin (requires admin role)',
       health: '/health',
     },
   });

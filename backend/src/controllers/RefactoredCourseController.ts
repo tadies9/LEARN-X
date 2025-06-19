@@ -7,21 +7,7 @@ import {
   CrudHelpers,
   PaginationResult,
 } from '../utils/controllerHelpers';
-import type { Course, CreateCourseInput, UpdateCourseInput, CourseFilters } from '../types/course';
-
-interface CourseStats {
-  moduleCount: number;
-  totalFiles: number;
-  totalFileSize: number;
-  fileTypes: Record<string, number>;
-  processingStatus: {
-    pending: number;
-    processing: number;
-    completed: number;
-    failed: number;
-  };
-  estimatedDuration: number;
-}
+import type { Course, CreateCourseData, UpdateCourseData, CourseFilters } from '../types/course';
 
 export class RefactoredCourseController extends BaseController {
   private courseService: CourseService;
@@ -42,7 +28,13 @@ export class RefactoredCourseController extends BaseController {
           ...filters,
           userIdOrPublic: userId, // Include user's courses and public courses
         };
-        return this.courseService.getCourses(enhancedFilters);
+        const result = await this.courseService.getCourses(enhancedFilters);
+        return {
+          data: result.courses,
+          total: result.total,
+          page: result.page,
+          limit: result.limit,
+        };
       },
     },
     (query, userId) => ({
@@ -58,24 +50,42 @@ export class RefactoredCourseController extends BaseController {
     'Course'
   );
 
-  createCourse = CrudHelpers.createCreateHandler<Course, CreateCourseInput>(
+  createCourse = CrudHelpers.createCreateHandler<Course, CreateCourseData>(
     {
-      create: (data: CreateCourseInput, userId: string) =>
+      create: (data: CreateCourseData, userId: string) =>
         this.courseService.createCourse({
           ...data,
           userId,
+          settings: data.settings as Record<string, unknown>,
         }),
     },
     (body, userId) => ({ ...body, userId }),
     'Course'
   );
 
-  updateCourse = CrudHelpers.createUpdateHandler<Course, UpdateCourseInput>(
-    this.courseService,
+  updateCourse = CrudHelpers.createUpdateHandler<Course, UpdateCourseData>(
+    {
+      update: (id: string, data: UpdateCourseData, _userId: string) => 
+        this.courseService.updateCourse(id, {
+          ...data,
+          settings: data.settings as Record<string, unknown>,
+        }),
+      checkOwnership: (id: string, userId: string) => 
+        this.courseService.checkCourseOwnership(id, userId),
+    },
     'Course'
   );
 
-  deleteCourse = CrudHelpers.createDeleteHandler(this.courseService, 'Course');
+  deleteCourse = CrudHelpers.createDeleteHandler(
+    {
+      delete: async (id: string, _userId: string) => {
+        await this.courseService.deleteCourse(id);
+      },
+      checkOwnership: (id: string, userId: string) => 
+        this.courseService.checkCourseOwnership(id, userId),
+    },
+    'Course'
+  );
 
   // Custom actions using the base controller utilities
   archiveCourse = asyncHandler(async (req: AuthenticatedRequest, res: Response) => {

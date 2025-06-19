@@ -13,13 +13,22 @@ import helmet from 'helmet';
 import morgan from 'morgan';
 import 'express-async-errors';
 
+import { initializeSentry } from './config/sentry';
+import { apmService } from './config/apm';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
+import { correlationIdMiddleware } from './middleware/correlationId';
 import { logger } from './utils/logger';
 import routes from './routes';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
+
+// Initialize monitoring services
+initializeSentry(app);
+apmService.initialize();
+
+// Sentry middleware will be handled by the integration in sentry config
 
 // Middleware
 app.use(helmet());
@@ -36,6 +45,11 @@ app.use(
 );
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Add correlation ID middleware early in the chain
+app.use(correlationIdMiddleware);
+
+// Morgan with correlation ID
 app.use(morgan('combined', { stream: { write: (message) => logger.info(message.trim()) } }));
 
 // Rate limiting
@@ -76,6 +90,8 @@ app.get('/health/detailed', async (_req, res) => {
 
 // API routes
 app.use('/api/v1', routes);
+
+// Sentry error handler will be handled by the integration in sentry config
 
 // Error handling
 app.use(errorHandler);

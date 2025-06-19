@@ -386,6 +386,69 @@ router.post('/files/test-upload', upload.single('file'), async (req, res) => {
   }
 });
 
+// Job status tracking endpoints
+router.get('/files/:id/processing-status', authenticateUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user!.id;
+    
+    // First verify user has access to the file
+    const fileService = new FileService();
+    await fileService.getFile(id, userId);
+    
+    // Get job status from job_tracking table
+    const { supabase } = await import('../config/supabase');
+    const { data: jobs, error } = await supabase
+      .from('job_tracking')
+      .select('*')
+      .eq('payload->>fileId', id)
+      .order('created_at', { ascending: false })
+      .limit(1);
+    
+    if (error) {
+      console.error('Error fetching job status:', error);
+      return res.status(500).json({ error: 'Failed to fetch job status' });
+    }
+    
+    const latestJob = jobs && jobs.length > 0 ? jobs[0] : null;
+    
+    return res.json({
+      success: true,
+      data: {
+        fileId: id,
+        status: latestJob?.status || 'no_job_found',
+        jobId: latestJob?.id,
+        attempts: latestJob?.attempts || 0,
+        createdAt: latestJob?.created_at,
+        errorMessage: latestJob?.error_message,
+        metadata: latestJob?.metadata || {}
+      }
+    });
+  } catch (error) {
+    console.error('Error in processing status:', error);
+    return res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to get processing status' 
+    });
+  }
+});
+
+router.get('/queue/health', authenticateUser, async (_req, res) => {
+  try {
+    const { queueOrchestrator } = await import('../services/queue/QueueOrchestrator');
+    const health = await queueOrchestrator.getSystemHealth();
+    
+    return res.json({
+      success: true,
+      data: health
+    });
+  } catch (error) {
+    console.error('Error fetching queue health:', error);
+    return res.status(500).json({ 
+      error: 'Failed to fetch queue health' 
+    });
+  }
+});
+
 // File routes (all require authentication)
 router.get('/modules/:moduleId/files', authenticateUser, fileController.getModuleFiles);
 router.get('/files/:id', authenticateUser, fileController.getFile);

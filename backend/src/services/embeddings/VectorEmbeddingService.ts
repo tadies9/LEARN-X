@@ -47,7 +47,7 @@ export class VectorEmbeddingService {
       if (userId) {
         await this.costTracker.trackRequest({
           userId,
-          requestType: AIRequestType.EMBEDDING,
+          requestType: 'embedding' as AIRequestType,
           model: this.model,
           promptTokens: tokens,
           completionTokens: 0,
@@ -82,7 +82,7 @@ export class VectorEmbeddingService {
       if (userId) {
         await this.costTracker.trackRequest({
           userId,
-          requestType: AIRequestType.EMBEDDING,
+          requestType: 'embedding' as AIRequestType,
           model: this.model,
           promptTokens: totalTokens,
           completionTokens: 0,

@@ -6,13 +6,19 @@
     "dev": "next dev",
     "build": "next build",
     "build:vercel": "node scripts/build-with-env.js",
+    "build:analyze": "ANALYZE=true npm run build",
     "start": "next start",
     "lint": "next lint",
+    "lint:fix": "next lint --fix",
     "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "check:all": "npm run type-check && npm run lint && npm run test",
+    "analyze:deps": "node scripts/analyze-dependencies.js",
+    "perf:check": "lhci autorun",
+    "build:check": "npm run check:all && npm run build"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
@@ -37,6 +43,7 @@
     "@radix-ui/react-toggle-group": "^1.1.10",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@react-pdf/renderer": "^4.3.0",
+    "@sentry/nextjs": "^9.30.0",
     "@supabase/auth-helpers-nextjs": "^0.8.7",
     "@supabase/auth-helpers-react": "^0.4.2",
     "@supabase/ssr": "^0.6.1",
@@ -89,6 +96,7 @@
   },
   "devDependencies": {
     "@babel/plugin-transform-modules-commonjs": "^7.27.1",
+    "@next/bundle-analyzer": "^15.3.4",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^14.1.2",
     "@testing-library/user-event": "^14.5.2",

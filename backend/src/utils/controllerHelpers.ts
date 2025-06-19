@@ -38,7 +38,7 @@ export abstract class BaseController {
     return req.user.id;
   }
 
-  protected sendSuccess<T>(res: Response, data?: T, message?: string, statusCode = 200): void {
+  public sendSuccess<T>(res: Response, data?: T, message?: string, statusCode = 200): void {
     const response: ApiResponse<T> = {
       success: true,
       ...(data !== undefined && { data }),
@@ -48,7 +48,7 @@ export abstract class BaseController {
     res.status(statusCode).json(response);
   }
 
-  protected sendPaginatedSuccess<T>(
+  public sendPaginatedSuccess<T>(
     res: Response,
     result: PaginationResult<T>,
     message?: string
@@ -68,26 +68,26 @@ export abstract class BaseController {
     res.json(response);
   }
 
-  protected sendError(res: Response, message: string, statusCode = 500): void {
+  public sendError(res: Response, message: string, statusCode = 500): void {
     res.status(statusCode).json({
       success: false,
       message,
     });
   }
 
-  protected sendNotFound(res: Response, resource = 'Resource'): void {
+  public sendNotFound(res: Response, resource = 'Resource'): void {
     this.sendError(res, `${resource} not found`, 404);
   }
 
-  protected sendForbidden(res: Response, action = 'perform this action'): void {
+  public sendForbidden(res: Response, action = 'perform this action'): void {
     this.sendError(res, `You do not have permission to ${action}`, 403);
   }
 
-  protected sendBadRequest(res: Response, message: string): void {
+  public sendBadRequest(res: Response, message: string): void {
     this.sendError(res, message, 400);
   }
 
-  protected sendUnauthorized(res: Response, message = 'Authentication required'): void {
+  public sendUnauthorized(res: Response, message = 'Authentication required'): void {
     this.sendError(res, message, 401);
   }
 }
@@ -128,39 +128,43 @@ export function createPermissionMiddleware<T>(
   resourceParam = 'id',
   action = 'access this resource'
 ) {
-  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  return async (req: AuthenticatedRequest, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.user?.id;
       if (!userId) {
-        return res.status(401).json({
+        res.status(401).json({
           success: false,
           message: 'Authentication required',
         });
+        return;
       }
 
       const resourceId = req.params[resourceParam];
       if (!resourceId) {
-        return res.status(400).json({
+        res.status(400).json({
           success: false,
           message: `${resourceParam} parameter is required`,
         });
+        return;
       }
 
       const hasPermission = await checker.checkOwnership(resourceId, userId);
       if (!hasPermission) {
-        return res.status(403).json({
+        res.status(403).json({
           success: false,
           message: `You do not have permission to ${action}`,
         });
+        return;
       }
 
       next();
     } catch (error) {
       logger.error('Permission check error:', error);
-      return res.status(500).json({
+      res.status(500).json({
         success: false,
         message: 'Failed to verify permissions',
       });
+      return;
     }
   };
 }
@@ -286,14 +290,15 @@ export function validateRequired(data: Record<string, any>, fields: string[]): s
 }
 
 export function validateRequestBody(requiredFields: string[]) {
-  return (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  return (req: AuthenticatedRequest, res: Response, next: NextFunction): void => {
     const missing = validateRequired(req.body, requiredFields);
 
     if (missing.length > 0) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: `Missing required fields: ${missing.join(', ')}`,
       });
+      return;
     }
 
     next();

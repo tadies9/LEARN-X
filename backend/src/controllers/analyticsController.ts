@@ -72,4 +72,65 @@ export class AnalyticsController {
       throw new AppError('Failed to retrieve persona insights', 500);
     }
   };
+
+  getAggregatedAnalytics = async (req: Request, res: Response): Promise<Response | void> => {
+    try {
+      const { userIds, startDate, endDate } = req.query;
+      
+      // Parse time range if provided
+      let timeRange;
+      if (startDate && endDate) {
+        timeRange = {
+          start: new Date(startDate as string),
+          end: new Date(endDate as string)
+        };
+      }
+
+      // Parse user IDs if provided
+      const userIdArray = userIds ? (userIds as string).split(',') : undefined;
+
+      const analytics = await this.analyticsService.getAggregatedAnalytics(
+        userIdArray,
+        timeRange
+      );
+
+      res.json({
+        success: true,
+        data: analytics,
+      });
+    } catch (error) {
+      logger.error('Error getting aggregated analytics:', error);
+      throw new AppError('Failed to retrieve aggregated analytics', 500);
+    }
+  };
+
+  bulkTrackEvents = async (req: Request, res: Response): Promise<Response | void> => {
+    try {
+      const { events } = req.body;
+
+      if (!Array.isArray(events) || events.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Events array is required',
+        });
+      }
+
+      // Add user ID to each event
+      const userId = req.user!.id;
+      const eventsWithUser = events.map(e => ({ ...e, userId }));
+
+      await this.analyticsService.bulkInsertEvents(eventsWithUser);
+
+      res.json({
+        success: true,
+        message: `Successfully tracked ${events.length} events`,
+      });
+    } catch (error) {
+      logger.error('Error bulk tracking events:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to track events',
+      });
+    }
+  };
 }

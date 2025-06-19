@@ -1,14 +1,14 @@
 import { Router, Request, Response } from 'express';
 import { authenticateUser } from '../middleware/auth';
+import { aiRateLimiter } from '../middleware/rateLimiter';
 import { supabase } from '../config/supabase';
 import { logger } from '../utils/logger';
-import OpenAI from 'openai';
+import { pythonOutlineService } from '../services/ai/PythonOutlineService';
 
 const router = Router();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY || '' });
 
 // Generate outline for a file (JSON response)
-router.get('/:fileId', authenticateUser, async (req: Request, res: Response): Promise<void> => {
+router.get('/:fileId', authenticateUser, aiRateLimiter, async (req: Request, res: Response): Promise<void> => {
   const { fileId } = req.params;
   const userId = (req as any).user.id;
 
@@ -55,47 +55,19 @@ router.get('/:fileId', authenticateUser, async (req: Request, res: Response): Pr
 
     const chunks = file.chunks.map((c: any) => c.content).join('\n\n');
 
-    const topicPrompt = `Analyze this document and create a learning outline with 4-6 main topics.
+    logger.info('[Learn Outline] Generating outline with Python AI service...');
 
-Document content:
-${chunks.substring(0, 8000)} // Limit for context window
-
-For each topic, provide:
-1. A clear, descriptive title
-2. A brief summary
-3. Key concepts to cover
-4. Page range if mentioned in the content
-
-Return a JSON object with a "sections" array containing objects with this structure:
-{
-  "sections": [{
-    "id": "section-1",
-    "title": "Topic Title Here",
-    "summary": "Brief description of what this section covers",
-    "topics": ["concept1", "concept2", "concept3"],
-    "chunkIds": [],
-    "chunkCount": 5,
-    "startPage": 1,
-    "endPage": 10
-  }]
-}`;
-
-    logger.info('[Learn Outline] Generating outline with GPT-4o...');
-
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      messages: [{ role: 'user', content: topicPrompt }],
-      response_format: { type: 'json_object' },
-      temperature: 0.7,
+    // Use Python AI service for outline generation
+    const outlineResult = await pythonOutlineService.generateOutline({
+      content: chunks,
+      filename: file.filename,
+      sectionCount: 5,
+      includePageNumbers: true,
+      difficulty: 'intermediate',
+      userId
     });
 
-    const responseContent = completion.choices[0].message.content || '{}';
-    logger.info('[Learn Outline] GPT response received');
-
-    const outlineData = JSON.parse(responseContent);
-    const sections = outlineData.sections || [];
-
-    if (!sections.length) {
+    if (!outlineResult.sections.length) {
       logger.error('[Learn Outline] No sections generated');
       res.status(500).json({
         success: false,
@@ -104,23 +76,20 @@ Return a JSON object with a "sections" array containing objects with this struct
       return;
     }
 
-    // Format sections with proper IDs and default values
-    const formattedSections = sections.map((section: any, i: number) => ({
-      id: section.id || `section-${i + 1}`,
-      title: section.title || `Section ${i + 1}`,
-      summary: section.summary || '',
-      topics: section.topics || [],
-      chunkIds: [], // Will be populated later
-      chunkCount: Math.floor(file.chunks.length / sections.length),
-      startPage: section.startPage || i * 10 + 1,
-      endPage: section.endPage || (i + 1) * 10,
+    // Format sections with chunk distribution
+    const formattedSections = outlineResult.sections.map((section, _i) => ({
+      ...section,
+      chunkIds: [], // Will be populated later if needed
+      chunkCount: Math.floor(file.chunks.length / outlineResult.sections.length)
     }));
 
     // Return JSON response
     res.json({
       fileId,
       sections: formattedSections,
-      generatedAt: new Date(),
+      generatedAt: outlineResult.generatedAt,
+      processingTime: outlineResult.processingTime,
+      tokensUsed: outlineResult.tokensUsed
     });
   } catch (error) {
     logger.error('[Learn Outline] Error generating outline:', error);
