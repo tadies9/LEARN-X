@@ -15,17 +15,49 @@ export const API_CLIENT = axios.create({
 API_CLIENT.interceptors.request.use(async (config) => {
   try {
     const supabase = createClient();
-    const {
+
+    // First try to get the current session
+    let {
       data: { session },
       error,
     } = await supabase.auth.getSession();
 
+    // If no session or error, try to refresh the session
+    if (!session || error) {
+      const refreshResult = await supabase.auth.refreshSession();
+      session = refreshResult.data.session;
+      error = refreshResult.error;
+
+      if (process.env.NODE_ENV === 'development' && refreshResult.data.session) {
+        console.log('Session refreshed successfully');
+      }
+    }
+
     if (error) {
-      console.warn('Error getting session:', error);
+      console.warn('Error getting/refreshing session:', error);
     }
 
     if (session?.access_token) {
       config.headers.Authorization = `Bearer ${session.access_token}`;
+
+      // Debug logging in development
+      if (process.env.NODE_ENV === 'development') {
+        console.log('API Request:', {
+          method: config.method?.toUpperCase(),
+          url: config.url,
+          hasAuth: true,
+          tokenPreview: `${session.access_token.substring(0, 20)}...`,
+        });
+      }
+    } else {
+      // Debug logging when no token
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('API Request without auth token:', {
+          method: config.method?.toUpperCase(),
+          url: config.url,
+          hasSession: !!session,
+        });
+      }
     }
   } catch (error) {
     console.warn('Failed to get authentication token:', error);
@@ -51,7 +83,8 @@ API_CLIENT.interceptors.response.use(
     if (error.response?.status === 401) {
       // Unauthorized request - redirecting to login
       // Redirect to login on unauthorized (only on client side)
-      if (typeof window !== 'undefined') {
+      // Skip redirect for DELETE requests to allow retry logic
+      if (typeof window !== 'undefined' && error.config?.method !== 'delete') {
         window.location.href = '/login';
       }
     } else if (error.code === 'ERR_NETWORK') {

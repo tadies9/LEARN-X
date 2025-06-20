@@ -79,6 +79,17 @@ export abstract class BaseApiService {
 
   protected async delete(id: string, endpoint?: string): Promise<boolean> {
     const url = endpoint || `${this.baseEndpoint}/${id}`;
+
+    // Debug logging for DELETE requests
+    if (process.env.NODE_ENV === 'development') {
+      console.log('DELETE request details:', {
+        url,
+        endpoint: this.baseEndpoint,
+        id,
+        fullUrl: url,
+      });
+    }
+
     const response = await this.client.delete<ApiResponse<boolean>>(url);
     return response.data.success;
   }

@@ -147,6 +147,49 @@ export class FileProcessingQueue {
   }
 
   /**
+   * Adds generation tasks for batch content generation
+   */
+  async addGenerationTasks(
+    tasks: Array<{
+      jobId: string;
+      fileId: string;
+      outputType: string;
+      userId: string;
+      courseId: string;
+      options?: Record<string, any>;
+    }>
+  ): Promise<bigint[]> {
+    try {
+      const payloads = tasks.map((task) => ({
+        file_id: task.fileId,
+        user_id: task.userId,
+        job_type: 'generate_content',
+        processing_options: {
+          jobId: task.jobId,
+          outputType: task.outputType,
+          courseId: task.courseId,
+          ...task.options,
+          priority: mapPriorityToInteger('high'), // High priority for user-facing generation
+        },
+        queued_at: new Date().toISOString(),
+        retry_count: 0,
+      }));
+
+      const msgIds = await this.client.sendBatch(this.queueName, payloads);
+
+      logger.info(`[FileProcessingQueue] Enqueued generation tasks: ${tasks.length}`, {
+        jobId: tasks[0]?.jobId,
+        msgIds: msgIds.map((id) => id.toString()),
+      });
+
+      return msgIds;
+    } catch (error) {
+      logger.error('[FileProcessingQueue] Failed to enqueue generation tasks:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Stops the queue processing
    */
   async stop(): Promise<void> {

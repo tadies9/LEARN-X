@@ -116,7 +116,7 @@ export function CourseCard({ course, onUpdate }: CourseCardProps) {
         <div className="flex items-start justify-between">
           <div className="space-y-1">
             <CardTitle className="line-clamp-2">
-              <Link href={`/courses/${course.id}`} className="hover:underline">
+              <Link href={`/courses/${course.id}/workspace`} className="hover:underline">
                 {course.title}
               </Link>
             </CardTitle>
@@ -174,7 +174,7 @@ export function CourseCard({ course, onUpdate }: CourseCardProps) {
         </div>
       </CardContent>
 
-      <CardFooter>
+      <CardFooter className="pt-auto">
         <div className="flex items-center justify-between w-full">
           <p className="text-sm text-muted-foreground">
             Updated{' '}
@@ -182,7 +182,15 @@ export function CourseCard({ course, onUpdate }: CourseCardProps) {
               ? formatDistanceToNow(new Date(course.updatedAt), { addSuffix: true })
               : 'recently'}
           </p>
-          {course.isArchived && <Badge variant="secondary">Archived</Badge>}
+          <div className="flex items-center gap-2">
+            {course.isArchived && <Badge variant="secondary">Archived</Badge>}
+            <Button asChild size="sm" variant="default">
+              <Link href={`/courses/${course.id}/workspace`}>
+                <BookOpen className="mr-2 h-4 w-4" />
+                Open
+              </Link>
+            </Button>
+          </div>
         </div>
       </CardFooter>
     </Card>

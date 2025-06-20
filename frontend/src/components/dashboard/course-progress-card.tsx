@@ -12,6 +12,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import Image from 'next/image';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface CourseProgressCardProps {
   course: {
@@ -29,9 +31,14 @@ interface CourseProgressCardProps {
 }
 
 export function CourseProgressCard({ course }: CourseProgressCardProps) {
+  const router = useRouter();
+
   return (
     <motion.div whileHover={{ y: -5 }} transition={{ duration: 0.2 }}>
-      <Card className="overflow-hidden hover:shadow-lg transition-shadow">
+      <Card
+        className="overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+        onClick={() => router.push(`/courses/${course.id}/workspace`)}
+      >
         {/* Thumbnail */}
         <div className="relative h-48 bg-gradient-to-br from-primary/20 to-primary/5">
           {course.thumbnail ? (
@@ -57,15 +64,24 @@ export function CourseProgressCard({ course }: CourseProgressCardProps) {
         {/* Content */}
         <div className="p-6">
           <div className="flex items-start justify-between mb-2">
-            <h3 className="font-semibold text-lg line-clamp-1">{course.title}</h3>
+            <Link href={`/courses/${course.id}/workspace`} className="hover:underline flex-1">
+              <h3 className="font-semibold text-lg line-clamp-1">{course.title}</h3>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={(e) => e.stopPropagation()}
+                >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>View Details</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push(`/courses/${course.id}/workspace`)}>
+                  View Details
+                </DropdownMenuItem>
                 <DropdownMenuItem>Download Resources</DropdownMenuItem>
                 <DropdownMenuItem>Share Progress</DropdownMenuItem>
               </DropdownMenuContent>
@@ -88,7 +104,14 @@ export function CourseProgressCard({ course }: CourseProgressCardProps) {
 
           {/* Action */}
           {course.nextLesson && (
-            <Button className="w-full" size="sm">
+            <Button
+              className="w-full"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                router.push(`/courses/${course.id}/workspace`);
+              }}
+            >
               <PlayCircle className="h-4 w-4 mr-2" />
               Continue: {course.nextLesson}
             </Button>

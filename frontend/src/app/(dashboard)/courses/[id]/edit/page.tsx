@@ -114,7 +114,7 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
       <div className="max-w-3xl mx-auto">
         <div className="mb-6">
           <Link
-            href={`/courses/${params.id}`}
+            href={`/courses/${params.id}/workspace`}
             className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />

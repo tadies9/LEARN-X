@@ -131,12 +131,13 @@ export function CourseHeader({ course, onUpdate }: CourseHeaderProps) {
                   Edit
                 </Link>
               </Button>
+              {/* Settings page not yet implemented
               <Button variant="outline" asChild>
                 <Link href={`/courses/${course.id}/settings`}>
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
                 </Link>
-              </Button>
+              </Button> */}
               <Button variant="outline" onClick={handleArchive}>
                 <Archive className="mr-2 h-4 w-4" />
                 {course.isArchived ? 'Unarchive' : 'Archive'}

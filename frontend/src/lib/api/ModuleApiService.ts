@@ -53,8 +53,28 @@ class ModuleApiService extends BaseApiService {
 
   // Get module files
   async getModuleFiles(moduleId: string) {
-    // Temporary: Use working test endpoint
-    return this.customRequest<CourseFile[]>('get', `/test-module-files/${moduleId}`);
+    return this.customRequest<CourseFile[]>('get', `/modules/${moduleId}/files`);
+  }
+
+  // Get modules with their files
+  async getModulesWithFiles(courseId: string) {
+    const modulesResponse = await this.getModules(courseId);
+    const modules = Array.isArray(modulesResponse) ? modulesResponse : modulesResponse.data || [];
+
+    // Fetch files for each module in parallel
+    const modulesWithFiles = await Promise.all(
+      modules.map(async (module) => {
+        try {
+          const files = await this.getModuleFiles(module.id);
+          return { ...module, files };
+        } catch (error) {
+          console.warn(`Failed to fetch files for module ${module.id}:`, error);
+          return { ...module, files: [] };
+        }
+      })
+    );
+
+    return modulesWithFiles;
   }
 }
 
@@ -71,4 +91,5 @@ export const moduleApi = {
   unpublishModule: moduleApiService.unpublishModule.bind(moduleApiService),
   reorderModules: moduleApiService.reorderModules.bind(moduleApiService),
   getModuleFiles: moduleApiService.getModuleFiles.bind(moduleApiService),
+  getModulesWithFiles: moduleApiService.getModulesWithFiles.bind(moduleApiService),
 };

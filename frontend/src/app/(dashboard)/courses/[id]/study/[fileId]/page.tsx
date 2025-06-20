@@ -123,7 +123,13 @@ export default async function StudyPage({ params }: StudyPageProps) {
   let fileUrl = '';
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/files/${params.fileId}/working-signed-url`
+      `${process.env.NEXT_PUBLIC_API_URL}/files/${params.fileId}/signed-url`,
+      {
+        headers: {
+          Authorization: `Bearer ${user.id}`,
+          'Content-Type': 'application/json',
+        },
+      }
     );
     if (response.ok) {
       const data = await response.json();

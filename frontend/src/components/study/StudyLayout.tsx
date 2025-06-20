@@ -201,7 +201,7 @@ export function StudyLayout({
       {/* Header */}
       <div className="flex items-center justify-between border-b px-4 py-2">
         <div className="flex items-center gap-4">
-          <Link href={`/courses/${courseId}`}>
+          <Link href={`/courses/${courseId}/workspace`}>
             <Button variant="ghost" size="sm">
               <ChevronLeft className="mr-1 h-4 w-4" />
               Back to Course

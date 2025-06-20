@@ -23,16 +23,26 @@ export function useModuleDetail({ courseId, moduleId }: UseModuleDetailProps) {
 
   const loadData = async (): Promise<void> => {
     try {
+      console.log('Loading module data for:', { courseId, moduleId });
+
       const [courseData, moduleData, filesData] = await Promise.all([
         courseApi.getCourse(courseId),
         moduleApi.getModule(moduleId),
         fileApi.getModuleFiles(moduleId),
       ]);
 
+      console.log('Module data loaded:', {
+        course: courseData,
+        module: moduleData,
+        filesCount: filesData.length,
+        files: filesData,
+      });
+
       setCourse(courseData);
       setModule(moduleData);
       setFiles(filesData);
     } catch (error) {
+      console.error('Error loading module data:', error);
       toast({
         title: 'Error',
         description: 'Failed to load module data.',

@@ -11,7 +11,7 @@ export function ModuleBreadcrumb({ courseId, courseTitle }: ModuleBreadcrumbProp
   return (
     <div className="mb-6">
       <Link
-        href={`/courses/${courseId}`}
+        href={`/courses/${courseId}/workspace`}
         className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="mr-2 h-4 w-4" />

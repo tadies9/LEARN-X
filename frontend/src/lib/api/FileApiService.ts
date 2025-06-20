@@ -11,7 +11,14 @@ class FileApiService extends BaseApiService {
 
   // Get files for a module
   async getModuleFiles(moduleId: string) {
-    return this.customRequest<CourseFile[]>('get', `/modules/${moduleId}/files`);
+    console.log('FileApiService.getModuleFiles called with moduleId:', moduleId);
+    const response = await this.customRequest<CourseFile[]>('get', `/modules/${moduleId}/files`);
+    console.log('FileApiService.getModuleFiles response:', {
+      moduleId,
+      filesCount: response.length,
+      files: response,
+    });
+    return response;
   }
 
   // Get single file
@@ -45,7 +52,7 @@ class FileApiService extends BaseApiService {
   async getSignedUrl(fileId: string) {
     const response = await this.customRequest<{ success: boolean; data: { url: string } }>(
       'get',
-      `/files/${fileId}/working-signed-url`
+      `/files/${fileId}/signed-url`
     );
     return response.data.url;
   }
