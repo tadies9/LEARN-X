@@ -156,6 +156,7 @@ export class FileProcessingQueue {
       outputType: string;
       userId: string;
       courseId: string;
+      personaId?: string;
       options?: Record<string, any>;
     }>
   ): Promise<bigint[]> {
@@ -168,6 +169,7 @@ export class FileProcessingQueue {
           jobId: task.jobId,
           outputType: task.outputType,
           courseId: task.courseId,
+          personaId: task.personaId,
           ...task.options,
           priority: mapPriorityToInteger('high'), // High priority for user-facing generation
         },

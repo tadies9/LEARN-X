@@ -14,6 +14,7 @@ interface GenerationJobData {
   fileIds: string[];
   outputTypes: string[];
   courseId: string;
+  personaId?: string;
   options: Record<string, any>;
 }
 
@@ -48,6 +49,7 @@ export class GenerateService {
         course_id: data.courseId,
         file_ids: data.fileIds,
         output_types: data.outputTypes,
+        persona_id: data.personaId,
         options: data.options,
         status: 'pending',
         progress: 0,
@@ -86,6 +88,7 @@ export class GenerateService {
           outputType,
           userId: data.userId,
           courseId: data.courseId,
+          personaId: data.personaId,
           options: data.options,
         });
       }

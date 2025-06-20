@@ -32,6 +32,7 @@ import { EditModuleDialog } from './EditModuleDialog';
 import { ModuleMenu } from './ModuleMenu';
 import type { Module, CourseFile } from '@/lib/types/course';
 import { fileApi } from '@/lib/api/file';
+import { usePersona } from '@/hooks/usePersona';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,6 +59,7 @@ export function CourseWorkspace({
 }: CourseWorkspaceProps) {
   const { toast } = useToast();
   const router = useRouter();
+  const { persona } = usePersona();
   const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeJobs, setActiveJobs] = useState<Map<string, any>>(new Map());
@@ -173,6 +175,7 @@ export function CourseWorkspace({
           file_ids: [file.id],
           output_types: [action],
           course_id: courseId,
+          persona_id: persona?.id,
         }),
       });
 
@@ -243,6 +246,7 @@ export function CourseWorkspace({
           file_ids: Array.from(selectedFiles),
           output_types: ['flashcards', 'summary'],
           course_id: courseId,
+          persona_id: persona?.id,
         }),
       });
 

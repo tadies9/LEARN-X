@@ -21,7 +21,7 @@ export class GenerateController {
   generateContent = async (req: Request, res: Response): Promise<void> => {
     try {
       const userId = req.user!.id;
-      const { file_ids, output_types, course_id, options } = req.body;
+      const { file_ids, output_types, course_id, persona_id, options } = req.body;
 
       logger.info('[GenerateController] Starting content generation', {
         userId,
@@ -35,6 +35,7 @@ export class GenerateController {
         fileIds: file_ids,
         outputTypes: output_types,
         courseId: course_id,
+        personaId: persona_id,
         options: options || {},
       });
 

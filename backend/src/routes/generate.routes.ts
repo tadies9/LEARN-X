@@ -20,6 +20,7 @@ const generateSchema = z.object({
   file_ids: z.array(z.string().uuid()).min(1).max(10),
   output_types: z.array(z.enum(['flashcards', 'summary', 'quiz', 'outline'])),
   course_id: z.string().uuid(),
+  persona_id: z.string().uuid().optional(),
   options: z
     .object({
       flashcard_count: z.number().min(5).max(50).optional(),
