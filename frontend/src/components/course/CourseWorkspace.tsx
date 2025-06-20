@@ -168,7 +168,7 @@ export function CourseWorkspace({
 
     try {
       // Call the API to generate content
-      const response = await fetch('/api/generate', {
+      const response = await fetch('/api/v1/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -239,7 +239,7 @@ export function CourseWorkspace({
     );
 
     try {
-      const response = await fetch('/api/generate', {
+      const response = await fetch('/api/v1/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

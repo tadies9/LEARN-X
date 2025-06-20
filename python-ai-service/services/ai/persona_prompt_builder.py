@@ -174,16 +174,24 @@ class PersonaPromptBuilder:
         
         # Build the complete prompt
         prompt_parts = [
-            f"You are creating {output_type.value} content for the following learner profile:",
+            f"You are a master storyteller creating deeply personalized {output_type.value} content.",
             "",
+            "LEARNER PROFILE:",
             persona_desc,
             "",
             "LEARNING STYLE EMPHASIS:",
             learning_emphasis,
             "",
-            "CONTENT TO PROCESS:",
+            "STORYTELLING APPROACH:",
+            f"Create content that feels like it was written by a mentor who deeply understands this learner.",
+            f"Use narratives, analogies, and examples specifically from their world: {persona_context.industry or 'their field'}.",
+            f"Connect to their interests: {', '.join(persona_context.interests[:3]) if persona_context.interests else 'their passions'}.",
+            f"Relate everything to their journey toward: {', '.join(persona_context.goals[:2]) if persona_context.goals else 'their aspirations'}.",
+            "",
+            "CONTENT TO TRANSFORM INTO A PERSONAL NARRATIVE:",
             content_context,
             "",
+            "CREATION GUIDELINES:",
             template,
         ]
         
@@ -198,7 +206,9 @@ class PersonaPromptBuilder:
         # Add output format reminder
         prompt_parts.extend([
             "",
-            f"Generate the {output_type.value} following the learner's preferences and style."
+            f"Transform this technical content into a compelling personal narrative that will resonate deeply with this specific learner.",
+            f"Make them feel seen, understood, and excited about their learning journey.",
+            f"Every sentence should feel like it was written specifically for them."
         ])
         
         return "\n".join(prompt_parts)
@@ -237,12 +247,21 @@ class PersonaPromptBuilder:
         """Initialize output-specific prompt templates"""
         return {
             OutputType.EXPLAIN: """
-Create a detailed explanation that:
-1. Matches the learner's technical level and background
-2. Uses appropriate terminology and examples
-3. Follows their preferred communication style
-4. Includes relevant industry examples if applicable
-5. Emphasizes concepts based on their learning style""",
+Create a deeply personalized, narrative-driven explanation that:
+1. Opens with a relatable story or analogy from the learner's industry/interests
+2. Weaves technical concepts through personal narratives and real-world scenarios
+3. Uses emotional engagement and storytelling to make complex ideas memorable
+4. Incorporates specific examples from their professional context and aspirations
+5. Creates "aha moments" by connecting abstract concepts to their daily experiences
+6. Uses metaphors and analogies that resonate with their interests and background
+7. Maintains a conversational, engaging tone throughout
+8. Builds understanding through a journey, not just facts
+9. Relates everything back to their career goals and personal growth
+10. Makes them feel like the content was written specifically for them
+
+The explanation should feel like a personal mentor sharing wisdom, not a textbook.
+Use storytelling techniques, personal anecdotes (hypothetical but relatable), and 
+create an emotional connection to the material.""",
             
             OutputType.FLASHCARDS: """
 Create flashcards that:
@@ -296,11 +315,20 @@ Create a structured outline that:
     def _initialize_learning_styles(self) -> Dict[str, str]:
         """Initialize learning style emphasis guidelines"""
         return {
-            'visual': "Use diagrams, charts, and visual metaphors. Structure with clear visual hierarchy.",
-            'auditory': "Use conversational tone, rhythmic patterns, and mnemonic devices.",
-            'reading': "Provide detailed written explanations with comprehensive text coverage.",
-            'kinesthetic': "Include hands-on examples, step-by-step actions, and practical applications.",
-            'mixed': "Balance visual, textual, and practical elements for comprehensive understanding."
+            'visual': """Paint vivid pictures with words. Create mental images through rich descriptions and visual metaphors. 
+Use storytelling that helps them 'see' the concepts. Structure content like a visual journey with clear landmarks.""",
+            
+            'auditory': """Write as if you're having a personal conversation. Use rhythm, repetition, and memorable phrases. 
+Include dialogue, quotes, and conversational examples. Make it feel like a mentor speaking directly to them.""",
+            
+            'reading': """Craft rich, detailed narratives with depth and nuance. Use eloquent language and comprehensive storytelling. 
+Build understanding through well-crafted prose that engages their love of reading.""",
+            
+            'kinesthetic': """Create action-oriented narratives. Use examples where they can imagine themselves doing things. 
+Include stories of hands-on experiences and practical applications. Make them feel the concepts through active scenarios.""",
+            
+            'mixed': """Blend all storytelling techniques - paint pictures, create conversations, craft narratives, and include action. 
+Use varied approaches to create a rich, multi-dimensional learning experience."""
         }
 
 

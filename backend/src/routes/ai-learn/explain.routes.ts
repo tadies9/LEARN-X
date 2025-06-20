@@ -61,18 +61,17 @@ async function getUserPersona(userId: string) {
     return null;
   }
 
+  // Return the raw persona data with all 5 dimensions for PersonaPromptBuilder
   return {
     id: persona.id,
-    userId: persona.user_id,
-    currentRole: persona.professional_context?.role,
-    industry: persona.professional_context?.industry,
-    technicalLevel: persona.professional_context?.technicalLevel,
-    primaryInterests: persona.personal_interests?.primary || [],
-    secondaryInterests: persona.personal_interests?.secondary || [],
-    learningStyle: persona.learning_style?.primary,
-    communicationTone: persona.communication_tone?.style,
-    createdAt: new Date(persona.created_at),
-    updatedAt: new Date(persona.updated_at),
+    user_id: persona.user_id,
+    professional_context: persona.professional_context || {},
+    personal_interests: persona.personal_interests || {},
+    learning_style: persona.learning_style || {},
+    content_preferences: persona.content_preferences || {},
+    communication_tone: persona.communication_tone || {},
+    created_at: persona.created_at,
+    updated_at: persona.updated_at,
   };
 }
 
@@ -116,6 +115,10 @@ router.post(
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
+      
+      // Flush headers immediately
+      res.flushHeaders();
 
       // Check cache first with personalized key
       const cacheOptions = generateCacheOptions(fileId, topicId, subtopic || '', mode || 'explain', userId);
@@ -156,9 +159,11 @@ router.post(
 
       logger.info('[AI Learn Explain] User persona loaded:', {
         userId,
-        role: persona.currentRole,
-        industry: persona.industry,
-        learningStyle: persona.learningStyle,
+        professionalContext: persona.professional_context,
+        learningStyle: persona.learning_style?.primary,
+        communicationTone: persona.communication_tone?.style,
+        contentDensity: persona.content_preferences?.density,
+        primaryInterests: persona.personal_interests?.primary,
       });
 
       // Prepare content from chunks
@@ -234,6 +239,10 @@ router.post(
           }
           
           sendSSE(res, 'message', { type: 'content', data: formattedContent });
+          
+          // Force flush to send immediately
+          // @ts-expect-error - flush might not be in types
+          if ((res as any).flush) (res as any).flush();
         }
 
         if (chunk.done) {
@@ -311,6 +320,10 @@ router.post(
       res.setHeader('Content-Type', 'text/event-stream');
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
+      res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
+      
+      // Flush headers immediately
+      res.flushHeaders();
 
       sendSSE(res, 'message', { 
         type: 'regeneration-start', 
@@ -366,6 +379,10 @@ router.post(
         if (chunk.content) {
           newContent += chunk.content;
           sendSSE(res, 'message', { type: 'content', data: chunk.content });
+          
+          // Force flush to send immediately
+          // @ts-expect-error - flush might not be in types
+          if ((res as any).flush) (res as any).flush();
         }
 
         if (chunk.done) {

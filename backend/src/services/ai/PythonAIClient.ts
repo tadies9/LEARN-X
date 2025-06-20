@@ -5,7 +5,7 @@
 
 import { logger } from '../../utils/logger';
 // Removed unused import '../../types/ai';
-import { UserPersona } from '../../types/persona';
+import { UserPersona, PersonaRow } from '../../types/persona';
 
 export interface PythonAIConfig {
   baseUrl: string;
@@ -26,7 +26,7 @@ export interface ContentGenerationRequest {
     | 'practice';
   topic?: string;
   difficulty: 'beginner' | 'intermediate' | 'advanced';
-  persona?: UserPersona;
+  persona?: UserPersona | PersonaRow | any; // Allow flexible persona types for PersonaPromptBuilder
   model?: string;
   temperature?: number;
   max_tokens?: number;

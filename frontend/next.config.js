@@ -155,6 +155,15 @@ const nextConfig = {
   // Rewrites configuration
   async rewrites() {
     return [
+      // Proxy API requests to backend
+      {
+        source: '/api/v1/:path*',
+        destination: 'http://localhost:8080/api/v1/:path*',
+      },
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:8080/api/:path*',
+      },
       {
         source: '/_next/webpack-hmr',
         destination: 'http://localhost:3000/_next/webpack-hmr',

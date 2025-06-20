@@ -59,12 +59,12 @@ router.get('/migration-info', (_req: Request, res: Response) => {
     status: 'migrated',
     message: 'AI Learn routes have been migrated to Python AI service',
     newEndpoints: {
-      outline: '/ai-learn/outline/generate-outline',
-      explain: '/ai-learn/explain/stream',
-      feedback: '/ai-learn/feedback',
-      batch: '/ai-learn/batch',
-      stats: '/ai-learn/stats/costs',
-      health: '/ai-learn/health'
+      outline: '/outline/generate-outline',
+      explain: '/explain/stream',
+      feedback: '/feedback',
+      batch: '/batch',
+      stats: '/stats/costs',
+      health: '/health'
     },
     features: [
       'Python AI service integration',

@@ -279,11 +279,10 @@ class PGMQClient:
         """
         try:
             async with self.pool.acquire() as conn:
-                # Cast msg_id to BIGINT for PGMQ compatibility
                 result = await conn.fetchval(
-                    "SELECT pgmq.delete($1, $2::BIGINT)",
+                    "SELECT pgmq.delete($1, $2)",
                     queue_name,
-                    int(msg_id)
+                    msg_id
                 )
                 
                 logger.debug(

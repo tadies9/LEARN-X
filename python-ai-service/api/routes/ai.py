@@ -1018,19 +1018,62 @@ async def invalidate_cache(
 
 def _build_content_messages(request: ContentGenerationRequest) -> List[Message]:
     """Build messages for content generation based on type"""
-    system_prompt = _get_system_prompt(request.content_type, request.difficulty)
+    # Use PersonaPromptBuilder for personalized content generation
+    from services.ai.persona_prompt_builder import PersonaPromptBuilder
     
-    # Add persona information if provided
+    logger.info(f"Building content messages with persona: {bool(request.persona)}")
     if request.persona:
-        persona_info = _format_persona(request.persona)
-        system_prompt += f"\n\nUser Profile:\n{persona_info}"
+        logger.info(f"Persona data keys: {list(request.persona.keys())}")
     
-    user_prompt = _get_user_prompt(request)
+    # Convert content to chunks format
+    chunks = [request.content]
     
-    return [
-        Message(role="system", content=system_prompt),
-        Message(role="user", content=user_prompt)
-    ]
+    # Use PersonaPromptBuilder if persona is provided
+    if request.persona:
+        prompt_builder = PersonaPromptBuilder()
+        
+        # Convert persona to the format expected by PersonaPromptBuilder
+        persona_data = {
+            'professional_context': request.persona.get('professional_context', {}),
+            'personal_interests': request.persona.get('personal_interests', {}),
+            'learning_style': request.persona.get('learning_style', {}),
+            'content_preferences': request.persona.get('content_preferences', {}),
+            'communication_tone': request.persona.get('communication_tone', {})
+        }
+        
+        # Map content_type to PersonaPromptBuilder output types
+        output_type_map = {
+            'explanation': 'explain',
+            'summary': 'summary',
+            'quiz': 'quiz',
+            'flashcards': 'flashcards',
+            'outline': 'outline',
+            'examples': 'examples',
+            'practice': 'practice'
+        }
+        output_type = output_type_map.get(request.content_type, 'explain')
+        
+        # Build the personalized prompt
+        user_prompt = prompt_builder.build_prompt(
+            chunks=chunks,
+            output_type=output_type,
+            persona_data=persona_data,
+            additional_context={'topic': request.topic, 'difficulty': request.difficulty}
+        )
+        
+        logger.info(f"Generated personalized prompt (first 500 chars): {user_prompt[:500]}...")
+        
+        # For explanations, we don't need a system prompt as it's included in the prompt
+        return [Message(role="user", content=user_prompt)]
+    else:
+        # Fallback to basic prompts if no persona
+        system_prompt = _get_system_prompt(request.content_type, request.difficulty)
+        user_prompt = _get_user_prompt(request)
+        
+        return [
+            Message(role="system", content=system_prompt),
+            Message(role="user", content=user_prompt)
+        ]
 
 
 def _get_system_prompt(content_type: str, difficulty: str) -> str:

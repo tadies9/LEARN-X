@@ -12,7 +12,7 @@ const router = Router();
 /**
  * Test Sentry error reporting
  */
-router.get('/sentry-error', (req, res) => {
+router.get('/sentry-error', (_req, res) => {
   logger.info('Testing Sentry error reporting');
   
   // Create a test error
@@ -50,9 +50,9 @@ router.get('/unhandled-error', () => {
 /**
  * Test async error
  */
-router.get('/async-error', async (req, res, next) => {
+router.get('/async-error', async (_req, _res, next) => {
   try {
-    await new Promise((resolve, reject) => {
+    await new Promise((_resolve, reject) => {
       setTimeout(() => {
         reject(new Error('Async test error from LEARN-X Backend'));
       }, 100);

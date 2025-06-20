@@ -25,6 +25,7 @@ export function useContentStream() {
       // Get auth token from localStorage
       const token = localStorage.getItem('auth_token');
 
+      console.log('[useContentStream v2] Fetching /api/v1/learn/explain/stream');
       const response = await fetch('/api/v1/learn/explain/stream', {
         method: 'POST',
         headers: {
