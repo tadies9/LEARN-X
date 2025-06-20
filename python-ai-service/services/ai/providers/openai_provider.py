@@ -3,7 +3,12 @@ import asyncio
 from typing import AsyncIterator, Dict, List, Optional, Union, Any
 import openai
 from openai import AsyncOpenAI
-import tiktoken
+try:
+    import tiktoken
+    TIKTOKEN_AVAILABLE = True
+except ImportError:
+    TIKTOKEN_AVAILABLE = False
+    tiktoken = None
 from structlog import get_logger
 
 from .base import (
@@ -61,7 +66,7 @@ class OpenAIProvider(AIProvider):
     def __init__(self, config: ProviderConfig):
         super().__init__(config)
         self.client: Optional[AsyncOpenAI] = None
-        self._tokenizers: Dict[str, tiktoken.Encoding] = {}
+        self._tokenizers: Dict[str, Any] = {}
     
     async def initialize(self) -> None:
         """Initialize OpenAI client"""
@@ -233,6 +238,11 @@ class OpenAIProvider(AIProvider):
     
     async def count_tokens(self, text: str, model: AIModel) -> int:
         """Count tokens for the given text and model"""
+        if not TIKTOKEN_AVAILABLE:
+            # Fallback when tiktoken is not available
+            # Rough approximation: 1 token ≈ 4 characters for English text
+            return len(text) // 4 + 1
+            
         encoding_name = self._get_encoding_name(model)
         
         if encoding_name not in self._tokenizers:

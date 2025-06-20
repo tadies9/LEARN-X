@@ -241,6 +241,16 @@ class PGMQClient:
             )
             # Return empty list instead of raising to allow retry
             return []
+        except asyncpg.exceptions.InvalidSQLStatementNameError as e:
+            # Circuit breaker for prepared statement errors - PgBouncer issue
+            logger.error(
+                "Invalid prepared statement - PgBouncer dropped session state",
+                queue=queue_name,
+                error=str(e),
+                error_type=type(e).__name__
+            )
+            # Return empty list to avoid retry loop
+            return []
         except Exception as e:
             logger.error(
                 "Failed to read with poll",
@@ -250,6 +260,9 @@ class PGMQClient:
             )
             # Return empty list for non-critical errors to allow continuation
             if "timeout" in str(e).lower() or "connection" in str(e).lower():
+                return []
+            # Also handle prepared statement errors in general exception
+            if "prepared statement" in str(e).lower():
                 return []
             raise
     

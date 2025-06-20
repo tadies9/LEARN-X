@@ -15,6 +15,10 @@ logger = get_logger(__name__)
 
 async def check_database_connection():
     """Check if database is available"""
+    if not settings.database_url:
+        logger.warning("No database URL configured")
+        return False
+        
     try:
         # Try to connect to database
         conn = await asyncpg.connect(
@@ -30,30 +34,17 @@ async def check_database_connection():
 
 async def main():
     """Main startup logic"""
-    db_available = await check_database_connection()
+    logger.info("Starting Python AI Service")
     
-    if db_available:
-        logger.info("Database is available, starting full application")
-        # Import and run the full app
-        import uvicorn
-        uvicorn.run(
-            "app.main:app",
-            host="0.0.0.0",
-            port=8001,
-            reload=settings.is_development,
-            log_level=settings.log_level.value.lower()
-        )
-    else:
-        logger.warning("Database is not available, starting minimal application")
-        # Import and run the minimal app
-        import uvicorn
-        uvicorn.run(
-            "app.main_minimal:app",
-            host="0.0.0.0",
-            port=8001,
-            reload=settings.is_development,
-            log_level=settings.log_level.value.lower()
-        )
+    # Just start the main app - it will handle missing database gracefully
+    import uvicorn
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8001,
+        reload=settings.is_development,
+        log_level=settings.log_level.value.lower()
+    )
 
 
 if __name__ == "__main__":

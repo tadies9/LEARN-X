@@ -40,29 +40,32 @@ async def lifespan(app: FastAPI):
     # Initialize database pool
     global db_pool, pgmq_client, job_processor
     
-    try:
-        db_pool = await asyncpg.create_pool(
-            settings.database_url,
-            min_size=settings.database_pool_size,
-            max_size=settings.database_pool_size + settings.database_max_overflow,
-            command_timeout=60
-        )
-        logger.info("Database pool created")
-        
-        # Initialize PGMQ client
-        pgmq_client = PGMQClient(db_pool)
-        logger.info("PGMQ client initialized")
-        
-        # Initialize job processor
-        job_processor = JobProcessor(pgmq_client, db_pool)
-        
-        # Start processing queues
-        asyncio.create_task(job_processor.start())
-        logger.info("Job processor started")
-        
-    except Exception as e:
-        logger.error("Failed to initialize services", error=str(e))
-        raise
+    if settings.database_url:
+        try:
+            db_pool = await asyncpg.create_pool(
+                settings.database_url,
+                min_size=settings.database_pool_size,
+                max_size=settings.database_pool_size + settings.database_max_overflow,
+                command_timeout=60,
+                statement_cache_size=0  # Disable prepared statements to fix pooling issues
+            )
+            logger.info("Database pool created")
+            
+            # Initialize PGMQ client
+            pgmq_client = PGMQClient(db_pool)
+            logger.info("PGMQ client initialized")
+            
+            # Initialize job processor
+            job_processor = JobProcessor(pgmq_client, db_pool)
+            
+            # Start processing queues
+            asyncio.create_task(job_processor.start())
+            logger.info("Job processor started")
+            
+        except Exception as e:
+            logger.warning("Failed to initialize database services, continuing without queue processing", error=str(e))
+    else:
+        logger.warning("No database URL provided, running without queue processing")
     
     yield
     
@@ -116,9 +119,10 @@ if settings.enable_metrics:
 app.include_router(health.router, prefix=settings.api_prefix, tags=["health"])
 app.include_router(ai.router, prefix=f"{settings.api_prefix}/ai", tags=["ai"])
 
-# Debug routes disabled for now - need to create debug.py
-# if settings.debug:
-#     app.include_router(debug.router, prefix=settings.api_prefix, tags=["debug"])
+# Test routes - only in non-production
+if not settings.is_production:
+    from api.routes import test
+    app.include_router(test.router, prefix=f"{settings.api_prefix}/test", tags=["test"])
 
 
 # Middleware for request logging

@@ -26,6 +26,10 @@
         "--access-token",
         "sbp_63acd536123d6d5ae4c30b3b93c068ae3fe15ee7"
       ]
+    },
+    "sentry": {
+      "command": "npx",
+      "args": ["mcp-remote@latest", "https://mcp.sentry.dev/sse"]
     }
   }
 }

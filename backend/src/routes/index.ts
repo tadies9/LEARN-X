@@ -16,8 +16,9 @@ import savedContentRoutes from './savedContentRoutes';
 import { healthRoutes } from './healthRoutes';
 import dashboardRoutes from './dashboard';
 import adminRoutes from './admin';
-import vectorOptimizationRoutes from './vectorOptimization';
+// import vectorOptimizationRoutes from './vectorOptimization'; // Disabled - using Python AI service
 import { requireAdmin } from '../middleware/adminAuth';
+import testRoutes from './test';
 
 const router = Router();
 
@@ -70,11 +71,16 @@ router.use('/learn', aiLearnRoutes); // AI learning routes with advanced persona
 router.use('/sessions', sessionRoutes);
 router.use('/search', searchRoutes); // Vector search routes
 router.use('/saved', savedContentRoutes); // Saved content routes
-router.use('/vector-optimization', vectorOptimizationRoutes); // Vector optimization and monitoring routes
+// router.use('/vector-optimization', vectorOptimizationRoutes); // Disabled - using Python AI service
 router.use('/dashboard', dashboardRoutes); // Dashboard statistics and activity routes
 router.use('/admin', requireAdmin, adminRoutes); // Admin routes with authentication
 router.use('/', healthRoutes); // Health and monitoring routes
 router.use('/', fileRoutes); // File routes are mixed between /files and /modules - mount last
+
+// Test routes - only in development
+if (process.env.NODE_ENV !== 'production') {
+  router.use('/test', testRoutes);
+}
 
 // API info
 router.get('/', (_, res) => {
@@ -90,7 +96,7 @@ router.get('/', (_, res) => {
       files: '/files',
       learn: '/learn',
       dashboard: '/dashboard',
-      vectorOptimization: '/vector-optimization',
+      // vectorOptimization: '/vector-optimization', // Disabled - using Python AI service
       admin: '/admin (requires admin role)',
       health: '/health',
     },

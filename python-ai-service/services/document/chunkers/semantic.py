@@ -3,7 +3,12 @@ Semantic text chunking using spaCy.
 Provides intelligent NLP-based chunking.
 """
 
-import spacy
+try:
+    import spacy
+    SPACY_AVAILABLE = True
+except ImportError:
+    SPACY_AVAILABLE = False
+    spacy = None
 from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 import re
@@ -36,15 +41,19 @@ class SemanticChunker(BaseChunker):
     """
     
     def __init__(self, model_name: str = "en_core_web_sm"):
+        if not SPACY_AVAILABLE:
+            logger.warning("spaCy not available, semantic chunking will fall back to simple sentence splitting")
+            self.nlp = None
+            return
+            
         try:
             self.nlp = spacy.load(model_name)
         except OSError:
             logger.warning(
-                f"spaCy model {model_name} not found, downloading..."
+                f"spaCy model {model_name} not found, semantic chunking will fall back to simple sentence splitting"
             )
-            import subprocess
-            subprocess.run(["python", "-m", "spacy", "download", model_name])
-            self.nlp = spacy.load(model_name)
+            self.nlp = None
+            return
         
         # Increase max_length for processing large documents
         # Default is 1,000,000 characters, we'll set it to 10,000,000
@@ -69,6 +78,10 @@ class SemanticChunker(BaseChunker):
         Returns:
             List of semantic chunks
         """
+        # Fallback to simple sentence splitting if spaCy not available
+        if self.nlp is None:
+            return self._fallback_chunk(text, options)
+            
         # Check if text is too large for single processing
         if len(text) > self.nlp.max_length:
             logger.info(
@@ -92,7 +105,7 @@ class SemanticChunker(BaseChunker):
     
     def _extract_semantic_units(
         self,
-        doc: spacy.tokens.Doc,
+        doc: Any,
         original_text: str
     ) -> List[SemanticUnit]:
         """Extract semantic units from document"""
@@ -147,7 +160,7 @@ class SemanticChunker(BaseChunker):
         
         return paragraphs
     
-    def _calculate_importance(self, sent: spacy.tokens.Span) -> float:
+    def _calculate_importance(self, sent: Any) -> float:
         """
         Calculate sentence importance based on various factors.
         Higher scores indicate more important sentences.
@@ -312,7 +325,7 @@ class SemanticChunker(BaseChunker):
     def _enhance_with_metadata(
         self,
         chunks: List[Chunk],
-        doc: spacy.tokens.Doc
+        doc: Any
     ) -> List[Chunk]:
         """Enhance chunks with additional NLP-derived metadata"""
         # Extract document-level entities
@@ -347,6 +360,10 @@ class SemanticChunker(BaseChunker):
         """
         Handle texts that exceed spaCy's max_length by processing in sections.
         """
+        # If spaCy not available, use fallback
+        if self.nlp is None:
+            return self._fallback_chunk(text, options)
+            
         chunks = []
         
         # Split text into manageable sections
@@ -443,5 +460,71 @@ class SemanticChunker(BaseChunker):
         # Add basic metadata (full document metadata will be limited)
         for chunk in chunks:
             chunk.metadata['section_processed'] = True
+        
+        return chunks
+    
+    def _fallback_chunk(self, text: str, options: ChunkingOptions) -> List[Chunk]:
+        """
+        Simple fallback chunking when spaCy is not available.
+        Uses basic sentence splitting and size-based chunking.
+        """
+        import re
+        
+        # Simple sentence splitting using regex
+        sentences = re.split(r'(?<=[.!?])\s+', text)
+        
+        chunks = []
+        current_chunk = ""
+        current_start = 0
+        
+        for sentence in sentences:
+            sentence = sentence.strip()
+            if not sentence:
+                continue
+                
+            # Check if adding this sentence would exceed chunk size
+            if (len(current_chunk) + len(sentence) + 1 > options.max_size and 
+                current_chunk and 
+                len(current_chunk) >= options.min_size):
+                
+                # Create chunk from current content
+                chunk = Chunk(
+                    text=current_chunk.strip(),
+                    start_idx=current_start,
+                    end_idx=current_start + len(current_chunk),
+                    chunk_index=len(chunks),
+                    metadata={
+                        'chunking_method': 'fallback_sentence',
+                        'sentence_count': current_chunk.count('.') + current_chunk.count('!') + current_chunk.count('?'),
+                        'spacy_available': False
+                    }
+                )
+                chunks.append(chunk)
+                
+                # Start new chunk
+                current_chunk = sentence
+                current_start = text.find(sentence, current_start + len(current_chunk))
+            else:
+                # Add sentence to current chunk
+                if current_chunk:
+                    current_chunk += " " + sentence
+                else:
+                    current_chunk = sentence
+                    current_start = text.find(sentence, current_start)
+        
+        # Add final chunk if any content remains
+        if current_chunk.strip():
+            chunk = Chunk(
+                text=current_chunk.strip(),
+                start_idx=current_start,
+                end_idx=current_start + len(current_chunk),
+                chunk_index=len(chunks),
+                metadata={
+                    'chunking_method': 'fallback_sentence',
+                    'sentence_count': current_chunk.count('.') + current_chunk.count('!') + current_chunk.count('?'),
+                    'spacy_available': False
+                }
+            )
+            chunks.append(chunk)
         
         return chunks

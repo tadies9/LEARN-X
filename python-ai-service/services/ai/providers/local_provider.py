@@ -11,6 +11,7 @@ try:
     LLAMA_CPP_AVAILABLE = True
 except ImportError:
     LLAMA_CPP_AVAILABLE = False
+    Llama = None
     
 from structlog import get_logger
 
@@ -73,7 +74,7 @@ class LocalModelProvider(AIProvider):
         if not LLAMA_CPP_AVAILABLE:
             raise ImportError("llama-cpp-python is not installed. Install with: pip install llama-cpp-python")
         
-        self.models: Dict[AIModel, Llama] = {}
+        self.models: Dict[AIModel, Any] = {}
         self.executor = ThreadPoolExecutor(max_workers=4)
         self.model_cache_dir = Path(config.model_path or "./models")
         self.model_cache_dir.mkdir(exist_ok=True)
@@ -86,7 +87,7 @@ class LocalModelProvider(AIProvider):
         self._initialized = True
         logger.info("Local model provider initialized")
     
-    def _load_model(self, model: AIModel) -> Llama:
+    def _load_model(self, model: AIModel) -> Any:
         """Load a model if not already loaded"""
         if model in self.models:
             return self.models[model]

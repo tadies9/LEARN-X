@@ -367,7 +367,7 @@ export class VectorOptimizationOrchestrator {
         appliedOptimizations.push('quantization');
         
         // Generate embeddings
-        const embeddings = await this.embeddingService.generateEmbeddings(
+        const embeddings = await this.embeddingService.generateEmbedding(
           chunks.map(c => c.content),
           userId
         );

@@ -119,7 +119,7 @@ export class VectorSearchAdapter {
     let embeddings: number[][] = [];
 
     if (chunksToEmbed.length > 0) {
-      embeddings = await this.embeddingService.generateEmbeddings(
+      embeddings = await this.embeddingService.generateEmbedding(
         chunksToEmbed.map(c => c.content),
         userId
       );

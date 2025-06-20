@@ -14,7 +14,14 @@ from .providers.base import (
 )
 from .providers.openai_provider import OpenAIProvider
 from .providers.anthropic_provider import AnthropicProvider
-from .providers.local_provider import LocalModelProvider
+
+# Conditionally import local provider
+try:
+    from .providers.local_provider import LocalModelProvider
+    LOCAL_PROVIDER_AVAILABLE = True
+except ImportError:
+    LOCAL_PROVIDER_AVAILABLE = False
+    LocalModelProvider = None
 from .circuit_breaker import CircuitBreaker
 from .cost_tracker import CostTracker
 
@@ -77,6 +84,8 @@ class AIManager:
             elif provider_type == ProviderType.ANTHROPIC:
                 provider = AnthropicProvider(config)
             elif provider_type == ProviderType.LOCAL:
+                if not LOCAL_PROVIDER_AVAILABLE:
+                    raise ImportError("Local model provider is not available. Install llama-cpp-python to use local models.")
                 provider = LocalModelProvider(config)
             else:
                 raise ValueError(f"Unknown provider type: {provider_type}")

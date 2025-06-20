@@ -53,8 +53,8 @@ class Settings(BaseSettings):
     )
     
     # Database
-    database_url: str = Field(
-        default="postgresql://postgres:password@localhost:5432/postgres",
+    database_url: Optional[str] = Field(
+        default=None,
         description="PostgreSQL connection URL"
     )
     database_pool_size: int = Field(default=10)
@@ -143,9 +143,9 @@ class Settings(BaseSettings):
     )
     
     @validator("database_url")
-    def validate_database_url(cls, v: str) -> str:
-        """Ensure database URL is PostgreSQL"""
-        if not v.startswith(("postgresql://", "postgres://")):
+    def validate_database_url(cls, v: Optional[str]) -> Optional[str]:
+        """Ensure database URL is PostgreSQL if provided"""
+        if v and not v.startswith(("postgresql://", "postgres://")):
             raise ValueError("Database URL must be PostgreSQL")
         return v
     
