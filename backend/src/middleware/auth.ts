@@ -12,6 +12,17 @@ export const authenticateUser = async (
   try {
     const authHeader = req.headers.authorization;
 
+    // Debug logging for DELETE requests
+    if (process.env.NODE_ENV === 'development' && req.method === 'DELETE') {
+      logger.info('DELETE request auth debug:', {
+        method: req.method,
+        url: req.url,
+        hasAuthHeader: !!authHeader,
+        authHeaderPreview: authHeader ? authHeader.substring(0, 20) + '...' : 'none',
+        headers: Object.keys(req.headers),
+      });
+    }
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new AppError('No authentication token provided', 401);
     }

@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -349,13 +348,9 @@ export function CourseWorkspace({
                           {index + 1}
                         </div>
                         <div className="flex-1">
-                          <Link
-                            href={`/courses/${courseId}/modules/${module.id}`}
-                            className="text-sm font-medium group-hover:text-primary transition-colors hover:underline"
-                            onClick={(e) => e.stopPropagation()}
-                          >
+                          <span className="text-sm font-medium group-hover:text-primary transition-colors">
                             {module.title}
-                          </Link>
+                          </span>
                           {module.files && (
                             <p className="text-xs text-muted-foreground mt-0.5">
                               {module.files.length} {module.files.length === 1 ? 'file' : 'files'}
@@ -369,26 +364,6 @@ export function CourseWorkspace({
                         />
                       </div>
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 text-xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  router.push(`/courses/${courseId}/modules/${module.id}`);
-                                }}
-                              >
-                                View
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>View only this module's files</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>

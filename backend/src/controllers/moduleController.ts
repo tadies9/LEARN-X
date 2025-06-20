@@ -231,6 +231,8 @@ export class ModuleController {
       const userId = req.user!.id;
       const moduleId = req.params.id;
 
+      logger.info('Getting module files', { moduleId, userId });
+
       // Check if user can access the module
       const module = await this.moduleService.getModule(moduleId, userId);
       if (!module) {
@@ -241,6 +243,12 @@ export class ModuleController {
       }
 
       const files = await this.moduleService.getModuleFiles(moduleId);
+
+      logger.info('Module files retrieved', {
+        moduleId,
+        fileCount: files.length,
+        files: files.map((f) => ({ id: f.id, name: f.name, module_id: f.module_id })),
+      });
 
       res.json({
         success: true,

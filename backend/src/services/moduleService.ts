@@ -1,5 +1,6 @@
 import { supabase } from '../config/supabase';
 import { logger } from '../utils/logger';
+import { transformCourseFiles } from '../utils/transformers';
 
 interface CreateModuleData {
   courseId: string;
@@ -240,7 +241,8 @@ export class ModuleService {
 
       if (error) throw error;
 
-      return files || [];
+      // Transform snake_case to camelCase for frontend
+      return transformCourseFiles(files || []);
     } catch (error) {
       logger.error('Error fetching module files:', error);
       throw error;

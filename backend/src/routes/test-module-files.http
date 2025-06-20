@@ -1,0 +1,17 @@
+### Test Module Files Endpoint
+
+# Replace with actual values
+@baseUrl = http://localhost:8080/api/v1
+@moduleId = YOUR_MODULE_ID_HERE
+@token = YOUR_TOKEN_HERE
+
+### Get module files - authenticated
+GET {{baseUrl}}/modules/{{moduleId}}/files
+Authorization: Bearer {{token}}
+
+### Get module files - debug endpoint (dev only)
+GET {{baseUrl}}/modules/{{moduleId}}/files-debug
+Authorization: Bearer {{token}}
+
+### Direct test without auth (dev only)
+GET {{baseUrl}}/test-module-files/{{moduleId}}
