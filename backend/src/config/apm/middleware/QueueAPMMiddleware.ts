@@ -8,10 +8,7 @@ import { apmService } from '../APMService';
 import { businessMetrics } from '../metrics/BusinessMetrics';
 import { distributedTracing } from '../tracing/DistributedTracing';
 import { apmAlerting } from '../alerting/APMAlertingService';
-import type { 
-  APMTransaction,
-  DistributedTracingContext 
-} from '../types';
+import type { APMTransaction, DistributedTracingContext } from '../types';
 
 export interface QueueJob {
   id: string;
@@ -68,13 +65,13 @@ export class QueueAPMMiddleware {
     try {
       // Add trace context to job
       const enrichedJob = this.addTraceContext(job);
-      
+
       // Record enqueue metrics
       this.recordEnqueueMetrics(queueName, enrichedJob);
-      
+
       // Update queue depth
       this.updateQueueDepth(queueName, 1);
-      
+
       // Start APM span for job lifecycle
       const span = apmService.startSpan(`queue.enqueue.${queueName}`);
       if (span) {
@@ -90,7 +87,7 @@ export class QueueAPMMiddleware {
       apmService.captureError(error as Error, {
         queueName,
         jobId: job.id,
-        jobType: job.type
+        jobType: job.type,
       });
       return job;
     }
@@ -103,13 +100,13 @@ export class QueueAPMMiddleware {
     try {
       // Record start time
       this.jobStartTimes.set(job.id, Date.now());
-      
+
       // Extract trace context
       const traceContext = distributedTracing.extractFromQueueJob(job);
-      
+
       // Start transaction
       const transaction = apmService.startTransaction(`queue.process.${job.type}`, 'queue');
-      
+
       if (transaction && traceContext) {
         // Set trace context attributes
         apmService.setTransactionAttribute('trace.id', traceContext.traceId);
@@ -127,14 +124,14 @@ export class QueueAPMMiddleware {
 
       // Record processing start
       businessMetrics.recordQueueActivity(queueName, 'processed', job.type);
-      
+
       return transaction;
     } catch (error) {
       logger.error('Error in queue job start middleware:', error);
       apmService.captureError(error as Error, {
         queueName,
         jobId: job.id,
-        jobType: job.type
+        jobType: job.type,
       });
       return null;
     }
@@ -147,13 +144,13 @@ export class QueueAPMMiddleware {
     try {
       const startTime = this.jobStartTimes.get(job.id);
       const processingTime = startTime ? Date.now() - startTime : 0;
-      
+
       // Record completion metrics
       this.recordJobComplete(queueName, job, processingTime);
-      
+
       // Update queue depth
       this.updateQueueDepth(queueName, -1);
-      
+
       // End transaction
       if (transaction) {
         apmService.setTransactionAttribute('job.status', 'completed');
@@ -163,7 +160,6 @@ export class QueueAPMMiddleware {
 
       // Clean up
       this.jobStartTimes.delete(job.id);
-      
     } catch (error) {
       logger.error('Error in queue job complete middleware:', error);
     }
@@ -172,24 +168,29 @@ export class QueueAPMMiddleware {
   /**
    * Middleware for job failure
    */
-  onJobFailed(queueName: string, job: QueueJob, error: Error, transaction: APMTransaction | null): void {
+  onJobFailed(
+    queueName: string,
+    job: QueueJob,
+    error: Error,
+    transaction: APMTransaction | null
+  ): void {
     try {
       const startTime = this.jobStartTimes.get(job.id);
       const processingTime = startTime ? Date.now() - startTime : 0;
-      
+
       // Record failure metrics
       this.recordJobFailure(queueName, job, error, processingTime);
-      
+
       // Update queue depth
       this.updateQueueDepth(queueName, -1);
-      
+
       // Capture error
       apmService.captureError(error, {
         queueName,
         jobId: job.id,
         jobType: job.type,
         attempt: job.attempts || 1,
-        processingTime
+        processingTime,
       });
 
       // End transaction with error
@@ -202,7 +203,6 @@ export class QueueAPMMiddleware {
 
       // Clean up
       this.jobStartTimes.delete(job.id);
-      
     } catch (middlewareError) {
       logger.error('Error in queue job failed middleware:', middlewareError);
     }
@@ -215,7 +215,7 @@ export class QueueAPMMiddleware {
     try {
       // Record retry metrics
       this.recordJobRetry(queueName, job, error);
-      
+
       // Start span for retry
       const span = apmService.startSpan(`queue.retry.${job.type}`);
       if (span) {
@@ -226,7 +226,6 @@ export class QueueAPMMiddleware {
         apmService.setSpanAttribute(span, 'retry.reason', error.message);
         apmService.endSpan(span);
       }
-
     } catch (middlewareError) {
       logger.error('Error in queue job retry middleware:', middlewareError);
     }
@@ -238,10 +237,10 @@ export class QueueAPMMiddleware {
   onQueueStalled(queueName: string, job: QueueJob): void {
     try {
       logger.warn(`Queue job stalled: ${queueName}/${job.id}`);
-      
+
       apmService.recordBusinessMetric('queue.stalled', 1, 'count', {
         queue: queueName,
-        job_type: job.type
+        job_type: job.type,
       });
 
       // Capture stall as error
@@ -249,9 +248,8 @@ export class QueueAPMMiddleware {
         queueName,
         jobId: job.id,
         jobType: job.type,
-        stallTime: Date.now()
+        stallTime: Date.now(),
       });
-
     } catch (error) {
       logger.error('Error in queue stall middleware:', error);
     }
@@ -263,16 +261,15 @@ export class QueueAPMMiddleware {
   recordQueueDepth(queueName: string, depth: number): void {
     try {
       apmService.recordBusinessMetric('queue.depth', depth, 'gauge', {
-        queue: queueName
+        queue: queueName,
       });
 
       // Alert on high queue depth
       apmAlerting.recordMetric(`queue.depth.${queueName}`, depth);
-      
+
       // Update metrics
       const metrics = this.getOrCreateQueueMetrics(queueName);
       metrics.currentDepth = depth;
-      
     } catch (error) {
       logger.error('Error recording queue depth:', error);
     }
@@ -311,11 +308,11 @@ export class QueueAPMMiddleware {
   private recordEnqueueMetrics(queueName: string, job: QueueJob): void {
     // Business metrics
     businessMetrics.recordQueueActivity(queueName, 'enqueued', job.type);
-    
+
     // APM metrics
     apmService.recordQueueMetric(queueName, 'enqueue', 1, {
       job_type: job.type,
-      priority: job.priority?.toString() || '0'
+      priority: job.priority?.toString() || '0',
     });
 
     // Update queue metrics
@@ -326,11 +323,11 @@ export class QueueAPMMiddleware {
   private recordJobComplete(queueName: string, job: QueueJob, processingTime: number): void {
     // Business metrics
     businessMetrics.recordQueueActivity(queueName, 'processed', job.type, processingTime);
-    
+
     // APM metrics
     apmService.recordQueueMetric(queueName, 'process', processingTime, {
       job_type: job.type,
-      success: 'true'
+      success: 'true',
     });
 
     // Update queue metrics
@@ -343,15 +340,20 @@ export class QueueAPMMiddleware {
     );
   }
 
-  private recordJobFailure(queueName: string, job: QueueJob, error: Error, processingTime: number): void {
+  private recordJobFailure(
+    queueName: string,
+    job: QueueJob,
+    error: Error,
+    processingTime: number
+  ): void {
     // Business metrics
     businessMetrics.recordQueueActivity(queueName, 'failed', job.type, processingTime);
-    
+
     // APM metrics
     apmService.recordQueueMetric(queueName, 'error', 1, {
       job_type: job.type,
       error_type: error.name,
-      error_message: error.message.substring(0, 100)
+      error_message: error.message.substring(0, 100),
     });
 
     // Update queue metrics
@@ -364,7 +366,7 @@ export class QueueAPMMiddleware {
     apmService.recordQueueMetric(queueName, 'retry', 1, {
       job_type: job.type,
       attempt: job.attempts?.toString() || '1',
-      error_type: error.name
+      error_type: error.name,
     });
 
     // Update queue metrics
@@ -375,7 +377,7 @@ export class QueueAPMMiddleware {
   private updateQueueDepth(queueName: string, delta: number): void {
     const metrics = this.getOrCreateQueueMetrics(queueName);
     metrics.currentDepth = Math.max(0, metrics.currentDepth + delta);
-    
+
     this.recordQueueDepth(queueName, metrics.currentDepth);
   }
 
@@ -389,7 +391,7 @@ export class QueueAPMMiddleware {
         jobsRetried: 0,
         avgProcessingTime: 0,
         currentDepth: 0,
-        oldestJobAge: 0
+        oldestJobAge: 0,
       };
       this.queueMetrics.set(queueName, metrics);
     }
@@ -397,7 +399,7 @@ export class QueueAPMMiddleware {
   }
 
   private updateAverage(currentAvg: number, newValue: number, count: number): number {
-    return ((currentAvg * (count - 1)) + newValue) / count;
+    return (currentAvg * (count - 1) + newValue) / count;
   }
 
   private startHealthChecks(): void {
@@ -410,13 +412,13 @@ export class QueueAPMMiddleware {
     for (const [queueName, metrics] of this.queueMetrics.entries()) {
       const health = this.assessQueueHealth(queueName, metrics);
       this.queueHealthChecks.set(queueName, health);
-      
+
       // Alert on unhealthy queues
       if (!health.healthy) {
         apmService.captureError(new Error(`Queue ${queueName} is unhealthy`), {
           queueName,
           issues: health.issues,
-          metrics: health.metrics
+          metrics: health.metrics,
         });
       }
     }
@@ -424,7 +426,7 @@ export class QueueAPMMiddleware {
 
   private assessQueueHealth(queueName: string, metrics: QueueMetrics): QueueHealthStatus {
     const issues: string[] = [];
-    
+
     // Check error rate
     const totalJobs = metrics.jobsProcessed + metrics.jobsFailed;
     if (totalJobs > 0) {
@@ -440,7 +442,8 @@ export class QueueAPMMiddleware {
     }
 
     // Check processing time
-    if (metrics.avgProcessingTime > 30000) { // 30 seconds
+    if (metrics.avgProcessingTime > 30000) {
+      // 30 seconds
       issues.push(`Slow processing: ${metrics.avgProcessingTime}ms avg`);
     }
 
@@ -449,7 +452,7 @@ export class QueueAPMMiddleware {
       queueName,
       metrics: { ...metrics },
       issues,
-      lastCheck: new Date()
+      lastCheck: new Date(),
     };
   }
 
@@ -463,7 +466,7 @@ export class QueueAPMMiddleware {
 
       descriptor.value = async function (job: QueueJob, ...args: any[]) {
         const transaction = middleware.onJobStart(queueName, job);
-        
+
         try {
           const result = await originalMethod.call(this, job, ...args);
           middleware.onJobComplete(queueName, job, transaction);

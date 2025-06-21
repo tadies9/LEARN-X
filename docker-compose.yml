@@ -12,6 +12,7 @@ services:
       - REDIS_PORT=6379
       - REDIS_URL= # Let it use REDIS_HOST/PORT instead
       - PYTHON_FILE_PROCESSING=true # Enable Python service for file processing
+      - PYTHON_AI_SERVICE_URL=http://host.docker.internal:8001
     env_file:
       - ./backend/.env
     volumes:

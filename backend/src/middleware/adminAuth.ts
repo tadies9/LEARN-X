@@ -26,7 +26,7 @@ export const requireAdmin = async (
     // In production, this would check against the database
     // For now, we'll use a simple check
     const adminUserIds = process.env.ADMIN_USER_IDS?.split(',') || [];
-    
+
     if (!adminUserIds.includes(req.userId)) {
       logger.warn(`Unauthorized admin access attempt by user: ${req.userId}`);
       throw new AppError('Admin access required', 403);
@@ -67,7 +67,7 @@ export const checkAdmin = async (
 
     const adminUserIds = process.env.ADMIN_USER_IDS?.split(',') || [];
     req.isAdmin = adminUserIds.includes(req.userId);
-    
+
     next();
   } catch (error) {
     logger.error('Check admin middleware error:', error);

@@ -55,12 +55,12 @@ export class PythonContentGenerationService {
 
   constructor() {
     this.pythonClient = pythonContentClient;
-    
+
     // Set up event listeners for monitoring
     this.pythonClient.on('usage', (data) => {
       logger.info('Python service usage:', data);
     });
-    
+
     this.pythonClient.on('error', (error) => {
       logger.error('Python service error:', error);
     });
@@ -72,15 +72,15 @@ export class PythonContentGenerationService {
   async *generateExplanation(params: ExplanationParams): AsyncGenerator<string> {
     try {
       logger.info(`Generating explanation for topic: ${params.topic}`);
-      
+
       // Transform parameters to Python service format
       const pythonParams = {
         user_id: params.persona.userId,
-        chunks: params.chunks.map(chunk => ({
+        chunks: params.chunks.map((chunk) => ({
           id: chunk.id,
           content: chunk.content,
           metadata: {},
-          score: 1.0
+          score: 1.0,
         })),
         topic: params.topic,
         subtopic: params.subtopic,
@@ -92,15 +92,14 @@ export class PythonContentGenerationService {
         personalization_level: 'high' as const,
         include_examples: true,
         include_practice: false,
-        stream: true
+        stream: true,
       };
 
       // Stream from Python service
       yield* this.pythonClient.generateExplanationStream(pythonParams);
-      
     } catch (error) {
       logger.error('Failed to generate explanation via Python service:', error);
-      
+
       // Fallback to error message
       yield 'I apologize, but I encountered an error while generating the explanation. Please try again.';
     }
@@ -112,7 +111,7 @@ export class PythonContentGenerationService {
   async generateSummary(params: SummaryParams): Promise<string> {
     try {
       logger.info(`Generating summary with format: ${params.format}`);
-      
+
       // Transform parameters
       const pythonParams = {
         user_id: params.persona.userId,
@@ -123,12 +122,11 @@ export class PythonContentGenerationService {
         temperature: params.temperature || 0.5,
         max_tokens: params.maxTokens || 1000,
         use_cache: true,
-        personalization_level: 'high' as const
+        personalization_level: 'high' as const,
       };
 
       const result = await this.pythonClient.generateSummary(pythonParams);
       return result.content;
-      
     } catch (error) {
       logger.error('Failed to generate summary via Python service:', error);
       throw new Error('Failed to generate summary. Please try again.');
@@ -138,14 +136,16 @@ export class PythonContentGenerationService {
   /**
    * Generate flashcards (maintains original interface)
    */
-  async generateFlashcards(params: FlashcardParams): Promise<Array<{
-    front: string;
-    back: string;
-    difficulty: 'easy' | 'medium' | 'hard';
-  }>> {
+  async generateFlashcards(params: FlashcardParams): Promise<
+    Array<{
+      front: string;
+      back: string;
+      difficulty: 'easy' | 'medium' | 'hard';
+    }>
+  > {
     try {
       logger.info(`Generating ${params.count || 10} flashcards`);
-      
+
       // Transform parameters
       const pythonParams = {
         user_id: params.persona?.userId || 'anonymous',
@@ -158,11 +158,10 @@ export class PythonContentGenerationService {
         use_cache: true,
         personalization_level: 'medium' as const,
         contextual_examples: true,
-        difficulty_mix: true
+        difficulty_mix: true,
       };
 
       return await this.pythonClient.generateFlashcards(pythonParams);
-      
     } catch (error) {
       logger.error('Failed to generate flashcards via Python service:', error);
       throw new Error('Failed to generate flashcards. Please try again.');
@@ -172,21 +171,23 @@ export class PythonContentGenerationService {
   /**
    * Generate quiz (maintains original interface)
    */
-  async generateQuiz(params: QuizParams): Promise<Array<{
-    question: string;
-    type: QuizType;
-    options?: string[];
-    answer: string;
-    explanation: string;
-  }>> {
+  async generateQuiz(params: QuizParams): Promise<
+    Array<{
+      question: string;
+      type: QuizType;
+      options?: string[];
+      answer: string;
+      explanation: string;
+    }>
+  > {
     try {
       logger.info(`Generating ${params.count || 5} quiz questions of type: ${params.type}`);
-      
+
       // Map QuizType to Python service format
       const quizTypeMap = {
         [QuizType.MULTIPLE_CHOICE]: 'multiple_choice' as const,
         [QuizType.TRUE_FALSE]: 'true_false' as const,
-        [QuizType.SHORT_ANSWER]: 'short_answer' as const
+        [QuizType.SHORT_ANSWER]: 'short_answer' as const,
       };
 
       // Transform parameters
@@ -202,20 +203,19 @@ export class PythonContentGenerationService {
         use_cache: true,
         personalization_level: 'medium' as const,
         adaptive_difficulty: true,
-        include_explanations: true
+        include_explanations: true,
       };
 
       const questions = await this.pythonClient.generateQuiz(pythonParams);
-      
+
       // Transform back to original format
-      return questions.map(q => ({
+      return questions.map((q) => ({
         question: q.question,
         type: params.type,
         options: q.type === 'multiple_choice' ? Object.values(q.options || {}) : undefined,
         answer: q.answer,
-        explanation: q.explanation
+        explanation: q.explanation,
       }));
-      
     } catch (error) {
       logger.error('Failed to generate quiz via Python service:', error);
       throw new Error('Failed to generate quiz. Please try again.');
@@ -228,7 +228,7 @@ export class PythonContentGenerationService {
   async *streamChatResponse(params: ChatParams): AsyncGenerator<string> {
     try {
       logger.info('Streaming chat response');
-      
+
       // Transform parameters
       const pythonParams = {
         user_id: params.persona?.userId || 'anonymous',
@@ -242,11 +242,10 @@ export class PythonContentGenerationService {
         max_tokens: 1000,
         use_cache: false,
         personalization_level: 'high' as const,
-        stream: true
+        stream: true,
       };
 
       yield* this.pythonClient.streamChatResponse(pythonParams);
-      
     } catch (error) {
       logger.error('Failed to stream chat response via Python service:', error);
       yield 'I apologize, but I encountered an error. Please try rephrasing your question.';
@@ -263,15 +262,10 @@ export class PythonContentGenerationService {
   ): Promise<string> {
     try {
       logger.info(`Generating personalized introduction for topic: ${topic}`);
-      
-      const result = await this.pythonClient.generateIntroduction(
-        topic,
-        content,
-        persona.userId
-      );
-      
+
+      const result = await this.pythonClient.generateIntroduction(topic, content, persona.userId);
+
       return result.content;
-      
     } catch (error) {
       logger.error('Failed to generate personalized introduction:', error);
       throw new Error('Failed to generate introduction. Please try again.');
@@ -288,13 +282,8 @@ export class PythonContentGenerationService {
   ): Promise<string[]> {
     try {
       logger.info(`Generating ${count} personalized examples for concept: ${concept}`);
-      
-      return await this.pythonClient.generateExamples(
-        concept,
-        persona.userId,
-        count
-      );
-      
+
+      return await this.pythonClient.generateExamples(concept, persona.userId, count);
     } catch (error) {
       logger.error('Failed to generate personalized examples:', error);
       throw new Error('Failed to generate examples. Please try again.');
@@ -307,9 +296,8 @@ export class PythonContentGenerationService {
   async updateUserPersona(userId: string, updates: Record<string, any>): Promise<void> {
     try {
       logger.info(`Updating persona for user: ${userId}`);
-      
+
       await this.pythonClient.updatePersona(userId, updates);
-      
     } catch (error) {
       logger.error('Failed to update user persona:', error);
       throw new Error('Failed to update persona. Please try again.');

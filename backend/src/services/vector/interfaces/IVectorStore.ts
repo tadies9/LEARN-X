@@ -83,10 +83,7 @@ export interface IVectorStore {
   /**
    * Search for similar vectors
    */
-  search(
-    queryVector: number[],
-    options?: VectorSearchOptions
-  ): Promise<VectorSearchResult[]>;
+  search(queryVector: number[], options?: VectorSearchOptions): Promise<VectorSearchResult[]>;
 
   /**
    * Search using multiple query vectors (multi-vector search)
@@ -114,10 +111,7 @@ export interface IVectorStore {
   /**
    * Update metadata for existing vectors
    */
-  updateMetadata(
-    id: string,
-    metadata: Record<string, any>
-  ): Promise<void>;
+  updateMetadata(id: string, metadata: Record<string, any>): Promise<void>;
 
   /**
    * Get statistics about the vector store

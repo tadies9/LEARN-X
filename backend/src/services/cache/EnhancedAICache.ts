@@ -6,7 +6,15 @@ import { personalizedCacheKeyGenerator } from './PersonalizedCacheKeyGenerator';
 import { CostTracker } from '../ai/CostTracker';
 
 interface CacheOptions {
-  service: 'explain' | 'summary' | 'quiz' | 'flashcard' | 'chat' | 'embedding' | 'practice' | 'introduction';
+  service:
+    | 'explain'
+    | 'summary'
+    | 'quiz'
+    | 'flashcard'
+    | 'chat'
+    | 'embedding'
+    | 'practice'
+    | 'introduction';
   userId: string;
   contentHash?: string;
   persona?: UserPersona;
@@ -42,7 +50,7 @@ export class EnhancedAICache {
    */
   async get(options: CacheOptions): Promise<CachedResponse | null> {
     const key = personalizedCacheKeyGenerator.generateKey(options);
-    
+
     try {
       const cached = await this.redis.get(key);
       if (!cached) {
@@ -51,12 +59,14 @@ export class EnhancedAICache {
       }
 
       const parsed = JSON.parse(cached) as CachedResponse;
-      
+
       // Validate cache freshness
       const ttl = personalizedCacheKeyGenerator.getTTL(options.service, {
-        personalizationScore: personalizedCacheKeyGenerator.calculatePersonalizationScore(options.persona),
+        personalizationScore: personalizedCacheKeyGenerator.calculatePersonalizationScore(
+          options.persona
+        ),
       });
-      
+
       const age = Date.now() - parsed.timestamp;
       if (age > ttl * 1000) {
         await this.redis.del(key);
@@ -70,7 +80,7 @@ export class EnhancedAICache {
         key: key.substring(0, 50),
         age: Math.floor(age / 1000),
       });
-      
+
       return parsed;
     } catch (error) {
       logger.error('Cache get error:', error);
@@ -88,7 +98,7 @@ export class EnhancedAICache {
     metadata?: Record<string, any>
   ): Promise<void> {
     const key = personalizedCacheKeyGenerator.generateKey(options);
-    
+
     try {
       const cacheData: CachedResponse = {
         content,
@@ -96,7 +106,9 @@ export class EnhancedAICache {
         usage,
         metadata: {
           ...metadata,
-          personalizationScore: personalizedCacheKeyGenerator.calculatePersonalizationScore(options.persona),
+          personalizationScore: personalizedCacheKeyGenerator.calculatePersonalizationScore(
+            options.persona
+          ),
           service: options.service,
         },
       };
@@ -131,7 +143,7 @@ export class EnhancedAICache {
     try {
       const pattern = personalizedCacheKeyGenerator.generateInvalidationPattern(criteria);
       const keys = await this.redis.keys(pattern);
-      
+
       if (keys.length === 0) {
         return 0;
       }
@@ -139,7 +151,7 @@ export class EnhancedAICache {
       // Delete in batches to avoid blocking
       const batchSize = 100;
       let deleted = 0;
-      
+
       for (let i = 0; i < keys.length; i += batchSize) {
         const batch = keys.slice(i, i + batchSize);
         deleted += await this.redis.del(...batch);
@@ -177,7 +189,7 @@ export class EnhancedAICache {
       // Generate and cache
       const { content, usage } = await generator();
       await this.set(options, content, usage);
-      
+
       logger.info('Cache warmed successfully', {
         service: options.service,
         userId: options.userId,
@@ -195,12 +207,12 @@ export class EnhancedAICache {
       const stats = this.stats.get(service) || this.createEmptyStats();
       return { [service]: stats };
     }
-    
+
     const allStats: Record<string, CacheStats> = {};
     this.stats.forEach((stats, key) => {
       allStats[key] = stats;
     });
-    
+
     return allStats;
   }
 
@@ -221,7 +233,7 @@ export class EnhancedAICache {
     try {
       // Get all cache keys
       const keys = await this.redis.keys('ai_cache:v2:*');
-      
+
       // Get memory info
       const info = await this.redis.info('memory');
       const memoryMatch = info.match(/used_memory_human:(.+)/);
@@ -230,7 +242,7 @@ export class EnhancedAICache {
       // Analyze key distribution
       const keyDistribution: Record<string, number> = {};
       let totalTTL = 0;
-      
+
       for (const key of keys) {
         const parsed = personalizedCacheKeyGenerator.parseKey(key);
         if (parsed) {
@@ -267,8 +279,17 @@ export class EnhancedAICache {
    * Initialize statistics tracking
    */
   private initializeStats(): void {
-    const services = ['explain', 'summary', 'quiz', 'flashcard', 'chat', 'embedding', 'practice', 'introduction'];
-    services.forEach(service => {
+    const services = [
+      'explain',
+      'summary',
+      'quiz',
+      'flashcard',
+      'chat',
+      'embedding',
+      'practice',
+      'introduction',
+    ];
+    services.forEach((service) => {
       this.stats.set(service, this.createEmptyStats());
     });
   }
@@ -289,16 +310,19 @@ export class EnhancedAICache {
   /**
    * Record cache hit
    */
-  private recordHit(service: string, usage: { promptTokens: number; completionTokens: number }): void {
+  private recordHit(
+    service: string,
+    usage: { promptTokens: number; completionTokens: number }
+  ): void {
     const stats = this.stats.get(service) || this.createEmptyStats();
     stats.hits++;
     stats.totalSaved += usage.promptTokens + usage.completionTokens;
     stats.hitRate = stats.hits / (stats.hits + stats.misses);
-    
+
     // Estimate cost saved (rough estimate)
     const costPerToken = 0.00002; // Average across models
     stats.costSaved += (usage.promptTokens + usage.completionTokens) * costPerToken;
-    
+
     this.stats.set(service, stats);
   }
 
@@ -317,14 +341,14 @@ export class EnhancedAICache {
    */
   private async calculateCostSavings(startTime: number, endTime: number): Promise<number> {
     let totalSaved = 0;
-    
+
     this.stats.forEach((stats) => {
       // This is a simplified calculation
       // In production, you'd want to track timestamps for accurate period calculations
       const periodRatio = (endTime - startTime) / (30 * 24 * 3600 * 1000); // Fraction of month
       totalSaved += stats.costSaved * periodRatio;
     });
-    
+
     return totalSaved;
   }
 

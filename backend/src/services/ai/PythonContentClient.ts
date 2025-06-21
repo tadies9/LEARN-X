@@ -98,15 +98,15 @@ export class PythonContentClient extends EventEmitter {
 
   constructor(baseURL?: string) {
     super();
-    
+
     this.baseURL = baseURL || process.env.PYTHON_AI_SERVICE_URL || 'http://localhost:8001';
-    
+
     this.client = axios.create({
       baseURL: this.baseURL,
       timeout: 60000, // 60 seconds
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        Accept: 'application/json',
       },
     });
 
@@ -115,7 +115,6 @@ export class PythonContentClient extends EventEmitter {
       failureThreshold: 5,
       resetTimeout: 30000,
     });
-
 
     // Add request/response interceptors
     this.setupInterceptors();
@@ -126,13 +125,13 @@ export class PythonContentClient extends EventEmitter {
    */
   async *generateExplanationStream(params: ExplanationParams): AsyncGenerator<string> {
     const startTime = Date.now();
-    
+
     try {
       const response = await this.circuitBreaker.execute(async () => {
         return this.client.post('/content/explanation/stream', params, {
           responseType: 'stream',
           headers: {
-            'Accept': 'text/plain',
+            Accept: 'text/plain',
           },
         });
       });
@@ -181,7 +180,6 @@ export class PythonContentClient extends EventEmitter {
         userId: params.user_id,
         responseTime: Date.now() - startTime,
       });
-
     } catch (error) {
       logger.error('Failed to generate explanation stream:', error);
       throw this.handleError(error);
@@ -193,7 +191,7 @@ export class PythonContentClient extends EventEmitter {
    */
   async generateSummary(params: SummaryParams): Promise<PersonalizedContent> {
     const startTime = Date.now();
-    
+
     try {
       const response = await this.circuitBreaker.execute(async () => {
         return this.client.post('/content/summary', params);
@@ -206,7 +204,6 @@ export class PythonContentClient extends EventEmitter {
       });
 
       return response.data;
-
     } catch (error) {
       logger.error('Failed to generate summary:', error);
       throw this.handleError(error);
@@ -218,7 +215,7 @@ export class PythonContentClient extends EventEmitter {
    */
   async generateFlashcards(params: FlashcardParams): Promise<FlashcardResult[]> {
     const startTime = Date.now();
-    
+
     try {
       const response = await this.circuitBreaker.execute(async () => {
         return this.client.post('/content/flashcards', params);
@@ -231,7 +228,6 @@ export class PythonContentClient extends EventEmitter {
       });
 
       return response.data.flashcards || response.data;
-
     } catch (error) {
       logger.error('Failed to generate flashcards:', error);
       throw this.handleError(error);
@@ -243,7 +239,7 @@ export class PythonContentClient extends EventEmitter {
    */
   async generateQuiz(params: QuizParams): Promise<QuizQuestion[]> {
     const startTime = Date.now();
-    
+
     try {
       const response = await this.circuitBreaker.execute(async () => {
         return this.client.post('/content/quiz', params);
@@ -256,7 +252,6 @@ export class PythonContentClient extends EventEmitter {
       });
 
       return response.data.questions || response.data;
-
     } catch (error) {
       logger.error('Failed to generate quiz:', error);
       throw this.handleError(error);
@@ -268,13 +263,13 @@ export class PythonContentClient extends EventEmitter {
    */
   async *streamChatResponse(params: ChatParams): AsyncGenerator<string> {
     const startTime = Date.now();
-    
+
     try {
       const response = await this.circuitBreaker.execute(async () => {
         return this.client.post('/content/chat/stream', params, {
           responseType: 'stream',
           headers: {
-            'Accept': 'text/plain',
+            Accept: 'text/plain',
           },
         });
       });
@@ -319,7 +314,6 @@ export class PythonContentClient extends EventEmitter {
         userId: params.user_id,
         responseTime: Date.now() - startTime,
       });
-
     } catch (error) {
       logger.error('Failed to stream chat response:', error);
       throw this.handleError(error);
@@ -336,7 +330,7 @@ export class PythonContentClient extends EventEmitter {
     model?: string
   ): Promise<PersonalizedContent> {
     const startTime = Date.now();
-    
+
     try {
       const response = await this.circuitBreaker.execute(async () => {
         return this.client.post('/content/introduction', {
@@ -354,7 +348,6 @@ export class PythonContentClient extends EventEmitter {
       });
 
       return response.data;
-
     } catch (error) {
       logger.error('Failed to generate introduction:', error);
       throw this.handleError(error);
@@ -371,7 +364,7 @@ export class PythonContentClient extends EventEmitter {
     model?: string
   ): Promise<string[]> {
     const startTime = Date.now();
-    
+
     try {
       const response = await this.circuitBreaker.execute(async () => {
         return this.client.post('/content/examples', {
@@ -389,7 +382,6 @@ export class PythonContentClient extends EventEmitter {
       });
 
       return response.data.examples || response.data;
-
     } catch (error) {
       logger.error('Failed to generate examples:', error);
       throw this.handleError(error);
@@ -406,7 +398,6 @@ export class PythonContentClient extends EventEmitter {
       });
 
       this.emit('persona-updated', { userId, updates });
-
     } catch (error) {
       logger.error('Failed to update persona:', error);
       throw this.handleError(error);
@@ -431,7 +422,6 @@ export class PythonContentClient extends EventEmitter {
       });
 
       return response.data;
-
     } catch (error) {
       logger.error('Failed to get personalization score:', error);
       return { overall: 0.0 };
@@ -494,15 +484,15 @@ export class PythonContentClient extends EventEmitter {
   private async *streamAsyncIterator(stream: any): AsyncGenerator<string> {
     return new Promise((resolve, reject) => {
       const chunks: string[] = [];
-      
+
       stream.on('data', (chunk: Buffer) => {
         chunks.push(chunk.toString());
       });
-      
+
       stream.on('end', () => {
         resolve(chunks.join(''));
       });
-      
+
       stream.on('error', (error: Error) => {
         reject(error);
       });
@@ -514,7 +504,7 @@ export class PythonContentClient extends EventEmitter {
       // HTTP error response
       const message = error.response.data?.message || error.response.statusText;
       const statusCode = error.response.status;
-      
+
       return new Error(`Python service error (${statusCode}): ${message}`);
     } else if (error.request) {
       // Network error

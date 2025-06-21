@@ -72,7 +72,7 @@ export class CircuitBreaker extends EventEmitter {
 
     if (this.state === CircuitState.HALF_OPEN) {
       this.halfOpenRequests++;
-      
+
       if (this.halfOpenRequests >= this.options.halfOpenRequests) {
         // Enough successful requests, close the circuit
         this.close();
@@ -167,7 +167,7 @@ export class CircuitBreaker extends EventEmitter {
 
   getStats(): CircuitBreakerStats {
     const totalRequests = this.successes + this.failures;
-    
+
     return {
       state: this.state,
       failures: this.failures,

@@ -39,7 +39,7 @@ export class DirectPostgresService {
   constructor() {
     // Parse DATABASE_URL or use individual config
     const connectionString = process.env.DATABASE_URL || this.buildConnectionString();
-    
+
     this.pool = new Pool({
       connectionString,
       max: 20, // Maximum number of clients in the pool
@@ -64,7 +64,7 @@ export class DirectPostgresService {
     timeRange?: TimeRange
   ): Promise<AnalyticsData[]> {
     const client = await this.pool.connect();
-    
+
     try {
       let query = `
         SELECT 
@@ -75,7 +75,7 @@ export class DirectPostgresService {
         FROM analytics_events
         WHERE user_id = ANY($1)
       `;
-      
+
       const params: any[] = [userIds];
       let paramIndex = 2;
 
@@ -93,8 +93,8 @@ export class DirectPostgresService {
       query += ' ORDER BY created_at DESC LIMIT 10000';
 
       const result = await client.query(query, params);
-      
-      return result.rows.map(row => ({
+
+      return result.rows.map((row) => ({
         userId: row.user_id,
         metric: row.metric,
         value: row.value,
@@ -115,7 +115,7 @@ export class DirectPostgresService {
     if (events.length === 0) return;
 
     const client = await this.pool.connect();
-    
+
     try {
       await client.query('BEGIN');
 
@@ -128,7 +128,7 @@ export class DirectPostgresService {
       }
 
       await client.query('COMMIT');
-      
+
       logger.info(`Successfully inserted ${events.length} events`);
     } catch (error) {
       await client.query('ROLLBACK');
@@ -144,7 +144,7 @@ export class DirectPostgresService {
    */
   async getAggregatedStats(timeRange: TimeRange): Promise<AggregatedStats> {
     const client = await this.pool.connect();
-    
+
     try {
       // Use parallel queries for better performance
       const [usersResult, eventsResult, topTypesResult] = await Promise.all([
@@ -156,21 +156,24 @@ export class DirectPostgresService {
           'SELECT COUNT(*) as total, AVG(value) as avg_value FROM analytics_events WHERE created_at BETWEEN $1 AND $2',
           [timeRange.start, timeRange.end]
         ),
-        client.query(`
+        client.query(
+          `
           SELECT event_type, COUNT(*) as count
           FROM analytics_events
           WHERE created_at BETWEEN $1 AND $2
           GROUP BY event_type
           ORDER BY count DESC
           LIMIT 10
-        `, [timeRange.start, timeRange.end]),
+        `,
+          [timeRange.start, timeRange.end]
+        ),
       ]);
 
       return {
         totalUsers: parseInt(usersResult.rows[0]?.count || '0'),
         totalEvents: parseInt(eventsResult.rows[0]?.total || '0'),
         avgEventValue: parseFloat(eventsResult.rows[0]?.avg_value || '0'),
-        topEventTypes: topTypesResult.rows.map(row => ({
+        topEventTypes: topTypesResult.rows.map((row) => ({
           type: row.event_type,
           count: parseInt(row.count),
         })),
@@ -186,23 +189,19 @@ export class DirectPostgresService {
   /**
    * Execute raw query with retry logic
    */
-  async executeQuery<T>(
-    query: string,
-    params?: any[],
-    retries = this.maxRetries
-  ): Promise<T[]> {
+  async executeQuery<T>(query: string, params?: any[], retries = this.maxRetries): Promise<T[]> {
     let lastError: Error | null = null;
-    
+
     for (let i = 0; i < retries; i++) {
       const client = await this.pool.connect();
-      
+
       try {
         const result = await client.query(query, params);
         return result.rows;
       } catch (error) {
         lastError = error as Error;
         logger.warn(`Query failed (attempt ${i + 1}/${retries}):`, error);
-        
+
         if (i < retries - 1) {
           await this.delay(this.retryDelay * (i + 1));
         }
@@ -210,7 +209,7 @@ export class DirectPostgresService {
         client.release();
       }
     }
-    
+
     throw lastError || new Error('Query failed after retries');
   }
 
@@ -237,12 +236,14 @@ export class DirectPostgresService {
   /**
    * Get query performance statistics
    */
-  async getQueryStats(): Promise<Array<{
-    query: string;
-    calls: number;
-    totalTime: number;
-    meanTime: number;
-  }>> {
+  async getQueryStats(): Promise<
+    Array<{
+      query: string;
+      calls: number;
+      totalTime: number;
+      meanTime: number;
+    }>
+  > {
     const query = `
       SELECT 
         query,
@@ -285,16 +286,11 @@ export class DirectPostgresService {
   private async multiValueInsert(client: PoolClient, events: BulkEvent[]): Promise<void> {
     const values: any[] = [];
     const placeholders: string[] = [];
-    
+
     events.forEach((event, index) => {
       const base = index * 4;
       placeholders.push(`($${base + 1}, $${base + 2}, $${base + 3}, $${base + 4})`);
-      values.push(
-        event.userId,
-        event.eventType,
-        JSON.stringify(event.metadata),
-        event.timestamp
-      );
+      values.push(event.userId, event.eventType, JSON.stringify(event.metadata), event.timestamp);
     });
 
     const query = `
@@ -307,7 +303,7 @@ export class DirectPostgresService {
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   /**

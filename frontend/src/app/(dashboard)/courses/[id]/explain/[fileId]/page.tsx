@@ -96,7 +96,7 @@ export default function ExplainPage() {
             throw new Error('Not authenticated');
           }
 
-          const url = 'http://localhost:8080/api/v1/learn/explain/stream';
+          const url = '/api/v1/learn/explain/stream';
           console.log('Making explain request to:', url);
           
           const response = await fetch(url, {
@@ -175,7 +175,7 @@ export default function ExplainPage() {
         throw new Error('Not authenticated');
       }
 
-      const url = 'http://localhost:8080/api/v1/learn/explain/regenerate';
+      const url = '/api/v1/learn/explain/regenerate';
       
       const response = await fetch(url, {
         method: 'POST',

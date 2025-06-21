@@ -1,6 +1,10 @@
 async function testBackendStreaming() {
   console.log('Testing backend streaming endpoint...');
+<<<<<<< Updated upstream
 
+=======
+  
+>>>>>>> Stashed changes
   // First login to get a token
   const loginResponse = await fetch('http://localhost:3001/api/v1/auth/login', {
     method: 'POST',
@@ -9,7 +13,11 @@ async function testBackendStreaming() {
     },
     body: JSON.stringify({
       email: 'tadies@gmail.com',
+<<<<<<< Updated upstream
       password: 'Test123456!', // You'll need to replace with actual password
+=======
+      password: 'Test123456!'  // You'll need to replace with actual password
+>>>>>>> Stashed changes
     }),
   });
 
@@ -27,7 +35,11 @@ async function testBackendStreaming() {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
+<<<<<<< Updated upstream
       Authorization: `Bearer ${token}`,
+=======
+      'Authorization': `Bearer ${token}`,
+>>>>>>> Stashed changes
     },
     body: JSON.stringify({
       fileId: 'a0b9c8d7-6e5f-4a3b-2c1d-9e8f7a6b5c4d',
@@ -51,10 +63,17 @@ async function testBackendStreaming() {
   const startTime = Date.now();
 
   console.log('Starting to read stream from backend...');
+<<<<<<< Updated upstream
 
   while (true) {
     const { done, value } = await reader.read();
 
+=======
+  
+  while (true) {
+    const { done, value } = await reader.read();
+    
+>>>>>>> Stashed changes
     if (done) {
       console.log('Stream complete');
       break;
@@ -76,6 +95,7 @@ async function testBackendStreaming() {
       } else if (line.startsWith('data: ')) {
         chunkCount++;
         const data = line.slice(6);
+<<<<<<< Updated upstream
 
         try {
           const parsed = JSON.parse(data);
@@ -86,6 +106,15 @@ async function testBackendStreaming() {
               `Chunk ${chunkCount} (${elapsed}ms):`,
               parsed.data.substring(0, 50) + '...'
             );
+=======
+        
+        try {
+          const parsed = JSON.parse(data);
+          const elapsed = Date.now() - startTime;
+          
+          if (parsed.type === 'content' && parsed.data) {
+            console.log(`Chunk ${chunkCount} (${elapsed}ms):`, parsed.data.substring(0, 50) + '...');
+>>>>>>> Stashed changes
           } else if (parsed.type === 'complete') {
             console.log(`Complete signal received after ${elapsed}ms`);
           } else if (parsed.type === 'error') {
@@ -105,4 +134,8 @@ async function testBackendStreaming() {
   console.log(`Total chunks received: ${chunkCount}`);
 }
 
+<<<<<<< Updated upstream
 testBackendStreaming().catch(console.error);
+=======
+testBackendStreaming().catch(console.error);
+>>>>>>> Stashed changes

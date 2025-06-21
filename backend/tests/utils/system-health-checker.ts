@@ -2,12 +2,11 @@ import { testConfig } from '../config/test.config';
 
 /**
  * System Health Checker
- * 
+ *
  * Validates that all system components are ready for E2E testing
  * before running comprehensive test suites.
  */
 export class SystemHealthChecker {
-  
   /**
    * Performs comprehensive system health check
    */
@@ -33,7 +32,7 @@ export class SystemHealthChecker {
       database: false,
       redis: false,
       pythonAI: false,
-      queue: false
+      queue: false,
     };
 
     console.log('🔍 Checking system health...');
@@ -41,7 +40,7 @@ export class SystemHealthChecker {
     // Check backend API
     try {
       const response = await fetch(`${testConfig.api.baseUrl}/health`, {
-        timeout: 5000
+        timeout: 5000,
       } as RequestInit);
       services.backend = response.ok;
       if (!response.ok) {
@@ -54,7 +53,7 @@ export class SystemHealthChecker {
     // Check database connectivity
     try {
       const response = await fetch(`${testConfig.api.baseUrl}/health/database`, {
-        timeout: 5000
+        timeout: 5000,
       } as RequestInit);
       services.database = response.ok;
       if (!response.ok) {
@@ -67,7 +66,7 @@ export class SystemHealthChecker {
     // Check Redis
     try {
       const response = await fetch(`${testConfig.api.baseUrl}/health/redis`, {
-        timeout: 5000
+        timeout: 5000,
       } as RequestInit);
       services.redis = response.ok;
       if (!response.ok) {
@@ -80,7 +79,7 @@ export class SystemHealthChecker {
     // Check Python AI Service
     try {
       const response = await fetch(`${testConfig.api.baseUrl}/api/v1/ai/health`, {
-        timeout: 10000
+        timeout: 10000,
       } as RequestInit);
       services.pythonAI = response.ok;
       if (!response.ok) {
@@ -93,7 +92,7 @@ export class SystemHealthChecker {
     // Check Queue System
     try {
       const response = await fetch(`${testConfig.api.baseUrl}/health/queue`, {
-        timeout: 5000
+        timeout: 5000,
       } as RequestInit);
       services.queue = response.ok;
       if (!response.ok) {
@@ -108,7 +107,7 @@ export class SystemHealthChecker {
     const performancePromises = [
       this.checkResponseTime(),
       this.checkMemoryUsage(),
-      this.checkCPUUsage()
+      this.checkCPUUsage(),
     ];
 
     const [avgResponseTime, memoryUsage, cpuUsage] = await Promise.allSettled(performancePromises);
@@ -122,8 +121,8 @@ export class SystemHealthChecker {
       performance: {
         avgResponseTime: avgResponseTime.status === 'fulfilled' ? avgResponseTime.value : 0,
         memoryUsage: memoryUsage.status === 'fulfilled' ? memoryUsage.value : 0,
-        cpuUsage: cpuUsage.status === 'fulfilled' ? cpuUsage.value : 0
-      }
+        cpuUsage: cpuUsage.status === 'fulfilled' ? cpuUsage.value : 0,
+      },
     };
   }
 
@@ -131,11 +130,7 @@ export class SystemHealthChecker {
    * Checks average API response time
    */
   private async checkResponseTime(): Promise<number> {
-    const endpoints = [
-      '/health',
-      '/api/v1/health',
-      '/health/database'
-    ];
+    const endpoints = ['/health', '/api/v1/health', '/health/database'];
 
     const responseTimes: number[] = [];
 
@@ -143,10 +138,10 @@ export class SystemHealthChecker {
       try {
         const start = Date.now();
         const response = await fetch(`${testConfig.api.baseUrl}${endpoint}`, {
-          timeout: 5000
+          timeout: 5000,
         } as RequestInit);
         const end = Date.now();
-        
+
         if (response.ok) {
           responseTimes.push(end - start);
         }
@@ -155,8 +150,8 @@ export class SystemHealthChecker {
       }
     }
 
-    return responseTimes.length > 0 
-      ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length 
+    return responseTimes.length > 0
+      ? responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
       : 0;
   }
 
@@ -166,9 +161,9 @@ export class SystemHealthChecker {
   private async checkMemoryUsage(): Promise<number> {
     try {
       const response = await fetch(`${testConfig.api.baseUrl}/health/system`, {
-        timeout: 5000
+        timeout: 5000,
       } as RequestInit);
-      
+
       if (response.ok) {
         const data = await response.json();
         return data.memory?.usage || 0;
@@ -176,7 +171,7 @@ export class SystemHealthChecker {
     } catch (error) {
       console.warn('Failed to get memory usage:', error);
     }
-    
+
     return 0;
   }
 
@@ -186,9 +181,9 @@ export class SystemHealthChecker {
   private async checkCPUUsage(): Promise<number> {
     try {
       const response = await fetch(`${testConfig.api.baseUrl}/health/system`, {
-        timeout: 5000
+        timeout: 5000,
       } as RequestInit);
-      
+
       if (response.ok) {
         const data = await response.json();
         return data.cpu?.usage || 0;
@@ -196,7 +191,7 @@ export class SystemHealthChecker {
     } catch (error) {
       console.warn('Failed to get CPU usage:', error);
     }
-    
+
     return 0;
   }
 
@@ -215,18 +210,25 @@ export class SystemHealthChecker {
 
     try {
       const response = await fetch(`${testConfig.api.baseUrl}/health/database/schema`, {
-        timeout: 10000
+        timeout: 10000,
       } as RequestInit);
-      
+
       if (response.ok) {
         const schemaData = await response.json();
-        
+
         // Check required tables
         const requiredTables = [
-          'users', 'courses', 'modules', 'files', 'chunks', 
-          'embeddings', 'ai_content', 'personas', 'pgmq_queue'
+          'users',
+          'courses',
+          'modules',
+          'files',
+          'chunks',
+          'embeddings',
+          'ai_content',
+          'personas',
+          'pgmq_queue',
         ];
-        
+
         for (const table of requiredTables) {
           if (!schemaData.tables?.includes(table)) {
             missingTables.push(table);
@@ -238,7 +240,7 @@ export class SystemHealthChecker {
           'idx_embeddings_vector',
           'idx_chunks_file_id',
           'idx_files_user_id',
-          'idx_pgmq_queue_created_at'
+          'idx_pgmq_queue_created_at',
         ];
 
         for (const index of requiredIndexes) {
@@ -254,7 +256,6 @@ export class SystemHealthChecker {
         if (missingIndexes.length > 0) {
           issues.push(`Missing indexes: ${missingIndexes.join(', ')}`);
         }
-
       } else {
         issues.push(`Schema validation failed: ${response.status}`);
       }
@@ -266,7 +267,7 @@ export class SystemHealthChecker {
       isValid: issues.length === 0,
       missingTables,
       missingIndexes,
-      issues
+      issues,
     };
   }
 
@@ -294,24 +295,24 @@ export class SystemHealthChecker {
       fileProcessing: false,
       aiGeneration: false,
       embeddings: false,
-      notifications: false
+      notifications: false,
     };
 
     let metrics = {
       pendingJobs: 0,
       processingJobs: 0,
       failedJobs: 0,
-      averageProcessingTime: 0
+      averageProcessingTime: 0,
     };
 
     try {
       const response = await fetch(`${testConfig.api.baseUrl}/health/queue/detailed`, {
-        timeout: 10000
+        timeout: 10000,
       } as RequestInit);
-      
+
       if (response.ok) {
         const queueData = await response.json();
-        
+
         // Check individual queues
         queues.fileProcessing = queueData.queues?.file_processing?.healthy || false;
         queues.aiGeneration = queueData.queues?.ai_generation?.healthy || false;
@@ -323,7 +324,7 @@ export class SystemHealthChecker {
           pendingJobs: queueData.metrics?.pending || 0,
           processingJobs: queueData.metrics?.processing || 0,
           failedJobs: queueData.metrics?.failed || 0,
-          averageProcessingTime: queueData.metrics?.avgProcessingTime || 0
+          averageProcessingTime: queueData.metrics?.avgProcessingTime || 0,
         };
 
         // Check for issues
@@ -340,7 +341,6 @@ export class SystemHealthChecker {
             issues.push(`Queue ${queueName} is unhealthy`);
           }
         });
-
       } else {
         issues.push(`Queue health check failed: ${response.status}`);
       }
@@ -352,7 +352,7 @@ export class SystemHealthChecker {
       isHealthy: issues.length === 0 && Object.values(queues).every(Boolean),
       queues,
       metrics,
-      issues
+      issues,
     };
   }
 
@@ -383,28 +383,28 @@ export class SystemHealthChecker {
     const providers = {
       openai: false,
       anthropic: false,
-      local: false
+      local: false,
     };
     const capabilities = {
       textGeneration: false,
       embeddings: false,
       streamingSupport: false,
-      costTracking: false
+      costTracking: false,
     };
     let performance = {
       avgResponseTime: 0,
       tokensPerSecond: 0,
-      errorRate: 0
+      errorRate: 0,
     };
 
     try {
       const response = await fetch(`${testConfig.api.baseUrl}/api/v1/ai/health/detailed`, {
-        timeout: 15000
+        timeout: 15000,
       } as RequestInit);
-      
+
       if (response.ok) {
         const aiData = await response.json();
-        
+
         // Check providers
         providers.openai = aiData.providers?.openai?.healthy || false;
         providers.anthropic = aiData.providers?.anthropic?.healthy || false;
@@ -420,7 +420,7 @@ export class SystemHealthChecker {
         performance = {
           avgResponseTime: aiData.performance?.avgResponseTime || 0,
           tokensPerSecond: aiData.performance?.tokensPerSecond || 0,
-          errorRate: aiData.performance?.errorRate || 0
+          errorRate: aiData.performance?.errorRate || 0,
         };
 
         // Check for issues
@@ -435,7 +435,6 @@ export class SystemHealthChecker {
         if (performance.avgResponseTime > 10000) {
           issues.push(`Slow AI responses: ${performance.avgResponseTime}ms avg`);
         }
-
       } else {
         issues.push(`AI service health check failed: ${response.status}`);
       }
@@ -448,7 +447,7 @@ export class SystemHealthChecker {
       providers,
       capabilities,
       performance,
-      issues
+      issues,
     };
   }
 
@@ -470,7 +469,7 @@ export class SystemHealthChecker {
       { path: '/health/database', method: 'GET' },
       { path: '/health/redis', method: 'GET' },
       { path: '/health/queue', method: 'GET' },
-      { path: '/api/v1/ai/health', method: 'GET' }
+      { path: '/api/v1/ai/health', method: 'GET' },
     ];
 
     const results = [];
@@ -480,32 +479,32 @@ export class SystemHealthChecker {
       try {
         const response = await fetch(`${testConfig.api.baseUrl}${endpoint.path}`, {
           method: endpoint.method,
-          timeout: 5000
+          timeout: 5000,
         } as RequestInit);
-        
+
         const responseTime = Date.now() - start;
-        
+
         results.push({
           endpoint: endpoint.path,
           status: response.status,
           responseTime,
-          success: response.ok
+          success: response.ok,
         });
       } catch (error) {
         results.push({
           endpoint: endpoint.path,
           status: 0,
           responseTime: Date.now() - start,
-          success: false
+          success: false,
         });
       }
     }
 
-    const passed = results.every(result => result.success);
+    const passed = results.every((result) => result.success);
 
     return {
       passed,
-      results
+      results,
     };
   }
 }

@@ -12,7 +12,7 @@ import {
 
 /**
  * Qdrant Vector Store Implementation
- * 
+ *
  * Prerequisites:
  * - npm install @qdrant/qdrant-js
  * - QDRANT_URL environment variable
@@ -29,7 +29,7 @@ export class QdrantStore extends BaseVectorStore {
   protected async doInitialize(_config: IndexConfig): Promise<void> {
     // TODO: Implement Qdrant initialization
     throw new Error('Qdrant implementation not yet available');
-    
+
     /*
     // Example implementation:
     const { QdrantClient } = require('@qdrant/qdrant-js');
@@ -81,10 +81,7 @@ export class QdrantStore extends BaseVectorStore {
     throw new Error('Not implemented');
   }
 
-  protected async doUpdateMetadata(
-    _id: string,
-    _metadata: Record<string, any>
-  ): Promise<void> {
+  protected async doUpdateMetadata(_id: string, _metadata: Record<string, any>): Promise<void> {
     throw new Error('Not implemented');
   }
 

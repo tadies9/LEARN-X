@@ -62,7 +62,7 @@ export class APMAlertingService {
       evaluationInterval: parseInt(process.env.APM_ALERTING_INTERVAL || '60'),
       retryAttempts: parseInt(process.env.APM_ALERTING_RETRY_ATTEMPTS || '3'),
       retryDelay: parseInt(process.env.APM_ALERTING_RETRY_DELAY || '5'),
-      defaultChannels: this.parseDefaultChannels()
+      defaultChannels: this.parseDefaultChannels(),
     };
   }
 
@@ -82,10 +82,10 @@ export class APMAlertingService {
     try {
       // Load default alert rules
       this.loadDefaultRules();
-      
+
       // Start evaluation timer
       this.startEvaluationTimer();
-      
+
       logger.info('🚨 APM Alerting Service initialized');
     } catch (error) {
       logger.error('Failed to initialize APM Alerting Service:', error);
@@ -115,7 +115,7 @@ export class APMAlertingService {
     const updatedRule = { ...rule, ...updates };
     this.validateRule(updatedRule);
     this.rules.set(ruleId, updatedRule);
-    
+
     logger.info(`Alert rule updated: ${rule.name}`);
     return true;
   }
@@ -134,14 +134,14 @@ export class APMAlertingService {
 
     const now = new Date();
     const history = this.metricHistory.get(metricName) || [];
-    
+
     // Add new value
     history.push({ value, timestamp: now });
-    
+
     // Remove old values
     const cutoff = new Date(now.getTime() - this.HISTORY_RETENTION_MINUTES * 60 * 1000);
-    const filteredHistory = history.filter(h => h.timestamp > cutoff);
-    
+    const filteredHistory = history.filter((h) => h.timestamp > cutoff);
+
     this.metricHistory.set(metricName, filteredHistory);
   }
 
@@ -165,15 +165,13 @@ export class APMAlertingService {
     // Calculate metric value based on duration
     const durationMs = rule.duration * 60 * 1000;
     const cutoff = new Date(Date.now() - durationMs);
-    const relevantValues = metricHistory
-      .filter(h => h.timestamp > cutoff)
-      .map(h => h.value);
+    const relevantValues = metricHistory.filter((h) => h.timestamp > cutoff).map((h) => h.value);
 
     if (relevantValues.length === 0) return;
 
     // Calculate average value
     const currentValue = relevantValues.reduce((sum, val) => sum + val, 0) / relevantValues.length;
-    
+
     // Check condition
     const shouldTrigger = this.evaluateCondition(rule.condition, currentValue, rule.threshold);
     const alertKey = `${rule.id}_${rule.metric}`;
@@ -194,18 +192,17 @@ export class APMAlertingService {
         context: {
           duration: rule.duration,
           condition: rule.condition,
-          tags: rule.tags
-        }
+          tags: rule.tags,
+        },
       };
 
       this.activeAlerts.set(alertKey, alert);
       await this.sendAlert(alert, rule.channels);
-      
     } else if (!shouldTrigger && existingAlert) {
       // Resolve existing alert
       existingAlert.status = 'resolved';
       existingAlert.resolvedAt = new Date();
-      
+
       await this.sendAlertResolution(existingAlert, rule.channels);
       this.activeAlerts.delete(alertKey);
     }
@@ -227,17 +224,17 @@ export class APMAlertingService {
   // Alert Sending
   private async sendAlert(alert: AlertEvent, channels: AlertChannel[]): Promise<void> {
     const allChannels = [...channels, ...this.config.defaultChannels];
-    
+
     for (const channel of allChannels) {
       try {
         await this.sendToChannel(alert, channel);
       } catch (error) {
         logger.error(`Failed to send alert to ${channel.type}:`, error);
-        
+
         // Retry logic
         for (let attempt = 1; attempt <= this.config.retryAttempts; attempt++) {
           await this.delay(this.config.retryDelay * 1000);
-          
+
           try {
             await this.sendToChannel(alert, channel);
             break;
@@ -251,7 +248,7 @@ export class APMAlertingService {
 
   private async sendAlertResolution(alert: AlertEvent, channels: AlertChannel[]): Promise<void> {
     const allChannels = [...channels, ...this.config.defaultChannels];
-    
+
     for (const channel of allChannels) {
       try {
         await this.sendResolutionToChannel(alert, channel);
@@ -300,11 +297,11 @@ export class APMAlertingService {
   // Channel Implementations
   private async sendSlackAlert(alert: AlertEvent, channel: AlertChannel): Promise<void> {
     const message = this.formatSlackMessage(alert);
-    
+
     const response = await fetch(channel.endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(message)
+      body: JSON.stringify(message),
     });
 
     if (!response.ok) {
@@ -314,11 +311,11 @@ export class APMAlertingService {
 
   private async sendSlackResolution(alert: AlertEvent, channel: AlertChannel): Promise<void> {
     const message = this.formatSlackResolution(alert);
-    
+
     await fetch(channel.endpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(message)
+      body: JSON.stringify(message),
     });
   }
 
@@ -335,16 +332,16 @@ export class APMAlertingService {
     const payload = {
       type: 'alert',
       alert,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     const response = await fetch(channel.endpoint, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        ...channel.config?.headers
+        ...channel.config?.headers,
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -356,16 +353,16 @@ export class APMAlertingService {
     const payload = {
       type: 'resolution',
       alert,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     await fetch(channel.endpoint, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        ...channel.config?.headers
+        ...channel.config?.headers,
       },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
   }
 
@@ -383,15 +380,15 @@ export class APMAlertingService {
           metric: alert.metric,
           currentValue: alert.currentValue,
           threshold: alert.threshold,
-          context: alert.context
-        }
-      }
+          context: alert.context,
+        },
+      },
     };
 
     const response = await fetch('https://events.pagerduty.com/v2/enqueue', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
 
     if (!response.ok) {
@@ -403,13 +400,13 @@ export class APMAlertingService {
     const payload = {
       routing_key: channel.config?.integrationKey,
       event_action: 'resolve',
-      dedup_key: `${alert.ruleId}_${alert.metric}`
+      dedup_key: `${alert.ruleId}_${alert.metric}`,
     };
 
     await fetch('https://events.pagerduty.com/v2/enqueue', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
+      body: JSON.stringify(payload),
     });
   }
 
@@ -427,40 +424,40 @@ export class APMAlertingService {
               type: 'header',
               text: {
                 type: 'plain_text',
-                text: `${emoji} ALERT: ${alert.ruleName}`
-              }
+                text: `${emoji} ALERT: ${alert.ruleName}`,
+              },
             },
             {
               type: 'section',
               fields: [
                 {
                   type: 'mrkdwn',
-                  text: `*Metric:* ${alert.metric}`
+                  text: `*Metric:* ${alert.metric}`,
                 },
                 {
                   type: 'mrkdwn',
-                  text: `*Current Value:* ${alert.currentValue.toFixed(2)}`
+                  text: `*Current Value:* ${alert.currentValue.toFixed(2)}`,
                 },
                 {
                   type: 'mrkdwn',
-                  text: `*Threshold:* ${alert.threshold}`
+                  text: `*Threshold:* ${alert.threshold}`,
                 },
                 {
                   type: 'mrkdwn',
-                  text: `*Severity:* ${alert.severity.toUpperCase()}`
-                }
-              ]
+                  text: `*Severity:* ${alert.severity.toUpperCase()}`,
+                },
+              ],
             },
             {
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: `*Triggered:* ${alert.triggeredAt.toISOString()}`
-              }
-            }
-          ]
-        }
-      ]
+                text: `*Triggered:* ${alert.triggeredAt.toISOString()}`,
+              },
+            },
+          ],
+        },
+      ],
     };
   }
 
@@ -474,39 +471,49 @@ export class APMAlertingService {
               type: 'header',
               text: {
                 type: 'plain_text',
-                text: `✅ RESOLVED: ${alert.ruleName}`
-              }
+                text: `✅ RESOLVED: ${alert.ruleName}`,
+              },
             },
             {
               type: 'section',
               text: {
                 type: 'mrkdwn',
-                text: `Alert for metric \`${alert.metric}\` has been resolved.`
-              }
-            }
-          ]
-        }
-      ]
+                text: `Alert for metric \`${alert.metric}\` has been resolved.`,
+              },
+            },
+          ],
+        },
+      ],
     };
   }
 
   private getSeverityEmoji(severity: string): string {
     switch (severity) {
-      case 'critical': return '🚨';
-      case 'high': return '⚠️';
-      case 'medium': return '⚠️';
-      case 'low': return 'ℹ️';
-      default: return '🔔';
+      case 'critical':
+        return '🚨';
+      case 'high':
+        return '⚠️';
+      case 'medium':
+        return '⚠️';
+      case 'low':
+        return 'ℹ️';
+      default:
+        return '🔔';
     }
   }
 
   private getSeverityColor(severity: string): string {
     switch (severity) {
-      case 'critical': return 'danger';
-      case 'high': return 'warning';
-      case 'medium': return 'warning';
-      case 'low': return 'good';
-      default: return '#808080';
+      case 'critical':
+        return 'danger';
+      case 'high':
+        return 'warning';
+      case 'medium':
+        return 'warning';
+      case 'low':
+        return 'good';
+      default:
+        return '#808080';
     }
   }
 
@@ -531,12 +538,12 @@ export class APMAlertingService {
 
   private parseDefaultChannels(): AlertChannel[] {
     const channels: AlertChannel[] = [];
-    
+
     // Slack webhook
     if (process.env.SLACK_WEBHOOK_URL) {
       channels.push({
         type: 'slack',
-        endpoint: process.env.SLACK_WEBHOOK_URL
+        endpoint: process.env.SLACK_WEBHOOK_URL,
       });
     }
 
@@ -544,7 +551,7 @@ export class APMAlertingService {
     if (process.env.ALERT_EMAIL) {
       channels.push({
         type: 'email',
-        endpoint: process.env.ALERT_EMAIL
+        endpoint: process.env.ALERT_EMAIL,
       });
     }
 
@@ -554,8 +561,8 @@ export class APMAlertingService {
         type: 'pagerduty',
         endpoint: 'https://events.pagerduty.com/v2/enqueue',
         config: {
-          integrationKey: process.env.PAGERDUTY_INTEGRATION_KEY
-        }
+          integrationKey: process.env.PAGERDUTY_INTEGRATION_KEY,
+        },
       });
     }
 
@@ -574,7 +581,7 @@ export class APMAlertingService {
       duration: 5, // minutes
       severity: 'high',
       enabled: true,
-      channels: []
+      channels: [],
     });
 
     this.addRule({
@@ -587,7 +594,7 @@ export class APMAlertingService {
       duration: 10,
       severity: 'critical',
       enabled: true,
-      channels: []
+      channels: [],
     });
 
     this.addRule({
@@ -600,7 +607,7 @@ export class APMAlertingService {
       duration: 5,
       severity: 'medium',
       enabled: true,
-      channels: []
+      channels: [],
     });
 
     this.addRule({
@@ -613,7 +620,7 @@ export class APMAlertingService {
       duration: 15,
       severity: 'high',
       enabled: true,
-      channels: []
+      channels: [],
     });
 
     logger.info('Default alert rules loaded');
@@ -631,7 +638,7 @@ export class APMAlertingService {
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, ms));
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   // Public Getters

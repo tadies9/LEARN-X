@@ -50,7 +50,8 @@ export class DashboardDataService {
         throw todayError;
       }
 
-      const todayMinutes = todayData?.reduce((sum, session) => sum + (session.duration || 0), 0) || 0;
+      const todayMinutes =
+        todayData?.reduce((sum, session) => sum + (session.duration || 0), 0) || 0;
 
       // Get this week's study time
       const { data: weekData, error: weekError } = await supabase
@@ -78,7 +79,8 @@ export class DashboardDataService {
         throw totalError;
       }
 
-      const totalMinutes = totalData?.reduce((sum, session) => sum + (session.duration || 0), 0) || 0;
+      const totalMinutes =
+        totalData?.reduce((sum, session) => sum + (session.duration || 0), 0) || 0;
 
       return {
         today: todayMinutes,
@@ -107,13 +109,13 @@ export class DashboardDataService {
         throw courseError;
       }
 
-      const active = courses?.filter(c => c.status === 'active').length || 0;
-      const completed = courses?.filter(c => c.status === 'completed').length || 0;
-      const archived = courses?.filter(c => c.status === 'archived').length || 0;
+      const active = courses?.filter((c) => c.status === 'active').length || 0;
+      const completed = courses?.filter((c) => c.status === 'completed').length || 0;
+      const archived = courses?.filter((c) => c.status === 'archived').length || 0;
 
       // Get module statistics
-      const courseIds = courses?.map(c => c.id) || [];
-      
+      const courseIds = courses?.map((c) => c.id) || [];
+
       if (courseIds.length === 0) {
         return {
           active,
@@ -135,7 +137,8 @@ export class DashboardDataService {
       }
 
       const totalModules = modules?.length || 0;
-      const completedModules = modules?.filter(m => m.completion_status === 'completed').length || 0;
+      const completedModules =
+        modules?.filter((m) => m.completion_status === 'completed').length || 0;
 
       return {
         active,

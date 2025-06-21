@@ -59,7 +59,7 @@ export class VectorBenchmark {
     // Run benchmarks for each provider
     for (const provider of this.config.providers) {
       logger.info(`[Benchmark] Testing provider: ${provider}`);
-      
+
       try {
         await this.benchmarkProvider(provider);
       } catch (error) {
@@ -128,7 +128,7 @@ export class VectorBenchmark {
 
     for (const batch of batches) {
       const batchStart = Date.now();
-      
+
       try {
         const result = await store.upsertBatch(batch);
         errors += result.failed;
@@ -170,7 +170,7 @@ export class VectorBenchmark {
 
     for (const query of queries) {
       const queryStart = Date.now();
-      
+
       try {
         const results = await store.search(query, {
           topK: this.config.topK,
@@ -218,7 +218,7 @@ export class VectorBenchmark {
     for (let i = 0; i < updateCount; i++) {
       const updateStart = Date.now();
       const docId = `doc_${i}`;
-      
+
       try {
         await store.updateMetadata(docId, {
           updated: true,
@@ -255,7 +255,7 @@ export class VectorBenchmark {
   ): Promise<void> {
     const deleteCount = Math.min(100, vectorCount / 10);
     const deleteIds = Array.from({ length: deleteCount }, (_, i) => `doc_${i}`);
-    
+
     const startTime = Date.now();
     let errors = 0;
 
@@ -298,16 +298,17 @@ export class VectorBenchmark {
    */
   private generateRandomVectors(count: number, dimensions: number): number[][] {
     const vectors: number[][] = [];
-    
+
     for (let i = 0; i < count; i++) {
-      const vector = Array.from({ length: dimensions }, () => 
-        Math.random() * 2 - 1 // Random values between -1 and 1
+      const vector = Array.from(
+        { length: dimensions },
+        () => Math.random() * 2 - 1 // Random values between -1 and 1
       );
-      
+
       // Normalize vector
       const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0));
-      const normalized = vector.map(val => val / magnitude);
-      
+      const normalized = vector.map((val) => val / magnitude);
+
       vectors.push(normalized);
     }
 
@@ -335,11 +336,11 @@ export class VectorBenchmark {
    */
   private createBatches<T>(items: T[], batchSize: number): T[][] {
     const batches: T[][] = [];
-    
+
     for (let i = 0; i < items.length; i += batchSize) {
       batches.push(items.slice(i, i + batchSize));
     }
-    
+
     return batches;
   }
 
@@ -357,7 +358,7 @@ export class VectorBenchmark {
     metadata?: any;
   }): void {
     const sortedLatencies = [...data.latencies].sort((a, b) => a - b);
-    
+
     const result: BenchmarkResult = {
       provider: data.provider,
       vectorCount: data.vectorCount,
@@ -375,7 +376,7 @@ export class VectorBenchmark {
     };
 
     this.results.push(result);
-    
+
     logger.info('[Benchmark] Result recorded:', {
       provider: result.provider,
       operation: result.operation,
@@ -436,7 +437,7 @@ export class VectorBenchmark {
       'Timestamp',
     ];
 
-    const rows = this.results.map(r => [
+    const rows = this.results.map((r) => [
       r.provider,
       r.vectorCount,
       r.operation,
@@ -451,12 +452,9 @@ export class VectorBenchmark {
       r.timestamp.toISOString(),
     ]);
 
-    const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
-    
-    await fs.writeFile(
-      path.join(this.config.outputDir, 'benchmark_results.csv'),
-      csv
-    );
+    const csv = [headers, ...rows].map((row) => row.join(',')).join('\n');
+
+    await fs.writeFile(path.join(this.config.outputDir, 'benchmark_results.csv'), csv);
   }
 
   /**
@@ -481,7 +479,7 @@ export class VectorBenchmark {
    */
   private async generateComparisonReport(): Promise<void> {
     const comparisons = this.compareProviders();
-    
+
     await fs.writeFile(
       path.join(this.config.outputDir, 'provider_comparison.json'),
       JSON.stringify(comparisons, null, 2)
@@ -493,11 +491,8 @@ export class VectorBenchmark {
    */
   private async generateRecommendations(): Promise<void> {
     const recommendations = this.generateProviderRecommendations();
-    
-    await fs.writeFile(
-      path.join(this.config.outputDir, 'recommendations.md'),
-      recommendations
-    );
+
+    await fs.writeFile(path.join(this.config.outputDir, 'recommendations.md'), recommendations);
   }
 
   /**
@@ -508,10 +503,10 @@ export class VectorBenchmark {
 
     for (const provider of this.config.providers) {
       summary[provider] = {};
-      
+
       for (const operation of ['index', 'search', 'update', 'delete']) {
         const results = this.results.filter(
-          r => r.provider === provider && r.operation === operation
+          (r) => r.provider === provider && r.operation === operation
         );
 
         if (results.length > 0) {
@@ -531,19 +526,21 @@ export class VectorBenchmark {
    * Compare providers
    */
   private compareProviders(): ProviderComparison[] {
-    return this.config.providers.map(provider => {
-      const results = this.results.filter(r => r.provider === provider);
-      
+    return this.config.providers.map((provider) => {
+      const results = this.results.filter((r) => r.provider === provider);
+
       // Calculate scores (lower is better for latency, higher for throughput)
-      const searchResults = results.filter(r => r.operation === 'search');
-      const indexResults = results.filter(r => r.operation === 'index');
-      
-      const avgSearchLatency = searchResults.reduce((sum, r) => sum + r.avgLatencyMs, 0) / searchResults.length || 0;
-      const avgIndexLatency = indexResults.reduce((sum, r) => sum + r.avgLatencyMs, 0) / indexResults.length || 0;
-      
+      const searchResults = results.filter((r) => r.operation === 'search');
+      const indexResults = results.filter((r) => r.operation === 'index');
+
+      const avgSearchLatency =
+        searchResults.reduce((sum, r) => sum + r.avgLatencyMs, 0) / searchResults.length || 0;
+      const avgIndexLatency =
+        indexResults.reduce((sum, r) => sum + r.avgLatencyMs, 0) / indexResults.length || 0;
+
       const searchScore = avgSearchLatency > 0 ? 1000 / avgSearchLatency : 0;
       const indexScore = avgIndexLatency > 0 ? 1000 / avgIndexLatency : 0;
-      
+
       return {
         provider,
         totalScore: searchScore + indexScore,
@@ -575,7 +572,7 @@ export class VectorBenchmark {
    */
   private getProviderRecommendation(provider: string, results: BenchmarkResult[]): string {
     const avgLatency = results.reduce((sum, r) => sum + r.avgLatencyMs, 0) / results.length;
-    const maxVectorCount = Math.max(...results.map(r => r.vectorCount));
+    const maxVectorCount = Math.max(...results.map((r) => r.vectorCount));
 
     if (provider === 'pgvector') {
       if (maxVectorCount > 1000000) {
@@ -628,23 +625,25 @@ export class VectorBenchmark {
 
     for (const provider of this.config.providers) {
       markdown += `### ${provider}\n\n`;
-      
-      const results = this.results.filter(r => r.provider === provider);
+
+      const results = this.results.filter((r) => r.provider === provider);
       const summary = this.generateSummary()[provider];
 
       markdown += '#### Performance Metrics\n\n';
       markdown += '| Operation | Avg Latency (ms) | Throughput (ops/s) | Error Rate (%) |\n';
       markdown += '|-----------|------------------|-------------------|----------------|\n';
-      
+
       for (const [op, stats] of Object.entries(summary)) {
         const s = stats as any;
         markdown += `| ${op} | ${s.avgLatency.toFixed(2)} | ${s.avgThroughput.toFixed(2)} | ${s.avgErrorRate.toFixed(2)} |\n`;
       }
 
       markdown += '\n#### Scalability\n\n';
-      
-      const scalabilityData = this.config.vectorCounts.map(count => {
-        const searchResult = results.find(r => r.operation === 'search' && r.vectorCount === count);
+
+      const scalabilityData = this.config.vectorCounts.map((count) => {
+        const searchResult = results.find(
+          (r) => r.operation === 'search' && r.vectorCount === count
+        );
         return {
           count,
           latency: searchResult?.avgLatencyMs || 0,
@@ -653,15 +652,15 @@ export class VectorBenchmark {
 
       markdown += '| Vector Count | Search Latency (ms) |\n';
       markdown += '|--------------|--------------------|\n';
-      scalabilityData.forEach(data => {
+      scalabilityData.forEach((data) => {
         markdown += `| ${data.count.toLocaleString()} | ${data.latency.toFixed(2)} |\n`;
       });
-      
+
       markdown += '\n';
     }
 
     markdown += '## Migration Recommendations\n\n';
-    
+
     const currentVectorCount = Math.max(...this.config.vectorCounts);
     if (currentVectorCount < 100000) {
       markdown += '- **Current Scale**: Small dataset\n';

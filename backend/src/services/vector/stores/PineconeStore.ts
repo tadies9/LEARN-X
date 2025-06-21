@@ -12,7 +12,7 @@ import {
 
 /**
  * Pinecone Vector Store Implementation
- * 
+ *
  * Prerequisites:
  * - npm install @pinecone-database/pinecone
  * - PINECONE_API_KEY environment variable
@@ -29,7 +29,7 @@ export class PineconeStore extends BaseVectorStore {
   protected async doInitialize(_config: IndexConfig): Promise<void> {
     // TODO: Implement Pinecone initialization
     throw new Error('Pinecone implementation not yet available');
-    
+
     /*
     // Example implementation:
     const { Pinecone } = require('@pinecone-database/pinecone');
@@ -80,10 +80,7 @@ export class PineconeStore extends BaseVectorStore {
     throw new Error('Not implemented');
   }
 
-  protected async doUpdateMetadata(
-    _id: string,
-    _metadata: Record<string, any>
-  ): Promise<void> {
+  protected async doUpdateMetadata(_id: string, _metadata: Record<string, any>): Promise<void> {
     throw new Error('Not implemented');
   }
 

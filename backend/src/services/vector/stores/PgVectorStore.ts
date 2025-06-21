@@ -100,14 +100,12 @@ export class PgVectorStore extends BaseVectorStore {
 
     const embeddingStr = this.vectorToString(document.vector);
 
-    const { error } = await supabase
-      .from(this.tableName)
-      .upsert({
-        id: document.id,
-        embedding: embeddingStr,
-        metadata: document.metadata || {},
-        content: document.content,
-      });
+    const { error } = await supabase.from(this.tableName).upsert({
+      id: document.id,
+      embedding: embeddingStr,
+      metadata: document.metadata || {},
+      content: document.content,
+    });
 
     if (error) {
       throw new Error(`Failed to upsert vector: ${error.message}`);
@@ -135,7 +133,7 @@ export class PgVectorStore extends BaseVectorStore {
     }
 
     // Process valid documents in batches
-    const validDocs = documents.filter(doc => {
+    const validDocs = documents.filter((doc) => {
       try {
         this.validateVector(doc.vector);
         return true;
@@ -147,21 +145,19 @@ export class PgVectorStore extends BaseVectorStore {
     const batchSize = 100;
     for (let i = 0; i < validDocs.length; i += batchSize) {
       const batch = validDocs.slice(i, i + batchSize);
-      
-      const records = batch.map(doc => ({
+
+      const records = batch.map((doc) => ({
         id: doc.id,
         embedding: this.vectorToString(doc.vector),
         metadata: doc.metadata || {},
         content: doc.content,
       }));
 
-      const { error } = await supabase
-        .from(this.tableName)
-        .upsert(records);
+      const { error } = await supabase.from(this.tableName).upsert(records);
 
       if (error) {
         result.failed += batch.length;
-        batch.forEach(doc => {
+        batch.forEach((doc) => {
           result.errors?.push({
             id: doc.id,
             error: error.message,
@@ -235,14 +231,11 @@ export class PgVectorStore extends BaseVectorStore {
       errors: [],
     };
 
-    const { error, count } = await supabase
-      .from(this.tableName)
-      .delete()
-      .in('id', ids);
+    const { error, count } = await supabase.from(this.tableName).delete().in('id', ids);
 
     if (error) {
       result.failed = ids.length;
-      ids.forEach(id => {
+      ids.forEach((id) => {
         result.errors?.push({
           id,
           error: error.message,
@@ -258,7 +251,7 @@ export class PgVectorStore extends BaseVectorStore {
 
   protected async doDeleteByFilter(filter: Record<string, any>): Promise<number> {
     const filterQuery = this.buildMetadataFilter(filter);
-    
+
     if (!filterQuery) {
       throw new Error('Invalid filter provided');
     }
@@ -279,16 +272,13 @@ export class PgVectorStore extends BaseVectorStore {
   }
 
   protected async doGet(ids: string[]): Promise<VectorDocument[]> {
-    const { data, error } = await supabase
-      .from(this.tableName)
-      .select('*')
-      .in('id', ids);
+    const { data, error } = await supabase.from(this.tableName).select('*').in('id', ids);
 
     if (error) {
       throw new Error(`Get failed: ${error.message}`);
     }
 
-    return (data || []).map(row => ({
+    return (data || []).map((row) => ({
       id: row.id,
       vector: this.stringToVector(row.embedding),
       metadata: row.metadata,
@@ -296,14 +286,8 @@ export class PgVectorStore extends BaseVectorStore {
     }));
   }
 
-  protected async doUpdateMetadata(
-    id: string,
-    metadata: Record<string, any>
-  ): Promise<void> {
-    const { error } = await supabase
-      .from(this.tableName)
-      .update({ metadata })
-      .eq('id', id);
+  protected async doUpdateMetadata(id: string, metadata: Record<string, any>): Promise<void> {
+    const { error } = await supabase.from(this.tableName).update({ metadata }).eq('id', id);
 
     if (error) {
       throw new Error(`Update metadata failed: ${error.message}`);
@@ -322,9 +306,7 @@ export class PgVectorStore extends BaseVectorStore {
     // Get index size using our monitoring function
     const { data: indexStats } = await supabase.rpc('get_pgvector_index_stats');
 
-    const relevantStats = indexStats?.find((stat: any) => 
-      stat.table_name === this.tableName
-    );
+    const relevantStats = indexStats?.find((stat: any) => stat.table_name === this.tableName);
 
     return {
       totalVectors: count || 0,
@@ -347,10 +329,7 @@ export class PgVectorStore extends BaseVectorStore {
   }
 
   protected async doClear(): Promise<void> {
-    const { error } = await supabase
-      .from(this.tableName)
-      .delete()
-      .neq('id', ''); // Delete all
+    const { error } = await supabase.from(this.tableName).delete().neq('id', ''); // Delete all
 
     if (error) {
       throw new Error(`Clear failed: ${error.message}`);
@@ -365,7 +344,7 @@ export class PgVectorStore extends BaseVectorStore {
   /**
    * Helper methods
    */
-  
+
   private getIndexOperator(metric: 'cosine' | 'euclidean' | 'dotproduct'): string {
     switch (metric) {
       case 'cosine':
@@ -411,7 +390,7 @@ export class PgVectorStore extends BaseVectorStore {
       } else if (typeof value === 'number' || typeof value === 'boolean') {
         conditions.push(`metadata->>'${key}' = '${value}'`);
       } else if (Array.isArray(value)) {
-        const values = value.map(v => `'${v}'`).join(',');
+        const values = value.map((v) => `'${v}'`).join(',');
         conditions.push(`metadata->>'${key}' IN (${values})`);
       } else if (typeof value === 'object' && value.hasOwnProperty('$in')) {
         const values = value.$in.map((v: any) => `'${v}'`).join(',');

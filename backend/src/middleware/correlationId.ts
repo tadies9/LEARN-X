@@ -5,9 +5,10 @@ import * as Sentry from '@sentry/node';
 
 export function correlationIdMiddleware(req: Request, res: Response, next: NextFunction): void {
   // Generate or extract correlation ID
-  const correlationId = req.headers['x-correlation-id'] as string || 
-                       req.headers['x-request-id'] as string || 
-                       uuidv4();
+  const correlationId =
+    (req.headers['x-correlation-id'] as string) ||
+    (req.headers['x-request-id'] as string) ||
+    uuidv4();
 
   // Add to request object
   req.headers['x-correlation-id'] = correlationId;
@@ -24,12 +25,15 @@ export function correlationIdMiddleware(req: Request, res: Response, next: NextF
   });
 
   // Run the rest of the request in the context
-  requestContext.run({
-    correlationId,
-    userId: undefined, // Will be set by auth middleware
-    requestPath: req.path,
-    requestMethod: req.method,
-  }, () => {
-    next();
-  });
+  requestContext.run(
+    {
+      correlationId,
+      userId: undefined, // Will be set by auth middleware
+      requestPath: req.path,
+      requestMethod: req.method,
+    },
+    () => {
+      next();
+    }
+  );
 }

@@ -44,8 +44,8 @@ export class PerformanceHelpers {
   }
 
   static endTimer(
-    timerId: string, 
-    success: boolean = true, 
+    timerId: string,
+    success: boolean = true,
     customMetrics?: Record<string, number>
   ): PerformanceMetrics {
     const timer = this.activeTimers.get(timerId);
@@ -126,9 +126,9 @@ export class PerformanceHelpers {
       return null;
     }
 
-    const durations = metrics.map(m => m.duration).sort((a, b) => a - b);
-    const successCount = metrics.filter(m => m.success).length;
-    
+    const durations = metrics.map((m) => m.duration).sort((a, b) => a - b);
+    const successCount = metrics.filter((m) => m.success).length;
+
     // Calculate percentiles
     const p50Index = Math.floor(durations.length * 0.5);
     const p95Index = Math.floor(durations.length * 0.95);
@@ -154,10 +154,10 @@ export class PerformanceHelpers {
 
   private static checkThreshold(operationName: string, p95Duration: number): boolean {
     const thresholds = {
-      'file_processing': testConfig.performance.fileProcessingThreshold,
-      'ai_generation': testConfig.performance.aiGenerationThreshold,
-      'search': testConfig.performance.searchThreshold,
-      'api_response': testConfig.performance.apiResponseThreshold,
+      file_processing: testConfig.performance.fileProcessingThreshold,
+      ai_generation: testConfig.performance.aiGenerationThreshold,
+      search: testConfig.performance.searchThreshold,
+      api_response: testConfig.performance.apiResponseThreshold,
     };
 
     // Try to match operation name with threshold keys
@@ -173,7 +173,7 @@ export class PerformanceHelpers {
 
   static getAllBenchmarkReports(): BenchmarkResult[] {
     const reports: BenchmarkResult[] = [];
-    
+
     for (const operationName of this.measurements.keys()) {
       const report = this.generateBenchmarkReport(operationName);
       if (report) {
@@ -205,7 +205,8 @@ export class PerformanceHelpers {
       return false;
     }
 
-    const memoryGrowthBytes = lastMeasurement.memory_usage.heapUsed - firstMeasurement.memory_usage.heapUsed;
+    const memoryGrowthBytes =
+      lastMeasurement.memory_usage.heapUsed - firstMeasurement.memory_usage.heapUsed;
     const memoryGrowthMB = memoryGrowthBytes / (1024 * 1024);
 
     return memoryGrowthMB > maxGrowthMB;
@@ -234,8 +235,8 @@ export class PerformanceHelpers {
     // Calculate totals and check for memory leaks
     for (const [operationName, metrics] of this.measurements) {
       totalMeasurements += metrics.length;
-      successfulMeasurements += metrics.filter(m => m.success).length;
-      
+      successfulMeasurements += metrics.filter((m) => m.success).length;
+
       if (this.detectMemoryLeaks(operationName)) {
         memoryLeakDetected = true;
       }
@@ -243,8 +244,8 @@ export class PerformanceHelpers {
 
     // Find threshold violations
     const thresholdViolations = benchmarks
-      .filter(b => !b.threshold_met)
-      .map(b => {
+      .filter((b) => !b.threshold_met)
+      .map((b) => {
         const expectedThreshold = this.getThresholdForOperation(b.operation);
         return {
           operation: b.operation,
@@ -258,7 +259,8 @@ export class PerformanceHelpers {
       summary: {
         total_operations: this.measurements.size,
         total_measurements: totalMeasurements,
-        overall_success_rate: totalMeasurements > 0 ? successfulMeasurements / totalMeasurements : 0,
+        overall_success_rate:
+          totalMeasurements > 0 ? successfulMeasurements / totalMeasurements : 0,
         memory_leak_detected: memoryLeakDetected,
       },
       benchmarks,
@@ -268,10 +270,10 @@ export class PerformanceHelpers {
 
   private static getThresholdForOperation(operationName: string): number {
     const thresholds = {
-      'file_processing': testConfig.performance.fileProcessingThreshold,
-      'ai_generation': testConfig.performance.aiGenerationThreshold,
-      'search': testConfig.performance.searchThreshold,
-      'api_response': testConfig.performance.apiResponseThreshold,
+      file_processing: testConfig.performance.fileProcessingThreshold,
+      ai_generation: testConfig.performance.aiGenerationThreshold,
+      search: testConfig.performance.searchThreshold,
+      api_response: testConfig.performance.apiResponseThreshold,
     };
 
     for (const [key, threshold] of Object.entries(thresholds)) {
@@ -319,7 +321,7 @@ export class PerformanceHelpers {
           totalRequests++;
         }
       })();
-      
+
       workers.push(worker);
     }
 

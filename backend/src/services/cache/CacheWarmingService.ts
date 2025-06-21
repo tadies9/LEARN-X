@@ -53,15 +53,18 @@ export class CacheWarmingService {
    */
   async startWarmingProcess(): Promise<void> {
     if (this.isWarming) return;
-    
+
     this.isWarming = true;
     logger.info('Starting cache warming process');
 
     try {
       // Schedule regular warming cycles
-      setInterval(async () => {
-        await this.performWarmingCycle();
-      }, 10 * 60 * 1000); // Every 10 minutes
+      setInterval(
+        async () => {
+          await this.performWarmingCycle();
+        },
+        10 * 60 * 1000
+      ); // Every 10 minutes
 
       // Initial warming
       await this.performWarmingCycle();
@@ -91,7 +94,7 @@ export class CacheWarmingService {
       logger.info('Cache warming cycle completed', {
         popularContentCount: popularContent.length,
         activeUsersCount: activeUsers.length,
-        queueSize: this.warmingQueue.length
+        queueSize: this.warmingQueue.length,
       });
     } catch (error) {
       logger.error('Error in warming cycle:', error);
@@ -101,12 +104,14 @@ export class CacheWarmingService {
   /**
    * Identify popular content based on recent access patterns
    */
-  private async identifyPopularContent(): Promise<Array<{
-    contentHash: string;
-    contentType: string;
-    accessCount: number;
-    lastAccessed: Date;
-  }>> {
+  private async identifyPopularContent(): Promise<
+    Array<{
+      contentHash: string;
+      contentType: string;
+      accessCount: number;
+      lastAccessed: Date;
+    }>
+  > {
     try {
       const recentThreshold = new Date();
       recentThreshold.setMinutes(recentThreshold.getMinutes() - this.config.recentActivityWindow);
@@ -121,17 +126,20 @@ export class CacheWarmingService {
       if (!requests) return [];
 
       // Group by content type and count occurrences
-      const contentStats = new Map<string, {
-        contentType: string;
-        accessCount: number;
-        lastAccessed: Date;
-        users: Set<string>;
-      }>();
+      const contentStats = new Map<
+        string,
+        {
+          contentType: string;
+          accessCount: number;
+          lastAccessed: Date;
+          users: Set<string>;
+        }
+      >();
 
-      requests.forEach(req => {
+      requests.forEach((req) => {
         const key = req.request_type;
         const existing = contentStats.get(key);
-        
+
         if (existing) {
           existing.accessCount++;
           existing.users.add(req.user_id);
@@ -143,26 +151,25 @@ export class CacheWarmingService {
             contentType: req.request_type,
             accessCount: 1,
             lastAccessed: new Date(req.created_at),
-            users: new Set([req.user_id])
+            users: new Set([req.user_id]),
           });
         }
       });
 
       // Filter for popular content
       return Array.from(contentStats.entries())
-        .filter(([_, stats]) => 
-          stats.accessCount >= this.config.popularContentThreshold ||
-          stats.users.size >= 3 // Content accessed by multiple users
+        .filter(
+          ([_, stats]) =>
+            stats.accessCount >= this.config.popularContentThreshold || stats.users.size >= 3 // Content accessed by multiple users
         )
         .map(([contentHash, stats]) => ({
           contentHash,
           contentType: stats.contentType,
           accessCount: stats.accessCount,
-          lastAccessed: stats.lastAccessed
+          lastAccessed: stats.lastAccessed,
         }))
         .sort((a, b) => b.accessCount - a.accessCount)
         .slice(0, 20); // Top 20 popular content items
-
     } catch (error) {
       logger.error('Error identifying popular content:', error);
       return [];
@@ -172,11 +179,13 @@ export class CacheWarmingService {
   /**
    * Get active users who might benefit from cache warming
    */
-  private async getActiveUsers(): Promise<Array<{
-    userId: string;
-    persona: UserPersona;
-    lastActivity: Date;
-  }>> {
+  private async getActiveUsers(): Promise<
+    Array<{
+      userId: string;
+      persona: UserPersona;
+      lastActivity: Date;
+    }>
+  > {
     try {
       const recentThreshold = new Date();
       recentThreshold.setHours(recentThreshold.getHours() - 2); // Last 2 hours
@@ -191,8 +200,8 @@ export class CacheWarmingService {
       if (!recentUsers) return [];
 
       // Get unique active users
-      const uniqueUserIds = [...new Set(recentUsers.map(u => u.user_id))];
-      
+      const uniqueUserIds = [...new Set(recentUsers.map((u) => u.user_id))];
+
       // Fetch user personas
       const { data: personas } = await supabase
         .from('personas')
@@ -202,14 +211,15 @@ export class CacheWarmingService {
       if (!personas) return [];
 
       return personas
-        .map(persona => ({
+        .map((persona) => ({
           userId: persona.user_id,
           persona: this.transformPersona(persona),
-          lastActivity: new Date(recentUsers.find(u => u.user_id === persona.user_id)?.created_at || '')
+          lastActivity: new Date(
+            recentUsers.find((u) => u.user_id === persona.user_id)?.created_at || ''
+          ),
         }))
-        .filter(user => user.persona)
+        .filter((user) => user.persona)
         .slice(0, 50); // Limit to top 50 active users
-
     } catch (error) {
       logger.error('Error getting active users:', error);
       return [];
@@ -227,11 +237,18 @@ export class CacheWarmingService {
     this.warmingQueue = [];
 
     // Create jobs for popular content + active user combinations
-    for (const content of popularContent.slice(0, 10)) { // Top 10 popular content
-      for (const user of activeUsers.slice(0, 20)) { // Top 20 active users
+    for (const content of popularContent.slice(0, 10)) {
+      // Top 10 popular content
+      for (const user of activeUsers.slice(0, 20)) {
+        // Top 20 active users
         // Check if this combination is already cached
-        const isAlreadyCached = await this.isCachedCombination(content.contentType, user.userId, content.contentHash, user.persona);
-        
+        const isAlreadyCached = await this.isCachedCombination(
+          content.contentType,
+          user.userId,
+          content.contentHash,
+          user.persona
+        );
+
         if (!isAlreadyCached) {
           this.warmingQueue.push({
             id: crypto.randomUUID(),
@@ -242,10 +259,10 @@ export class CacheWarmingService {
             persona: user.persona,
             metadata: {
               accessCount: content.accessCount,
-              originalContentType: content.contentType
+              originalContentType: content.contentType,
             },
             retries: 0,
-            maxRetries: 2
+            maxRetries: 2,
           });
         }
       }
@@ -265,15 +282,13 @@ export class CacheWarmingService {
    */
   private async processWarmingQueue(): Promise<void> {
     const batches = this.chunkArray(this.warmingQueue, this.config.batchSize);
-    
+
     for (const batch of batches) {
-      await Promise.allSettled(
-        batch.map(job => this.processWarmingJob(job))
-      );
-      
+      await Promise.allSettled(batch.map((job) => this.processWarmingJob(job)));
+
       // Delay between batches to avoid overwhelming the system
       if (batches.indexOf(batch) < batches.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, this.config.delayBetweenBatches));
+        await new Promise((resolve) => setTimeout(resolve, this.config.delayBetweenBatches));
       }
     }
   }
@@ -287,7 +302,7 @@ export class CacheWarmingService {
 
       // Generate sample content for warming
       const sampleContent = await this.generateSampleContent(job);
-      
+
       if (sampleContent) {
         // Use cache warming method
         await this.cache.warmCache(
@@ -298,12 +313,12 @@ export class CacheWarmingService {
             persona: job.persona,
             context: {
               difficulty: 'intermediate',
-              format: 'standard'
-            }
+              format: 'standard',
+            },
           },
           async () => ({
             content: sampleContent,
-            usage: { promptTokens: 100, completionTokens: 200 } // Estimated usage
+            usage: { promptTokens: 100, completionTokens: 200 }, // Estimated usage
           })
         );
 
@@ -311,7 +326,7 @@ export class CacheWarmingService {
       }
     } catch (error) {
       logger.warn(`Failed to process warming job ${job.id}:`, error);
-      
+
       // Retry logic
       if (job.retries < job.maxRetries) {
         job.retries++;
@@ -329,26 +344,30 @@ export class CacheWarmingService {
       switch (job.contentType) {
         case 'explanation':
           return `This is a personalized explanation for ${job.persona.currentRole || 'learner'} interested in ${job.persona.primaryInterests?.slice(0, 2).join(', ') || 'various topics'}.`;
-        
+
         case 'summary':
           return `Summary tailored for ${job.persona.learningStyle || 'visual'} learner with background in ${job.persona.industry || 'general'}.`;
-        
+
         case 'quiz':
-          return JSON.stringify([{
-            question: 'Sample question',
-            type: 'multiple_choice',
-            options: ['A', 'B', 'C', 'D'],
-            answer: 'A',
-            explanation: 'Sample explanation'
-          }]);
-        
+          return JSON.stringify([
+            {
+              question: 'Sample question',
+              type: 'multiple_choice',
+              options: ['A', 'B', 'C', 'D'],
+              answer: 'A',
+              explanation: 'Sample explanation',
+            },
+          ]);
+
         case 'flashcard':
-          return JSON.stringify([{
-            front: 'Sample term',
-            back: 'Sample definition',
-            difficulty: 'medium'
-          }]);
-        
+          return JSON.stringify([
+            {
+              front: 'Sample term',
+              back: 'Sample definition',
+              difficulty: 'medium',
+            },
+          ]);
+
         default:
           return 'Sample content';
       }
@@ -375,10 +394,10 @@ export class CacheWarmingService {
         persona,
         context: {
           difficulty: 'intermediate',
-          format: 'standard'
-        }
+          format: 'standard',
+        },
       });
-      
+
       return !!cached;
     } catch (error) {
       return false;
@@ -437,7 +456,7 @@ export class CacheWarmingService {
       queueSize: this.warmingQueue.length,
       isActive: this.isWarming,
       lastCycle: null, // Would track in production
-      successRate: 0.85 // Would calculate from actual metrics
+      successRate: 0.85, // Would calculate from actual metrics
     };
   }
 
@@ -450,7 +469,8 @@ export class CacheWarmingService {
     userIds: string[]
   ): Promise<void> {
     try {
-      const contentHash = crypto.createHash('sha256')
+      const contentHash = crypto
+        .createHash('sha256')
         .update(content)
         .digest('hex')
         .substring(0, 16);
@@ -465,25 +485,26 @@ export class CacheWarmingService {
 
         if (persona) {
           const transformedPersona = this.transformPersona(persona);
-          
+
           await this.cache.warmCache(
             {
-              service: contentType === 'explanation' ? 'explain' : contentType as any,
+              service: contentType === 'explanation' ? 'explain' : (contentType as any),
               userId,
               contentHash,
               persona: transformedPersona,
               context: {
                 difficulty: 'intermediate',
-                format: 'standard'
-              }
+                format: 'standard',
+              },
             },
             async () => ({
-              content: await this.generateSampleContent({
-                contentType,
-                userId,
-                persona: transformedPersona
-              } as WarmingJob) || content,
-              usage: { promptTokens: 100, completionTokens: 200 }
+              content:
+                (await this.generateSampleContent({
+                  contentType,
+                  userId,
+                  persona: transformedPersona,
+                } as WarmingJob)) || content,
+              usage: { promptTokens: 100, completionTokens: 200 },
             })
           );
         }
@@ -491,7 +512,7 @@ export class CacheWarmingService {
 
       logger.info(`Manually warmed cache for ${contentType} content`, {
         contentHash,
-        userCount: userIds.length
+        userCount: userIds.length,
       });
     } catch (error) {
       logger.error('Error in manual cache warming:', error);

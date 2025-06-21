@@ -37,7 +37,7 @@ export function apmMiddleware(req: Request, res: Response, next: NextFunction): 
     // Set transaction attributes
     apmService.setUser(req.user?.id || 'anonymous', {
       role: req.user?.role,
-      email: req.user?.email
+      email: req.user?.email,
     });
 
     // Add request context
@@ -50,15 +50,15 @@ export function apmMiddleware(req: Request, res: Response, next: NextFunction): 
   const originalSend = res.send;
   res.send = function (data: any): Response {
     res.send = originalSend;
-    
+
     if (req.apmTransaction && req.startTime) {
       const duration = Date.now() - req.startTime;
-      
+
       // Record response metrics
       apmService.recordBusinessMetric('http.request.duration', duration, 'ms', {
         method: req.method,
         path: normalizeRoute(req.route?.path || req.path),
-        status: res.statusCode.toString()
+        status: res.statusCode.toString(),
       });
 
       // Set response attributes
@@ -88,10 +88,10 @@ export function apmMiddleware(req: Request, res: Response, next: NextFunction): 
           headers: req.headers,
           body: req.body,
           params: req.params,
-          query: req.query
+          query: req.query,
         },
         user: req.user,
-        correlationId: req.headers['x-correlation-id'] as string
+        correlationId: req.headers['x-correlation-id'] as string,
       });
     }
     originalNext(error);
@@ -107,24 +107,24 @@ export function databaseAPMMiddleware(queryFn: Function) {
   return async function (this: any, ...args: any[]) {
     const startTime = Date.now();
     const query = args[0]?.text || args[0] || 'unknown';
-    
+
     try {
       const result = await queryFn.apply(this, args);
       const duration = Date.now() - startTime;
-      
+
       apmService.recordDatabaseQuery(query, duration, 'postgres');
-      
+
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       apmService.recordDatabaseQuery(query, duration, 'postgres');
       apmService.captureError(error as Error, {
         query,
         duration,
-        database: 'postgres'
+        database: 'postgres',
       });
-      
+
       throw error;
     }
   };
@@ -146,7 +146,7 @@ export function externalServiceAPMMiddleware(serviceName: string) {
         const duration = Date.now() - startTime;
 
         apmService.recordExternalCall(serviceName, propertyKey, duration, true);
-        
+
         if (span) {
           apmService.endSpan(span);
         }
@@ -154,12 +154,12 @@ export function externalServiceAPMMiddleware(serviceName: string) {
         return result;
       } catch (error) {
         const duration = Date.now() - startTime;
-        
+
         apmService.recordExternalCall(serviceName, propertyKey, duration, false);
         apmService.captureError(error as Error, {
           service: serviceName,
           operation: propertyKey,
-          duration
+          duration,
         });
 
         if (span) {
@@ -187,7 +187,7 @@ export function trackExecution(name?: string) {
 
       try {
         const result = await originalMethod.apply(this, args);
-        
+
         if (span) {
           apmService.endSpan(span);
         }
@@ -196,7 +196,7 @@ export function trackExecution(name?: string) {
       } catch (error) {
         apmService.captureError(error as Error, {
           method: spanName,
-          args: args.length
+          args: args.length,
         });
 
         if (span) {

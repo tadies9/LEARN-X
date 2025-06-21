@@ -98,12 +98,12 @@ export class APMDashboardService {
       id: this.generateDashboardId(),
       ...dashboard,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     this.dashboards.set(newDashboard.id, newDashboard);
     logger.info(`Dashboard created: ${newDashboard.name}`);
-    
+
     return newDashboard;
   }
 
@@ -114,12 +114,12 @@ export class APMDashboardService {
     const updatedDashboard = {
       ...dashboard,
       ...updates,
-      updatedAt: new Date()
+      updatedAt: new Date(),
     };
 
     this.dashboards.set(dashboardId, updatedDashboard);
     logger.info(`Dashboard updated: ${updatedDashboard.name}`);
-    
+
     return updatedDashboard;
   }
 
@@ -137,15 +137,15 @@ export class APMDashboardService {
 
   getDashboards(category?: string, owner?: string): Dashboard[] {
     let dashboards = Array.from(this.dashboards.values());
-    
+
     if (category) {
-      dashboards = dashboards.filter(d => d.category === category);
+      dashboards = dashboards.filter((d) => d.category === category);
     }
-    
+
     if (owner) {
-      dashboards = dashboards.filter(d => d.owner === owner);
+      dashboards = dashboards.filter((d) => d.owner === owner);
     }
-    
+
     return dashboards;
   }
 
@@ -156,32 +156,36 @@ export class APMDashboardService {
 
     const newWidget: DashboardWidget = {
       id: this.generateWidgetId(),
-      ...widget
+      ...widget,
     };
 
     dashboard.widgets.push(newWidget);
     dashboard.updatedAt = new Date();
-    
+
     this.dashboards.set(dashboardId, dashboard);
-    
+
     return newWidget;
   }
 
-  updateWidget(dashboardId: string, widgetId: string, updates: Partial<DashboardWidget>): DashboardWidget | null {
+  updateWidget(
+    dashboardId: string,
+    widgetId: string,
+    updates: Partial<DashboardWidget>
+  ): DashboardWidget | null {
     const dashboard = this.dashboards.get(dashboardId);
     if (!dashboard) return null;
 
-    const widgetIndex = dashboard.widgets.findIndex(w => w.id === widgetId);
+    const widgetIndex = dashboard.widgets.findIndex((w) => w.id === widgetId);
     if (widgetIndex === -1) return null;
 
     dashboard.widgets[widgetIndex] = {
       ...dashboard.widgets[widgetIndex],
-      ...updates
+      ...updates,
     };
-    
+
     dashboard.updatedAt = new Date();
     this.dashboards.set(dashboardId, dashboard);
-    
+
     return dashboard.widgets[widgetIndex];
   }
 
@@ -189,14 +193,14 @@ export class APMDashboardService {
     const dashboard = this.dashboards.get(dashboardId);
     if (!dashboard) return false;
 
-    const widgetIndex = dashboard.widgets.findIndex(w => w.id === widgetId);
+    const widgetIndex = dashboard.widgets.findIndex((w) => w.id === widgetId);
     if (widgetIndex === -1) return false;
 
     dashboard.widgets.splice(widgetIndex, 1);
     dashboard.updatedAt = new Date();
-    
+
     this.dashboards.set(dashboardId, dashboard);
-    
+
     return true;
   }
 
@@ -205,16 +209,14 @@ export class APMDashboardService {
     const dashboard = this.dashboards.get(dashboardId);
     if (!dashboard) return null;
 
-    const widgetDataPromises = dashboard.widgets.map(widget => 
-      this.getWidgetData(widget)
-    );
+    const widgetDataPromises = dashboard.widgets.map((widget) => this.getWidgetData(widget));
 
     const widgetData = await Promise.all(widgetDataPromises);
 
     return {
       dashboardId,
       widgets: widgetData,
-      generatedAt: new Date()
+      generatedAt: new Date(),
     };
   }
 
@@ -228,24 +230,24 @@ export class APMDashboardService {
           data = await this.getMetricData(widget);
           status = this.evaluateThresholds(data, widget.config.threshold);
           break;
-        
+
         case 'chart':
           data = await this.getChartData(widget);
           break;
-        
+
         case 'table':
           data = await this.getTableData(widget);
           break;
-        
+
         case 'gauge':
           data = await this.getGaugeData(widget);
           status = this.evaluateThresholds(data, widget.config.threshold);
           break;
-        
+
         case 'text':
           data = await this.getTextData(widget);
           break;
-        
+
         default:
           data = [];
           status = 'error';
@@ -256,17 +258,17 @@ export class APMDashboardService {
         type: widget.type,
         data,
         status,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       };
     } catch (error) {
       logger.error(`Error getting widget data for ${widget.id}:`, error);
-      
+
       return {
         widgetId: widget.id,
         type: widget.type,
         data: [],
         status: 'error',
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       };
     }
   }
@@ -278,7 +280,7 @@ export class APMDashboardService {
 
     const cacheKey = `${metric}_${timeRange}_${aggregation}_${JSON.stringify(filters)}`;
     const cached = this.metricCache.get(cacheKey);
-    
+
     if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
       return cached.data;
     }
@@ -289,165 +291,185 @@ export class APMDashboardService {
       case 'response_time':
         data = await this.getResponseTimeData(timeRange, aggregation);
         break;
-      
+
       case 'error_rate':
         data = await this.getErrorRateData(timeRange);
         break;
-      
+
       case 'throughput':
         data = await this.getThroughputData(timeRange);
         break;
-      
+
       case 'queue_depth':
         data = await this.getQueueDepthData(timeRange, filters);
         break;
-      
+
       case 'ai_cost':
         data = await this.getAICostData(timeRange);
         break;
-      
+
       case 'user_activity':
         data = await this.getUserActivityData(timeRange);
         break;
-      
+
       default:
         data = await this.getCustomMetricData(metric, timeRange, aggregation, filters);
     }
 
     this.metricCache.set(cacheKey, { data, timestamp: Date.now() });
-    
+
     return data;
   }
 
-  private async getResponseTimeData(timeRange?: string, _aggregation?: string): Promise<MetricSeries[]> {
+  private async getResponseTimeData(
+    timeRange?: string,
+    _aggregation?: string
+  ): Promise<MetricSeries[]> {
     // Mock implementation - in real scenario, this would query the APM provider
     const dataPoints: MetricDataPoint[] = [];
     const now = Date.now();
     const duration = this.parseTimeRange(timeRange || '1h');
-    
+
     for (let i = 0; i < 60; i++) {
       dataPoints.push({
         timestamp: now - (duration / 60) * i,
-        value: Math.random() * 500 + 100 // Random response time between 100-600ms
+        value: Math.random() * 500 + 100, // Random response time between 100-600ms
       });
     }
 
-    return [{
-      name: 'Response Time',
-      data: dataPoints.reverse(),
-      unit: 'ms'
-    }];
+    return [
+      {
+        name: 'Response Time',
+        data: dataPoints.reverse(),
+        unit: 'ms',
+      },
+    ];
   }
 
   private async getErrorRateData(timeRange?: string): Promise<MetricSeries[]> {
     const dataPoints: MetricDataPoint[] = [];
     const now = Date.now();
     const duration = this.parseTimeRange(timeRange || '1h');
-    
+
     for (let i = 0; i < 60; i++) {
       dataPoints.push({
         timestamp: now - (duration / 60) * i,
-        value: Math.random() * 5 // Random error rate between 0-5%
+        value: Math.random() * 5, // Random error rate between 0-5%
       });
     }
 
-    return [{
-      name: 'Error Rate',
-      data: dataPoints.reverse(),
-      unit: '%'
-    }];
+    return [
+      {
+        name: 'Error Rate',
+        data: dataPoints.reverse(),
+        unit: '%',
+      },
+    ];
   }
 
   private async getThroughputData(timeRange?: string): Promise<MetricSeries[]> {
     const dataPoints: MetricDataPoint[] = [];
     const now = Date.now();
     const duration = this.parseTimeRange(timeRange || '1h');
-    
+
     for (let i = 0; i < 60; i++) {
       dataPoints.push({
         timestamp: now - (duration / 60) * i,
-        value: Math.random() * 1000 + 500 // Random throughput between 500-1500 req/min
+        value: Math.random() * 1000 + 500, // Random throughput between 500-1500 req/min
       });
     }
 
-    return [{
-      name: 'Throughput',
-      data: dataPoints.reverse(),
-      unit: 'req/min'
-    }];
+    return [
+      {
+        name: 'Throughput',
+        data: dataPoints.reverse(),
+        unit: 'req/min',
+      },
+    ];
   }
 
-  private async getQueueDepthData(timeRange?: string, filters?: Record<string, string>): Promise<MetricSeries[]> {
+  private async getQueueDepthData(
+    timeRange?: string,
+    filters?: Record<string, string>
+  ): Promise<MetricSeries[]> {
     const queueName = filters?.queue || 'all';
     const dataPoints: MetricDataPoint[] = [];
     const now = Date.now();
     const duration = this.parseTimeRange(timeRange || '1h');
-    
+
     for (let i = 0; i < 60; i++) {
       dataPoints.push({
         timestamp: now - (duration / 60) * i,
         value: Math.random() * 100, // Random queue depth
-        tags: { queue: queueName }
+        tags: { queue: queueName },
       });
     }
 
-    return [{
-      name: `Queue Depth - ${queueName}`,
-      data: dataPoints.reverse(),
-      unit: 'jobs'
-    }];
+    return [
+      {
+        name: `Queue Depth - ${queueName}`,
+        data: dataPoints.reverse(),
+        unit: 'jobs',
+      },
+    ];
   }
 
   private async getAICostData(timeRange?: string): Promise<MetricSeries[]> {
     const dataPoints: MetricDataPoint[] = [];
     const now = Date.now();
     const duration = this.parseTimeRange(timeRange || '1h');
-    
+
     for (let i = 0; i < 60; i++) {
       dataPoints.push({
         timestamp: now - (duration / 60) * i,
-        value: Math.random() * 2 // Random cost between $0-2
+        value: Math.random() * 2, // Random cost between $0-2
       });
     }
 
-    return [{
-      name: 'AI Cost',
-      data: dataPoints.reverse(),
-      unit: 'USD'
-    }];
+    return [
+      {
+        name: 'AI Cost',
+        data: dataPoints.reverse(),
+        unit: 'USD',
+      },
+    ];
   }
 
   private async getUserActivityData(timeRange?: string): Promise<MetricSeries[]> {
     const dataPoints: MetricDataPoint[] = [];
     const now = Date.now();
     const duration = this.parseTimeRange(timeRange || '1h');
-    
+
     for (let i = 0; i < 60; i++) {
       dataPoints.push({
         timestamp: now - (duration / 60) * i,
-        value: Math.random() * 50 + 10 // Random user activity between 10-60
+        value: Math.random() * 50 + 10, // Random user activity between 10-60
       });
     }
 
-    return [{
-      name: 'Active Users',
-      data: dataPoints.reverse(),
-      unit: 'users'
-    }];
+    return [
+      {
+        name: 'Active Users',
+        data: dataPoints.reverse(),
+        unit: 'users',
+      },
+    ];
   }
 
   private async getCustomMetricData(
-    metric: string, 
-    _timeRange?: string, 
-    _aggregation?: string, 
+    metric: string,
+    _timeRange?: string,
+    _aggregation?: string,
     _filters?: Record<string, string>
   ): Promise<MetricSeries[]> {
     // Placeholder for custom metric implementation
-    return [{
-      name: metric,
-      data: [],
-      unit: 'count'
-    }];
+    return [
+      {
+        name: metric,
+        data: [],
+        unit: 'count',
+      },
+    ];
   }
 
   private async getChartData(widget: DashboardWidget): Promise<MetricSeries[]> {
@@ -459,7 +481,7 @@ export class APMDashboardService {
     return [
       { endpoint: '/api/users', avgResponseTime: 245, requests: 1250, errors: 3 },
       { endpoint: '/api/courses', avgResponseTime: 189, requests: 890, errors: 1 },
-      { endpoint: '/api/files', avgResponseTime: 567, requests: 345, errors: 12 }
+      { endpoint: '/api/files', avgResponseTime: 567, requests: 345, errors: 12 },
     ];
   }
 
@@ -468,11 +490,13 @@ export class APMDashboardService {
     const metricData = await this.getMetricData(widget);
     if (metricData.length > 0 && metricData[0].data.length > 0) {
       const latestValue = metricData[0].data[metricData[0].data.length - 1].value;
-      return [{
-        name: metricData[0].name,
-        data: [{ timestamp: Date.now(), value: latestValue }],
-        unit: metricData[0].unit
-      }];
+      return [
+        {
+          name: metricData[0].name,
+          data: [{ timestamp: Date.now(), value: latestValue }],
+          unit: metricData[0].unit,
+        },
+      ];
     }
     return [];
   }
@@ -484,31 +508,35 @@ export class APMDashboardService {
 
   // Utility Methods
   private evaluateThresholds(
-    data: MetricSeries[] | any, 
+    data: MetricSeries[] | any,
     threshold?: { warning: number; critical: number }
   ): 'ok' | 'warning' | 'critical' | 'error' {
     if (!threshold || !Array.isArray(data) || data.length === 0) return 'ok';
-    
+
     const latestSeries = data[0];
     if (!latestSeries.data || latestSeries.data.length === 0) return 'ok';
-    
+
     const latestValue = latestSeries.data[latestSeries.data.length - 1].value;
-    
+
     if (latestValue >= threshold.critical) return 'critical';
     if (latestValue >= threshold.warning) return 'warning';
-    
+
     return 'ok';
   }
 
   private parseTimeRange(timeRange: string): number {
     const unit = timeRange.slice(-1);
     const value = parseInt(timeRange.slice(0, -1));
-    
+
     switch (unit) {
-      case 'm': return value * 60 * 1000;
-      case 'h': return value * 60 * 60 * 1000;
-      case 'd': return value * 24 * 60 * 60 * 1000;
-      default: return 60 * 60 * 1000; // Default to 1 hour
+      case 'm':
+        return value * 60 * 1000;
+      case 'h':
+        return value * 60 * 60 * 1000;
+      case 'd':
+        return value * 24 * 60 * 60 * 1000;
+      default:
+        return 60 * 60 * 1000; // Default to 1 hour
     }
   }
 
@@ -539,8 +567,8 @@ export class APMDashboardService {
             timeRange: '6h',
             aggregation: 'avg',
             chartConfig: { type: 'line' },
-            threshold: { warning: 300, critical: 500 }
-          }
+            threshold: { warning: 300, critical: 500 },
+          },
         },
         {
           id: 'error_rate_gauge',
@@ -552,8 +580,8 @@ export class APMDashboardService {
             metric: 'error_rate',
             timeRange: '1h',
             threshold: { warning: 2, critical: 5 },
-            format: { unit: '%', decimals: 2 }
-          }
+            format: { unit: '%', decimals: 2 },
+          },
         },
         {
           id: 'throughput_metric',
@@ -565,10 +593,10 @@ export class APMDashboardService {
             metric: 'throughput',
             timeRange: '1h',
             aggregation: 'avg',
-            format: { unit: 'req/min', decimals: 0 }
-          }
-        }
-      ]
+            format: { unit: 'req/min', decimals: 0 },
+          },
+        },
+      ],
     });
 
     // Business Metrics Dashboard
@@ -589,8 +617,8 @@ export class APMDashboardService {
             timeRange: '24h',
             aggregation: 'sum',
             chartConfig: { type: 'area' },
-            threshold: { warning: 50, critical: 100 }
-          }
+            threshold: { warning: 50, critical: 100 },
+          },
         },
         {
           id: 'user_activity_metric',
@@ -602,8 +630,8 @@ export class APMDashboardService {
             metric: 'user_activity',
             timeRange: '1h',
             aggregation: 'count',
-            format: { unit: 'users', decimals: 0 }
-          }
+            format: { unit: 'users', decimals: 0 },
+          },
         },
         {
           id: 'queue_depth_table',
@@ -613,10 +641,10 @@ export class APMDashboardService {
           position: { x: 0, y: 1 },
           config: {
             metric: 'queue_depth',
-            timeRange: '1h'
-          }
-        }
-      ]
+            timeRange: '1h',
+          },
+        },
+      ],
     });
 
     logger.info('Default dashboards loaded');

@@ -10,18 +10,18 @@ describe('Performance Regression Test Suite', () => {
   let testCourse: any;
   let testModule: any;
   let baselineMetrics: Map<string, any>;
-  let createdIds: string[] = [];
+  const createdIds: string[] = [];
 
   beforeAll(async () => {
     DatabaseHelpers.initialize();
-    
+
     // Create test data
     testUser = await DatabaseHelpers.createTestUser();
     testCourse = await DatabaseHelpers.createTestCourse(testUser.id);
     testModule = await DatabaseHelpers.createTestModule(testCourse.id);
-    
+
     createdIds.push(testUser.id, testCourse.id, testModule.id);
-    
+
     // Load baseline performance metrics
     baselineMetrics = await loadBaselineMetrics();
   });
@@ -29,7 +29,7 @@ describe('Performance Regression Test Suite', () => {
   afterAll(async () => {
     await DatabaseHelpers.cleanupTestDataById(createdIds);
     await DatabaseHelpers.cleanupTestData();
-    
+
     // Save current run metrics as new baseline if significantly improved
     await saveCurrentMetricsIfImproved();
   });
@@ -44,7 +44,7 @@ describe('Performance Regression Test Suite', () => {
         { path: '/api/v1/health', method: 'GET', baseline_ms: 50 },
         { path: '/api/v1/dashboard/stats', method: 'GET', baseline_ms: 200 },
         { path: '/api/v1/search', method: 'POST', baseline_ms: 500 },
-        { path: '/api/v1/ai/generate-content', method: 'POST', baseline_ms: 3000 }
+        { path: '/api/v1/ai/generate-content', method: 'POST', baseline_ms: 3000 },
       ];
 
       const regressionResults = [];
@@ -69,20 +69,20 @@ describe('Performance Regression Test Suite', () => {
               max: Math.max(...durations),
               avg: durations.reduce((sum, d) => sum + d, 0) / durations.length,
               p95: durations.sort((a, b) => a - b)[Math.floor(durations.length * 0.95)],
-              baseline: endpoint.baseline_ms
+              baseline: endpoint.baseline_ms,
             };
           }
         );
 
         const result = performanceTest.result;
         const regressionPercentage = ((result.p95 - result.baseline) / result.baseline) * 100;
-        
+
         regressionResults.push({
           endpoint: endpoint.path,
           current_p95: result.p95,
           baseline: result.baseline,
           regression_percentage: regressionPercentage,
-          is_regression: regressionPercentage > 20 // 20% threshold
+          is_regression: regressionPercentage > 20, // 20% threshold
         });
 
         // Assert no significant regression
@@ -104,16 +104,18 @@ describe('Performance Regression Test Suite', () => {
           let requestCount = 0;
           let errorCount = 0;
 
-          const workers = Array(concurrency).fill(null).map(async () => {
-            while (Date.now() - startTime < duration) {
-              try {
-                await simulateAPICall('/api/v1/dashboard/stats', 'GET');
-                requestCount++;
-              } catch (error) {
-                errorCount++;
+          const workers = Array(concurrency)
+            .fill(null)
+            .map(async () => {
+              while (Date.now() - startTime < duration) {
+                try {
+                  await simulateAPICall('/api/v1/dashboard/stats', 'GET');
+                  requestCount++;
+                } catch (error) {
+                  errorCount++;
+                }
               }
-            }
-          });
+            });
 
           await Promise.all(workers);
 
@@ -125,14 +127,15 @@ describe('Performance Regression Test Suite', () => {
             total_requests: requestCount,
             requests_per_second: requestsPerSecond,
             error_rate: errorRate,
-            duration_ms: actualDuration
+            duration_ms: actualDuration,
           };
         }
       );
 
       const currentThroughput = loadTest.result.requests_per_second;
       const baselineThroughput = baselineMetrics.get('throughput_rps') || 50;
-      const throughputRegression = ((baselineThroughput - currentThroughput) / baselineThroughput) * 100;
+      const throughputRegression =
+        ((baselineThroughput - currentThroughput) / baselineThroughput) * 100;
 
       // Throughput should not degrade by more than 15%
       expect(throughputRegression).toBeLessThan(15);
@@ -145,59 +148,58 @@ describe('Performance Regression Test Suite', () => {
       const queries = [
         {
           name: 'user_dashboard_query',
-          operation: () => DatabaseHelpers.getClient().from('courses').select('*').eq('user_id', testUser.id),
-          baseline_ms: 100
+          operation: () =>
+            DatabaseHelpers.getClient().from('courses').select('*').eq('user_id', testUser.id),
+          baseline_ms: 100,
         },
         {
           name: 'file_search_query',
           operation: () => DatabaseHelpers.getClient().from('files').select('*').limit(50),
-          baseline_ms: 150
+          baseline_ms: 150,
         },
         {
           name: 'complex_join_query',
-          operation: () => DatabaseHelpers.getClient()
-            .from('files')
-            .select('*, modules(*), courses(*)')
-            .eq('courses.user_id', testUser.id),
-          baseline_ms: 300
-        }
+          operation: () =>
+            DatabaseHelpers.getClient()
+              .from('files')
+              .select('*, modules(*), courses(*)')
+              .eq('courses.user_id', testUser.id),
+          baseline_ms: 300,
+        },
       ];
 
       const queryResults = [];
 
       for (const query of queries) {
-        const queryTest = await PerformanceHelpers.measureAsync(
-          `db_${query.name}`,
-          async () => {
-            const iterations = 20;
-            const durations = [];
+        const queryTest = await PerformanceHelpers.measureAsync(`db_${query.name}`, async () => {
+          const iterations = 20;
+          const durations = [];
 
-            for (let i = 0; i < iterations; i++) {
-              const startTime = Date.now();
-              await query.operation();
-              const duration = Date.now() - startTime;
-              durations.push(duration);
-            }
-
-            return {
-              query_name: query.name,
-              min: Math.min(...durations),
-              max: Math.max(...durations),
-              avg: durations.reduce((sum, d) => sum + d, 0) / durations.length,
-              p95: durations.sort((a, b) => a - b)[Math.floor(durations.length * 0.95)],
-              baseline: query.baseline_ms
-            };
+          for (let i = 0; i < iterations; i++) {
+            const startTime = Date.now();
+            await query.operation();
+            const duration = Date.now() - startTime;
+            durations.push(duration);
           }
-        );
+
+          return {
+            query_name: query.name,
+            min: Math.min(...durations),
+            max: Math.max(...durations),
+            avg: durations.reduce((sum, d) => sum + d, 0) / durations.length,
+            p95: durations.sort((a, b) => a - b)[Math.floor(durations.length * 0.95)],
+            baseline: query.baseline_ms,
+          };
+        });
 
         const result = queryTest.result;
         const regressionPercentage = ((result.p95 - result.baseline) / result.baseline) * 100;
-        
+
         queryResults.push({
           query: query.name,
           current_p95: result.p95,
           baseline: result.baseline,
-          regression_percentage: regressionPercentage
+          regression_percentage: regressionPercentage,
         });
 
         // Database queries should not regress by more than 25%
@@ -212,34 +214,41 @@ describe('Performance Regression Test Suite', () => {
           const concurrentConnections = 50;
           const connectionsPerWorker = 10;
 
-          const connectionWorkers = Array(concurrentConnections).fill(null).map(async () => {
-            const connectionTimes = [];
+          const connectionWorkers = Array(concurrentConnections)
+            .fill(null)
+            .map(async () => {
+              const connectionTimes = [];
 
-            for (let i = 0; i < connectionsPerWorker; i++) {
-              const startTime = Date.now();
-              const client = DatabaseHelpers.getClient();
-              await client.from('users').select('count').single();
-              const connectionTime = Date.now() - startTime;
-              connectionTimes.push(connectionTime);
-            }
+              for (let i = 0; i < connectionsPerWorker; i++) {
+                const startTime = Date.now();
+                const client = DatabaseHelpers.getClient();
+                await client.from('users').select('count').single();
+                const connectionTime = Date.now() - startTime;
+                connectionTimes.push(connectionTime);
+              }
 
-            return connectionTimes;
-          });
+              return connectionTimes;
+            });
 
           const allConnectionTimes = (await Promise.all(connectionWorkers)).flat();
-          const avgConnectionTime = allConnectionTimes.reduce((sum, t) => sum + t, 0) / allConnectionTimes.length;
+          const avgConnectionTime =
+            allConnectionTimes.reduce((sum, t) => sum + t, 0) / allConnectionTimes.length;
 
           return {
             total_connections: allConnectionTimes.length,
             avg_connection_time: avgConnectionTime,
             max_connection_time: Math.max(...allConnectionTimes),
-            connection_pool_efficiency: allConnectionTimes.filter(t => t < 50).length / allConnectionTimes.length
+            connection_pool_efficiency:
+              allConnectionTimes.filter((t) => t < 50).length / allConnectionTimes.length,
           };
         }
       );
 
       const baselineConnectionTime = baselineMetrics.get('avg_connection_time') || 30;
-      const connectionTimeRegression = ((connectionPoolTest.result.avg_connection_time - baselineConnectionTime) / baselineConnectionTime) * 100;
+      const connectionTimeRegression =
+        ((connectionPoolTest.result.avg_connection_time - baselineConnectionTime) /
+          baselineConnectionTime) *
+        100;
 
       expect(connectionTimeRegression).toBeLessThan(30);
       expect(connectionPoolTest.result.connection_pool_efficiency).toBeGreaterThan(0.8); // 80% of connections under 50ms
@@ -252,7 +261,7 @@ describe('Performance Regression Test Suite', () => {
         { size: '1KB', content: 'a'.repeat(1024), baseline_ms: 2000 },
         { size: '10KB', content: 'a'.repeat(10240), baseline_ms: 4000 },
         { size: '100KB', content: 'a'.repeat(102400), baseline_ms: 8000 },
-        { size: '1MB', content: AITestHelpers.createLargeTextContent(1000), baseline_ms: 15000 }
+        { size: '1MB', content: AITestHelpers.createLargeTextContent(1000), baseline_ms: 15000 },
       ];
 
       const processingResults = [];
@@ -264,35 +273,36 @@ describe('Performance Regression Test Suite', () => {
             const testFile = await DatabaseHelpers.createTestFile(testModule.id, {
               filename: `regression_test_${fileSize.size}.txt`,
               file_size: fileSize.content.length,
-              processing_status: 'pending'
+              processing_status: 'pending',
             });
-            
+
             createdIds.push(testFile.id);
 
             const startTime = Date.now();
-            
+
             // Simulate complete file processing pipeline
             await simulateFileProcessingPipeline(testFile.id, fileSize.content);
-            
+
             const processingTime = Date.now() - startTime;
 
             return {
               file_size: fileSize.size,
               processing_time: processingTime,
               baseline: fileSize.baseline_ms,
-              content_length: fileSize.content.length
+              content_length: fileSize.content.length,
             };
           }
         );
 
         const result = processingTest.result;
-        const regressionPercentage = ((result.processing_time - result.baseline) / result.baseline) * 100;
-        
+        const regressionPercentage =
+          ((result.processing_time - result.baseline) / result.baseline) * 100;
+
         processingResults.push({
           file_size: fileSize.size,
           current_time: result.processing_time,
           baseline: result.baseline,
-          regression_percentage: regressionPercentage
+          regression_percentage: regressionPercentage,
         });
 
         // File processing should not regress by more than 30%
@@ -307,7 +317,7 @@ describe('Performance Regression Test Suite', () => {
           const textChunks = [
             'Short text for embedding',
             'Medium length text content that should generate consistent embedding performance metrics',
-            'This is a longer text chunk that contains more detailed information and should still maintain reasonable embedding generation performance within our established baseline metrics and thresholds'
+            'This is a longer text chunk that contains more detailed information and should still maintain reasonable embedding generation performance within our established baseline metrics and thresholds',
           ];
 
           const embeddingTimes = [];
@@ -318,22 +328,26 @@ describe('Performance Regression Test Suite', () => {
             const embeddingTime = Date.now() - startTime;
             embeddingTimes.push({
               chunk_length: chunk.length,
-              embedding_time: embeddingTime
+              embedding_time: embeddingTime,
             });
           }
 
-          const avgEmbeddingTime = embeddingTimes.reduce((sum, e) => sum + e.embedding_time, 0) / embeddingTimes.length;
+          const avgEmbeddingTime =
+            embeddingTimes.reduce((sum, e) => sum + e.embedding_time, 0) / embeddingTimes.length;
 
           return {
             embedding_times: embeddingTimes,
             avg_embedding_time: avgEmbeddingTime,
-            chunks_processed: textChunks.length
+            chunks_processed: textChunks.length,
           };
         }
       );
 
       const baselineEmbeddingTime = baselineMetrics.get('avg_embedding_time') || 200;
-      const embeddingRegression = ((embeddingTest.result.avg_embedding_time - baselineEmbeddingTime) / baselineEmbeddingTime) * 100;
+      const embeddingRegression =
+        ((embeddingTest.result.avg_embedding_time - baselineEmbeddingTime) /
+          baselineEmbeddingTime) *
+        100;
 
       expect(embeddingRegression).toBeLessThan(25);
     });
@@ -364,19 +378,20 @@ describe('Performance Regression Test Suite', () => {
               content_type: contentType,
               avg_generation_time: avgTime,
               min_time: Math.min(...generationTimes),
-              max_time: Math.max(...generationTimes)
+              max_time: Math.max(...generationTimes),
             };
           }
         );
 
         const baselineTime = baselineMetrics.get(`ai_generation_${contentType}`) || 2000;
-        const regressionPercentage = ((generationTest.result.avg_generation_time - baselineTime) / baselineTime) * 100;
+        const regressionPercentage =
+          ((generationTest.result.avg_generation_time - baselineTime) / baselineTime) * 100;
 
         generationResults.push({
           content_type: contentType,
           current_time: generationTest.result.avg_generation_time,
           baseline: baselineTime,
-          regression_percentage: regressionPercentage
+          regression_percentage: regressionPercentage,
         });
 
         // AI generation should not regress by more than 20%
@@ -387,7 +402,7 @@ describe('Performance Regression Test Suite', () => {
     test('should maintain personalization performance', async () => {
       const personas = [
         AITestHelpers.loadPersona('student'),
-        AITestHelpers.loadPersona('professional')
+        AITestHelpers.loadPersona('professional'),
       ];
 
       const personalizationTest = await PerformanceHelpers.measureAsync(
@@ -405,18 +420,22 @@ describe('Performance Regression Test Suite', () => {
             }
           }
 
-          const avgPersonalizationTime = personalizationTimes.reduce((sum, t) => sum + t, 0) / personalizationTimes.length;
+          const avgPersonalizationTime =
+            personalizationTimes.reduce((sum, t) => sum + t, 0) / personalizationTimes.length;
 
           return {
             total_personalizations: personalizationTimes.length,
             avg_personalization_time: avgPersonalizationTime,
-            max_personalization_time: Math.max(...personalizationTimes)
+            max_personalization_time: Math.max(...personalizationTimes),
           };
         }
       );
 
       const baselinePersonalizationTime = baselineMetrics.get('avg_personalization_time') || 500;
-      const personalizationRegression = ((personalizationTest.result.avg_personalization_time - baselinePersonalizationTime) / baselinePersonalizationTime) * 100;
+      const personalizationRegression =
+        ((personalizationTest.result.avg_personalization_time - baselinePersonalizationTime) /
+          baselinePersonalizationTime) *
+        100;
 
       expect(personalizationRegression).toBeLessThan(25);
     });
@@ -428,13 +447,13 @@ describe('Performance Regression Test Suite', () => {
         'memory_usage_regression',
         async () => {
           const initialMemory = process.memoryUsage();
-          
+
           // Perform memory-intensive operations
           const operations = [
             () => simulateFileProcessingPipeline('test-file', 'a'.repeat(1024 * 1024)), // 1MB
             () => simulateAIContentGeneration('summary'),
             () => simulateEmbeddingGeneration('Large content for embedding'),
-            () => simulatePersonalizedContentGeneration(AITestHelpers.loadPersona('student'))
+            () => simulatePersonalizedContentGeneration(AITestHelpers.loadPersona('student')),
           ];
 
           const memorySnapshots = [initialMemory];
@@ -457,13 +476,14 @@ describe('Performance Regression Test Suite', () => {
             initial_memory_mb: initialMemory.heapUsed / (1024 * 1024),
             final_memory_mb: finalMemory.heapUsed / (1024 * 1024),
             memory_growth_mb: memoryGrowthMB,
-            peak_memory_mb: Math.max(...memorySnapshots.map(s => s.heapUsed)) / (1024 * 1024)
+            peak_memory_mb: Math.max(...memorySnapshots.map((s) => s.heapUsed)) / (1024 * 1024),
           };
         }
       );
 
       const baselineMemoryGrowth = baselineMetrics.get('memory_growth_mb') || 50;
-      const memoryRegression = ((memoryTest.result.memory_growth_mb - baselineMemoryGrowth) / baselineMemoryGrowth) * 100;
+      const memoryRegression =
+        ((memoryTest.result.memory_growth_mb - baselineMemoryGrowth) / baselineMemoryGrowth) * 100;
 
       // Memory growth should not increase by more than 40%
       expect(memoryRegression).toBeLessThan(40);
@@ -480,7 +500,7 @@ describe('Performance Regression Test Suite', () => {
           for (let i = 0; i < iterations; i++) {
             // Perform operations that should not leak memory
             await simulateAIContentGeneration('summary');
-            
+
             if (i % 10 === 0) {
               // Force garbage collection periodically
               if (global.gc) {
@@ -488,7 +508,7 @@ describe('Performance Regression Test Suite', () => {
               }
               memoryReadings.push({
                 iteration: i,
-                memory_mb: process.memoryUsage().heapUsed / (1024 * 1024)
+                memory_mb: process.memoryUsage().heapUsed / (1024 * 1024),
               });
             }
           }
@@ -499,7 +519,7 @@ describe('Performance Regression Test Suite', () => {
           return {
             memory_readings: memoryReadings,
             memory_trend_mb_per_iteration: memoryTrend,
-            potential_leak: memoryTrend > 0.5 // More than 0.5MB growth per 10 iterations
+            potential_leak: memoryTrend > 0.5, // More than 0.5MB growth per 10 iterations
           };
         }
       );
@@ -520,20 +540,22 @@ describe('Performance Regression Test Suite', () => {
 
           for (const concurrency of concurrencyLevels) {
             const testStart = Date.now();
-            
-            const operations = Array(concurrency).fill(null).map(async () => {
-              await simulateAIContentGeneration('summary');
-            });
+
+            const operations = Array(concurrency)
+              .fill(null)
+              .map(async () => {
+                await simulateAIContentGeneration('summary');
+              });
 
             await Promise.all(operations);
-            
+
             const duration = Date.now() - testStart;
             const operationsPerSecond = (concurrency / duration) * 1000;
 
             results.push({
               concurrency,
               duration_ms: duration,
-              operations_per_second: operationsPerSecond
+              operations_per_second: operationsPerSecond,
             });
           }
 
@@ -543,13 +565,14 @@ describe('Performance Regression Test Suite', () => {
 
       // Verify that performance scales reasonably with concurrency
       const results = concurrencyTest.result.concurrency_results;
-      
+
       // Performance should not degrade exponentially
-      const singleThreadOps = results.find(r => r.concurrency === 1)?.operations_per_second || 1;
-      const highConcurrencyOps = results.find(r => r.concurrency === 20)?.operations_per_second || 1;
-      
+      const singleThreadOps = results.find((r) => r.concurrency === 1)?.operations_per_second || 1;
+      const highConcurrencyOps =
+        results.find((r) => r.concurrency === 20)?.operations_per_second || 1;
+
       const efficiencyRatio = highConcurrencyOps / singleThreadOps;
-      
+
       // Should maintain at least 20% efficiency at high concurrency
       expect(efficiencyRatio).toBeGreaterThan(0.2);
     });
@@ -569,9 +592,9 @@ async function loadBaselineMetrics(): Promise<Map<string, any>> {
     ['ai_generation_quiz', 3000],
     ['ai_generation_explanation', 2200],
     ['avg_personalization_time', 500],
-    ['memory_growth_mb', 50]
+    ['memory_growth_mb', 50],
   ]);
-  
+
   return baselines;
 }
 
@@ -582,31 +605,34 @@ async function saveCurrentMetricsIfImproved(): Promise<void> {
 }
 
 function generateRegressionReport(results: any[]): any {
-  const regressions = results.filter(r => r.is_regression);
-  const improvements = results.filter(r => r.regression_percentage < -10); // 10% improvement
-  
+  const regressions = results.filter((r) => r.is_regression);
+  const improvements = results.filter((r) => r.regression_percentage < -10); // 10% improvement
+
   return {
     total_endpoints: results.length,
     regressions_detected: regressions.length,
     improvements_detected: improvements.length,
-    avg_regression_percentage: results.reduce((sum, r) => sum + r.regression_percentage, 0) / results.length,
-    worst_regression: regressions.length > 0 ? Math.max(...regressions.map(r => r.regression_percentage)) : 0,
-    best_improvement: improvements.length > 0 ? Math.min(...improvements.map(r => r.regression_percentage)) : 0
+    avg_regression_percentage:
+      results.reduce((sum, r) => sum + r.regression_percentage, 0) / results.length,
+    worst_regression:
+      regressions.length > 0 ? Math.max(...regressions.map((r) => r.regression_percentage)) : 0,
+    best_improvement:
+      improvements.length > 0 ? Math.min(...improvements.map((r) => r.regression_percentage)) : 0,
   };
 }
 
 function calculateMemoryTrend(readings: Array<{ iteration: number; memory_mb: number }>): number {
   if (readings.length < 2) return 0;
-  
+
   const n = readings.length;
   const sumX = readings.reduce((sum, r) => sum + r.iteration, 0);
   const sumY = readings.reduce((sum, r) => sum + r.memory_mb, 0);
-  const sumXY = readings.reduce((sum, r) => sum + (r.iteration * r.memory_mb), 0);
-  const sumXX = readings.reduce((sum, r) => sum + (r.iteration * r.iteration), 0);
-  
+  const sumXY = readings.reduce((sum, r) => sum + r.iteration * r.memory_mb, 0);
+  const sumXX = readings.reduce((sum, r) => sum + r.iteration * r.iteration, 0);
+
   // Linear regression slope
   const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-  
+
   return slope;
 }
 
@@ -614,54 +640,55 @@ function calculateMemoryTrend(readings: Array<{ iteration: number; memory_mb: nu
 
 async function simulateAPICall(path: string, method: string): Promise<void> {
   // Simulate API call with realistic delays
-  const baseDelay = {
-    '/api/v1/health': 20,
-    '/api/v1/dashboard/stats': 150,
-    '/api/v1/search': 400,
-    '/api/v1/ai/generate-content': 2500
-  }[path] || 100;
-  
-  const delay = baseDelay + (Math.random() * baseDelay * 0.3); // ±30% variance
-  await new Promise(resolve => setTimeout(resolve, delay));
+  const baseDelay =
+    {
+      '/api/v1/health': 20,
+      '/api/v1/dashboard/stats': 150,
+      '/api/v1/search': 400,
+      '/api/v1/ai/generate-content': 2500,
+    }[path] || 100;
+
+  const delay = baseDelay + Math.random() * baseDelay * 0.3; // ±30% variance
+  await new Promise((resolve) => setTimeout(resolve, delay));
 }
 
 async function simulateFileProcessingPipeline(fileId: string, content: string): Promise<void> {
   // Text extraction
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
   // Chunking
-  await new Promise(resolve => setTimeout(resolve, 200));
-  
+  await new Promise((resolve) => setTimeout(resolve, 200));
+
   // Embedding generation
-  await new Promise(resolve => setTimeout(resolve, content.length / 1000)); // 1ms per char
-  
+  await new Promise((resolve) => setTimeout(resolve, content.length / 1000)); // 1ms per char
+
   // AI content generation
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  await new Promise((resolve) => setTimeout(resolve, 2000));
 }
 
 async function simulateEmbeddingGeneration(text: string): Promise<void> {
   const baseTime = 100;
   const timePerChar = text.length * 0.1;
-  await new Promise(resolve => setTimeout(resolve, baseTime + timePerChar));
+  await new Promise((resolve) => setTimeout(resolve, baseTime + timePerChar));
 }
 
 async function simulateAIContentGeneration(contentType: string): Promise<void> {
   const times = {
-    'summary': 1800,
-    'flashcards': 2200,
-    'quiz': 2800,
-    'explanation': 2000
+    summary: 1800,
+    flashcards: 2200,
+    quiz: 2800,
+    explanation: 2000,
   };
-  
+
   const baseTime = times[contentType] || 2000;
   const variance = baseTime * 0.2; // ±20% variance
   const delay = baseTime + (Math.random() * variance * 2 - variance);
-  
-  await new Promise(resolve => setTimeout(resolve, delay));
+
+  await new Promise((resolve) => setTimeout(resolve, delay));
 }
 
 async function simulatePersonalizedContentGeneration(persona: any): Promise<void> {
   const baseTime = 400;
   const personalizationOverhead = 100;
-  await new Promise(resolve => setTimeout(resolve, baseTime + personalizationOverhead));
+  await new Promise((resolve) => setTimeout(resolve, baseTime + personalizationOverhead));
 }

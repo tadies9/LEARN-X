@@ -40,37 +40,42 @@ export interface APMMetric {
 export interface APMProvider {
   initialize(): Promise<void>;
   isEnabled(): boolean;
-  
+
   // Transaction management
   startTransaction(name: string, type?: string): APMTransaction;
   endTransaction(transaction: APMTransaction): void;
-  
+
   // Span management
   startSpan(name: string, parentTransaction?: APMTransaction): APMSpan;
   endSpan(span: APMSpan): void;
-  
+
   // Error tracking
   captureError(error: APMError): void;
-  
+
   // Metrics
   recordMetric(metric: APMMetric): void;
-  recordBusinessMetric(name: string, value: number, unit: string, tags?: Record<string, string>): void;
-  
+  recordBusinessMetric(
+    name: string,
+    value: number,
+    unit: string,
+    tags?: Record<string, string>
+  ): void;
+
   // Attributes
   setTransactionAttribute(key: string, value: any): void;
   setSpanAttribute(span: APMSpan, key: string, value: any): void;
-  
+
   // User tracking
   setUser(userId: string, attributes?: Record<string, any>): void;
-  
+
   // Custom events
   recordCustomEvent(eventType: string, attributes: Record<string, any>): void;
-  
+
   // Specialized tracking
   recordDatabaseQuery(query: string, duration: number, database: string): void;
   recordExternalCall(service: string, operation: string, duration: number, success: boolean): void;
   recordFeatureUsage(feature: string, userId: string, metadata?: Record<string, any>): void;
-  
+
   // Performance monitoring
   checkPerformanceBudget(metric: string, value: number, budget: number): void;
 }

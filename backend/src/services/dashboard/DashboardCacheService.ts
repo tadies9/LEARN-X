@@ -32,13 +32,13 @@ export class DashboardCacheService {
     try {
       const fullKey = this.buildKey(key);
       const cached = await this.redis.get(fullKey);
-      
+
       if (!cached) {
         return null;
       }
 
       const parsed: DashboardCacheData = JSON.parse(cached);
-      
+
       // Check if cache is still valid
       const age = Date.now() - parsed.timestamp;
       if (age > parsed.ttl * 1000) {
@@ -61,7 +61,7 @@ export class DashboardCacheService {
     try {
       const fullKey = this.buildKey(key, options?.keyPrefix);
       const ttl = options?.ttl || this.defaultTTL;
-      
+
       const cacheData: DashboardCacheData = {
         data,
         timestamp: Date.now(),
@@ -69,7 +69,7 @@ export class DashboardCacheService {
       };
 
       await this.redis.setex(fullKey, ttl, JSON.stringify(cacheData));
-      
+
       logger.debug(`Dashboard data cached for key: ${key}, TTL: ${ttl}s`);
     } catch (error) {
       logger.error('Dashboard cache set error:', error);
@@ -79,11 +79,7 @@ export class DashboardCacheService {
   /**
    * Get or set cached data with factory function
    */
-  async getOrSet<T>(
-    key: string,
-    factory: () => Promise<T>,
-    options?: CacheOptions
-  ): Promise<T> {
+  async getOrSet<T>(key: string, factory: () => Promise<T>, options?: CacheOptions): Promise<T> {
     // Try to get from cache first
     const cached = await this.get<T>(key);
     if (cached !== null) {
@@ -92,10 +88,10 @@ export class DashboardCacheService {
 
     // Generate fresh data
     const data = await factory();
-    
+
     // Cache the result
     await this.set(key, data, options);
-    
+
     return data;
   }
 
@@ -106,14 +102,14 @@ export class DashboardCacheService {
     try {
       const fullPattern = this.buildKey(pattern);
       const keys = await this.redis.keys(fullPattern);
-      
+
       if (keys.length === 0) {
         return 0;
       }
 
       const deleted = await this.redis.del(...keys);
       logger.info(`Invalidated ${deleted} dashboard cache entries matching: ${pattern}`);
-      
+
       return deleted;
     } catch (error) {
       logger.error('Dashboard cache invalidation error:', error);
@@ -144,7 +140,7 @@ export class DashboardCacheService {
 
       // Analyze key patterns
       const patterns: Record<string, number> = {};
-      keys.forEach(key => {
+      keys.forEach((key) => {
         const parts = key.split(':');
         if (parts.length >= 3) {
           const pattern = parts[2]; // e.g., 'stats', 'activities', etc.
@@ -180,12 +176,12 @@ export class DashboardCacheService {
    */
   getTTLForDataType(dataType: string): number {
     const ttlMap: Record<string, number> = {
-      'stats': 300,        // 5 minutes - general stats
-      'activities': 60,    // 1 minute - recent activities
-      'streak': 3600,      // 1 hour - streak calculations
-      'progress': 600,     // 10 minutes - progress metrics
-      'patterns': 1800,    // 30 minutes - weekly patterns
-      'leaderboard': 900,  // 15 minutes - leaderboard data
+      stats: 300, // 5 minutes - general stats
+      activities: 60, // 1 minute - recent activities
+      streak: 3600, // 1 hour - streak calculations
+      progress: 600, // 10 minutes - progress metrics
+      patterns: 1800, // 30 minutes - weekly patterns
+      leaderboard: 900, // 15 minutes - leaderboard data
     };
 
     return ttlMap[dataType] || this.defaultTTL;

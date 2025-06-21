@@ -1,10 +1,17 @@
-import { TestDatabase, TestRedis, TestAPI, PerformanceTracker, waitForCondition, retry } from './test-helpers';
+import {
+  TestDatabase,
+  TestRedis,
+  TestAPI,
+  PerformanceTracker,
+  waitForCondition,
+  retry,
+} from './test-helpers';
 import { testConfig } from '../config/test.config';
 import { SystemHealthChecker } from './system-health-checker';
 
 /**
  * E2E Test Orchestrator
- * 
+ *
  * Coordinates complex end-to-end test scenarios across multiple services
  * and validates complete user journeys with realistic data flows.
  */
@@ -24,48 +31,50 @@ export class E2ETestOrchestrator {
   /**
    * Creates test users with different personas for comprehensive testing
    */
-  async createTestUsers(count: number = 5): Promise<Array<{
-    id: string;
-    email: string;
-    token: string;
-    persona: any;
-  }>> {
+  async createTestUsers(count: number = 5): Promise<
+    Array<{
+      id: string;
+      email: string;
+      token: string;
+      persona: any;
+    }>
+  > {
     const personas = [
       {
         learning_style: 'visual',
         expertise_level: 'beginner',
         interests: ['programming', 'web development'],
         communication_preference: 'simple',
-        goals: ['skill_building']
+        goals: ['skill_building'],
       },
       {
         learning_style: 'auditory',
         expertise_level: 'intermediate',
         interests: ['data science', 'machine learning'],
         communication_preference: 'detailed',
-        goals: ['certification', 'career_advancement']
+        goals: ['certification', 'career_advancement'],
       },
       {
         learning_style: 'kinesthetic',
         expertise_level: 'expert',
         interests: ['cybersecurity', 'networking'],
         communication_preference: 'technical',
-        goals: ['research', 'teaching']
+        goals: ['research', 'teaching'],
       },
       {
         learning_style: 'mixed',
         expertise_level: 'intermediate',
         interests: ['design', 'ux/ui'],
         communication_preference: 'visual',
-        goals: ['portfolio_building']
+        goals: ['portfolio_building'],
       },
       {
         learning_style: 'analytical',
         expertise_level: 'expert',
         interests: ['mathematics', 'algorithms'],
         communication_preference: 'formal',
-        goals: ['academic_research']
-      }
+        goals: ['academic_research'],
+      },
     ];
 
     const users = [];
@@ -83,8 +92,8 @@ export class E2ETestOrchestrator {
           email,
           password: 'TestPassword123!',
           full_name: `Test User ${i}`,
-          persona
-        })
+          persona,
+        }),
       });
 
       expect(registerResponse.status).toBe(201);
@@ -95,8 +104,8 @@ export class E2ETestOrchestrator {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email,
-          password: 'TestPassword123!'
-        })
+          password: 'TestPassword123!',
+        }),
       });
 
       expect(loginResponse.status).toBe(200);
@@ -106,7 +115,7 @@ export class E2ETestOrchestrator {
         id: user.id,
         email,
         token,
-        persona
+        persona,
       });
     }
 
@@ -116,11 +125,13 @@ export class E2ETestOrchestrator {
   /**
    * Creates test courses and modules for each user
    */
-  async createTestCourses(users: Array<{ id: string; token: string }>): Promise<Array<{
-    id: string;
-    moduleId: string;
-    userId: string;
-  }>> {
+  async createTestCourses(users: Array<{ id: string; token: string }>): Promise<
+    Array<{
+      id: string;
+      moduleId: string;
+      userId: string;
+    }>
+  > {
     const courses = [];
 
     for (const user of users) {
@@ -128,14 +139,14 @@ export class E2ETestOrchestrator {
       const courseResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/courses`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${user.token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${user.token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           title: `E2E Test Course ${Date.now()}`,
           description: 'Course for end-to-end testing',
-          category: 'technology'
-        })
+          category: 'technology',
+        }),
       });
 
       expect(courseResponse.status).toBe(201);
@@ -145,14 +156,14 @@ export class E2ETestOrchestrator {
       const moduleResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/modules`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${user.token}`,
-          'Content-Type': 'application/json'
+          Authorization: `Bearer ${user.token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           course_id: course.id,
           title: `E2E Test Module ${Date.now()}`,
-          description: 'Module for end-to-end testing'
-        })
+          description: 'Module for end-to-end testing',
+        }),
       });
 
       expect(moduleResponse.status).toBe(201);
@@ -161,7 +172,7 @@ export class E2ETestOrchestrator {
       courses.push({
         id: course.id,
         moduleId: module.id,
-        userId: user.id
+        userId: user.id,
       });
     }
 
@@ -171,10 +182,7 @@ export class E2ETestOrchestrator {
   /**
    * Simulates a complete new user journey from registration to content generation
    */
-  async simulateNewUserJourney(userConfig: {
-    email: string;
-    persona: any;
-  }): Promise<{
+  async simulateNewUserJourney(userConfig: { email: string; persona: any }): Promise<{
     userId: string;
     courseId: string;
     moduleId: string;
@@ -188,8 +196,8 @@ export class E2ETestOrchestrator {
         email: userConfig.email,
         password: 'TestPassword123!',
         full_name: 'New Journey User',
-        persona: userConfig.persona
-      })
+        persona: userConfig.persona,
+      }),
     });
 
     if (registerResponse.status !== 201) {
@@ -202,8 +210,8 @@ export class E2ETestOrchestrator {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: userConfig.email,
-        password: 'TestPassword123!'
-      })
+        password: 'TestPassword123!',
+      }),
     });
 
     if (loginResponse.status !== 200) {
@@ -216,13 +224,13 @@ export class E2ETestOrchestrator {
     const courseResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/courses`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         title: 'New User Journey Course',
-        description: 'Course for new user journey testing'
-      })
+        description: 'Course for new user journey testing',
+      }),
     });
 
     const course = await courseResponse.json();
@@ -231,14 +239,14 @@ export class E2ETestOrchestrator {
     const moduleResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/modules`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json'
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         course_id: course.id,
         title: 'New User Journey Module',
-        description: 'Module for new user journey testing'
-      })
+        description: 'Module for new user journey testing',
+      }),
     });
 
     const module = await moduleResponse.json();
@@ -247,7 +255,7 @@ export class E2ETestOrchestrator {
       userId: user.id,
       courseId: course.id,
       moduleId: module.id,
-      authToken: token
+      authToken: token,
     };
   }
 
@@ -259,13 +267,15 @@ export class E2ETestOrchestrator {
     courseId: string,
     files: Array<{ content: string; filename: string }>,
     authToken: string
-  ): Promise<Array<{
-    fileId: string;
-    processingStatus: string;
-    chunks: any[];
-    embeddings: any;
-    aiContent: any;
-  }>> {
+  ): Promise<
+    Array<{
+      fileId: string;
+      processingStatus: string;
+      chunks: any[];
+      embeddings: any;
+      aiContent: any;
+    }>
+  > {
     const results = [];
 
     for (const file of files) {
@@ -277,8 +287,8 @@ export class E2ETestOrchestrator {
 
       const uploadResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/files/upload`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${authToken}` },
-        body: formData
+        headers: { Authorization: `Bearer ${authToken}` },
+        body: formData,
       });
 
       expect(uploadResponse.status).toBe(200);
@@ -288,30 +298,29 @@ export class E2ETestOrchestrator {
       await waitForCondition(async () => {
         const statusResponse = await fetch(
           `${testConfig.api.baseUrl}/api/v1/files/${file_id}/status`,
-          { headers: { 'Authorization': `Bearer ${authToken}` } }
+          { headers: { Authorization: `Bearer ${authToken}` } }
         );
         const status = await statusResponse.json();
         return status.processing_status === 'completed';
       }, 60000);
 
       // Get file details
-      const fileResponse = await fetch(
-        `${testConfig.api.baseUrl}/api/v1/files/${file_id}`,
-        { headers: { 'Authorization': `Bearer ${authToken}` } }
-      );
+      const fileResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/files/${file_id}`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
       const fileData = await fileResponse.json();
 
       // Get chunks
       const chunksResponse = await fetch(
         `${testConfig.api.baseUrl}/api/v1/files/${file_id}/chunks`,
-        { headers: { 'Authorization': `Bearer ${authToken}` } }
+        { headers: { Authorization: `Bearer ${authToken}` } }
       );
       const chunks = await chunksResponse.json();
 
       // Get AI content
       const aiContentResponse = await fetch(
         `${testConfig.api.baseUrl}/api/v1/files/${file_id}/ai-content`,
-        { headers: { 'Authorization': `Bearer ${authToken}` } }
+        { headers: { Authorization: `Bearer ${authToken}` } }
       );
       const aiContent = await aiContentResponse.json();
 
@@ -320,7 +329,7 @@ export class E2ETestOrchestrator {
         processingStatus: fileData.processing_status,
         chunks,
         embeddings: chunks[0]?.embedding_status,
-        aiContent
+        aiContent,
       });
     }
 
@@ -341,18 +350,21 @@ export class E2ETestOrchestrator {
     studyGuide: string;
     metadata: any;
   }> {
-    const response = await fetch(`${testConfig.api.baseUrl}/api/v1/ai/generate-personalized-content`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${authToken}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        file_id: fileId,
-        persona,
-        content_types: ['summary', 'flashcards', 'quiz', 'study_guide']
-      })
-    });
+    const response = await fetch(
+      `${testConfig.api.baseUrl}/api/v1/ai/generate-personalized-content`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${authToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          file_id: fileId,
+          persona,
+          content_types: ['summary', 'flashcards', 'quiz', 'study_guide'],
+        }),
+      }
+    );
 
     expect(response.status).toBe(200);
     return await response.json();
@@ -375,12 +387,11 @@ export class E2ETestOrchestrator {
 
     for (let i = 0; i < requests; i++) {
       const startTime = Date.now();
-      
-      const response = await fetch(
-        `${testConfig.api.baseUrl}/api/v1/files/${fileId}/ai-content`,
-        { headers: { 'Authorization': `Bearer ${authToken}` } }
-      );
-      
+
+      const response = await fetch(`${testConfig.api.baseUrl}/api/v1/files/${fileId}/ai-content`, {
+        headers: { Authorization: `Bearer ${authToken}` },
+      });
+
       const endTime = Date.now();
       responseTimes.push(endTime - startTime);
 
@@ -389,13 +400,13 @@ export class E2ETestOrchestrator {
       }
 
       // Small delay between requests
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
     }
 
     return {
       cacheHitRate: cacheHits / requests,
       avgResponseTime: responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length,
-      requests
+      requests,
     };
   }
 
@@ -413,41 +424,34 @@ export class E2ETestOrchestrator {
   }> {
     const startTime = Date.now();
 
-    const response = await fetch(
-      `${testConfig.api.baseUrl}/api/v1/search/semantic`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ query, user_id: userId, limit: 10 })
-      }
-    );
+    const response = await fetch(`${testConfig.api.baseUrl}/api/v1/search/semantic`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query, user_id: userId, limit: 10 }),
+    });
 
     const endTime = Date.now();
     expect(response.status).toBe(200);
 
     const results = await response.json();
-    const avgRelevanceScore = results.results.reduce(
-      (sum: number, result: any) => sum + (result.relevance_score || 0),
-      0
-    ) / Math.max(results.results.length, 1);
+    const avgRelevanceScore =
+      results.results.reduce((sum: number, result: any) => sum + (result.relevance_score || 0), 0) /
+      Math.max(results.results.length, 1);
 
     return {
       results: results.results,
       responseTime: endTime - startTime,
-      relevanceScore: avgRelevanceScore
+      relevanceScore: avgRelevanceScore,
     };
   }
 
   /**
    * Simulates a complete user journey with all steps
    */
-  async simulateCompleteUserJourney(userConfig: {
-    email: string;
-    persona: any;
-  }): Promise<{
+  async simulateCompleteUserJourney(userConfig: { email: string; persona: any }): Promise<{
     success: boolean;
     fileProcessed: boolean;
     aiContentGenerated: boolean;
@@ -463,7 +467,7 @@ export class E2ETestOrchestrator {
     try {
       // Complete user journey
       const journey = await this.simulateNewUserJourney(userConfig);
-      
+
       // Process file
       const fileResults = await this.processMultipleFiles(
         journey.userId,
@@ -487,7 +491,6 @@ export class E2ETestOrchestrator {
         journey.authToken
       );
       cacheUtilized = cacheResults.cacheHitRate > 0;
-
     } catch (error) {
       success = false;
       errors.push((error as Error).message);
@@ -498,7 +501,7 @@ export class E2ETestOrchestrator {
       fileProcessed,
       aiContentGenerated,
       cacheUtilized,
-      errors
+      errors,
     };
   }
 
@@ -517,63 +520,58 @@ export class E2ETestOrchestrator {
   }> {
     // Frontend to Backend
     const frontendStart = Date.now();
-    const dashboardResponse = await fetch(
-      `${testConfig.api.baseUrl}/api/v1/dashboard`,
-      { headers: { 'Authorization': `Bearer ${authToken}` } }
-    );
+    const dashboardResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/dashboard`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
     const frontendTime = Date.now() - frontendStart;
 
     // Backend to Python AI Service
     const pythonStart = Date.now();
-    const aiResponse = await fetch(
-      `${testConfig.api.baseUrl}/api/v1/ai/health`,
-      { headers: { 'Authorization': `Bearer ${authToken}` } }
-    );
+    const aiResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/ai/health`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
     const pythonTime = Date.now() - pythonStart;
 
     // Queue Processing Test
-    const queueResponse = await fetch(
-      `${testConfig.api.baseUrl}/api/v1/admin/queue/stats`,
-      { headers: { 'Authorization': `Bearer ${authToken}` } }
-    );
+    const queueResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/admin/queue/stats`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
     const queueStats = await queueResponse.json();
 
     // Database Operations
     const dbStart = Date.now();
-    const userResponse = await fetch(
-      `${testConfig.api.baseUrl}/api/v1/users/${userId}`,
-      { headers: { 'Authorization': `Bearer ${authToken}` } }
-    );
+    const userResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/users/${userId}`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
     const dbTime = Date.now() - dbStart;
 
     // Cache Operations
-    const cacheResponse = await fetch(
-      `${testConfig.api.baseUrl}/api/v1/admin/cache/stats`,
-      { headers: { 'Authorization': `Bearer ${authToken}` } }
-    );
+    const cacheResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/admin/cache/stats`, {
+      headers: { Authorization: `Bearer ${authToken}` },
+    });
     const cacheStats = await cacheResponse.json();
 
     return {
       frontendToBackend: {
         success: dashboardResponse.status === 200,
-        responseTime: frontendTime
+        responseTime: frontendTime,
       },
       backendToPython: {
         success: aiResponse.status === 200,
-        responseTime: pythonTime
+        responseTime: pythonTime,
       },
       queueProcessing: {
         success: queueResponse.status === 200,
-        jobsProcessed: queueStats.processed_jobs || 0
+        jobsProcessed: queueStats.processed_jobs || 0,
       },
       databaseOperations: {
         success: userResponse.status === 200,
-        queryTime: dbTime
+        queryTime: dbTime,
       },
       cacheOperations: {
         success: cacheResponse.status === 200,
-        hitRate: cacheStats.hit_rate || 0
-      }
+        hitRate: cacheStats.hit_rate || 0,
+      },
     };
   }
 
@@ -593,7 +591,7 @@ export class E2ETestOrchestrator {
     let networkRecovered = false;
     try {
       const response = await fetch(`${testConfig.api.baseUrl}/api/v1/files/invalid-endpoint`, {
-        headers: { 'Authorization': `Bearer ${authToken}` }
+        headers: { Authorization: `Bearer ${authToken}` },
       });
       networkRecovered = response.status === 404; // Expected 404
     } catch (error) {
@@ -601,42 +599,35 @@ export class E2ETestOrchestrator {
     }
 
     // Service unavailable test
-    const serviceResponse = await fetch(
-      `${testConfig.api.baseUrl}/api/v1/ai/generate-content`,
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${authToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ file_id: 'non-existent' })
-      }
-    );
+    const serviceResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/ai/generate-content`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${authToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ file_id: 'non-existent' }),
+    });
     const gracefulDegradation = serviceResponse.status === 404;
 
     // Malformed data test
-    const malformedResponse = await fetch(
-      `${testConfig.api.baseUrl}/api/v1/files/upload`,
-      {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${authToken}` },
-        body: 'invalid-form-data'
-      }
-    );
+    const malformedResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/files/upload`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${authToken}` },
+      body: 'invalid-form-data',
+    });
     const errorPropagation = malformedResponse.status === 400;
 
     // Auth failure test
-    const authResponse = await fetch(
-      `${testConfig.api.baseUrl}/api/v1/users/${userId}`,
-      { headers: { 'Authorization': 'Bearer invalid-token' } }
-    );
+    const authResponse = await fetch(`${testConfig.api.baseUrl}/api/v1/users/${userId}`, {
+      headers: { Authorization: 'Bearer invalid-token' },
+    });
     const securityMaintained = authResponse.status === 401;
 
     return {
       networkFailure: { recovered: networkRecovered },
       serviceUnavailable: { gracefulDegradation },
       malformedData: { errorPropagation },
-      authFailure: { securityMaintained }
+      authFailure: { securityMaintained },
     };
   }
 
@@ -668,7 +659,7 @@ export class E2ETestOrchestrator {
     const responses = await Promise.all(promises);
     const endTime = Date.now();
 
-    responses.forEach(response => {
+    responses.forEach((response) => {
       if (response.success) {
         results.push(response.responseTime);
       } else {
@@ -680,8 +671,8 @@ export class E2ETestOrchestrator {
     const successfulRequests = results.length;
     const averageResponseTime = results.reduce((a, b) => a + b, 0) / results.length;
     const errorRate = errors.length / totalRequests;
-    const throughput = successfulRequests / (endTime - startTime) * 1000; // RPS
-    
+    const throughput = (successfulRequests / (endTime - startTime)) * 1000; // RPS
+
     results.sort((a, b) => a - b);
     const p95Index = Math.floor(results.length * 0.95);
     const p95ResponseTime = results[p95Index] || 0;
@@ -690,7 +681,7 @@ export class E2ETestOrchestrator {
       averageResponseTime,
       errorRate,
       throughput,
-      p95ResponseTime
+      p95ResponseTime,
     };
   }
 
@@ -704,10 +695,10 @@ export class E2ETestOrchestrator {
   }> {
     try {
       const startTime = Date.now();
-      
+
       // Randomly select a scenario
       const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
-      
+
       let response;
       switch (scenario) {
         case 'file-upload':
@@ -728,13 +719,13 @@ export class E2ETestOrchestrator {
 
       return {
         success: response.ok,
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     } catch (error) {
       return {
         success: false,
         responseTime: 0,
-        error: (error as Error).message
+        error: (error as Error).message,
       };
     }
   }
@@ -760,8 +751,8 @@ export class E2ETestOrchestrator {
     }
 
     const results = await Promise.all(requests);
-    
-    const hits = results.filter(r => r.cacheHit).length;
+
+    const hits = results.filter((r) => r.cacheHit).length;
     const avgResponseTime = results.reduce((sum, r) => sum + r.responseTime, 0) / results.length;
 
     // Simulate memory usage (would get from Redis in real implementation)
@@ -770,7 +761,7 @@ export class E2ETestOrchestrator {
     return {
       hitRate: hits / results.length,
       avgCacheResponseTime: avgResponseTime,
-      cacheMemoryUsage
+      cacheMemoryUsage,
     };
   }
 
@@ -782,13 +773,13 @@ export class E2ETestOrchestrator {
     responseTime: number;
   }> {
     const startTime = Date.now();
-    
+
     // Simulate cache lookup
-    await new Promise(resolve => setTimeout(resolve, Math.random() * 50));
-    
+    await new Promise((resolve) => setTimeout(resolve, Math.random() * 50));
+
     return {
       cacheHit: Math.random() > 0.3, // 70% hit rate
-      responseTime: Date.now() - startTime
+      responseTime: Date.now() - startTime,
     };
   }
 
@@ -808,7 +799,7 @@ export class E2ETestOrchestrator {
       systemMetrics: { success: true },
       contentModeration: { success: true },
       performanceMonitoring: { success: true },
-      costTracking: { success: true }
+      costTracking: { success: true },
     };
   }
 
@@ -831,7 +822,7 @@ export class E2ETestOrchestrator {
       fileProcessingFlow: { integrity: true },
       aiContentFlow: { integrity: true },
       costTrackingFlow: { accuracy: 0.98 },
-      performanceMetricsFlow: { completeness: true }
+      performanceMetricsFlow: { completeness: true },
     };
   }
 
@@ -849,7 +840,7 @@ export class E2ETestOrchestrator {
       metricsCollection: { success: true },
       alerting: { responsiveness: 2000 },
       dashboards: { dataAccuracy: 0.97 },
-      logging: { completeness: true }
+      logging: { completeness: true },
     };
   }
 
@@ -857,11 +848,7 @@ export class E2ETestOrchestrator {
    * Warms up services before testing
    */
   async warmUpServices(): Promise<void> {
-    const endpoints = [
-      '/health',
-      '/api/v1/health',
-      '/api/v1/ai/health'
-    ];
+    const endpoints = ['/health', '/api/v1/health', '/api/v1/ai/health'];
 
     for (const endpoint of endpoints) {
       try {

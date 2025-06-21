@@ -6,13 +6,13 @@
 import { logger } from '../../utils/logger';
 import { NewRelicProvider } from './providers/NewRelicProvider';
 import { DatadogProvider } from './providers/DatadogProvider';
-import type { 
-  APMProvider, 
-  APMConfig, 
-  APMTransaction, 
-  APMSpan, 
+import type {
+  APMProvider,
+  APMConfig,
+  APMTransaction,
+  APMSpan,
   APMError,
-  PerformanceBudget 
+  PerformanceBudget,
 } from './types';
 
 export class APMService {
@@ -30,8 +30,8 @@ export class APMService {
       environment: process.env.NODE_ENV || 'development',
       customTags: {
         version: process.env.npm_package_version || 'unknown',
-        region: process.env.AWS_REGION || process.env.VERCEL_REGION || 'unknown'
-      }
+        region: process.env.AWS_REGION || process.env.VERCEL_REGION || 'unknown',
+      },
     };
 
     this.initializePerformanceBudgets();
@@ -75,7 +75,7 @@ export class APMService {
     if (!this.provider?.isEnabled()) return null;
 
     const transaction = this.provider.startTransaction(name, type);
-    
+
     // Store transaction for correlation
     const transactionKey = `${name}_${transaction.id}`;
     this.transactionStore.set(transactionKey, transaction);
@@ -83,7 +83,7 @@ export class APMService {
     // Set default attributes
     this.provider.setTransactionAttribute('service.name', this.config.serviceName);
     this.provider.setTransactionAttribute('environment', this.config.environment);
-    
+
     if (this.config.customTags) {
       Object.entries(this.config.customTags).forEach(([key, value]) => {
         this.provider!.setTransactionAttribute(key, value);
@@ -97,10 +97,10 @@ export class APMService {
     if (!transaction || !this.provider?.isEnabled()) return;
 
     const duration = Date.now() - transaction.startTime;
-    
+
     // Check performance budgets
     this.checkTransactionPerformance(transaction.name, duration);
-    
+
     // Record transaction metrics
     this.provider.recordMetric({
       name: `transaction.duration.${transaction.type}`,
@@ -108,12 +108,12 @@ export class APMService {
       type: 'histogram',
       tags: {
         transaction: transaction.name,
-        type: transaction.type
-      }
+        type: transaction.type,
+      },
     });
 
     this.provider.endTransaction(transaction);
-    
+
     // Clean up stored transaction
     const transactionKey = `${transaction.name}_${transaction.id}`;
     this.transactionStore.delete(transactionKey);
@@ -129,15 +129,15 @@ export class APMService {
     if (!span || !this.provider?.isEnabled()) return;
 
     const duration = Date.now() - span.startTime;
-    
+
     // Record span metrics
     this.provider.recordMetric({
       name: 'span.duration',
       value: duration,
       type: 'histogram',
       tags: {
-        span: span.name
-      }
+        span: span.name,
+      },
     });
 
     this.provider.endSpan(span);
@@ -165,12 +165,12 @@ export class APMService {
       context: {
         ...context,
         service: this.config.serviceName,
-        environment: this.config.environment
-      }
+        environment: this.config.environment,
+      },
     };
 
     this.provider.captureError(apmError);
-    
+
     // Increment error counter
     this.provider.recordMetric({
       name: 'errors.count',
@@ -178,19 +178,24 @@ export class APMService {
       type: 'counter',
       tags: {
         error_type: error.name,
-        service: this.config.serviceName
-      }
+        service: this.config.serviceName,
+      },
     });
   }
 
   // Business Metrics
-  recordBusinessMetric(name: string, value: number, unit: string = 'count', tags?: Record<string, string>): void {
+  recordBusinessMetric(
+    name: string,
+    value: number,
+    unit: string = 'count',
+    tags?: Record<string, string>
+  ): void {
     if (!this.provider?.isEnabled()) return;
-    
+
     this.provider.recordBusinessMetric(name, value, unit, {
       ...tags,
       service: this.config.serviceName,
-      environment: this.config.environment
+      environment: this.config.environment,
     });
   }
 
@@ -203,37 +208,44 @@ export class APMService {
   // Custom Events
   recordEvent(eventType: string, attributes: Record<string, any>): void {
     if (!this.provider?.isEnabled()) return;
-    
+
     this.provider.recordCustomEvent(eventType, {
       ...attributes,
       timestamp: Date.now(),
       service: this.config.serviceName,
-      environment: this.config.environment
+      environment: this.config.environment,
     });
   }
 
   // Database Operations
   recordDatabaseQuery(query: string, duration: number, database: string = 'postgres'): void {
     if (!this.provider?.isEnabled()) return;
-    
+
     this.provider.recordDatabaseQuery(query, duration, database);
-    
+
     // Check slow query threshold
-    if (duration > 1000) { // 1 second
+    if (duration > 1000) {
+      // 1 second
       this.captureError(new Error('Slow database query detected'), {
         query: query.substring(0, 500),
         duration,
-        database
+        database,
       });
     }
   }
 
   // External Service Calls
-  recordExternalCall(service: string, operation: string, duration: number, success: boolean = true, statusCode?: number): void {
+  recordExternalCall(
+    service: string,
+    operation: string,
+    duration: number,
+    success: boolean = true,
+    statusCode?: number
+  ): void {
     if (!this.provider?.isEnabled()) return;
-    
+
     this.provider.recordExternalCall(service, operation, duration, success);
-    
+
     // Track status codes
     if (statusCode) {
       this.provider.recordMetric({
@@ -244,8 +256,8 @@ export class APMService {
           service,
           operation,
           status_code: statusCode.toString(),
-          status_class: `${Math.floor(statusCode / 100)}xx`
-        }
+          status_class: `${Math.floor(statusCode / 100)}xx`,
+        },
       });
     }
   }
@@ -253,32 +265,43 @@ export class APMService {
   // Feature Usage
   recordFeatureUsage(feature: string, userId: string, metadata?: Record<string, any>): void {
     if (!this.provider?.isEnabled()) return;
-    
+
     this.provider.recordFeatureUsage(feature, userId, {
       ...metadata,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
   // Queue Metrics
-  recordQueueMetric(queueName: string, metric: 'enqueue' | 'dequeue' | 'process' | 'error' | 'retry', value: number = 1, metadata?: Record<string, any>): void {
+  recordQueueMetric(
+    queueName: string,
+    metric: 'enqueue' | 'dequeue' | 'process' | 'error' | 'retry',
+    value: number = 1,
+    metadata?: Record<string, any>
+  ): void {
     if (!this.provider?.isEnabled()) return;
-    
+
     this.provider.recordMetric({
       name: `queue.${metric}`,
       value,
-      type: (metric === 'error' || metric === 'retry') ? 'counter' : 'histogram',
+      type: metric === 'error' || metric === 'retry' ? 'counter' : 'histogram',
       tags: {
         queue: queueName,
-        ...metadata
-      }
+        ...metadata,
+      },
     });
   }
 
   // AI Service Metrics
-  recordAIMetric(operation: string, model: string, tokens: number, duration: number, cost?: number): void {
+  recordAIMetric(
+    operation: string,
+    model: string,
+    tokens: number,
+    duration: number,
+    cost?: number
+  ): void {
     if (!this.provider?.isEnabled()) return;
-    
+
     // Token usage
     this.provider.recordMetric({
       name: 'ai.tokens',
@@ -286,8 +309,8 @@ export class APMService {
       type: 'counter',
       tags: {
         operation,
-        model
-      }
+        model,
+      },
     });
 
     // Duration
@@ -297,30 +320,34 @@ export class APMService {
       type: 'histogram',
       tags: {
         operation,
-        model
-      }
+        model,
+      },
     });
 
     // Cost tracking
     if (cost !== undefined) {
       this.recordBusinessMetric('ai.cost', cost, 'usd', {
         operation,
-        model
+        model,
       });
     }
   }
 
   // Cache Metrics
-  recordCacheMetric(operation: 'hit' | 'miss' | 'set' | 'delete', cacheType: string, duration?: number): void {
+  recordCacheMetric(
+    operation: 'hit' | 'miss' | 'set' | 'delete',
+    cacheType: string,
+    duration?: number
+  ): void {
     if (!this.provider?.isEnabled()) return;
-    
+
     this.provider.recordMetric({
       name: `cache.${operation}`,
       value: 1,
       type: 'counter',
       tags: {
-        cache_type: cacheType
-      }
+        cache_type: cacheType,
+      },
     });
 
     if (duration !== undefined) {
@@ -330,19 +357,24 @@ export class APMService {
         type: 'histogram',
         tags: {
           operation,
-          cache_type: cacheType
-        }
+          cache_type: cacheType,
+        },
       });
     }
   }
 
   // Performance Budget Management
-  setPerformanceBudget(metric: string, budget: number, unit: string = 'ms', critical: boolean = false): void {
+  setPerformanceBudget(
+    metric: string,
+    budget: number,
+    unit: string = 'ms',
+    critical: boolean = false
+  ): void {
     this.performanceBudgets.set(metric, {
       metric,
       budget,
       unit,
-      critical
+      critical,
     });
   }
 

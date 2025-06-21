@@ -56,35 +56,35 @@ export class VectorStoreFactory implements IVectorStoreFactory {
       case 'pgvector':
         store = new PgVectorStore();
         break;
-      
+
       case 'pinecone':
         if (!config?.pinecone?.apiKey) {
           throw new Error('Pinecone API key is required');
         }
         store = new PineconeStore();
         break;
-      
+
       case 'weaviate':
         if (!config?.weaviate?.url) {
           throw new Error('Weaviate URL is required');
         }
         store = new WeaviateStore();
         break;
-      
+
       case 'qdrant':
         if (!config?.qdrant?.url) {
           throw new Error('Qdrant URL is required');
         }
         store = new QdrantStore();
         break;
-      
+
       default:
         throw new Error(`Unsupported vector store provider: ${provider}`);
     }
 
     this.stores.set(provider, store);
     logger.info(`[VectorStoreFactory] Created new ${provider} instance`);
-    
+
     return store;
   }
 
@@ -101,7 +101,7 @@ export class VectorStoreFactory implements IVectorStoreFactory {
    */
   async getStore(config: VectorStoreConfig): Promise<IVectorStore> {
     const store = this.create(config.provider, config);
-    
+
     // Initialize if not already initialized
     const isHealthy = await store.healthCheck();
     if (!isHealthy) {
@@ -111,7 +111,7 @@ export class VectorStoreFactory implements IVectorStoreFactory {
         metric: 'cosine',
       });
     }
-    
+
     return store;
   }
 
@@ -119,15 +119,15 @@ export class VectorStoreFactory implements IVectorStoreFactory {
    * Close all vector store connections
    */
   async closeAll(): Promise<void> {
-    const closePromises = Array.from(this.stores.values()).map(store => 
-      store.close().catch(error => 
-        logger.error('[VectorStoreFactory] Error closing store', error)
-      )
+    const closePromises = Array.from(this.stores.values()).map((store) =>
+      store
+        .close()
+        .catch((error) => logger.error('[VectorStoreFactory] Error closing store', error))
     );
-    
+
     await Promise.all(closePromises);
     this.stores.clear();
-    
+
     logger.info('[VectorStoreFactory] All stores closed');
   }
 }

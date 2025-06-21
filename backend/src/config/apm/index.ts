@@ -10,78 +10,81 @@ export { distributedTracing, DistributedTracingService } from './tracing/Distrib
 
 // Alerting
 export { apmAlerting, APMAlertingService } from './alerting/APMAlertingService';
-export type { 
-  AlertRule, 
-  AlertChannel, 
-  AlertEvent, 
-  AlertingConfig 
+export type {
+  AlertRule,
+  AlertChannel,
+  AlertEvent,
+  AlertingConfig,
 } from './alerting/APMAlertingService';
 
 // Middleware
 export { queueAPM, QueueAPMMiddleware } from './middleware/QueueAPMMiddleware';
-export { 
-  apmMiddleware, 
-  databaseAPMMiddleware, 
-  externalServiceAPMMiddleware, 
-  trackExecution 
+export {
+  apmMiddleware,
+  databaseAPMMiddleware,
+  externalServiceAPMMiddleware,
+  trackExecution,
 } from '../../middleware/apm';
-export { 
+export {
   distributedTracingMiddleware,
   createTracedHttpClient,
   createTracedAxios,
   traceQueueJob,
   propagateToPython,
-  propagateToQueue
+  propagateToQueue,
 } from '../../middleware/distributedTracing';
 
 // Python Service Integration
-export { 
+export {
   PythonServiceIntegration,
   PythonServiceClient,
   pythonServices,
   createPythonServiceIntegration,
-  tracePythonCall
+  tracePythonCall,
 } from './integrations/PythonServiceIntegration';
-export type { 
-  PythonServiceConfig, 
-  PythonServiceCall, 
-  PythonServiceResponse 
+export type {
+  PythonServiceConfig,
+  PythonServiceCall,
+  PythonServiceResponse,
 } from './integrations/PythonServiceIntegration';
 
 // Unified Observability
-export { unifiedObservability, UnifiedObservabilityService } from './observability/UnifiedObservabilityService';
-export type { 
-  UserSession, 
-  PageView, 
-  WebVitals, 
-  APICall, 
-  UserError, 
+export {
+  unifiedObservability,
+  UnifiedObservabilityService,
+} from './observability/UnifiedObservabilityService';
+export type {
+  UserSession,
+  PageView,
+  WebVitals,
+  APICall,
+  UserError,
   SessionPerformance,
-  RUMConfiguration 
+  RUMConfiguration,
 } from './observability/UnifiedObservabilityService';
 
 // Dashboard
 export { apmDashboard, APMDashboardService } from './dashboard/APMDashboardService';
-export type { 
-  Dashboard, 
-  DashboardWidget, 
-  WidgetConfig, 
-  DashboardData, 
+export type {
+  Dashboard,
+  DashboardWidget,
+  WidgetConfig,
+  DashboardData,
   WidgetData,
   MetricSeries,
-  MetricDataPoint
+  MetricDataPoint,
 } from './dashboard/APMDashboardService';
 
 // Health Check & Validation
 export { apmHealthCheck, APMHealthCheck } from './validation/APMHealthCheck';
-export type { 
-  HealthCheckResult, 
-  ConfigValidationResult, 
-  APMSystemHealth 
+export type {
+  HealthCheckResult,
+  ConfigValidationResult,
+  APMSystemHealth,
 } from './validation/APMHealthCheck';
 
 // Types
-export type { 
+export type {
   APMProvider,
   APMConfig,
   APMTransaction,
@@ -90,7 +93,7 @@ export type {
   APMMetric,
   DistributedTracingContext,
   PerformanceBudget,
-  BusinessMetricDefinition
+  BusinessMetricDefinition,
 } from './types';
 
 // Providers
@@ -107,16 +110,16 @@ export async function initializeAPM(): Promise<void> {
     const { apmService } = await import('./APMService');
     const { apmAlerting } = await import('./alerting/APMAlertingService');
     const { apmHealthCheck } = await import('./validation/APMHealthCheck');
-    
+
     // Initialize core APM service
     await apmService.initialize();
-    
+
     // Initialize alerting
     await apmAlerting.initialize();
-    
+
     // Initialize health checking
     apmHealthCheck.initialize();
-    
+
     console.log('✅ APM System fully initialized');
   } catch (error) {
     console.error('❌ APM initialization failed:', error);
@@ -134,7 +137,7 @@ export async function getAPMStatus() {
   const { apmHealthCheck } = await import('./validation/APMHealthCheck');
   const { unifiedObservability } = await import('./observability/UnifiedObservabilityService');
   const { apmDashboard } = await import('./dashboard/APMDashboardService');
-  
+
   const health = await apmHealthCheck.performHealthCheck();
   const activeSessions = unifiedObservability.getActiveSessions();
   const activeAlerts = apmAlerting.getActiveAlerts();
@@ -149,9 +152,9 @@ export async function getAPMStatus() {
       activeAlerts: activeAlerts.length,
       dashboards: dashboards.length,
       alertingEnabled: apmAlerting.isEnabled(),
-      rumEnabled: unifiedObservability.getConfig().enabled
+      rumEnabled: unifiedObservability.getConfig().enabled,
     },
-    uptime: health.uptime
+    uptime: health.uptime,
   };
 }
 
@@ -165,12 +168,12 @@ export async function shutdownAPM(): Promise<void> {
     const { unifiedObservability } = await import('./observability/UnifiedObservabilityService');
     const { apmAlerting } = await import('./alerting/APMAlertingService');
     const { queueAPM } = await import('./middleware/QueueAPMMiddleware');
-    
+
     apmHealthCheck.destroy();
     unifiedObservability.destroy();
     apmAlerting.destroy();
     queueAPM.destroy();
-    
+
     console.log('✅ APM System shutdown complete');
   } catch (error) {
     console.error('❌ APM shutdown failed:', error);

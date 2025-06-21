@@ -14,10 +14,10 @@ const router = Router();
  */
 router.get('/sentry-error', (_req, res) => {
   logger.info('Testing Sentry error reporting');
-  
+
   // Create a test error
   const testError = new Error('Test error from LEARN-X Backend');
-  
+
   // Add additional context
   Sentry.withScope((scope) => {
     scope.setTag('test', true);
@@ -25,18 +25,18 @@ router.get('/sentry-error', (_req, res) => {
     scope.setContext('test_details', {
       endpoint: '/api/v1/test/sentry-error',
       service: 'backend',
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
-    
+
     // Report to Sentry
     Sentry.captureException(testError);
   });
-  
+
   res.json({
     message: 'Test error sent to Sentry',
     service: 'backend',
     timestamp: new Date().toISOString(),
-    note: 'Check your Sentry dashboard for the error'
+    note: 'Check your Sentry dashboard for the error',
   });
 });
 

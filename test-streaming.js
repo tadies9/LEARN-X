@@ -2,7 +2,11 @@
 
 async function testStreaming() {
   console.log('Testing Python AI service streaming...');
+<<<<<<< Updated upstream
 
+=======
+  
+>>>>>>> Stashed changes
   const response = await fetch('http://localhost:8001/api/v1/ai/generate-content', {
     method: 'POST',
     headers: {
@@ -30,10 +34,17 @@ async function testStreaming() {
   let chunkCount = 0;
 
   console.log('Starting to read stream...');
+<<<<<<< Updated upstream
 
   while (true) {
     const { done, value } = await reader.read();
 
+=======
+  
+  while (true) {
+    const { done, value } = await reader.read();
+    
+>>>>>>> Stashed changes
     if (done) {
       console.log('Stream complete');
       break;
@@ -47,7 +58,11 @@ async function testStreaming() {
       if (line.startsWith('data: ')) {
         chunkCount++;
         const data = line.slice(6);
+<<<<<<< Updated upstream
 
+=======
+        
+>>>>>>> Stashed changes
         if (data === '[DONE]') {
           console.log('Received [DONE] signal');
           return;
@@ -55,10 +70,14 @@ async function testStreaming() {
 
         try {
           const chunk = JSON.parse(data);
+<<<<<<< Updated upstream
           console.log(
             `Chunk ${chunkCount}:`,
             chunk.content ? chunk.content.substring(0, 50) + '...' : chunk
           );
+=======
+          console.log(`Chunk ${chunkCount}:`, chunk.content ? chunk.content.substring(0, 50) + '...' : chunk);
+>>>>>>> Stashed changes
         } catch (error) {
           console.log(`Chunk ${chunkCount} (raw):`, data);
         }
@@ -67,4 +86,8 @@ async function testStreaming() {
   }
 }
 
+<<<<<<< Updated upstream
 testStreaming().catch(console.error);
+=======
+testStreaming().catch(console.error);
+>>>>>>> Stashed changes

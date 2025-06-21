@@ -22,7 +22,7 @@ export const errorHandler = (
   _: NextFunction
 ) => {
   const correlationId = req.headers['x-correlation-id'] as string;
-  
+
   // Capture error in Sentry
   Sentry.captureException(err, {
     tags: {

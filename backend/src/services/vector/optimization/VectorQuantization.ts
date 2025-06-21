@@ -53,7 +53,7 @@ export class VectorQuantization {
     }
 
     // For scalar and binary quantization, process individually
-    return vectors.map(vector => this.quantize(vector));
+    return vectors.map((vector) => this.quantize(vector));
   }
 
   /**
@@ -106,7 +106,7 @@ export class VectorQuantization {
       case 'scalar':
         return this.config.bits === 8 ? 0.95 : this.config.bits === 4 ? 0.85 : 0.98;
       case 'product':
-        return 0.90; // Depends on codebook size and subvector size
+        return 0.9; // Depends on codebook size and subvector size
       case 'binary':
         return 0.75; // Significant accuracy loss but huge compression
       default:
@@ -122,9 +122,9 @@ export class VectorQuantization {
     const max = Math.max(...vector);
     const range = max - min;
     const scale = range / ((1 << this.config.bits) - 1);
-    
+
     let quantizedData: Uint8Array | Uint16Array;
-    
+
     if (this.config.bits <= 8) {
       quantizedData = new Uint8Array(vector.length);
       for (let i = 0; i < vector.length; i++) {
@@ -171,26 +171,26 @@ export class VectorQuantization {
     const subVectorSize = this.config.subVectorSize || 8;
     const numSubVectors = Math.ceil(vector.length / subVectorSize);
     const codebookSize = this.config.codebookSize || 256;
-    
+
     // Generate random codebook (in practice, use k-means clustering)
     const codebook = this.generateRandomCodebook(subVectorSize, codebookSize);
-    
+
     const quantizedData = new Uint8Array(numSubVectors);
-    
+
     for (let i = 0; i < numSubVectors; i++) {
       const startIdx = i * subVectorSize;
       const endIdx = Math.min(startIdx + subVectorSize, vector.length);
       const subVector = vector.slice(startIdx, endIdx);
-      
+
       // Pad if necessary
       while (subVector.length < subVectorSize) {
         subVector.push(0);
       }
-      
+
       // Find nearest codeword
       let bestIdx = 0;
       let bestDistance = Infinity;
-      
+
       for (let j = 0; j < codebook.length; j++) {
         const distance = this.euclideanDistance(subVector, codebook[j]);
         if (distance < bestDistance) {
@@ -198,7 +198,7 @@ export class VectorQuantization {
           bestIdx = j;
         }
       }
-      
+
       quantizedData[i] = bestIdx;
     }
 
@@ -223,42 +223,42 @@ export class VectorQuantization {
 
     // Train codebooks for each subvector position
     const codebooks: number[][][] = [];
-    
+
     for (let i = 0; i < numSubVectors; i++) {
       const startIdx = i * subVectorSize;
       const endIdx = Math.min(startIdx + subVectorSize, dimensions);
-      
+
       // Collect all subvectors at this position
-      const subVectors = vectors.map(v => {
+      const subVectors = vectors.map((v) => {
         const sub = v.slice(startIdx, endIdx);
         while (sub.length < subVectorSize) {
           sub.push(0);
         }
         return sub;
       });
-      
+
       // Train codebook using k-means (simplified)
       const codebook = this.trainCodebook(subVectors, codebookSize);
       codebooks.push(codebook);
     }
 
     // Now quantize all vectors using trained codebooks
-    return vectors.map(vector => {
+    return vectors.map((vector) => {
       const quantizedData = new Uint8Array(numSubVectors);
-      
+
       for (let i = 0; i < numSubVectors; i++) {
         const startIdx = i * subVectorSize;
         const endIdx = Math.min(startIdx + subVectorSize, vector.length);
         const subVector = vector.slice(startIdx, endIdx);
-        
+
         while (subVector.length < subVectorSize) {
           subVector.push(0);
         }
-        
+
         // Find nearest codeword in the codebook for this position
         let bestIdx = 0;
         let bestDistance = Infinity;
-        
+
         for (let j = 0; j < codebooks[i].length; j++) {
           const distance = this.euclideanDistance(subVector, codebooks[i][j]);
           if (distance < bestDistance) {
@@ -266,7 +266,7 @@ export class VectorQuantization {
             bestIdx = j;
           }
         }
-        
+
         quantizedData[i] = bestIdx;
       }
 
@@ -308,9 +308,9 @@ export class VectorQuantization {
     for (let i = 0; i < vector.length; i++) {
       const byteIdx = Math.floor(i / bitsPerByte);
       const bitIdx = i % bitsPerByte;
-      
+
       if (vector[i] >= 0) {
-        quantizedData[byteIdx] |= (1 << bitIdx);
+        quantizedData[byteIdx] |= 1 << bitIdx;
       }
     }
 
@@ -333,7 +333,7 @@ export class VectorQuantization {
     for (let i = 0; i < quantized.originalDimensions; i++) {
       const byteIdx = Math.floor(i / bitsPerByte);
       const bitIdx = i % bitsPerByte;
-      
+
       const bit = (quantized.quantizedData[byteIdx] >> bitIdx) & 1;
       result[i] = bit === 1 ? 1.0 : -1.0;
     }
@@ -355,7 +355,7 @@ export class VectorQuantization {
 
   private generateRandomCodebook(dimensions: number, size: number): number[][] {
     const codebook: number[][] = [];
-    
+
     for (let i = 0; i < size; i++) {
       const codeword: number[] = [];
       for (let j = 0; j < dimensions; j++) {
@@ -363,17 +363,17 @@ export class VectorQuantization {
       }
       codebook.push(codeword);
     }
-    
+
     return codebook;
   }
 
   private trainCodebook(vectors: number[][], k: number): number[][] {
     // Simplified k-means implementation
     if (vectors.length === 0) return [];
-    
+
     const dimensions = vectors[0].length;
     const centroids: number[][] = [];
-    
+
     // Initialize centroids randomly
     for (let i = 0; i < k; i++) {
       const centroid: number[] = [];
@@ -382,16 +382,16 @@ export class VectorQuantization {
       }
       centroids.push(centroid);
     }
-    
+
     // Run a few iterations of k-means
     for (let iter = 0; iter < 10; iter++) {
       const clusters: number[][][] = Array.from({ length: k }, () => []);
-      
+
       // Assign vectors to closest centroids
       for (const vector of vectors) {
         let bestIdx = 0;
         let bestDistance = Infinity;
-        
+
         for (let i = 0; i < centroids.length; i++) {
           const distance = this.euclideanDistance(vector, centroids[i]);
           if (distance < bestDistance) {
@@ -399,10 +399,10 @@ export class VectorQuantization {
             bestIdx = i;
           }
         }
-        
+
         clusters[bestIdx].push(vector);
       }
-      
+
       // Update centroids
       for (let i = 0; i < k; i++) {
         if (clusters[i].length > 0) {
@@ -413,7 +413,7 @@ export class VectorQuantization {
         }
       }
     }
-    
+
     return centroids;
   }
 }

@@ -61,7 +61,7 @@ export class APMHealthCheck {
    */
   async performHealthCheck(): Promise<APMSystemHealth> {
     const startTime = Date.now();
-    
+
     try {
       const services = await Promise.all([
         this.checkAPMService(),
@@ -70,7 +70,7 @@ export class APMHealthCheck {
         this.checkDashboardService(),
         this.checkProviderConnectivity(),
         this.checkMetricsCollection(),
-        this.checkTraceCollection()
+        this.checkTraceCollection(),
       ]);
 
       const configuration = this.validateConfiguration();
@@ -81,7 +81,7 @@ export class APMHealthCheck {
         services,
         configuration,
         lastCheck: new Date(),
-        uptime: Date.now() - this.startTime.getTime()
+        uptime: Date.now() - this.startTime.getTime(),
       };
 
       const duration = Date.now() - startTime;
@@ -90,19 +90,26 @@ export class APMHealthCheck {
       return this.lastHealthCheck;
     } catch (error) {
       logger.error('Error performing APM health check:', error);
-      
+
       return {
         overall: 'critical',
-        services: [{
-          service: 'health_check',
-          status: 'critical',
-          message: 'Health check failed to execute',
-          details: { error: (error as Error).message },
-          timestamp: new Date()
-        }],
-        configuration: { valid: false, errors: ['Health check execution failed'], warnings: [], recommendations: [] },
+        services: [
+          {
+            service: 'health_check',
+            status: 'critical',
+            message: 'Health check failed to execute',
+            details: { error: (error as Error).message },
+            timestamp: new Date(),
+          },
+        ],
+        configuration: {
+          valid: false,
+          errors: ['Health check execution failed'],
+          warnings: [],
+          recommendations: [],
+        },
         lastCheck: new Date(),
-        uptime: Date.now() - this.startTime.getTime()
+        uptime: Date.now() - this.startTime.getTime(),
       };
     }
   }
@@ -119,19 +126,26 @@ export class APMHealthCheck {
    */
   async checkServiceHealth(serviceName: string): Promise<HealthCheckResult> {
     switch (serviceName) {
-      case 'apm': return this.checkAPMService();
-      case 'alerting': return this.checkAlertingService();
-      case 'observability': return this.checkObservabilityService();
-      case 'dashboard': return this.checkDashboardService();
-      case 'provider': return this.checkProviderConnectivity();
-      case 'metrics': return this.checkMetricsCollection();
-      case 'traces': return this.checkTraceCollection();
+      case 'apm':
+        return this.checkAPMService();
+      case 'alerting':
+        return this.checkAlertingService();
+      case 'observability':
+        return this.checkObservabilityService();
+      case 'dashboard':
+        return this.checkDashboardService();
+      case 'provider':
+        return this.checkProviderConnectivity();
+      case 'metrics':
+        return this.checkMetricsCollection();
+      case 'traces':
+        return this.checkTraceCollection();
       default:
         return {
           service: serviceName,
           status: 'unknown',
           message: 'Unknown service',
-          timestamp: new Date()
+          timestamp: new Date(),
         };
     }
   }
@@ -139,11 +153,11 @@ export class APMHealthCheck {
   // Individual Service Health Checks
   private async checkAPMService(): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    
+
     try {
       const isEnabled = apmService.isEnabled();
       const provider = apmService.getProvider();
-      
+
       if (!isEnabled) {
         return {
           service: 'apm',
@@ -151,7 +165,7 @@ export class APMHealthCheck {
           message: 'APM service is disabled',
           details: { enabled: false, provider },
           timestamp: new Date(),
-          responseTime: Date.now() - startTime
+          responseTime: Date.now() - startTime,
         };
       }
 
@@ -167,7 +181,7 @@ export class APMHealthCheck {
         message: 'APM service is functioning normally',
         details: { enabled: true, provider },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     } catch (error) {
       return {
@@ -176,14 +190,14 @@ export class APMHealthCheck {
         message: 'APM service check failed',
         details: { error: (error as Error).message },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     }
   }
 
   private async checkAlertingService(): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    
+
     try {
       const isEnabled = apmAlerting.isEnabled();
       const rules = apmAlerting.getRules();
@@ -192,14 +206,16 @@ export class APMHealthCheck {
       return {
         service: 'alerting',
         status: isEnabled ? 'healthy' : 'warning',
-        message: isEnabled ? 'Alerting service is functioning normally' : 'Alerting service is disabled',
-        details: { 
-          enabled: isEnabled, 
+        message: isEnabled
+          ? 'Alerting service is functioning normally'
+          : 'Alerting service is disabled',
+        details: {
+          enabled: isEnabled,
           rulesCount: rules.length,
-          activeAlertsCount: activeAlerts.length
+          activeAlertsCount: activeAlerts.length,
         },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     } catch (error) {
       return {
@@ -208,14 +224,14 @@ export class APMHealthCheck {
         message: 'Alerting service check failed',
         details: { error: (error as Error).message },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     }
   }
 
   private async checkObservabilityService(): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    
+
     try {
       const config = unifiedObservability.getConfig();
       const activeSessions = unifiedObservability.getActiveSessions();
@@ -223,14 +239,16 @@ export class APMHealthCheck {
       return {
         service: 'observability',
         status: config.enabled ? 'healthy' : 'warning',
-        message: config.enabled ? 'Observability service is functioning normally' : 'RUM is disabled',
-        details: { 
+        message: config.enabled
+          ? 'Observability service is functioning normally'
+          : 'RUM is disabled',
+        details: {
           enabled: config.enabled,
           activeSessionsCount: activeSessions.length,
-          sampleRate: config.sampleRate
+          sampleRate: config.sampleRate,
         },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     } catch (error) {
       return {
@@ -239,17 +257,17 @@ export class APMHealthCheck {
         message: 'Observability service check failed',
         details: { error: (error as Error).message },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     }
   }
 
   private async checkDashboardService(): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    
+
     try {
       const dashboards = apmDashboard.getDashboards();
-      
+
       // Test dashboard data retrieval
       if (dashboards.length > 0) {
         await apmDashboard.getDashboardData(dashboards[0].id);
@@ -261,7 +279,7 @@ export class APMHealthCheck {
         message: 'Dashboard service is functioning normally',
         details: { dashboardsCount: dashboards.length },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     } catch (error) {
       return {
@@ -270,14 +288,14 @@ export class APMHealthCheck {
         message: 'Dashboard service check failed',
         details: { error: (error as Error).message },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     }
   }
 
   private async checkProviderConnectivity(): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    
+
     try {
       const provider = apmService.getProvider();
       const isEnabled = apmService.isEnabled();
@@ -289,7 +307,7 @@ export class APMHealthCheck {
           message: 'No APM provider configured',
           details: { provider, enabled: isEnabled },
           timestamp: new Date(),
-          responseTime: Date.now() - startTime
+          responseTime: Date.now() - startTime,
         };
       }
 
@@ -302,7 +320,7 @@ export class APMHealthCheck {
         message: `${provider} provider connectivity is healthy`,
         details: { provider, enabled: isEnabled },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     } catch (error) {
       return {
@@ -311,26 +329,26 @@ export class APMHealthCheck {
         message: 'Provider connectivity check failed',
         details: { error: (error as Error).message },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     }
   }
 
   private async checkMetricsCollection(): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    
+
     try {
       // Record test metrics
       const testValue = Math.random() * 100;
       apmService.recordBusinessMetric('health_check.test_metric', testValue, 'count');
-      
+
       return {
         service: 'metrics',
         status: 'healthy',
         message: 'Metrics collection is functioning normally',
         details: { testMetricValue: testValue },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     } catch (error) {
       return {
@@ -339,18 +357,18 @@ export class APMHealthCheck {
         message: 'Metrics collection check failed',
         details: { error: (error as Error).message },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     }
   }
 
   private async checkTraceCollection(): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    
+
     try {
       // Create test trace
       const transaction = apmService.startTransaction('health_check.trace_test', 'health_check');
-      
+
       if (transaction) {
         const span = apmService.startSpan('test_span', transaction);
         if (span) {
@@ -362,10 +380,12 @@ export class APMHealthCheck {
       return {
         service: 'traces',
         status: transaction ? 'healthy' : 'warning',
-        message: transaction ? 'Trace collection is functioning normally' : 'Trace collection may have issues',
+        message: transaction
+          ? 'Trace collection is functioning normally'
+          : 'Trace collection may have issues',
         details: { transactionCreated: !!transaction },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     } catch (error) {
       return {
@@ -374,7 +394,7 @@ export class APMHealthCheck {
         message: 'Trace collection check failed',
         details: { error: (error as Error).message },
         timestamp: new Date(),
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     }
   }
@@ -396,7 +416,7 @@ export class APMHealthCheck {
 
     // Provider-specific validation
     const provider = process.env.APM_PROVIDER;
-    
+
     if (provider === 'newrelic') {
       if (!process.env.NEW_RELIC_LICENSE_KEY) {
         errors.push('NEW_RELIC_LICENSE_KEY is required for New Relic provider');
@@ -420,7 +440,7 @@ export class APMHealthCheck {
       if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
         recommendations.push('Consider reducing APM sampling rate in development');
       }
-      
+
       if (!process.env.APM_SAMPLE_RATE) {
         recommendations.push('Set APM_SAMPLE_RATE to control data volume and costs');
       }
@@ -444,22 +464,22 @@ export class APMHealthCheck {
       valid: errors.length === 0,
       errors,
       warnings,
-      recommendations
+      recommendations,
     };
   }
 
   // Health Determination
   private determineOverallHealth(
-    services: HealthCheckResult[], 
+    services: HealthCheckResult[],
     configuration: ConfigValidationResult
   ): 'healthy' | 'warning' | 'critical' {
     // Critical if any service is critical or configuration has errors
-    if (services.some(s => s.status === 'critical') || !configuration.valid) {
+    if (services.some((s) => s.status === 'critical') || !configuration.valid) {
       return 'critical';
     }
 
     // Warning if any service has warnings or configuration has warnings
-    if (services.some(s => s.status === 'warning') || configuration.warnings.length > 0) {
+    if (services.some((s) => s.status === 'warning') || configuration.warnings.length > 0) {
       return 'warning';
     }
 
@@ -472,9 +492,12 @@ export class APMHealthCheck {
     this.performHealthCheck();
 
     // Set up periodic checks every 5 minutes
-    this.healthCheckInterval = setInterval(() => {
-      this.performHealthCheck();
-    }, 5 * 60 * 1000);
+    this.healthCheckInterval = setInterval(
+      () => {
+        this.performHealthCheck();
+      },
+      5 * 60 * 1000
+    );
   }
 
   /**
@@ -494,7 +517,7 @@ System Uptime: ${Math.round(health.uptime / 1000 / 60)} minutes
 SERVICES:
 `;
 
-    health.services.forEach(service => {
+    health.services.forEach((service) => {
       report += `  ${service.service}: ${service.status.toUpperCase()} - ${service.message}`;
       if (service.responseTime) {
         report += ` (${service.responseTime}ms)`;
@@ -512,21 +535,21 @@ CONFIGURATION:
 
     if (health.configuration.errors.length > 0) {
       report += '\nERRORS:\n';
-      health.configuration.errors.forEach(error => {
+      health.configuration.errors.forEach((error) => {
         report += `  - ${error}\n`;
       });
     }
 
     if (health.configuration.warnings.length > 0) {
       report += '\nWARNINGS:\n';
-      health.configuration.warnings.forEach(warning => {
+      health.configuration.warnings.forEach((warning) => {
         report += `  - ${warning}\n`;
       });
     }
 
     if (health.configuration.recommendations.length > 0) {
       report += '\nRECOMMENDATIONS:\n';
-      health.configuration.recommendations.forEach(rec => {
+      health.configuration.recommendations.forEach((rec) => {
         report += `  - ${rec}\n`;
       });
     }

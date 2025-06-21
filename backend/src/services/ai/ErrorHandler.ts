@@ -18,7 +18,9 @@ interface ErrorWithResponse {
 }
 
 export class AIErrorHandler {
-  handle(error: ErrorWithResponse | Error | unknown): AIResponse & { success: boolean; error?: string } {
+  handle(
+    error: ErrorWithResponse | Error | unknown
+  ): AIResponse & { success: boolean; error?: string } {
     logger.error('AI Service Error:', error);
 
     // OpenAI specific errors
@@ -30,7 +32,14 @@ export class AIErrorHandler {
             success: false,
             error: 'AI service authentication failed. Please contact support.',
             content: '',
-            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0, model: '', cached: false },
+            usage: {
+              promptTokens: 0,
+              completionTokens: 0,
+              totalTokens: 0,
+              estimatedCost: 0,
+              model: '',
+              cached: false,
+            },
             cached: false,
           };
 
@@ -39,7 +48,14 @@ export class AIErrorHandler {
             success: false,
             error: 'Too many requests. Please try again in a moment.',
             content: '',
-            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0, model: '', cached: false },
+            usage: {
+              promptTokens: 0,
+              completionTokens: 0,
+              totalTokens: 0,
+              estimatedCost: 0,
+              model: '',
+              cached: false,
+            },
             cached: false,
           };
 
@@ -50,7 +66,14 @@ export class AIErrorHandler {
             success: false,
             error: 'AI service temporarily unavailable. Please try again.',
             content: '',
-            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0, model: '', cached: false },
+            usage: {
+              promptTokens: 0,
+              completionTokens: 0,
+              totalTokens: 0,
+              estimatedCost: 0,
+              model: '',
+              cached: false,
+            },
             cached: false,
           };
 
@@ -62,7 +85,14 @@ export class AIErrorHandler {
               success: false,
               error: 'Content too long for processing. Please try with shorter content.',
               content: '',
-              usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0, model: '', cached: false },
+              usage: {
+                promptTokens: 0,
+                completionTokens: 0,
+                totalTokens: 0,
+                estimatedCost: 0,
+                model: '',
+                cached: false,
+              },
               cached: false,
             };
           }
@@ -70,7 +100,14 @@ export class AIErrorHandler {
             success: false,
             error: 'Invalid request to AI service.',
             content: '',
-            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0, model: '', cached: false },
+            usage: {
+              promptTokens: 0,
+              completionTokens: 0,
+              totalTokens: 0,
+              estimatedCost: 0,
+              model: '',
+              cached: false,
+            },
             cached: false,
           };
 
@@ -79,7 +116,14 @@ export class AIErrorHandler {
             success: false,
             error: 'An unexpected error occurred with the AI service.',
             content: '',
-            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0, model: '', cached: false },
+            usage: {
+              promptTokens: 0,
+              completionTokens: 0,
+              totalTokens: 0,
+              estimatedCost: 0,
+              model: '',
+              cached: false,
+            },
             cached: false,
           };
       }
@@ -91,7 +135,14 @@ export class AIErrorHandler {
         success: false,
         error: 'Rate limit reached. Please wait a moment before trying again.',
         content: '',
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0, model: '', cached: false },
+        usage: {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          estimatedCost: 0,
+          model: '',
+          cached: false,
+        },
         cached: false,
       };
     }
@@ -105,7 +156,14 @@ export class AIErrorHandler {
         success: false,
         error: 'Daily usage limit reached. Please try again tomorrow.',
         content: '',
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0, model: '', cached: false },
+        usage: {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          estimatedCost: 0,
+          model: '',
+          cached: false,
+        },
         cached: false,
       };
     }
@@ -119,7 +177,14 @@ export class AIErrorHandler {
         success: false,
         error: 'Unable to connect to AI service. Please check your connection.',
         content: '',
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0, model: '', cached: false },
+        usage: {
+          promptTokens: 0,
+          completionTokens: 0,
+          totalTokens: 0,
+          estimatedCost: 0,
+          model: '',
+          cached: false,
+        },
         cached: false,
       };
     }
@@ -129,7 +194,14 @@ export class AIErrorHandler {
       success: false,
       error: 'Something went wrong. Please try again later.',
       content: '',
-      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0, estimatedCost: 0, model: '', cached: false },
+      usage: {
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        estimatedCost: 0,
+        model: '',
+        cached: false,
+      },
       cached: false,
     };
   }

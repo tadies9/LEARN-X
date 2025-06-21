@@ -2,9 +2,9 @@ import { TestDatabase } from './test-helpers';
 
 /**
  * Data Flow Validator
- * 
+ *
  * Validates data integrity and flow through all system components,
- * ensuring persona data, file metadata, cost tracking, and performance 
+ * ensuring persona data, file metadata, cost tracking, and performance
  * metrics are properly propagated and maintained.
  */
 export class DataFlowValidator {
@@ -29,7 +29,7 @@ export class DataFlowValidator {
     issues: string[];
   }> {
     const issues: string[] = [];
-    
+
     console.log('📊 Validating complete data flow...');
 
     // Validate persona data flow
@@ -60,7 +60,7 @@ export class DataFlowValidator {
       personaFlow.isValid,
       fileFlow.isValid,
       costFlow.isValid,
-      metricsFlow.isValid
+      metricsFlow.isValid,
     ];
     const overallIntegrity = validFlows.filter(Boolean).length / validFlows.length;
 
@@ -70,7 +70,7 @@ export class DataFlowValidator {
       costTrackingFlow: costFlow.isValid,
       performanceMetricsFlow: metricsFlow.isValid,
       overallIntegrity,
-      issues
+      issues,
     };
   }
 
@@ -99,7 +99,7 @@ export class DataFlowValidator {
           persona: null,
           personalizationApplied: false,
           consistencyScore: 0,
-          issues
+          issues,
         };
       }
 
@@ -109,14 +109,14 @@ export class DataFlowValidator {
       const aiContent = await this.fetchLatestAIContent(userId);
       if (aiContent) {
         personalizationApplied = aiContent.metadata?.persona_applied || false;
-        
+
         if (!personalizationApplied) {
           issues.push('Persona not applied in AI content generation');
         }
 
         // Validate consistency of persona application
         consistencyScore = await this.calculatePersonaConsistency(persona, aiContent);
-        
+
         if (consistencyScore < 0.7) {
           issues.push(`Low persona consistency score: ${consistencyScore.toFixed(2)}`);
         }
@@ -127,15 +127,14 @@ export class DataFlowValidator {
       // Check persona propagation to recommendations
       const recommendations = await this.fetchUserRecommendations(userId);
       if (recommendations && recommendations.length > 0) {
-        const recommendationPersonalized = recommendations.some(
-          (rec: any) => rec.personalization_factors?.includes(persona.learning_style)
+        const recommendationPersonalized = recommendations.some((rec: any) =>
+          rec.personalization_factors?.includes(persona.learning_style)
         );
-        
+
         if (!recommendationPersonalized) {
           issues.push('Persona not reflected in recommendations');
         }
       }
-
     } catch (error) {
       issues.push(`Persona validation error: ${(error as Error).message}`);
     }
@@ -145,7 +144,7 @@ export class DataFlowValidator {
       persona,
       personalizationApplied,
       consistencyScore,
-      issues
+      issues,
     };
   }
 
@@ -177,7 +176,7 @@ export class DataFlowValidator {
           chunkMetadata: [],
           embeddingMetadata: null,
           metadataConsistency: 0,
-          issues
+          issues,
         };
       }
 
@@ -196,16 +195,18 @@ export class DataFlowValidator {
       } else {
         // Validate chunk metadata consistency
         const totalChunkSize = chunkMetadata.reduce(
-          (sum: number, chunk: any) => sum + (chunk.content_length || 0), 
+          (sum: number, chunk: any) => sum + (chunk.content_length || 0),
           0
         );
-        
+
         if (Math.abs(totalChunkSize - (fileMetadata.content_length || 0)) > 100) {
           issues.push('Chunk content length mismatch with file metadata');
         }
 
         // Check chunk ordering
-        const chunkIndexes = chunkMetadata.map((chunk: any) => chunk.chunk_index).sort((a, b) => a - b);
+        const chunkIndexes = chunkMetadata
+          .map((chunk: any) => chunk.chunk_index)
+          .sort((a, b) => a - b);
         for (let i = 0; i < chunkIndexes.length; i++) {
           if (chunkIndexes[i] !== i) {
             issues.push('Chunk indexing is not sequential');
@@ -220,7 +221,8 @@ export class DataFlowValidator {
         issues.push('Embedding metadata not found');
       } else {
         // Validate embedding dimensions
-        if (embeddingMetadata.dimensions !== 1536) { // OpenAI text-embedding-3-small
+        if (embeddingMetadata.dimensions !== 1536) {
+          // OpenAI text-embedding-3-small
           issues.push(`Unexpected embedding dimensions: ${embeddingMetadata.dimensions}`);
         }
 
@@ -240,7 +242,6 @@ export class DataFlowValidator {
       if (metadataConsistency < 0.8) {
         issues.push(`Low metadata consistency: ${metadataConsistency.toFixed(2)}`);
       }
-
     } catch (error) {
       issues.push(`File metadata validation error: ${(error as Error).message}`);
     }
@@ -251,14 +252,17 @@ export class DataFlowValidator {
       chunkMetadata,
       embeddingMetadata,
       metadataConsistency,
-      issues
+      issues,
     };
   }
 
   /**
    * Validates cost tracking accuracy throughout the system
    */
-  async validateCostTrackingFlow(userId: string, fileId: string): Promise<{
+  async validateCostTrackingFlow(
+    userId: string,
+    fileId: string
+  ): Promise<{
     isValid: boolean;
     totalCosts: number;
     costBreakdown: any;
@@ -283,7 +287,7 @@ export class DataFlowValidator {
           costBreakdown: {},
           trackingAccuracy: 0,
           budgetCompliance: false,
-          issues
+          issues,
         };
       }
 
@@ -302,7 +306,7 @@ export class DataFlowValidator {
       const expectedCosts = await this.calculateExpectedCosts(userId, fileId);
       if (expectedCosts > 0) {
         trackingAccuracy = Math.min(totalCosts / expectedCosts, 1);
-        
+
         if (Math.abs(totalCosts - expectedCosts) / expectedCosts > 0.1) {
           issues.push(`Cost tracking inaccuracy: expected ${expectedCosts}, tracked ${totalCosts}`);
         }
@@ -313,7 +317,7 @@ export class DataFlowValidator {
       if (userBudget) {
         const dailySpent = await this.fetchDailySpending(userId);
         budgetCompliance = dailySpent <= userBudget.daily_limit;
-        
+
         if (!budgetCompliance) {
           issues.push(`Budget exceeded: spent ${dailySpent}, limit ${userBudget.daily_limit}`);
         }
@@ -325,12 +329,11 @@ export class DataFlowValidator {
         if (!entry.timestamp || !entry.operation_type) {
           issues.push('Incomplete cost entry data');
         }
-        
+
         if (entry.amount <= 0) {
           issues.push(`Invalid cost amount: ${entry.amount}`);
         }
       }
-
     } catch (error) {
       issues.push(`Cost tracking validation error: ${(error as Error).message}`);
     }
@@ -341,14 +344,17 @@ export class DataFlowValidator {
       costBreakdown,
       trackingAccuracy,
       budgetCompliance,
-      issues
+      issues,
     };
   }
 
   /**
    * Validates performance metrics collection and reporting
    */
-  async validatePerformanceMetricsFlow(userId: string, fileId: string): Promise<{
+  async validatePerformanceMetricsFlow(
+    userId: string,
+    fileId: string
+  ): Promise<{
     isValid: boolean;
     metricsCollected: string[];
     completeness: number;
@@ -373,7 +379,7 @@ export class DataFlowValidator {
           completeness: 0,
           accuracy: 0,
           realTimeUpdates: false,
-          issues
+          issues,
         };
       }
 
@@ -385,12 +391,10 @@ export class DataFlowValidator {
         'ai_generation_time',
         'embedding_time',
         'search_response_time',
-        'cache_hit_rate'
+        'cache_hit_rate',
       ];
 
-      const missingMetrics = requiredMetrics.filter(
-        metric => !metricsCollected.includes(metric)
-      );
+      const missingMetrics = requiredMetrics.filter((metric) => !metricsCollected.includes(metric));
 
       if (missingMetrics.length > 0) {
         issues.push(`Missing performance metrics: ${missingMetrics.join(', ')}`);
@@ -399,7 +403,7 @@ export class DataFlowValidator {
       completeness = (requiredMetrics.length - missingMetrics.length) / requiredMetrics.length;
 
       // Validate metric accuracy
-      const validMetrics = metricsCollected.filter(metric => {
+      const validMetrics = metricsCollected.filter((metric) => {
         const value = performanceData.metrics[metric];
         return typeof value === 'number' && value >= 0 && !isNaN(value);
       });
@@ -415,7 +419,7 @@ export class DataFlowValidator {
       if (latestTimestamp) {
         const age = Date.now() - new Date(latestTimestamp).getTime();
         realTimeUpdates = age < 60000; // Within 1 minute
-        
+
         if (!realTimeUpdates) {
           issues.push(`Stale performance metrics: ${Math.floor(age / 1000)}s old`);
         }
@@ -426,8 +430,8 @@ export class DataFlowValidator {
       // Validate metric thresholds
       const thresholds = {
         file_processing_time: 30000, // 30s
-        ai_generation_time: 15000,   // 15s
-        search_response_time: 1000   // 1s
+        ai_generation_time: 15000, // 15s
+        search_response_time: 1000, // 1s
       };
 
       for (const [metric, threshold] of Object.entries(thresholds)) {
@@ -436,7 +440,6 @@ export class DataFlowValidator {
           issues.push(`Performance threshold exceeded for ${metric}: ${value}ms > ${threshold}ms`);
         }
       }
-
     } catch (error) {
       issues.push(`Performance metrics validation error: ${(error as Error).message}`);
     }
@@ -447,7 +450,7 @@ export class DataFlowValidator {
       completeness,
       accuracy,
       realTimeUpdates,
-      issues
+      issues,
     };
   }
 
@@ -459,7 +462,7 @@ export class DataFlowValidator {
       learning_style: 'visual',
       expertise_level: 'intermediate',
       interests: ['programming', 'web development'],
-      communication_preference: 'detailed'
+      communication_preference: 'detailed',
     };
   }
 
@@ -470,8 +473,8 @@ export class DataFlowValidator {
       metadata: {
         persona_applied: true,
         learning_style: 'visual',
-        expertise_level: 'intermediate'
-      }
+        expertise_level: 'intermediate',
+      },
     };
   }
 
@@ -480,8 +483,8 @@ export class DataFlowValidator {
     return [
       {
         type: 'content',
-        personalization_factors: ['visual', 'intermediate']
-      }
+        personalization_factors: ['visual', 'intermediate'],
+      },
     ];
   }
 
@@ -493,7 +496,7 @@ export class DataFlowValidator {
       mime_type: 'text/plain',
       processing_status: 'completed',
       content_length: 5000,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
     };
   }
 
@@ -501,7 +504,7 @@ export class DataFlowValidator {
     // Simulate chunk metadata fetch
     return [
       { chunk_index: 0, content_length: 2500, file_id: fileId },
-      { chunk_index: 1, content_length: 2500, file_id: fileId }
+      { chunk_index: 1, content_length: 2500, file_id: fileId },
     ];
   }
 
@@ -510,7 +513,7 @@ export class DataFlowValidator {
     return {
       dimensions: 1536,
       status: 'completed',
-      model: 'text-embedding-3-small'
+      model: 'text-embedding-3-small',
     };
   }
 
@@ -521,22 +524,22 @@ export class DataFlowValidator {
       breakdown: {
         embeddings: 0.02,
         content_generation: 0.03,
-        processing: 0.001
-      }
+        processing: 0.001,
+      },
     };
   }
 
   private async fetchUserBudget(userId: string): Promise<any> {
     // Simulate user budget fetch
     return {
-      daily_limit: 5.00,
-      monthly_limit: 50.00
+      daily_limit: 5.0,
+      monthly_limit: 50.0,
     };
   }
 
   private async fetchDailySpending(userId: string): Promise<number> {
     // Simulate daily spending fetch
-    return 2.50;
+    return 2.5;
   }
 
   private async fetchCostEntries(userId: string, fileId: string): Promise<any[]> {
@@ -545,13 +548,13 @@ export class DataFlowValidator {
       {
         amount: 0.02,
         operation_type: 'embedding',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       },
       {
         amount: 0.03,
         operation_type: 'generation',
-        timestamp: new Date().toISOString()
-      }
+        timestamp: new Date().toISOString(),
+      },
     ];
   }
 
@@ -563,9 +566,9 @@ export class DataFlowValidator {
         ai_generation_time: 3200,
         embedding_time: 1800,
         search_response_time: 250,
-        cache_hit_rate: 0.75
+        cache_hit_rate: 0.75,
       },
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
     };
   }
 

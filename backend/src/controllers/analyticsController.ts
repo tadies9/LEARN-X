@@ -76,23 +76,20 @@ export class AnalyticsController {
   getAggregatedAnalytics = async (req: Request, res: Response): Promise<Response | void> => {
     try {
       const { userIds, startDate, endDate } = req.query;
-      
+
       // Parse time range if provided
       let timeRange;
       if (startDate && endDate) {
         timeRange = {
           start: new Date(startDate as string),
-          end: new Date(endDate as string)
+          end: new Date(endDate as string),
         };
       }
 
       // Parse user IDs if provided
       const userIdArray = userIds ? (userIds as string).split(',') : undefined;
 
-      const analytics = await this.analyticsService.getAggregatedAnalytics(
-        userIdArray,
-        timeRange
-      );
+      const analytics = await this.analyticsService.getAggregatedAnalytics(userIdArray, timeRange);
 
       res.json({
         success: true,
@@ -117,7 +114,7 @@ export class AnalyticsController {
 
       // Add user ID to each event
       const userId = req.user!.id;
-      const eventsWithUser = events.map(e => ({ ...e, userId }));
+      const eventsWithUser = events.map((e) => ({ ...e, userId }));
 
       await this.analyticsService.bulkInsertEvents(eventsWithUser);
 

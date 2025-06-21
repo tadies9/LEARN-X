@@ -34,10 +34,7 @@ export class VectorPerformanceMonitor {
   /**
    * Monitors a vector search operation
    */
-  async monitorSearch<T>(
-    operation: () => Promise<T>,
-    metadata?: Record<string, any>
-  ): Promise<T> {
+  async monitorSearch<T>(operation: () => Promise<T>, metadata?: Record<string, any>): Promise<T> {
     return this.monitorOperation('search', operation, metadata);
   }
 
@@ -106,7 +103,7 @@ export class VectorPerformanceMonitor {
 
     try {
       result = await operation();
-      
+
       // Extract result metadata if available
       if (operationType === 'search' && result && typeof result === 'object') {
         const searchResult = result as any;
@@ -254,7 +251,7 @@ export class VectorPerformanceMonitor {
       if (this.config.provider === 'pgvector') {
         await this.monitorPgvectorHealth();
       }
-      
+
       // Check error rates
       const stats = await this.metrics.getPerformanceStats(
         this.config.provider,
@@ -262,8 +259,10 @@ export class VectorPerformanceMonitor {
         5 // last 5 minutes
       );
 
-      if (this.config.alertThresholds?.errorRate && 
-          stats.errorRate > this.config.alertThresholds.errorRate) {
+      if (
+        this.config.alertThresholds?.errorRate &&
+        stats.errorRate > this.config.alertThresholds.errorRate
+      ) {
         logger.error('[VectorMonitor] High error rate detected', {
           provider: this.config.provider,
           errorRate: stats.errorRate,
@@ -284,7 +283,7 @@ export class VectorPerformanceMonitor {
   }> {
     const stats = await this.metrics.getAggregatedStats(this.config.provider, windowMinutes);
     const indexStats = await this.metrics.getIndexStats(this.config.provider);
-    
+
     const recommendations: string[] = [];
 
     // Analyze search performance
@@ -297,7 +296,9 @@ export class VectorPerformanceMonitor {
 
     // Analyze index performance
     if (stats.index.avgLatencyMs > 1000) {
-      recommendations.push('Index operations are slow - consider batch processing or async indexing');
+      recommendations.push(
+        'Index operations are slow - consider batch processing or async indexing'
+      );
     }
 
     // Analyze error rates
@@ -311,7 +312,9 @@ export class VectorPerformanceMonitor {
         recommendations.push('Index fragmentation is high - consider reindexing');
       }
       if (indexStats.totalVectors > 1000000) {
-        recommendations.push('Vector count is high - consider sharding or using dedicated vector DB');
+        recommendations.push(
+          'Vector count is high - consider sharding or using dedicated vector DB'
+        );
       }
     }
 

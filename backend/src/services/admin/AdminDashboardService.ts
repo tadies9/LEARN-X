@@ -129,12 +129,10 @@ export class AdminDashboardService {
   /**
    * Get detailed cost analytics
    */
-  async getCostAnalytics(
-    _timeRange: { start: Date; end: Date }
-  ): Promise<CostAnalytics> {
+  async getCostAnalytics(_timeRange: { start: Date; end: Date }): Promise<CostAnalytics> {
     try {
       const stats = await this.costTracker.getDashboardStats();
-      
+
       // Get spending summary
       const todaySpend = stats.today.cost;
       const weekSpend = await this.getWeekSpend();
@@ -252,19 +250,17 @@ export class AdminDashboardService {
   private async getAIMetrics() {
     const stats = await this.costTracker.getDashboardStats();
     const cacheStats = await this.aiCache.getStats();
-    
+
     // Calculate overall cache hit rate
     let totalHits = 0;
     let totalMisses = 0;
-    
-    Object.values(cacheStats).forEach(stat => {
+
+    Object.values(cacheStats).forEach((stat) => {
       totalHits += stat.hits;
       totalMisses += stat.misses;
     });
-    
-    const cacheHitRate = totalHits + totalMisses > 0 
-      ? totalHits / (totalHits + totalMisses) 
-      : 0;
+
+    const cacheHitRate = totalHits + totalMisses > 0 ? totalHits / (totalHits + totalMisses) : 0;
 
     return {
       requestsToday: stats.today.requests,
@@ -275,13 +271,11 @@ export class AdminDashboardService {
   }
 
   private async getStorageMetrics() {
-    const { data: files } = await supabase
-      .from('files')
-      .select('size, processed');
+    const { data: files } = await supabase.from('files').select('size, processed');
 
     const totalFiles = files?.length || 0;
     const totalSize = files?.reduce((sum, file) => sum + (file.size || 0), 0) || 0;
-    const processedFiles = files?.filter(f => f.processed).length || 0;
+    const processedFiles = files?.filter((f) => f.processed).length || 0;
 
     return {
       totalFiles,
@@ -327,15 +321,13 @@ export class AdminDashboardService {
     // Calculate overall hit rate
     let totalHits = 0;
     let totalMisses = 0;
-    
-    Object.values(cacheStats).forEach(stat => {
+
+    Object.values(cacheStats).forEach((stat) => {
       totalHits += stat.hits;
       totalMisses += stat.misses;
     });
-    
-    const hitRate = totalHits + totalMisses > 0 
-      ? totalHits / (totalHits + totalMisses) 
-      : 0;
+
+    const hitRate = totalHits + totalMisses > 0 ? totalHits / (totalHits + totalMisses) : 0;
 
     return {
       hitRate,
@@ -368,7 +360,7 @@ export class AdminDashboardService {
   private async getWeekSpend(): Promise<number> {
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
-    
+
     const { data } = await supabase
       .from('ai_requests')
       .select('cost')
@@ -380,7 +372,7 @@ export class AdminDashboardService {
   private async getMonthSpend(): Promise<number> {
     const monthAgo = new Date();
     monthAgo.setDate(monthAgo.getDate() - 30);
-    
+
     const { data } = await supabase
       .from('ai_requests')
       .select('cost')
@@ -403,8 +395,8 @@ export class AdminDashboardService {
 
     // Group by user and get details
     const userSpends = new Map<string, { cost: number; count: number }>();
-    
-    data?.forEach(req => {
+
+    data?.forEach((req) => {
       const current = userSpends.get(req.user_id) || { cost: 0, count: 0 };
       current.cost += req.cost || 0;
       current.count += 1;
@@ -413,12 +405,9 @@ export class AdminDashboardService {
 
     // Get user details
     const userIds = Array.from(userSpends.keys());
-    const { data: users } = await supabase
-      .from('users')
-      .select('id, email')
-      .in('id', userIds);
+    const { data: users } = await supabase.from('users').select('id, email').in('id', userIds);
 
-    const userMap = new Map(users?.map(u => [u.id, u.email]) || []);
+    const userMap = new Map(users?.map((u) => [u.id, u.email]) || []);
 
     return Array.from(userSpends.entries())
       .map(([userId, stats]) => ({
@@ -434,12 +423,12 @@ export class AdminDashboardService {
   private async getUserGrowth(days: number) {
     const growth = [];
     const today = new Date();
-    
+
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split('T')[0];
-      
+
       // Simplified - would use proper analytics
       growth.push({
         date: dateStr,
@@ -447,7 +436,7 @@ export class AdminDashboardService {
         activeUsers: Math.floor(Math.random() * 100) + 50,
       });
     }
-    
+
     return growth;
   }
 
@@ -489,7 +478,7 @@ export class AdminDashboardService {
     const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
     if (bytes === 0) return '0 Bytes';
     const i = Math.floor(Math.log(bytes) / Math.log(1024));
-    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+    return Math.round((bytes / Math.pow(1024, i)) * 100) / 100 + ' ' + sizes[i];
   }
 }
 

@@ -15,7 +15,7 @@ export class AdminDashboardController {
   async getOverview(_req: Request, res: Response): Promise<void> {
     try {
       const overview = await adminDashboardService.getOverview();
-      
+
       res.json({
         success: true,
         data: overview,
@@ -33,14 +33,14 @@ export class AdminDashboardController {
   async getCostAnalytics(req: Request, res: Response): Promise<void> {
     try {
       const { start, end } = req.query;
-      
+
       const timeRange = {
         start: start ? new Date(start as string) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
         end: end ? new Date(end as string) : new Date(),
       };
-      
+
       const analytics = await adminDashboardService.getCostAnalytics(timeRange);
-      
+
       res.json({
         success: true,
         data: analytics,
@@ -58,7 +58,7 @@ export class AdminDashboardController {
   async getPerformanceMetrics(_req: Request, res: Response): Promise<void> {
     try {
       const metrics = await adminDashboardService.getPerformanceMetrics();
-      
+
       res.json({
         success: true,
         data: metrics,
@@ -76,7 +76,7 @@ export class AdminDashboardController {
   async getUserAnalytics(_req: Request, res: Response): Promise<void> {
     try {
       const analytics = await adminDashboardService.getUserAnalytics();
-      
+
       res.json({
         success: true,
         data: analytics,
@@ -94,9 +94,9 @@ export class AdminDashboardController {
   async getCacheStats(req: Request, res: Response): Promise<void> {
     try {
       const { service } = req.query;
-      
+
       const stats = await adminDashboardService.getPerformanceMetrics();
-      
+
       res.json({
         success: true,
         data: {
@@ -117,7 +117,7 @@ export class AdminDashboardController {
   async getCircuitStatus(_req: Request, res: Response): Promise<void> {
     try {
       const metrics = await adminDashboardService.getPerformanceMetrics();
-      
+
       res.json({
         success: true,
         data: metrics.circuits,
@@ -135,11 +135,11 @@ export class AdminDashboardController {
   async invalidateCache(req: Request, res: Response): Promise<void> {
     try {
       const { pattern, userId, service } = req.body;
-      
+
       if (!pattern && !userId && !service) {
         throw new AppError('Must provide pattern, userId, or service', 400);
       }
-      
+
       // This would call the appropriate cache invalidation method
       // For now, just return success
       res.json({
@@ -161,11 +161,11 @@ export class AdminDashboardController {
   async resetCircuits(req: Request, res: Response): Promise<void> {
     try {
       const { service } = req.body;
-      
+
       if (!service || !['openai', 'embeddings', 'all'].includes(service)) {
         throw new AppError('Invalid service. Must be: openai, embeddings, or all', 400);
       }
-      
+
       // This would reset the actual circuit breakers
       // For now, just return success
       res.json({

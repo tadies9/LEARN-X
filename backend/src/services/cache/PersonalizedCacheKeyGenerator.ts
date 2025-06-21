@@ -3,7 +3,15 @@ import { UserPersona } from '../../types/persona';
 import { logger } from '../../utils/logger';
 
 interface CacheKeyParams {
-  service: 'explain' | 'summary' | 'quiz' | 'flashcard' | 'chat' | 'embedding' | 'practice' | 'introduction';
+  service:
+    | 'explain'
+    | 'summary'
+    | 'quiz'
+    | 'flashcard'
+    | 'chat'
+    | 'embedding'
+    | 'practice'
+    | 'introduction';
   userId: string;
   contentHash?: string;
   persona?: UserPersona;
@@ -62,7 +70,7 @@ export class PersonalizedCacheKeyGenerator {
     }
 
     const key = parts.join(this.SEPARATOR);
-    
+
     // Ensure key doesn't exceed max length
     if (key.length > this.MAX_KEY_LENGTH) {
       logger.warn(`Cache key too long (${key.length} chars), truncating`);
@@ -96,7 +104,7 @@ export class PersonalizedCacheKeyGenerator {
 
     if (params.userId) {
       parts.push(params.userId);
-      
+
       // If persona changed, invalidate all user's personalized content
       if (params.personaChanged) {
         parts.push('*');
@@ -118,7 +126,7 @@ export class PersonalizedCacheKeyGenerator {
       learningStyle: persona.learningStyle,
       communicationTone: persona.communicationTone,
       contentDensity: persona.contentDensity || persona.explanationDepth,
-      
+
       // Additional personalization factors
       interestProfile: this.hashInterests(persona.primaryInterests || []),
       pacePreference: persona.preferredSessionLength?.toString(),
@@ -165,7 +173,7 @@ export class PersonalizedCacheKeyGenerator {
    */
   private hashInterests(interests: string[]): string {
     if (!interests || interests.length === 0) return 'none';
-    
+
     // Sort and take top 5 interests for consistency
     const topInterests = interests.slice(0, 5).sort();
     return this.hashObject(topInterests);
@@ -186,7 +194,7 @@ export class PersonalizedCacheKeyGenerator {
     const parts = key.split(this.SEPARATOR);
     const essentialParts = parts.slice(0, 4); // Keep service info
     const hash = this.hashObject(parts.slice(4)); // Hash the rest
-    
+
     return [...essentialParts, hash].join(this.SEPARATOR);
   }
 
@@ -224,21 +232,24 @@ export class PersonalizedCacheKeyGenerator {
   /**
    * Get TTL based on service type, personalization level, and content stability
    */
-  getTTL(service: string, params?: {
-    personalizationScore?: number;
-    contentStability?: 'stable' | 'moderate' | 'volatile';
-    isStreaming?: boolean;
-  }): number {
+  getTTL(
+    service: string,
+    params?: {
+      personalizationScore?: number;
+      contentStability?: 'stable' | 'moderate' | 'volatile';
+      isStreaming?: boolean;
+    }
+  ): number {
     // Base TTL by service type
     const baseTTL: Record<string, number> = {
-      explain: 3600 * 24 * 7,      // 7 days - explanations are stable
-      summary: 3600 * 24 * 3,      // 3 days - summaries may change
-      quiz: 3600 * 24,             // 1 day - keep fresh for learning
-      flashcard: 3600 * 24 * 2,    // 2 days - relatively stable
-      practice: 3600 * 12,         // 12 hours - practice should vary
+      explain: 3600 * 24 * 7, // 7 days - explanations are stable
+      summary: 3600 * 24 * 3, // 3 days - summaries may change
+      quiz: 3600 * 24, // 1 day - keep fresh for learning
+      flashcard: 3600 * 24 * 2, // 2 days - relatively stable
+      practice: 3600 * 12, // 12 hours - practice should vary
       introduction: 3600 * 24 * 5, // 5 days - introductions are stable
-      chat: 3600 * 2,              // 2 hours - conversational context
-      embedding: 3600 * 24 * 30,   // 30 days - embeddings are very stable
+      chat: 3600 * 2, // 2 hours - conversational context
+      embedding: 3600 * 24 * 30, // 30 days - embeddings are very stable
     };
 
     let ttl = baseTTL[service] || 3600 * 6; // Default 6 hours
@@ -283,7 +294,7 @@ export class PersonalizedCacheKeyGenerator {
     };
 
     let score = 0;
-    
+
     if (persona.technicalLevel) score += weights.technicalLevel;
     if (persona.learningStyle) score += weights.learningStyle;
     if (persona.communicationTone) score += weights.communicationTone;

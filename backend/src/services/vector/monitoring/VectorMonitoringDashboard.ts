@@ -92,13 +92,13 @@ export class VectorMonitoringDashboard {
     try {
       // Get performance stats
       const performanceStats = await this.metrics.getAggregatedStats(provider, windowMinutes);
-      
+
       // Get index health from PostgreSQL
       const indexHealth = await this.getPgVectorIndexHealth();
-      
+
       // Get memory usage
       const memoryStats = await this.getPgVectorMemoryUsage();
-      
+
       // Generate recommendations
       const recommendations = await this.generateRecommendations(performanceStats, indexHealth);
 
@@ -140,13 +140,15 @@ export class VectorMonitoringDashboard {
   /**
    * Get real-time performance metrics
    */
-  async getRealTimeMetrics(intervalMinutes: number = 5): Promise<Array<{
-    timestamp: number;
-    searchLatency: number;
-    indexLatency: number;
-    searchThroughput: number;
-    errorRate: number;
-  }>> {
+  async getRealTimeMetrics(intervalMinutes: number = 5): Promise<
+    Array<{
+      timestamp: number;
+      searchLatency: number;
+      indexLatency: number;
+      searchThroughput: number;
+      errorRate: number;
+    }>
+  > {
     try {
       const searchTimeSeries = await this.metrics.getTimeSeriesMetrics(
         'pgvector',
@@ -164,8 +166,8 @@ export class VectorMonitoringDashboard {
 
       // Merge time series data
       const timeSeriesMap = new Map();
-      
-      searchTimeSeries.forEach(point => {
+
+      searchTimeSeries.forEach((point) => {
         timeSeriesMap.set(point.timestamp, {
           timestamp: point.timestamp,
           searchLatency: point.avgLatencyMs,
@@ -175,7 +177,7 @@ export class VectorMonitoringDashboard {
         });
       });
 
-      indexTimeSeries.forEach(point => {
+      indexTimeSeries.forEach((point) => {
         const existing = timeSeriesMap.get(point.timestamp) || {
           timestamp: point.timestamp,
           searchLatency: 0,
@@ -199,8 +201,8 @@ export class VectorMonitoringDashboard {
   async getActiveAlerts(): Promise<PerformanceAlert[]> {
     // Update alerts based on current metrics
     await this.updateAlerts();
-    
-    return this.alerts.filter(alert => !alert.resolved);
+
+    return this.alerts.filter((alert) => !alert.resolved);
   }
 
   /**
@@ -224,7 +226,7 @@ export class VectorMonitoringDashboard {
 
     try {
       const currentStats = await this.metrics.getAggregatedStats('pgvector', currentWindowMinutes);
-      
+
       // Get previous period stats (this would need custom implementation)
       // For now, we'll simulate comparison
       const previousStats = {
@@ -236,12 +238,18 @@ export class VectorMonitoringDashboard {
       };
 
       const changes = {
-        latencyChange: ((currentStats.search.avgLatencyMs - previousStats.search.avgLatencyMs) / 
-                       previousStats.search.avgLatencyMs) * 100,
-        throughputChange: ((currentStats.search.throughput - previousStats.search.throughput) / 
-                          previousStats.search.throughput) * 100,
-        errorRateChange: ((currentStats.search.errorRate - previousStats.search.errorRate) / 
-                         Math.max(previousStats.search.errorRate, 0.1)) * 100,
+        latencyChange:
+          ((currentStats.search.avgLatencyMs - previousStats.search.avgLatencyMs) /
+            previousStats.search.avgLatencyMs) *
+          100,
+        throughputChange:
+          ((currentStats.search.throughput - previousStats.search.throughput) /
+            previousStats.search.throughput) *
+          100,
+        errorRateChange:
+          ((currentStats.search.errorRate - previousStats.search.errorRate) /
+            Math.max(previousStats.search.errorRate, 0.1)) *
+          100,
       };
 
       return {
@@ -272,7 +280,7 @@ export class VectorMonitoringDashboard {
       }
 
       const stats = indexStats?.[0] || {};
-      
+
       return {
         totalVectors: stats.total_vectors || 0,
         indexSize: stats.index_size_bytes || 0,
@@ -304,13 +312,18 @@ export class VectorMonitoringDashboard {
         throw error;
       }
 
-      const bufferCacheStats = memStats?.find((stat: any) => stat.stat_name === 'buffer_cache_usage');
-      const sharedMemoryStats = memStats?.find((stat: any) => stat.stat_name === 'shared_memory_size');
+      const bufferCacheStats = memStats?.find(
+        (stat: any) => stat.stat_name === 'buffer_cache_usage'
+      );
+      const sharedMemoryStats = memStats?.find(
+        (stat: any) => stat.stat_name === 'shared_memory_size'
+      );
 
       return {
         bufferCache: bufferCacheStats?.memory_usage_mb || 0,
-        estimatedTotal: (bufferCacheStats?.memory_usage_mb || 0) + 
-                       (sharedMemoryStats?.memory_usage_mb || 0) * 0.1, // Estimate 10% of shared memory
+        estimatedTotal:
+          (bufferCacheStats?.memory_usage_mb || 0) +
+          (sharedMemoryStats?.memory_usage_mb || 0) * 0.1, // Estimate 10% of shared memory
       };
     } catch (error) {
       logger.error('[VectorDashboard] Failed to get memory usage:', error);
@@ -332,31 +345,43 @@ export class VectorMonitoringDashboard {
 
     // Latency recommendations
     if (performanceStats.search.avgLatencyMs > 500) {
-      recommendations.push('Search latency is high. Consider optimizing indexes or increasing hardware resources.');
+      recommendations.push(
+        'Search latency is high. Consider optimizing indexes or increasing hardware resources.'
+      );
     }
 
     if (performanceStats.search.p99LatencyMs > 2000) {
-      recommendations.push('P99 latency is very high. Investigate slow queries and consider query optimization.');
+      recommendations.push(
+        'P99 latency is very high. Investigate slow queries and consider query optimization.'
+      );
     }
 
     // Index health recommendations
     if (indexHealth.fragmentation > 0.3) {
-      recommendations.push('Index fragmentation is high. Consider running REINDEX to optimize performance.');
+      recommendations.push(
+        'Index fragmentation is high. Consider running REINDEX to optimize performance.'
+      );
     }
 
     // Error rate recommendations
     if (performanceStats.search.errorRate > 1) {
-      recommendations.push('Error rate is elevated. Check logs for specific error patterns and causes.');
+      recommendations.push(
+        'Error rate is elevated. Check logs for specific error patterns and causes.'
+      );
     }
 
     // Throughput recommendations
     if (performanceStats.search.throughput < 10) {
-      recommendations.push('Search throughput is low. Consider optimizing query patterns or scaling resources.');
+      recommendations.push(
+        'Search throughput is low. Consider optimizing query patterns or scaling resources.'
+      );
     }
 
     // Scale recommendations
     if (indexHealth.totalVectors > 1000000) {
-      recommendations.push('Vector count is high. Consider migrating to a dedicated vector database for better performance.');
+      recommendations.push(
+        'Vector count is high. Consider migrating to a dedicated vector database for better performance.'
+      );
     }
 
     // Get optimal index parameters
@@ -455,7 +480,7 @@ export class VectorMonitoringDashboard {
 
       // Add new alerts and remove duplicates
       const alertMap = new Map();
-      [...this.alerts, ...newAlerts].forEach(alert => {
+      [...this.alerts, ...newAlerts].forEach((alert) => {
         const key = `${alert.type}-${alert.severity}`;
         if (!alertMap.has(key) || alertMap.get(key).timestamp < alert.timestamp) {
           alertMap.set(key, alert);
@@ -466,11 +491,10 @@ export class VectorMonitoringDashboard {
 
       // Log new critical alerts
       newAlerts
-        .filter(alert => alert.severity === 'critical')
-        .forEach(alert => {
+        .filter((alert) => alert.severity === 'critical')
+        .forEach((alert) => {
           logger.error('[VectorDashboard] Critical alert generated:', alert);
         });
-
     } catch (error) {
       logger.error('[VectorDashboard] Failed to update alerts:', error);
     }
@@ -480,7 +504,7 @@ export class VectorMonitoringDashboard {
    * Resolve an alert
    */
   resolveAlert(alertId: string): void {
-    const alert = this.alerts.find(a => a.id === alertId);
+    const alert = this.alerts.find((a) => a.id === alertId);
     if (alert) {
       alert.resolved = true;
       logger.info('[VectorDashboard] Alert resolved:', alertId);
@@ -492,11 +516,11 @@ export class VectorMonitoringDashboard {
    */
   startMonitoring(intervalMs: number = 300000): NodeJS.Timeout {
     logger.info('[VectorDashboard] Starting monitoring dashboard');
-    
+
     return setInterval(async () => {
       try {
         await this.updateAlerts();
-        
+
         // Log summary metrics every 5 minutes
         const metrics = await this.getDashboardMetrics();
         logger.info('[VectorDashboard] Performance summary:', {

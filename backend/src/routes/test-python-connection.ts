@@ -6,14 +6,22 @@ const router = Router();
 router.get('/test-python-connection', async (_req: Request, res: Response) => {
   try {
     console.log('[Test] Testing Python AI connection...');
+<<<<<<< Updated upstream
 
+=======
+    
+>>>>>>> Stashed changes
     // Test basic connection with a simple request
     const generator = pythonAIClient.generateContent({
       content: 'Hello, this is a test.',
       content_type: 'explanation',
       difficulty: 'beginner',
       stream: true,
+<<<<<<< Updated upstream
       user_id: 'test-user',
+=======
+      user_id: 'test-user'
+>>>>>>> Stashed changes
     });
 
     // Set SSE headers
@@ -28,7 +36,11 @@ router.get('/test-python-connection', async (_req: Request, res: Response) => {
     for await (const chunk of generator) {
       chunkCount++;
       console.log(`[Test] Received chunk ${chunkCount}:`, chunk);
+<<<<<<< Updated upstream
 
+=======
+      
+>>>>>>> Stashed changes
       if (chunk.error) {
         res.write(`data: ${JSON.stringify({ type: 'error', data: chunk.error })}\n\n`);
         res.end();
@@ -47,10 +59,18 @@ router.get('/test-python-connection', async (_req: Request, res: Response) => {
         return;
       }
     }
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
   } catch (error) {
     console.error('[Test] Error:', error);
     res.status(500).json({ error: error instanceof Error ? error.message : 'Unknown error' });
   }
 });
 
+<<<<<<< Updated upstream
 export default router;
+=======
+export default router;
+>>>>>>> Stashed changes

@@ -1,6 +1,6 @@
 // AI-related type definitions
 
-export type AIRequestType = 
+export type AIRequestType =
   | 'chat-completion'
   | 'embedding'
   | 'moderation'

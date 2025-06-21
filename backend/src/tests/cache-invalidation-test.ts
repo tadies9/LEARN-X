@@ -51,7 +51,7 @@ class CacheInvalidationTest {
       await this.testSelectiveInvalidation();
       await this.testBulkInvalidation();
       await this.testCacheWarmingAfterInvalidation();
-      
+
       logger.info('✅ All cache invalidation tests passed!');
     } catch (error) {
       logger.error('❌ Cache invalidation test failed:', error);
@@ -74,8 +74,8 @@ class CacheInvalidationTest {
         persona: this.testPersona,
         context: {
           difficulty: 'intermediate',
-          format: 'explanation'
-        }
+          format: 'explanation',
+        },
       },
       'Test explanation content',
       { promptTokens: 100, completionTokens: 200 },
@@ -90,8 +90,8 @@ class CacheInvalidationTest {
       persona: this.testPersona,
       context: {
         difficulty: 'intermediate',
-        format: 'explanation'
-      }
+        format: 'explanation',
+      },
     });
 
     if (!cached || cached.content !== 'Test explanation content') {
@@ -116,8 +116,8 @@ class CacheInvalidationTest {
         persona: this.testPersona,
         context: {
           difficulty: 'basic',
-          format: 'summary'
-        }
+          format: 'summary',
+        },
       },
       'Summary for software developer',
       { promptTokens: 80, completionTokens: 150 }
@@ -132,8 +132,8 @@ class CacheInvalidationTest {
         persona: this.updatedPersona,
         context: {
           difficulty: 'basic',
-          format: 'summary'
-        }
+          format: 'summary',
+        },
       },
       'Summary for data scientist',
       { promptTokens: 80, completionTokens: 150 }
@@ -147,8 +147,8 @@ class CacheInvalidationTest {
       persona: this.testPersona,
       context: {
         difficulty: 'basic',
-        format: 'summary'
-      }
+        format: 'summary',
+      },
     });
 
     const updatedCache = await this.cache.get({
@@ -158,8 +158,8 @@ class CacheInvalidationTest {
       persona: this.updatedPersona,
       context: {
         difficulty: 'basic',
-        format: 'summary'
-      }
+        format: 'summary',
+      },
     });
 
     if (!originalCache || originalCache.content !== 'Summary for software developer') {
@@ -192,8 +192,8 @@ class CacheInvalidationTest {
           persona: this.testPersona,
           context: {
             difficulty: 'intermediate',
-            format: 'standard'
-          }
+            format: 'standard',
+          },
         },
         `Content for ${contentTypes[i]}`,
         { promptTokens: 100, completionTokens: 200 }
@@ -209,8 +209,8 @@ class CacheInvalidationTest {
         persona: this.testPersona,
         context: {
           difficulty: 'intermediate',
-          format: 'standard'
-        }
+          format: 'standard',
+        },
       });
 
       if (!cached) {
@@ -221,7 +221,7 @@ class CacheInvalidationTest {
     // Invalidate cache due to persona change
     const invalidatedCount = await this.cache.invalidate({
       userId: this.testPersona.userId,
-      personaChanged: true
+      personaChanged: true,
     });
 
     logger.info(`Invalidated ${invalidatedCount} cache entries for persona change`);
@@ -235,8 +235,8 @@ class CacheInvalidationTest {
         persona: this.testPersona,
         context: {
           difficulty: 'intermediate',
-          format: 'standard'
-        }
+          format: 'standard',
+        },
       });
 
       if (cached) {
@@ -267,8 +267,8 @@ class CacheInvalidationTest {
             persona: { ...this.testPersona, userId },
             context: {
               difficulty: 'basic',
-              format: 'standard'
-            }
+              format: 'standard',
+            },
           },
           `Content for ${userId} ${service}`,
           { promptTokens: 50, completionTokens: 100 }
@@ -279,7 +279,7 @@ class CacheInvalidationTest {
     // Invalidate only explain service for user-4a
     const invalidatedCount = await this.cache.invalidate({
       userId: 'user-4a',
-      service: 'explain'
+      service: 'explain',
     });
 
     logger.info(`Selectively invalidated ${invalidatedCount} cache entries`);
@@ -292,8 +292,8 @@ class CacheInvalidationTest {
       persona: { ...this.testPersona, userId: 'user-4a' },
       context: {
         difficulty: 'basic',
-        format: 'standard'
-      }
+        format: 'standard',
+      },
     });
 
     const shouldRemain = await this.cache.get({
@@ -303,8 +303,8 @@ class CacheInvalidationTest {
       persona: { ...this.testPersona, userId: 'user-4a' },
       context: {
         difficulty: 'basic',
-        format: 'standard'
-      }
+        format: 'standard',
+      },
     });
 
     if (shouldBeInvalidated) {
@@ -336,8 +336,8 @@ class CacheInvalidationTest {
             persona: { ...this.testPersona, userId: `bulk-user-${i}` },
             context: {
               difficulty: 'intermediate',
-              format: 'bulk-test'
-            }
+              format: 'bulk-test',
+            },
           },
           `Bulk content ${i}`,
           { promptTokens: 30, completionTokens: 60 }
@@ -349,7 +349,7 @@ class CacheInvalidationTest {
 
     // Perform bulk invalidation
     const invalidatedCount = await this.cache.invalidate({
-      service: 'explain'
+      service: 'explain',
     });
 
     logger.info(`Bulk invalidated ${invalidatedCount} cache entries`);
@@ -363,8 +363,8 @@ class CacheInvalidationTest {
         persona: { ...this.testPersona, userId: `bulk-user-${i}` },
         context: {
           difficulty: 'intermediate',
-          format: 'bulk-test'
-        }
+          format: 'bulk-test',
+        },
       });
 
       if (cached) {
@@ -390,8 +390,8 @@ class CacheInvalidationTest {
         persona: this.testPersona,
         context: {
           difficulty: 'basic',
-          format: 'warming-test'
-        }
+          format: 'warming-test',
+        },
       },
       'Original content',
       { promptTokens: 70, completionTokens: 140 }
@@ -400,7 +400,7 @@ class CacheInvalidationTest {
     // Invalidate the cache
     await this.cache.invalidate({
       userId: 'warm-test-user',
-      personaChanged: true
+      personaChanged: true,
     });
 
     // Verify invalidation
@@ -411,8 +411,8 @@ class CacheInvalidationTest {
       persona: this.testPersona,
       context: {
         difficulty: 'basic',
-        format: 'warming-test'
-      }
+        format: 'warming-test',
+      },
     });
 
     if (afterInvalidation) {
@@ -428,12 +428,12 @@ class CacheInvalidationTest {
         persona: this.updatedPersona,
         context: {
           difficulty: 'basic',
-          format: 'warming-test'
-        }
+          format: 'warming-test',
+        },
       },
       async () => ({
         content: 'Warmed content for updated persona',
-        usage: { promptTokens: 80, completionTokens: 160 }
+        usage: { promptTokens: 80, completionTokens: 160 },
       })
     );
 
@@ -445,8 +445,8 @@ class CacheInvalidationTest {
       persona: this.updatedPersona,
       context: {
         difficulty: 'basic',
-        format: 'warming-test'
-      }
+        format: 'warming-test',
+      },
     });
 
     if (!afterWarming || afterWarming.content !== 'Warmed content for updated persona') {
@@ -470,7 +470,7 @@ class CacheInvalidationTest {
     // Calculate overall hit rate
     let totalHits = 0;
     let totalMisses = 0;
-    Object.values(stats).forEach(serviceStats => {
+    Object.values(stats).forEach((serviceStats) => {
       totalHits += serviceStats.hits;
       totalMisses += serviceStats.misses;
     });
@@ -486,8 +486,8 @@ class CacheInvalidationTest {
         'Persona change invalidation',
         'Selective invalidation',
         'Bulk invalidation',
-        'Cache warming after invalidation'
-      ]
+        'Cache warming after invalidation',
+      ],
     };
   }
 }
@@ -497,17 +497,16 @@ class CacheInvalidationTest {
  */
 async function runCacheInvalidationTests(): Promise<void> {
   const test = new CacheInvalidationTest();
-  
+
   try {
     await test.runTests();
     const stats = await test.getTestStats();
-    
+
     logger.info('=== Test Summary ===');
     logger.info(`Total cache keys: ${stats.totalCacheKeys}`);
     logger.info(`Cache hit rate: ${(stats.hitRate * 100).toFixed(1)}%`);
     logger.info(`Test coverage: ${stats.testCoverage.length} test scenarios`);
     logger.info('===================');
-    
   } catch (error) {
     logger.error('Cache invalidation tests failed:', error);
     process.exit(1);

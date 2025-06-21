@@ -4,7 +4,12 @@
  */
 
 import { logger } from '../../utils/logger';
-import { pythonAIClient, PythonAIClient, EmbeddingRequest, BatchEmbeddingRequest } from '../ai/PythonAIClient';
+import {
+  pythonAIClient,
+  PythonAIClient,
+  EmbeddingRequest,
+  BatchEmbeddingRequest,
+} from '../ai/PythonAIClient';
 import { supabase } from '../../config/supabase';
 
 export interface PythonEmbeddingChunk {
@@ -45,19 +50,15 @@ export class PythonEmbeddingService {
   /**
    * Generate embedding for a single text
    */
-  async generateEmbedding(
-    text: string, 
-    userId?: string,
-    model?: string
-  ): Promise<number[]> {
+  async generateEmbedding(text: string, userId?: string, model?: string): Promise<number[]> {
     const startTime = Date.now();
-    
+
     try {
       const request: EmbeddingRequest = {
         texts: text,
         model: model || this.model,
         dimensions: this.dimensions,
-        user_id: userId
+        user_id: userId,
       };
 
       const response = await this.client.createEmbeddings(request);
@@ -68,11 +69,10 @@ export class PythonEmbeddingService {
         userId,
         model: response.model,
         textLength: text.length,
-        processingTime
+        processingTime,
       });
 
       return embedding;
-
     } catch (error) {
       logger.error('Python single embedding generation failed:', error);
       throw error;
@@ -82,19 +82,15 @@ export class PythonEmbeddingService {
   /**
    * Generate embeddings for multiple texts with optimization
    */
-  async generateEmbeddings(
-    texts: string[], 
-    userId?: string,
-    model?: string
-  ): Promise<number[][]> {
+  async generateEmbeddings(texts: string[], userId?: string, model?: string): Promise<number[][]> {
     const startTime = Date.now();
-    
+
     try {
       const request: EmbeddingRequest = {
         texts,
         model: model || this.model,
         dimensions: this.dimensions,
-        user_id: userId
+        user_id: userId,
       };
 
       const response = await this.client.createEmbeddings(request);
@@ -104,11 +100,10 @@ export class PythonEmbeddingService {
         userId,
         model: response.model,
         count: texts.length,
-        processingTime
+        processingTime,
       });
 
       return response.embeddings;
-
     } catch (error) {
       logger.error('Python batch embedding generation failed:', error);
       throw error;
@@ -119,22 +114,22 @@ export class PythonEmbeddingService {
    * Process chunks with advanced batching and optimization
    */
   async processBatch(
-    chunks: PythonEmbeddingChunk[], 
+    chunks: PythonEmbeddingChunk[],
     userId: string,
     model?: string
   ): Promise<BatchEmbeddingResult> {
     const startTime = Date.now();
-    
+
     try {
       // Prepare batch request with metadata
-      const items = chunks.map(chunk => ({
+      const items = chunks.map((chunk) => ({
         id: chunk.id,
         text: chunk.content,
         metadata: {
           fileId: chunk.fileId,
           position: chunk.position,
-          ...chunk.metadata
-        }
+          ...chunk.metadata,
+        },
       }));
 
       const request: BatchEmbeddingRequest = {
@@ -142,28 +137,28 @@ export class PythonEmbeddingService {
         model: model || this.model,
         dimensions: this.dimensions,
         batch_size: this.batchSize,
-        user_id: userId
+        user_id: userId,
       };
 
       const response = await this.client.createBatchEmbeddings(request);
 
       // Map results back to chunks
-      const results: PythonEmbeddingResult[] = response.embeddings.map(item => ({
+      const results: PythonEmbeddingResult[] = response.embeddings.map((item) => ({
         chunkId: item.id,
         embedding: item.embedding,
         model: response.model,
         cached: false, // Python service handles cache detection
-        processingTime: 0 // Individual timing not available in batch
+        processingTime: 0, // Individual timing not available in batch
       }));
 
       const totalProcessingTime = Date.now() - startTime;
-      
+
       logger.info('Python batch chunk processing completed', {
         userId,
         model: response.model,
         totalChunks: chunks.length,
         processedItems: response.total_items,
-        processingTime: totalProcessingTime
+        processingTime: totalProcessingTime,
       });
 
       return {
@@ -171,9 +166,8 @@ export class PythonEmbeddingService {
         totalTokens: 0, // Python service calculates internally
         processingTime: totalProcessingTime,
         cacheHitRate: 0, // Python service tracks internally
-        model: response.model
+        model: response.model,
       };
-
     } catch (error) {
       logger.error('Python batch chunk processing failed:', error);
       throw error;
@@ -183,24 +177,19 @@ export class PythonEmbeddingService {
   /**
    * Store embeddings in the database
    */
-  async storeEmbeddings(
-    results: PythonEmbeddingResult[],
-    model?: string
-  ): Promise<void> {
+  async storeEmbeddings(results: PythonEmbeddingResult[], model?: string): Promise<void> {
     try {
-      const embeddingData = results.map(result => ({
+      const embeddingData = results.map((result) => ({
         chunk_id: result.chunkId,
         embedding: result.embedding,
         model: result.model,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       }));
 
-      const { error } = await supabase
-        .from('chunk_embeddings')
-        .upsert(embeddingData, { 
-          onConflict: 'chunk_id',
-          ignoreDuplicates: false 
-        });
+      const { error } = await supabase.from('chunk_embeddings').upsert(embeddingData, {
+        onConflict: 'chunk_id',
+        ignoreDuplicates: false,
+      });
 
       if (error) {
         throw error;
@@ -208,9 +197,8 @@ export class PythonEmbeddingService {
 
       logger.info('Python embeddings stored in database', {
         count: results.length,
-        model: model || this.model
+        model: model || this.model,
       });
-
     } catch (error) {
       logger.error('Failed to store Python embeddings:', error);
       throw error;
@@ -232,12 +220,12 @@ export class PythonEmbeddingService {
     model?: string
   ): Promise<void> {
     const startTime = Date.now();
-    
+
     try {
       // Convert to PythonEmbeddingChunk format
-      const embeddingChunks: PythonEmbeddingChunk[] = chunks.map(chunk => ({
+      const embeddingChunks: PythonEmbeddingChunk[] = chunks.map((chunk) => ({
         ...chunk,
-        fileId
+        fileId,
       }));
 
       // Process in batches
@@ -255,12 +243,11 @@ export class PythonEmbeddingService {
         userId,
         totalChunks: chunks.length,
         model: batchResults.model,
-        processingTime: totalProcessingTime
+        processingTime: totalProcessingTime,
       });
-
     } catch (error) {
       logger.error('Python file chunk processing failed:', error);
-      
+
       // Update file status to failed
       await this.updateFileEmbeddingStatus(fileId, 'failed');
       throw error;
@@ -279,27 +266,25 @@ export class PythonEmbeddingService {
       fileIds?: string[];
       model?: string;
     } = {}
-  ): Promise<Array<{
-    chunkId: string;
-    content: string;
-    similarity: number;
-    metadata?: Record<string, any>;
-  }>> {
+  ): Promise<
+    Array<{
+      chunkId: string;
+      content: string;
+      similarity: number;
+      metadata?: Record<string, any>;
+    }>
+  > {
     const startTime = Date.now();
-    
+
     try {
       // Generate query embedding
-      const queryEmbedding = await this.generateEmbedding(
-        queryText, 
-        userId, 
-        options.model
-      );
+      const queryEmbedding = await this.generateEmbedding(queryText, userId, options.model);
 
       // Search in database using vector similarity
       let query = supabase.rpc('search_chunks_by_embedding', {
         query_embedding: queryEmbedding,
         similarity_threshold: options.threshold || 0.7,
-        match_count: options.topK || 10
+        match_count: options.topK || 10,
       });
 
       // Filter by file IDs if provided
@@ -318,11 +303,10 @@ export class PythonEmbeddingService {
         userId,
         queryLength: queryText.length,
         resultsCount: data?.length || 0,
-        processingTime
+        processingTime,
       });
 
       return data || [];
-
     } catch (error) {
       logger.error('Python similarity search failed:', error);
       throw error;
@@ -333,22 +317,21 @@ export class PythonEmbeddingService {
    * Update file embedding processing status
    */
   private async updateFileEmbeddingStatus(
-    fileId: string, 
+    fileId: string,
     status: 'processing' | 'completed' | 'failed'
   ): Promise<void> {
     try {
       const { error } = await supabase
         .from('uploaded_files')
-        .update({ 
+        .update({
           embedding_status: status,
-          embedding_updated_at: new Date().toISOString()
+          embedding_updated_at: new Date().toISOString(),
         })
         .eq('id', fileId);
 
       if (error) {
         throw error;
       }
-
     } catch (error) {
       logger.error('Failed to update file embedding status:', error);
       // Don't throw here as this is not critical to the main operation

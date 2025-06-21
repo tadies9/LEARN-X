@@ -204,16 +204,12 @@ export class AnalyticsService {
   async getAggregatedAnalytics(userIds?: string[], timeRange?: { start: Date; end: Date }) {
     try {
       // Use direct Postgres for bulk analytics
-      const analytics = await this.directPg.bulkFetchAnalytics(
-        userIds || [],
-        undefined,
-        timeRange
-      );
+      const analytics = await this.directPg.bulkFetchAnalytics(userIds || [], undefined, timeRange);
 
       // Aggregate the data
       const aggregated = {
         totalEvents: analytics.length,
-        uniqueUsers: new Set(analytics.map(a => a.userId)).size,
+        uniqueUsers: new Set(analytics.map((a) => a.userId)).size,
         eventsByType: {} as Record<string, number>,
         averageValue: 0,
         timeline: [] as Array<{ date: string; count: number }>,
@@ -223,13 +219,13 @@ export class AnalyticsService {
       let totalValue = 0;
       const dailyCounts = new Map<string, number>();
 
-      analytics.forEach(event => {
+      analytics.forEach((event) => {
         // Count by metric/type
         aggregated.eventsByType[event.metric] = (aggregated.eventsByType[event.metric] || 0) + 1;
-        
+
         // Sum values
         totalValue += event.value;
-        
+
         // Daily timeline
         const date = event.timestamp.toISOString().split('T')[0];
         dailyCounts.set(date, (dailyCounts.get(date) || 0) + 1);
@@ -253,21 +249,23 @@ export class AnalyticsService {
   /**
    * Bulk insert analytics events using direct Postgres
    */
-  async bulkInsertEvents(events: Array<{
-    userId: string;
-    eventType: string;
-    metadata: Record<string, any>;
-  }>) {
+  async bulkInsertEvents(
+    events: Array<{
+      userId: string;
+      eventType: string;
+      metadata: Record<string, any>;
+    }>
+  ) {
     try {
-      const bulkEvents = events.map(e => ({
+      const bulkEvents = events.map((e) => ({
         userId: e.userId,
         eventType: e.eventType,
         metadata: e.metadata,
-        timestamp: new Date()
+        timestamp: new Date(),
       }));
 
       await this.directPg.bulkInsertEvents(bulkEvents);
-      
+
       logger.info(`Bulk inserted ${events.length} analytics events`);
     } catch (error) {
       logger.error('Error bulk inserting events:', error);

@@ -3,12 +3,12 @@ import { DatabaseHelpers } from '../../utils/database-helpers';
 
 describe('Admin Dashboard Functionality Tests', () => {
   let adminUser: any;
-  let createdIds: string[] = [];
+  const createdIds: string[] = [];
 
   beforeAll(async () => {
     DatabaseHelpers.initialize();
     adminUser = await DatabaseHelpers.createTestUser({
-      email: 'admin@test.com'
+      email: 'admin@test.com',
     });
     createdIds.push(adminUser.id);
   });
@@ -30,7 +30,7 @@ describe('Admin Dashboard Functionality Tests', () => {
         total_users: 150,
         total_courses: 45,
         total_files: 230,
-        active_sessions: 23
+        active_sessions: 23,
       };
 
       expect(mockDashboardData.total_users).toBeGreaterThan(0);
@@ -54,7 +54,7 @@ describe('Admin Dashboard Functionality Tests', () => {
         cpu_usage: expect.any(Number),
         memory_usage: expect.any(Number),
         disk_usage: expect.any(Number),
-        active_connections: expect.any(Number)
+        active_connections: expect.any(Number),
       });
 
       expect(performanceMetrics.cpu_usage).toBeGreaterThanOrEqual(0);
@@ -73,6 +73,6 @@ function getSystemMetrics() {
     cpu_usage: 45.2,
     memory_usage: 68.5,
     disk_usage: 34.1,
-    active_connections: 125
+    active_connections: 125,
   };
 }

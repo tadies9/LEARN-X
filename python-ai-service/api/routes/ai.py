@@ -263,8 +263,12 @@ async def create_completion(
             
             return StreamingResponse(
                 generate(),
-                media_type="text/plain",
-                headers={"Cache-Control": "no-cache"}
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no"
+                }
             )
         else:
             # Return complete response
@@ -330,8 +334,12 @@ async def generate_content(
             
             return StreamingResponse(
                 generate(),
-                media_type="text/plain",
-                headers={"Cache-Control": "no-cache"}
+                media_type="text/event-stream",
+                headers={
+                    "Cache-Control": "no-cache",
+                    "Connection": "keep-alive",
+                    "X-Accel-Buffering": "no"
+                }
             )
         else:
             # Return complete response

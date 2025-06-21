@@ -12,7 +12,7 @@ import {
 
 /**
  * Weaviate Vector Store Implementation
- * 
+ *
  * Prerequisites:
  * - npm install weaviate-ts-client
  * - WEAVIATE_URL environment variable
@@ -29,7 +29,7 @@ export class WeaviateStore extends BaseVectorStore {
   protected async doInitialize(_config: IndexConfig): Promise<void> {
     // TODO: Implement Weaviate initialization
     throw new Error('Weaviate implementation not yet available');
-    
+
     /*
     // Example implementation:
     const weaviate = require('weaviate-ts-client');
@@ -92,10 +92,7 @@ export class WeaviateStore extends BaseVectorStore {
     throw new Error('Not implemented');
   }
 
-  protected async doUpdateMetadata(
-    _id: string,
-    _metadata: Record<string, any>
-  ): Promise<void> {
+  protected async doUpdateMetadata(_id: string, _metadata: Record<string, any>): Promise<void> {
     throw new Error('Not implemented');
   }
 

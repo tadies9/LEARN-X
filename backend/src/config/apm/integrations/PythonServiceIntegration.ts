@@ -48,16 +48,16 @@ export class PythonServiceIntegration {
 
   static getInstance(serviceName: string, config?: PythonServiceConfig): PythonServiceIntegration {
     let instance = PythonServiceIntegration.instances.get(serviceName);
-    
+
     if (!instance && config) {
       instance = new PythonServiceIntegration(config);
       PythonServiceIntegration.instances.set(serviceName, instance);
     }
-    
+
     if (!instance) {
       throw new Error(`Python service ${serviceName} not configured`);
     }
-    
+
     return instance;
   }
 
@@ -67,17 +67,21 @@ export class PythonServiceIntegration {
   async call(callConfig: PythonServiceCall): Promise<PythonServiceResponse> {
     const startTime = Date.now();
     const span = apmService.startSpan(`python.${this.config.serviceName}.${callConfig.operation}`);
-    
+
     try {
       // Prepare headers with trace context
       const headers = this.prepareHeaders(callConfig.headers || {});
-      
+
       // Set span attributes
       if (span) {
         apmService.setSpanAttribute(span, 'service.name', this.config.serviceName);
         apmService.setSpanAttribute(span, 'service.operation', callConfig.operation);
         apmService.setSpanAttribute(span, 'http.method', callConfig.method);
-        apmService.setSpanAttribute(span, 'http.url', `${this.config.baseUrl}${callConfig.endpoint}`);
+        apmService.setSpanAttribute(
+          span,
+          'http.url',
+          `${this.config.baseUrl}${callConfig.endpoint}`
+        );
       }
 
       // Make the HTTP call
@@ -86,7 +90,7 @@ export class PythonServiceIntegration {
 
       // Record success metrics
       this.recordCallMetrics(callConfig, response, duration, true);
-      
+
       // Set response attributes
       if (span) {
         apmService.setSpanAttribute(span, 'http.status_code', response.statusCode);
@@ -99,21 +103,20 @@ export class PythonServiceIntegration {
         data: response.data,
         statusCode: response.statusCode,
         duration,
-        traceId: response.headers?.['x-trace-id']
+        traceId: response.headers?.['x-trace-id'],
       };
-
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       // Record failure metrics
       this.recordCallMetrics(callConfig, null, duration, false, error as Error);
-      
+
       // Capture error
       apmService.captureError(error as Error, {
         service: this.config.serviceName,
         operation: callConfig.operation,
         endpoint: callConfig.endpoint,
-        duration
+        duration,
       });
 
       // Set error attributes
@@ -127,7 +130,7 @@ export class PythonServiceIntegration {
         success: false,
         error: (error as Error).message,
         statusCode: (error as any).response?.status || 500,
-        duration
+        duration,
       };
     }
   }
@@ -179,7 +182,6 @@ export class PythonServiceIntegration {
           data.searchType || 'vector'
         );
       }
-
     } catch (error) {
       logger.error('Error recording Python service metrics:', error);
     }
@@ -194,27 +196,35 @@ export class PythonServiceIntegration {
     }
 
     try {
-      const response = await this.makeHttpCall({
-        operation: 'health_check',
-        endpoint: this.config.healthCheckEndpoint,
-        method: 'GET'
-      }, {});
+      const response = await this.makeHttpCall(
+        {
+          operation: 'health_check',
+          endpoint: this.config.healthCheckEndpoint,
+          method: 'GET',
+        },
+        {}
+      );
 
       this.healthStatus = response.statusCode >= 200 && response.statusCode < 300;
-      
+
       // Record health status
-      apmService.recordBusinessMetric('python_service.health', this.healthStatus ? 1 : 0, 'boolean', {
-        service: this.config.serviceName
-      });
+      apmService.recordBusinessMetric(
+        'python_service.health',
+        this.healthStatus ? 1 : 0,
+        'boolean',
+        {
+          service: this.config.serviceName,
+        }
+      );
 
       return this.healthStatus;
     } catch (error) {
       this.healthStatus = false;
       logger.error(`Python service ${this.config.serviceName} health check failed:`, error);
-      
+
       apmService.captureError(error as Error, {
         service: this.config.serviceName,
-        operation: 'health_check'
+        operation: 'health_check',
       });
 
       return false;
@@ -231,11 +241,11 @@ export class PythonServiceIntegration {
   // Private Methods
   private prepareHeaders(baseHeaders: Record<string, string>): Record<string, string> {
     const headers = { ...baseHeaders };
-    
+
     // Add service identification
     headers['X-Source-Service'] = 'learn-x-api';
     headers['X-Source-Version'] = process.env.npm_package_version || 'unknown';
-    
+
     // Add trace context
     const context = distributedTracing.getCurrentContext();
     if (context) {
@@ -253,7 +263,7 @@ export class PythonServiceIntegration {
           headers['traceparent'] = `00-${context.traceId}-${context.spanId}-01`;
         }
         break;
-      
+
       case 'datadog':
         if (context) {
           headers['x-datadog-trace-id'] = context.traceId;
@@ -261,7 +271,7 @@ export class PythonServiceIntegration {
           headers['x-datadog-sampling-priority'] = '1';
         }
         break;
-      
+
       case 'custom':
         // Custom headers already added above
         break;
@@ -271,7 +281,7 @@ export class PythonServiceIntegration {
   }
 
   private async makeHttpCall(
-    callConfig: PythonServiceCall, 
+    callConfig: PythonServiceCall,
     headers: Record<string, string>
   ): Promise<any> {
     const url = `${this.config.baseUrl}${callConfig.endpoint}`;
@@ -281,9 +291,9 @@ export class PythonServiceIntegration {
       method: callConfig.method,
       headers: {
         'Content-Type': 'application/json',
-        ...headers
+        ...headers,
       },
-      signal: AbortSignal.timeout(timeout)
+      signal: AbortSignal.timeout(timeout),
     };
 
     if (callConfig.data && ['POST', 'PUT', 'PATCH'].includes(callConfig.method)) {
@@ -291,7 +301,7 @@ export class PythonServiceIntegration {
     }
 
     const response = await fetch(url, fetchOptions);
-    
+
     let data;
     try {
       data = await response.json();
@@ -302,7 +312,7 @@ export class PythonServiceIntegration {
     return {
       data,
       statusCode: response.status,
-      headers: Object.fromEntries(response.headers.entries())
+      headers: Object.fromEntries(response.headers.entries()),
     };
   }
 
@@ -327,19 +337,19 @@ export class PythonServiceIntegration {
       service: this.config.serviceName,
       operation: callConfig.operation,
       method: callConfig.method,
-      success: success.toString()
+      success: success.toString(),
     });
 
     apmService.recordBusinessMetric('python_service.duration', duration, 'ms', {
       service: this.config.serviceName,
-      operation: callConfig.operation
+      operation: callConfig.operation,
     });
 
     if (!success && error) {
       apmService.recordBusinessMetric('python_service.errors', 1, 'count', {
         service: this.config.serviceName,
         operation: callConfig.operation,
-        error_type: error.name
+        error_type: error.name,
       });
     }
   }
@@ -376,7 +386,7 @@ export class PythonServiceClient {
       operation: `ai.${operation}`,
       endpoint: `/ai/${operation}`,
       method: 'POST',
-      data
+      data,
     });
   }
 
@@ -385,7 +395,7 @@ export class PythonServiceClient {
       operation: 'embeddings.generate',
       endpoint: '/embeddings/generate',
       method: 'POST',
-      data: { text, model }
+      data: { text, model },
     });
   }
 
@@ -394,7 +404,7 @@ export class PythonServiceClient {
       operation: 'content.classify',
       endpoint: '/content/classify',
       method: 'POST',
-      data: { content, categories }
+      data: { content, categories },
     });
   }
 
@@ -408,8 +418,8 @@ export class PythonServiceClient {
       method: 'POST',
       data: {
         file: fileData.toString('base64'),
-        type: fileType
-      }
+        type: fileType,
+      },
     });
   }
 
@@ -420,8 +430,8 @@ export class PythonServiceClient {
       method: 'POST',
       data: {
         file: fileData.toString('base64'),
-        type: fileType
-      }
+        type: fileType,
+      },
     });
   }
 
@@ -433,7 +443,7 @@ export class PythonServiceClient {
       operation: 'search.vector',
       endpoint: '/search/vector',
       method: 'POST',
-      data: { query, ...options }
+      data: { query, ...options },
     });
   }
 
@@ -442,7 +452,7 @@ export class PythonServiceClient {
       operation: 'search.semantic',
       endpoint: '/search/semantic',
       method: 'POST',
-      data: { query, ...options }
+      data: { query, ...options },
     });
   }
 
@@ -453,7 +463,7 @@ export class PythonServiceClient {
     return this.integration.call({
       operation: 'health',
       endpoint: '/health',
-      method: 'GET'
+      method: 'GET',
     });
   }
 }
@@ -476,7 +486,7 @@ export function tracePythonCall(serviceName: string, operation?: string) {
 
         // Record metrics
         apmService.recordExternalCall(serviceName, actualOperation, duration, true);
-        
+
         if (span) {
           apmService.setSpanAttribute(span, 'service.name', serviceName);
           apmService.setSpanAttribute(span, 'operation', actualOperation);
@@ -487,12 +497,12 @@ export function tracePythonCall(serviceName: string, operation?: string) {
         return result;
       } catch (error) {
         const duration = Date.now() - startTime;
-        
+
         apmService.recordExternalCall(serviceName, actualOperation, duration, false);
         apmService.captureError(error as Error, {
           service: serviceName,
           operation: actualOperation,
-          duration
+          duration,
         });
 
         if (span) {
@@ -513,12 +523,12 @@ export function tracePythonCall(serviceName: string, operation?: string) {
  * Factory function for creating Python service integrations
  */
 export function createPythonServiceIntegration(
-  serviceName: string, 
+  serviceName: string,
   config: Omit<PythonServiceConfig, 'serviceName'>
 ): PythonServiceIntegration {
   const fullConfig: PythonServiceConfig = {
     serviceName,
-    ...config
+    ...config,
   };
 
   return PythonServiceIntegration.getInstance(serviceName, fullConfig);
@@ -531,7 +541,7 @@ export const pythonServices = {
     timeout: 30000,
     retryAttempts: 3,
     healthCheckEndpoint: '/health',
-    traceHeaderFormat: 'w3c'
+    traceHeaderFormat: 'w3c',
   }),
 
   vectorSearch: createPythonServiceIntegration('vector-search', {
@@ -539,7 +549,7 @@ export const pythonServices = {
     timeout: 10000,
     retryAttempts: 2,
     healthCheckEndpoint: '/health',
-    traceHeaderFormat: 'datadog'
+    traceHeaderFormat: 'datadog',
   }),
 
   documentProcessor: createPythonServiceIntegration('document-processor', {
@@ -547,6 +557,6 @@ export const pythonServices = {
     timeout: 60000,
     retryAttempts: 2,
     healthCheckEndpoint: '/health',
-    traceHeaderFormat: 'custom'
-  })
+    traceHeaderFormat: 'custom',
+  }),
 };

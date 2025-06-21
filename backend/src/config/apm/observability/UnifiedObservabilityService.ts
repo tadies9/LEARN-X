@@ -100,7 +100,7 @@ export class UnifiedObservabilityService {
       sessionTimeout: parseInt(process.env.RUM_SESSION_TIMEOUT || '30'),
       errorReporting: process.env.RUM_ERROR_REPORTING !== 'false',
       performanceTracking: process.env.RUM_PERFORMANCE_TRACKING !== 'false',
-      customEvents: process.env.RUM_CUSTOM_EVENTS !== 'false'
+      customEvents: process.env.RUM_CUSTOM_EVENTS !== 'false',
     };
 
     this.startSessionCleanup();
@@ -134,15 +134,15 @@ export class UnifiedObservabilityService {
         avgApiResponseTime: 0,
         errorCount: 0,
         bounceRate: 0,
-        engagementScore: 0
-      }
+        engagementScore: 0,
+      },
     };
 
     this.activeSessions.set(session.sessionId, session);
-    
+
     // Record session start
     this.recordSessionEvent('session_start', session);
-    
+
     return session;
   }
 
@@ -154,13 +154,13 @@ export class UnifiedObservabilityService {
     if (!session) return;
 
     session.endTime = new Date();
-    
+
     // Calculate final performance metrics
     this.calculateSessionMetrics(session);
-    
+
     // Record session end
     this.recordSessionEvent('session_end', session);
-    
+
     // Clean up
     this.activeSessions.delete(sessionId);
   }
@@ -174,7 +174,7 @@ export class UnifiedObservabilityService {
 
     const fullPageView: PageView = {
       ...pageView,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     session.pageViews.push(fullPageView);
@@ -182,7 +182,7 @@ export class UnifiedObservabilityService {
 
     // Update performance metrics
     this.updatePageViewMetrics(session, fullPageView);
-    
+
     // Record page view
     this.recordPageViewEvent(session, fullPageView);
   }
@@ -196,7 +196,7 @@ export class UnifiedObservabilityService {
 
     const fullApiCall: APICall = {
       ...apiCall,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     session.apiCalls.push(fullApiCall);
@@ -204,10 +204,10 @@ export class UnifiedObservabilityService {
 
     // Update API performance metrics
     this.updateApiCallMetrics(session, fullApiCall);
-    
+
     // Correlate with backend trace
     this.correlateTrace(session, fullApiCall);
-    
+
     // Record API call
     this.recordApiCallEvent(session, fullApiCall);
   }
@@ -222,7 +222,7 @@ export class UnifiedObservabilityService {
     const fullError: UserError = {
       errorId: this.generateErrorId(),
       ...error,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     session.errors.push(fullError);
@@ -230,7 +230,7 @@ export class UnifiedObservabilityService {
 
     // Record error
     this.recordErrorEvent(session, fullError);
-    
+
     // Correlate with backend error if applicable
     if (fullError.source === 'api' && fullError.context?.traceId) {
       this.correlateErrorWithBackend(session, fullError);
@@ -253,18 +253,14 @@ export class UnifiedObservabilityService {
       eventName,
       deviceType: session.deviceType,
       timestamp: Date.now(),
-      ...properties
+      ...properties,
     });
 
-    businessMetrics.recordUserActivity(
-      session.userId || 'anonymous',
-      eventName,
-      {
-        sessionId,
-        deviceType: session.deviceType,
-        ...properties
-      }
-    );
+    businessMetrics.recordUserActivity(session.userId || 'anonymous', eventName, {
+      sessionId,
+      deviceType: session.deviceType,
+      ...properties,
+    });
   }
 
   /**
@@ -294,7 +290,7 @@ export class UnifiedObservabilityService {
         sampleRate: this.config.sampleRate,
         trackingEndpoint: this.config.trackingEndpoint,
         errorReporting: this.config.errorReporting,
-        performanceTracking: this.config.performanceTracking
+        performanceTracking: this.config.performanceTracking,
       })},
       
       sessionId: null,
@@ -470,17 +466,13 @@ export class UnifiedObservabilityService {
       userAgent: session.userAgent,
       deviceType: session.deviceType,
       location: session.location,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
-    businessMetrics.recordUserActivity(
-      session.userId || 'anonymous',
-      eventType,
-      {
-        sessionId: session.sessionId,
-        deviceType: session.deviceType
-      }
-    );
+    businessMetrics.recordUserActivity(session.userId || 'anonymous', eventType, {
+      sessionId: session.sessionId,
+      deviceType: session.deviceType,
+    });
   }
 
   private recordPageViewEvent(session: UserSession, pageView: PageView): void {
@@ -491,18 +483,14 @@ export class UnifiedObservabilityService {
       title: pageView.title,
       loadTime: pageView.loadTime,
       vitals: pageView.vitals,
-      timestamp: pageView.timestamp.getTime()
+      timestamp: pageView.timestamp.getTime(),
     });
 
-    businessMetrics.recordUserActivity(
-      session.userId || 'anonymous',
-      'page_view',
-      {
-        sessionId: session.sessionId,
-        url: pageView.url,
-        loadTime: pageView.loadTime
-      }
-    );
+    businessMetrics.recordUserActivity(session.userId || 'anonymous', 'page_view', {
+      sessionId: session.sessionId,
+      url: pageView.url,
+      loadTime: pageView.loadTime,
+    });
   }
 
   private recordApiCallEvent(session: UserSession, apiCall: APICall): void {
@@ -515,7 +503,7 @@ export class UnifiedObservabilityService {
       statusCode: apiCall.statusCode,
       duration: apiCall.duration,
       success: apiCall.success,
-      timestamp: apiCall.timestamp.getTime()
+      timestamp: apiCall.timestamp.getTime(),
     });
   }
 
@@ -528,7 +516,7 @@ export class UnifiedObservabilityService {
       source: error.source,
       severity: error.severity,
       context: error.context,
-      timestamp: error.timestamp.getTime()
+      timestamp: error.timestamp.getTime(),
     });
 
     // Also capture as APM error
@@ -537,7 +525,7 @@ export class UnifiedObservabilityService {
       userId: session.userId,
       source: error.source,
       severity: error.severity,
-      ...error.context
+      ...error.context,
     });
   }
 
@@ -547,7 +535,7 @@ export class UnifiedObservabilityService {
       apmService.setUser(session.userId || 'anonymous', {
         sessionId: session.sessionId,
         deviceType: session.deviceType,
-        userAgent: session.userAgent
+        userAgent: session.userAgent,
       });
     }
   }
@@ -559,40 +547,40 @@ export class UnifiedObservabilityService {
       userId: session.userId,
       traceId: error.context?.traceId,
       correlationType: 'rum_backend',
-      frontendErrorId: error.errorId
+      frontendErrorId: error.errorId,
     });
   }
 
   private updatePageViewMetrics(session: UserSession, pageView: PageView): void {
     const totalViews = session.performance.totalPageViews;
     const currentAvg = session.performance.avgPageLoadTime;
-    
-    session.performance.avgPageLoadTime = 
-      ((currentAvg * (totalViews - 1)) + pageView.loadTime) / totalViews;
+
+    session.performance.avgPageLoadTime =
+      (currentAvg * (totalViews - 1) + pageView.loadTime) / totalViews;
   }
 
   private updateApiCallMetrics(session: UserSession, apiCall: APICall): void {
     const totalCalls = session.performance.totalApiCalls;
     const currentAvg = session.performance.avgApiResponseTime;
-    
-    session.performance.avgApiResponseTime = 
-      ((currentAvg * (totalCalls - 1)) + apiCall.duration) / totalCalls;
+
+    session.performance.avgApiResponseTime =
+      (currentAvg * (totalCalls - 1) + apiCall.duration) / totalCalls;
   }
 
   private calculateSessionMetrics(session: UserSession): void {
     // Calculate bounce rate
     session.performance.bounceRate = session.pageViews.length === 1 ? 1 : 0;
-    
+
     // Calculate engagement score
-    const sessionDuration = session.endTime 
-      ? (session.endTime.getTime() - session.startTime.getTime()) / 1000 
+    const sessionDuration = session.endTime
+      ? (session.endTime.getTime() - session.startTime.getTime()) / 1000
       : 0;
-    
+
     session.performance.engagementScore = Math.min(
-      (session.performance.totalPageViews * 10) + 
-      (sessionDuration / 60) + 
-      (session.performance.totalApiCalls * 5) - 
-      (session.performance.errorCount * 20),
+      session.performance.totalPageViews * 10 +
+        sessionDuration / 60 +
+        session.performance.totalApiCalls * 5 -
+        session.performance.errorCount * 20,
       100
     );
 
@@ -622,16 +610,19 @@ export class UnifiedObservabilityService {
   }
 
   private startSessionCleanup(): void {
-    this.sessionCleanupTimer = setInterval(() => {
-      const timeout = this.config.sessionTimeout * 60 * 1000;
-      const cutoff = Date.now() - timeout;
-      
-      for (const [sessionId, session] of this.activeSessions.entries()) {
-        if (session.startTime.getTime() < cutoff) {
-          this.endSession(sessionId);
+    this.sessionCleanupTimer = setInterval(
+      () => {
+        const timeout = this.config.sessionTimeout * 60 * 1000;
+        const cutoff = Date.now() - timeout;
+
+        for (const [sessionId, session] of this.activeSessions.entries()) {
+          if (session.startTime.getTime() < cutoff) {
+            this.endSession(sessionId);
+          }
         }
-      }
-    }, 5 * 60 * 1000); // Every 5 minutes
+      },
+      5 * 60 * 1000
+    ); // Every 5 minutes
   }
 
   /**

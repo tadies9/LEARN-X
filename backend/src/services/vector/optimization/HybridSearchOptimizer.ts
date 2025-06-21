@@ -76,11 +76,7 @@ export class HybridSearchOptimizer {
       );
 
       // Fuse results
-      const fusedResults = this.fuseResults(
-        vectorResults,
-        keywordResults,
-        adaptedConfig
-      );
+      const fusedResults = this.fuseResults(vectorResults, keywordResults, adaptedConfig);
 
       // Apply reranking if enabled
       if (adaptedConfig.rerankingEnabled) {
@@ -109,11 +105,27 @@ export class HybridSearchOptimizer {
       /\+\w+|-\w+/, // inclusion/exclusion operators
     ];
 
-    const hasKeywordPatterns = keywordPatterns.some(pattern => pattern.test(query));
+    const hasKeywordPatterns = keywordPatterns.some((pattern) => pattern.test(query));
 
     // Calculate keyword density
-    const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by', 'about']);
-    const contentWords = words.filter(word => !stopWords.has(word));
+    const stopWords = new Set([
+      'the',
+      'a',
+      'an',
+      'and',
+      'or',
+      'but',
+      'in',
+      'on',
+      'at',
+      'to',
+      'for',
+      'of',
+      'with',
+      'by',
+      'about',
+    ]);
+    const contentWords = words.filter((word) => !stopWords.has(word));
     const keywordDensity = contentWords.length / totalWords;
 
     // Determine query type
@@ -198,9 +210,10 @@ export class HybridSearchOptimizer {
       const limit = options.topK || 10;
 
       const { data, error } = await supabase.rpc('exec_sql_return', {
-        query: vectorSearchQuery.replace('$1', `'${embeddingStr}'`)
-                                .replace('$2', threshold.toString())
-                                .replace('$3', limit.toString()),
+        query: vectorSearchQuery
+          .replace('$1', `'${embeddingStr}'`)
+          .replace('$2', threshold.toString())
+          .replace('$3', limit.toString()),
       });
 
       if (error) {
@@ -254,8 +267,7 @@ export class HybridSearchOptimizer {
       const limit = options.topK || 10;
 
       const { data, error } = await supabase.rpc('exec_sql_return', {
-        query: keywordSearchQuery.replace('$1', `'${searchQuery}'`)
-                                 .replace('$2', limit.toString()),
+        query: keywordSearchQuery.replace('$1', `'${searchQuery}'`).replace('$2', limit.toString()),
       });
 
       if (error) {
@@ -285,9 +297,9 @@ export class HybridSearchOptimizer {
     const expansions: Record<string, string[]> = {
       'machine learning': ['ML', 'artificial intelligence', 'AI', 'neural networks'],
       'deep learning': ['neural networks', 'AI', 'machine learning'],
-      'database': ['DB', 'data store', 'repository'],
-      'algorithm': ['method', 'procedure', 'technique'],
-      'programming': ['coding', 'development', 'software'],
+      database: ['DB', 'data store', 'repository'],
+      algorithm: ['method', 'procedure', 'technique'],
+      programming: ['coding', 'development', 'software'],
     };
 
     let expandedQuery = query;
@@ -357,10 +369,7 @@ export class HybridSearchOptimizer {
   /**
    * Calculate fused scores using specified fusion method
    */
-  private calculateFusedScores(
-    results: HybridSearchResult[],
-    config: HybridSearchConfig
-  ): void {
+  private calculateFusedScores(results: HybridSearchResult[], config: HybridSearchConfig): void {
     switch (config.fusionMethod) {
       case 'linear':
         this.linearFusion(results, config);
@@ -383,10 +392,9 @@ export class HybridSearchOptimizer {
    * Linear weighted fusion
    */
   private linearFusion(results: HybridSearchResult[], config: HybridSearchConfig): void {
-    results.forEach(result => {
-      result.fusedScore = 
-        (config.vectorWeight * result.vectorScore) +
-        (config.keywordWeight * result.keywordScore);
+    results.forEach((result) => {
+      result.fusedScore =
+        config.vectorWeight * result.vectorScore + config.keywordWeight * result.keywordScore;
     });
   }
 
@@ -404,13 +412,12 @@ export class HybridSearchOptimizer {
     const keywordRanked = [...results].sort((a, b) => b.keywordScore - a.keywordScore);
     const keywordRanks = new Map(keywordRanked.map((result, index) => [result.id, index + 1]));
 
-    results.forEach(result => {
+    results.forEach((result) => {
       const vectorRank = vectorRanks.get(result.id) || results.length + 1;
       const keywordRank = keywordRanks.get(result.id) || results.length + 1;
 
-      result.fusedScore = 
-        (config.vectorWeight / (k + vectorRank)) +
-        (config.keywordWeight / (k + keywordRank));
+      result.fusedScore =
+        config.vectorWeight / (k + vectorRank) + config.keywordWeight / (k + keywordRank);
     });
   }
 
@@ -418,12 +425,11 @@ export class HybridSearchOptimizer {
    * Harmonic mean fusion
    */
   private harmonicFusion(results: HybridSearchResult[], config: HybridSearchConfig): void {
-    results.forEach(result => {
+    results.forEach((result) => {
       if (result.vectorScore > 0 && result.keywordScore > 0) {
-        result.fusedScore = 2 / (
-          (config.vectorWeight / result.vectorScore) +
-          (config.keywordWeight / result.keywordScore)
-        );
+        result.fusedScore =
+          2 /
+          (config.vectorWeight / result.vectorScore + config.keywordWeight / result.keywordScore);
       } else {
         result.fusedScore = result.vectorScore + result.keywordScore;
       }
@@ -434,7 +440,7 @@ export class HybridSearchOptimizer {
    * Convex combination with adaptive weights
    */
   private convexFusion(results: HybridSearchResult[], config: HybridSearchConfig): void {
-    results.forEach(result => {
+    results.forEach((result) => {
       // Adaptive weights based on score confidence
       const vectorConfidence = result.vectorScore;
       const keywordConfidence = result.keywordScore;
@@ -444,9 +450,8 @@ export class HybridSearchOptimizer {
         const adaptiveVectorWeight = (vectorConfidence / totalConfidence) * config.vectorWeight;
         const adaptiveKeywordWeight = (keywordConfidence / totalConfidence) * config.keywordWeight;
 
-        result.fusedScore = 
-          (adaptiveVectorWeight * result.vectorScore) +
-          (adaptiveKeywordWeight * result.keywordScore);
+        result.fusedScore =
+          adaptiveVectorWeight * result.vectorScore + adaptiveKeywordWeight * result.keywordScore;
       } else {
         result.fusedScore = 0;
       }
@@ -462,7 +467,7 @@ export class HybridSearchOptimizer {
     _queryVector: number[]
   ): HybridSearchResult[] {
     // Apply additional ranking signals
-    results.forEach(result => {
+    results.forEach((result) => {
       let rerankingBoost = 1.0;
 
       // Boost based on content quality indicators
@@ -511,14 +516,14 @@ export class HybridSearchOptimizer {
    */
   private hasStructuredContent(content: string): boolean {
     const structureIndicators = [
-      /\d+\./,  // Numbered lists
-      /[-*]\s/,  // Bullet points
+      /\d+\./, // Numbered lists
+      /[-*]\s/, // Bullet points
       /#{1,6}\s/, // Headers
-      /```/,     // Code blocks
-      /\|.*\|/,  // Tables
+      /```/, // Code blocks
+      /\|.*\|/, // Tables
     ];
 
-    return structureIndicators.some(pattern => pattern.test(content));
+    return structureIndicators.some((pattern) => pattern.test(content));
   }
 
   /**
@@ -530,9 +535,9 @@ export class HybridSearchOptimizer {
   ): number {
     // Simple diversity penalty based on content similarity
     let penalty = 1.0;
-    
-    const higherRankedResults = allResults.filter(r => 
-      r.rankPosition < result.rankPosition && r.fusedScore > result.fusedScore
+
+    const higherRankedResults = allResults.filter(
+      (r) => r.rankPosition < result.rankPosition && r.fusedScore > result.fusedScore
     );
 
     for (const other of higherRankedResults) {
@@ -550,20 +555,17 @@ export class HybridSearchOptimizer {
   private calculateContentSimilarity(content1: string, content2: string): number {
     const words1 = new Set(content1.toLowerCase().split(/\s+/));
     const words2 = new Set(content2.toLowerCase().split(/\s+/));
-    
-    const intersection = new Set([...words1].filter(word => words2.has(word)));
+
+    const intersection = new Set([...words1].filter((word) => words2.has(word)));
     const union = new Set([...words1, ...words2]);
-    
+
     return intersection.size / union.size; // Jaccard similarity
   }
 
   /**
    * Get optimization suggestions based on search performance
    */
-  getOptimizationSuggestions(
-    query: string,
-    results: HybridSearchResult[]
-  ): string[] {
+  getOptimizationSuggestions(query: string, results: HybridSearchResult[]): string[] {
     const suggestions: string[] = [];
     const analysis = this.analyzeQuery(query);
 

@@ -81,21 +81,21 @@ router.get(
         userId,
         contentHash: fileId as string,
         context: {
-          moduleId: fileId as string
-        }
+          moduleId: fileId as string,
+        },
       };
       const cachedOutline = await enhancedAICache.get(cacheOptions);
-      
+
       if (cachedOutline) {
         logger.info('[AI Learn Outline] Using cached outline');
         const topics = JSON.parse(cachedOutline.content).topics || [];
-        
+
         // Stream cached topics
         for (const topic of topics) {
           sendSSE(res, 'message', { type: 'topic', data: topic });
           await new Promise((resolve) => setTimeout(resolve, 200));
         }
-        
+
         sendSSE(res, 'message', { type: 'complete', data: { cached: true } });
         res.end();
         return;
@@ -128,7 +128,8 @@ router.get(
         sendSSE(res, 'message', {
           type: 'error',
           data: {
-            message: 'File has not been processed yet. Please wait for file processing to complete.',
+            message:
+              'File has not been processed yet. Please wait for file processing to complete.',
           },
         });
         res.end();
@@ -146,19 +147,21 @@ router.get(
         .eq('user_id', userId)
         .single();
 
-      const transformedPersona = persona ? {
-        id: persona.id,
-        userId: persona.user_id,
-        currentRole: persona.professional_context?.role,
-        industry: persona.professional_context?.industry,
-        technicalLevel: persona.professional_context?.technicalLevel,
-        primaryInterests: persona.personal_interests?.primary || [],
-        secondaryInterests: persona.personal_interests?.secondary || [],
-        learningStyle: persona.learning_style?.primary,
-        communicationTone: persona.communication_tone?.style,
-        createdAt: new Date(persona.created_at),
-        updatedAt: new Date(persona.updated_at),
-      } : undefined;
+      const transformedPersona = persona
+        ? {
+            id: persona.id,
+            userId: persona.user_id,
+            currentRole: persona.professional_context?.role,
+            industry: persona.professional_context?.industry,
+            technicalLevel: persona.professional_context?.technicalLevel,
+            primaryInterests: persona.personal_interests?.primary || [],
+            secondaryInterests: persona.personal_interests?.secondary || [],
+            learningStyle: persona.learning_style?.primary,
+            communicationTone: persona.communication_tone?.style,
+            createdAt: new Date(persona.created_at),
+            updatedAt: new Date(persona.updated_at),
+          }
+        : undefined;
 
       sendSSE(res, 'message', { type: 'generating' });
 
@@ -189,7 +192,7 @@ router.get(
 
         if (chunk.content) {
           currentTopic += chunk.content;
-          
+
           // Try to parse partial JSON for progressive loading
           try {
             const parsed = JSON.parse(currentTopic);
@@ -198,10 +201,10 @@ router.get(
               for (let i = topics.length; i < parsed.topics.length; i++) {
                 const topic = parsed.topics[i];
                 topics.push(topic);
-                
+
                 // Ensure proper ID format
                 topic.id = topic.id || `topic-${i + 1}`;
-                
+
                 // Ensure subtopics have proper IDs
                 if (topic.subtopics) {
                   topic.subtopics = topic.subtopics.map(
@@ -211,7 +214,7 @@ router.get(
                     })
                   );
                 }
-                
+
                 sendSSE(res, 'message', { type: 'topic', data: topic });
                 await new Promise((resolve) => setTimeout(resolve, 300));
               }

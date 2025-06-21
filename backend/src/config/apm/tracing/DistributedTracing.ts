@@ -10,29 +10,29 @@ import type { DistributedTracingContext } from '../types';
 
 export class DistributedTracingService {
   private static instance: DistributedTracingService;
-  
+
   // Standard trace header names
   private static readonly TRACE_HEADERS = {
     W3C: {
       TRACEPARENT: 'traceparent',
-      TRACESTATE: 'tracestate'
+      TRACESTATE: 'tracestate',
     },
     DATADOG: {
       TRACE_ID: 'x-datadog-trace-id',
       PARENT_ID: 'x-datadog-parent-id',
-      SAMPLING_PRIORITY: 'x-datadog-sampling-priority'
+      SAMPLING_PRIORITY: 'x-datadog-sampling-priority',
     },
     NEWRELIC: {
       TRACE_ID: 'x-newrelic-trace-id',
       SPAN_ID: 'x-newrelic-span-id',
-      DISTRIBUTED_TRACE: 'newrelic'
+      DISTRIBUTED_TRACE: 'newrelic',
     },
     CUSTOM: {
       TRACE_ID: 'x-trace-id',
       SPAN_ID: 'x-span-id',
       PARENT_SPAN_ID: 'x-parent-span-id',
-      CORRELATION_ID: 'x-correlation-id'
-    }
+      CORRELATION_ID: 'x-correlation-id',
+    },
   };
 
   private constructor() {}
@@ -72,7 +72,10 @@ export class DistributedTracingService {
   /**
    * Inject trace context into outgoing request headers
    */
-  injectTraceContext(headers: Record<string, string>, context?: DistributedTracingContext): Record<string, string> {
+  injectTraceContext(
+    headers: Record<string, string>,
+    context?: DistributedTracingContext
+  ): Record<string, string> {
     if (!context) {
       context = this.getCurrentContext() || undefined;
       if (!context) return headers;
@@ -115,7 +118,7 @@ export class DistributedTracingService {
       traceId,
       spanId,
       parentSpanId,
-      baggage: parentContext?.baggage || {}
+      baggage: parentContext?.baggage || {},
     };
   }
 
@@ -151,7 +154,7 @@ export class DistributedTracingService {
     // Add Python service specific headers
     headers['X-Service-Name'] = 'learn-x-api';
     headers['X-Service-Version'] = process.env.npm_package_version || 'unknown';
-    
+
     return this.injectTraceContext(headers, context);
   }
 
@@ -167,8 +170,8 @@ export class DistributedTracingService {
       _traceContext: {
         traceId: context.traceId,
         parentSpanId: context.spanId,
-        baggage: context.baggage
-      }
+        baggage: context.baggage,
+      },
     };
   }
 
@@ -182,13 +185,15 @@ export class DistributedTracingService {
       traceId: jobData._traceContext.traceId,
       spanId: this.generateSpanId(),
       parentSpanId: jobData._traceContext.parentSpanId,
-      baggage: jobData._traceContext.baggage || {}
+      baggage: jobData._traceContext.baggage || {},
     };
   }
 
   // W3C Trace Context Implementation
   private extractW3CContext(req: Request): DistributedTracingContext | null {
-    const traceparent = req.headers[DistributedTracingService.TRACE_HEADERS.W3C.TRACEPARENT] as string;
+    const traceparent = req.headers[
+      DistributedTracingService.TRACE_HEADERS.W3C.TRACEPARENT
+    ] as string;
     if (!traceparent) return null;
 
     // Parse traceparent: version-trace_id-parent_id-trace_flags
@@ -196,25 +201,31 @@ export class DistributedTracingService {
     if (parts.length !== 4) return null;
 
     const [_version, traceId, parentId, _flags] = parts;
-    
+
     return {
       traceId,
       spanId: this.generateSpanId(),
       parentSpanId: parentId,
-      baggage: this.parseTraceState(req.headers[DistributedTracingService.TRACE_HEADERS.W3C.TRACESTATE] as string)
+      baggage: this.parseTraceState(
+        req.headers[DistributedTracingService.TRACE_HEADERS.W3C.TRACESTATE] as string
+      ),
     };
   }
 
-  private injectW3CContext(headers: Record<string, string>, context: DistributedTracingContext): Record<string, string> {
+  private injectW3CContext(
+    headers: Record<string, string>,
+    context: DistributedTracingContext
+  ): Record<string, string> {
     const version = '00';
     const flags = '01'; // Sampled
-    
-    headers[DistributedTracingService.TRACE_HEADERS.W3C.TRACEPARENT] = 
+
+    headers[DistributedTracingService.TRACE_HEADERS.W3C.TRACEPARENT] =
       `${version}-${context.traceId}-${context.spanId}-${flags}`;
-    
+
     if (context.baggage && Object.keys(context.baggage).length > 0) {
-      headers[DistributedTracingService.TRACE_HEADERS.W3C.TRACESTATE] = 
-        this.formatTraceState(context.baggage);
+      headers[DistributedTracingService.TRACE_HEADERS.W3C.TRACESTATE] = this.formatTraceState(
+        context.baggage
+      );
     }
 
     return headers;
@@ -223,7 +234,9 @@ export class DistributedTracingService {
   // Datadog Implementation
   private extractDatadogContext(req: Request): DistributedTracingContext | null {
     const traceId = req.headers[DistributedTracingService.TRACE_HEADERS.DATADOG.TRACE_ID] as string;
-    const parentId = req.headers[DistributedTracingService.TRACE_HEADERS.DATADOG.PARENT_ID] as string;
+    const parentId = req.headers[
+      DistributedTracingService.TRACE_HEADERS.DATADOG.PARENT_ID
+    ] as string;
 
     if (!traceId) return null;
 
@@ -231,15 +244,18 @@ export class DistributedTracingService {
       traceId,
       spanId: this.generateSpanId(),
       parentSpanId: parentId,
-      baggage: {}
+      baggage: {},
     };
   }
 
-  private injectDatadogContext(headers: Record<string, string>, context: DistributedTracingContext): Record<string, string> {
+  private injectDatadogContext(
+    headers: Record<string, string>,
+    context: DistributedTracingContext
+  ): Record<string, string> {
     headers[DistributedTracingService.TRACE_HEADERS.DATADOG.TRACE_ID] = context.traceId;
     headers[DistributedTracingService.TRACE_HEADERS.DATADOG.PARENT_ID] = context.spanId;
     headers[DistributedTracingService.TRACE_HEADERS.DATADOG.SAMPLING_PRIORITY] = '1';
-    
+
     return headers;
   }
 
@@ -247,13 +263,13 @@ export class DistributedTracingService {
     try {
       const tracer = provider.tracer;
       const span = tracer.scope().active();
-      
+
       if (!span) return null;
 
       return {
         traceId: span.context().toTraceId(),
         spanId: span.context().toSpanId(),
-        baggage: {}
+        baggage: {},
       };
     } catch (error) {
       return null;
@@ -262,8 +278,10 @@ export class DistributedTracingService {
 
   // New Relic Implementation
   private extractNewRelicContext(req: Request): DistributedTracingContext | null {
-    const distributedTrace = req.headers[DistributedTracingService.TRACE_HEADERS.NEWRELIC.DISTRIBUTED_TRACE] as string;
-    
+    const distributedTrace = req.headers[
+      DistributedTracingService.TRACE_HEADERS.NEWRELIC.DISTRIBUTED_TRACE
+    ] as string;
+
     if (!distributedTrace) return null;
 
     try {
@@ -272,24 +290,28 @@ export class DistributedTracingService {
         traceId: parsed.tr,
         spanId: this.generateSpanId(),
         parentSpanId: parsed.id,
-        baggage: parsed.baggage || {}
+        baggage: parsed.baggage || {},
       };
     } catch (error) {
       return null;
     }
   }
 
-  private injectNewRelicContext(headers: Record<string, string>, context: DistributedTracingContext): Record<string, string> {
+  private injectNewRelicContext(
+    headers: Record<string, string>,
+    context: DistributedTracingContext
+  ): Record<string, string> {
     const trace = {
       tr: context.traceId,
       id: context.spanId,
       pr: context.parentSpanId,
-      baggage: context.baggage
+      baggage: context.baggage,
     };
 
-    headers[DistributedTracingService.TRACE_HEADERS.NEWRELIC.DISTRIBUTED_TRACE] = 
-      Buffer.from(JSON.stringify(trace)).toString('base64');
-    
+    headers[DistributedTracingService.TRACE_HEADERS.NEWRELIC.DISTRIBUTED_TRACE] = Buffer.from(
+      JSON.stringify(trace)
+    ).toString('base64');
+
     return headers;
   }
 
@@ -297,13 +319,13 @@ export class DistributedTracingService {
     try {
       const api = provider.api;
       const transaction = api.getTransaction();
-      
+
       if (!transaction) return null;
 
       return {
         traceId: transaction.traceId,
         spanId: transaction.id,
-        baggage: {}
+        baggage: {},
       };
     } catch (error) {
       return null;
@@ -314,8 +336,12 @@ export class DistributedTracingService {
   private extractCustomContext(req: Request): DistributedTracingContext | null {
     const traceId = req.headers[DistributedTracingService.TRACE_HEADERS.CUSTOM.TRACE_ID] as string;
     const spanId = req.headers[DistributedTracingService.TRACE_HEADERS.CUSTOM.SPAN_ID] as string;
-    const parentSpanId = req.headers[DistributedTracingService.TRACE_HEADERS.CUSTOM.PARENT_SPAN_ID] as string;
-    const correlationId = req.headers[DistributedTracingService.TRACE_HEADERS.CUSTOM.CORRELATION_ID] as string;
+    const parentSpanId = req.headers[
+      DistributedTracingService.TRACE_HEADERS.CUSTOM.PARENT_SPAN_ID
+    ] as string;
+    const correlationId = req.headers[
+      DistributedTracingService.TRACE_HEADERS.CUSTOM.CORRELATION_ID
+    ] as string;
 
     if (!traceId && !correlationId) return null;
 
@@ -323,20 +349,24 @@ export class DistributedTracingService {
       traceId: traceId || correlationId || this.generateTraceId(),
       spanId: spanId || this.generateSpanId(),
       parentSpanId,
-      baggage: correlationId ? { correlationId } : {}
+      baggage: correlationId ? { correlationId } : {},
     };
   }
 
-  private injectCustomContext(headers: Record<string, string>, context: DistributedTracingContext): Record<string, string> {
+  private injectCustomContext(
+    headers: Record<string, string>,
+    context: DistributedTracingContext
+  ): Record<string, string> {
     headers[DistributedTracingService.TRACE_HEADERS.CUSTOM.TRACE_ID] = context.traceId;
     headers[DistributedTracingService.TRACE_HEADERS.CUSTOM.SPAN_ID] = context.spanId;
-    
+
     if (context.parentSpanId) {
       headers[DistributedTracingService.TRACE_HEADERS.CUSTOM.PARENT_SPAN_ID] = context.parentSpanId;
     }
 
     if (context.baggage?.correlationId) {
-      headers[DistributedTracingService.TRACE_HEADERS.CUSTOM.CORRELATION_ID] = context.baggage.correlationId;
+      headers[DistributedTracingService.TRACE_HEADERS.CUSTOM.CORRELATION_ID] =
+        context.baggage.correlationId;
     }
 
     return headers;
@@ -345,16 +375,12 @@ export class DistributedTracingService {
   // Helper Methods
   private generateTraceId(): string {
     // Generate 128-bit trace ID (32 hex characters)
-    return Array.from({ length: 32 }, () => 
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('');
+    return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
   }
 
   private generateSpanId(): string {
     // Generate 64-bit span ID (16 hex characters)
-    return Array.from({ length: 16 }, () => 
-      Math.floor(Math.random() * 16).toString(16)
-    ).join('');
+    return Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
   }
 
   private parseTraceState(tracestate: string): Record<string, string> {
@@ -363,7 +389,7 @@ export class DistributedTracingService {
     const baggage: Record<string, string> = {};
     const parts = tracestate.split(',');
 
-    parts.forEach(part => {
+    parts.forEach((part) => {
       const [key, value] = part.split('=');
       if (key && value) {
         baggage[key.trim()] = value.trim();

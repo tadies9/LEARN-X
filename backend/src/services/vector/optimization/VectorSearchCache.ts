@@ -59,7 +59,7 @@ export class VectorSearchCache {
     provider: string
   ): Promise<VectorSearchResult[] | null> {
     const startTime = Date.now();
-    
+
     try {
       const cacheKey = this.generateCacheKey(queryVector, options, provider);
       const cachedData = await redisClient.get(cacheKey);
@@ -71,14 +71,14 @@ export class VectorSearchCache {
       }
 
       const cached: CachedSearchResult = JSON.parse(cachedData);
-      
+
       // Check if cache entry is still valid
       if (this.isCacheValid(cached)) {
         // Update popularity and TTL
         await this.updateCacheEntry(cacheKey, cached);
-        
+
         this.metrics.hits++;
-        this.metrics.avgResponseTime = 
+        this.metrics.avgResponseTime =
           (this.metrics.avgResponseTime + (Date.now() - startTime)) / 2;
         this.updateMetrics();
 
@@ -116,7 +116,7 @@ export class VectorSearchCache {
     try {
       const cacheKey = this.generateCacheKey(queryVector, options, provider);
       const queryHash = this.hashQuery(queryVector, options);
-      
+
       // Check if we should cache this result
       if (!this.shouldCache(results)) {
         return;
@@ -144,7 +144,6 @@ export class VectorSearchCache {
         ttl,
         sizeBytes: cachedResult.size,
       });
-
     } catch (error) {
       logger.error('[VectorCache] Error setting cache:', error);
     }
@@ -153,19 +152,17 @@ export class VectorSearchCache {
   /**
    * Get similar cached queries (for query expansion)
    */
-  async getSimilarQueries(
-    _queryVector: number[],
-    _threshold: number = 0.9
-  ): Promise<string[]> {
+  async getSimilarQueries(_queryVector: number[], _threshold: number = 0.9): Promise<string[]> {
     try {
       // This is a simplified implementation
       // In practice, you'd use a more sophisticated similarity search
       const pattern = `${this.config.keyPrefix}*`;
       const keys = await redisClient.keys(pattern);
-      
+
       const similarQueries: string[] = [];
-      
-      for (const key of keys.slice(0, 100)) { // Limit to avoid performance issues
+
+      for (const key of keys.slice(0, 100)) {
+        // Limit to avoid performance issues
         try {
           const cachedData = await redisClient.get(key);
           if (cachedData) {
@@ -191,11 +188,13 @@ export class VectorSearchCache {
   /**
    * Warm up cache with popular queries
    */
-  async warmup(popularQueries: Array<{
-    queryVector: number[];
-    options: VectorSearchOptions;
-    provider: string;
-  }>): Promise<void> {
+  async warmup(
+    popularQueries: Array<{
+      queryVector: number[];
+      options: VectorSearchOptions;
+      provider: string;
+    }>
+  ): Promise<void> {
     logger.info('[VectorCache] Starting cache warmup', {
       queryCount: popularQueries.length,
     });
@@ -229,13 +228,13 @@ export class VectorSearchCache {
     try {
       const searchPattern = pattern || `${this.config.keyPrefix}*`;
       const keys = await redisClient.keys(searchPattern);
-      
+
       if (keys.length === 0) {
         return 0;
       }
 
       await redisClient.del(...keys);
-      
+
       // Reset metrics if clearing all
       if (!pattern) {
         this.metrics = {
@@ -285,7 +284,7 @@ export class VectorSearchCache {
     try {
       const pattern = `${this.config.keyPrefix}*`;
       const keys = await redisClient.keys(pattern);
-      
+
       const topQueries: Array<{ queryHash: string; popularity: number; lastAccessed: Date }> = [];
       const sizeDistribution = { small: 0, medium: 0, large: 0 };
 
@@ -294,7 +293,7 @@ export class VectorSearchCache {
           const cachedData = await redisClient.get(key);
           if (cachedData) {
             const cached: CachedSearchResult = JSON.parse(cachedData);
-            
+
             topQueries.push({
               queryHash: cached.queryHash,
               popularity: cached.popularity,
@@ -352,13 +351,13 @@ export class VectorSearchCache {
           const cachedData = await redisClient.get(key);
           if (cachedData) {
             const cached: CachedSearchResult = JSON.parse(cachedData);
-            
+
             let shouldInvalidate = false;
 
             // Check if any results match invalidation rules
             if (invalidationRules.fileId) {
-              const hasMatchingFile = cached.results.some(result => 
-                result.metadata?.fileId === invalidationRules.fileId
+              const hasMatchingFile = cached.results.some(
+                (result) => result.metadata?.fileId === invalidationRules.fileId
               );
               if (hasMatchingFile) shouldInvalidate = true;
             }
@@ -412,8 +411,8 @@ export class VectorSearchCache {
    */
   private hashQuery(queryVector: number[], options: VectorSearchOptions): string {
     // Round vector components to reduce precision for better cache hits
-    const roundedVector = queryVector.map(v => Math.round(v * 10000) / 10000);
-    
+    const roundedVector = queryVector.map((v) => Math.round(v * 10000) / 10000);
+
     const queryData = {
       vector: roundedVector,
       topK: options.topK,
@@ -435,7 +434,7 @@ export class VectorSearchCache {
     const now = Date.now();
     const age = now - cached.timestamp;
     const maxAge = this.calculateTTL(cached) * 1000; // Convert to milliseconds
-    
+
     return age < maxAge;
   }
 
@@ -473,7 +472,8 @@ export class VectorSearchCache {
 
     // Don't cache if estimated size is too large
     const estimatedSize = this.estimateSize(results);
-    if (estimatedSize > 1024 * 1024) { // 1MB limit
+    if (estimatedSize > 1024 * 1024) {
+      // 1MB limit
       return false;
     }
 
@@ -498,10 +498,7 @@ export class VectorSearchCache {
   /**
    * Update cache entry with new access info
    */
-  private async updateCacheEntry(
-    cacheKey: string,
-    cached: CachedSearchResult
-  ): Promise<void> {
+  private async updateCacheEntry(cacheKey: string, cached: CachedSearchResult): Promise<void> {
     try {
       cached.popularity++;
       cached.timestamp = Date.now();

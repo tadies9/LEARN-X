@@ -5,13 +5,7 @@
 
 import { logger } from '../../../utils/logger';
 import { BaseAPMProvider } from './BaseAPMProvider';
-import type { 
-  APMTransaction, 
-  APMSpan, 
-  APMMetric, 
-  APMError,
-  APMProvider 
-} from '../types';
+import type { APMTransaction, APMSpan, APMMetric, APMError, APMProvider } from '../types';
 
 export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
   private api: any;
@@ -52,7 +46,7 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
         name,
         type,
         startTime: Date.now(),
-        _handle: transaction
+        _handle: transaction,
       };
     });
 
@@ -61,7 +55,7 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
 
   endTransaction(transaction: APMTransaction): void {
     if (!this.isEnabled() || !transaction._handle) return;
-    
+
     try {
       transaction._handle.end();
     } catch (error) {
@@ -78,7 +72,7 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
         id: `span_${Date.now()}`,
         name,
         startTime: Date.now(),
-        _segment: true
+        _segment: true,
       };
     });
 
@@ -88,7 +82,7 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
   endSpan(span: APMSpan): void {
     // New Relic segments end automatically when the callback completes
     if (!this.isEnabled() || !span._segment) return;
-    
+
     // Mark span as completed
     span.endTime = Date.now();
   }
@@ -101,8 +95,8 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
       customAttributes: {
         userId: error.userId,
         correlationId: error.correlationId,
-        ...error.context
-      }
+        ...error.context,
+      },
     });
   }
 
@@ -142,7 +136,12 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
   }
 
   // Business Metrics
-  recordBusinessMetric(name: string, value: number, unit: string, tags?: Record<string, string>): void {
+  recordBusinessMetric(
+    name: string,
+    value: number,
+    unit: string,
+    tags?: Record<string, string>
+  ): void {
     if (!this.isEnabled()) return;
 
     const metricName = `Business/${name}`;
@@ -154,7 +153,7 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
         metric: name,
         value,
         unit,
-        ...tags
+        ...tags,
       });
     }
   }
@@ -164,7 +163,7 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
     if (!this.isEnabled()) return;
 
     this.api.setUserID(userId);
-    
+
     if (attributes) {
       Object.entries(attributes).forEach(([key, value]) => {
         this.api.addCustomAttribute(`user.${key}`, value);
@@ -178,7 +177,7 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
 
     this.api.recordCustomEvent(eventType, {
       timestamp: Date.now(),
-      ...attributes
+      ...attributes,
     });
   }
 
@@ -190,7 +189,7 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
       query: query.substring(0, 1000), // Limit query length
       duration,
       database,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -203,7 +202,7 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
       operation,
       duration,
       success,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
   }
 
@@ -215,7 +214,7 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
       feature,
       userId,
       timestamp: Date.now(),
-      ...metadata
+      ...metadata,
     });
   }
 
@@ -224,14 +223,14 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
     if (!this.isEnabled()) return;
 
     const exceeded = value > budget;
-    
+
     this.api.recordCustomEvent('PerformanceBudget', {
       metric,
       value,
       budget,
       exceeded,
       percentage: (value / budget) * 100,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     if (exceeded) {
@@ -240,8 +239,8 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
           metric,
           value,
           budget,
-          exceeded: value - budget
-        }
+          exceeded: value - budget,
+        },
       });
     }
   }
@@ -252,7 +251,7 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
       id: `dummy_${Date.now()}`,
       name,
       type: 'dummy',
-      startTime: Date.now()
+      startTime: Date.now(),
     };
   }
 
@@ -260,7 +259,7 @@ export class NewRelicProvider extends BaseAPMProvider implements APMProvider {
     return {
       id: `dummy_span_${Date.now()}`,
       name,
-      startTime: Date.now()
+      startTime: Date.now(),
     };
   }
 }

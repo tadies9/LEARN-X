@@ -21,13 +21,15 @@ const timeRangeQuerySchema = z.object({
 });
 
 const cacheInvalidateBodySchema = z.object({
-  body: z.object({
-    pattern: z.string().optional(),
-    userId: z.string().uuid().optional(),
-    service: z.string().optional(),
-  }).refine(data => data.pattern || data.userId || data.service, {
-    message: 'Must provide pattern, userId, or service',
-  }),
+  body: z
+    .object({
+      pattern: z.string().optional(),
+      userId: z.string().uuid().optional(),
+      service: z.string().optional(),
+    })
+    .refine((data) => data.pattern || data.userId || data.service, {
+      message: 'Must provide pattern, userId, or service',
+    }),
 });
 
 const circuitResetBodySchema = z.object({

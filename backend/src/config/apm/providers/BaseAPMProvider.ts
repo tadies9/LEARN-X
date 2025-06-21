@@ -14,7 +14,7 @@ export abstract class BaseAPMProvider implements APMProvider {
 
   abstract initialize(): Promise<void>;
   abstract isEnabled(): boolean;
-  
+
   // These methods must be implemented by concrete providers
   abstract startTransaction(name: string, type?: string): any;
   abstract endTransaction(transaction: any): void;
@@ -24,12 +24,26 @@ export abstract class BaseAPMProvider implements APMProvider {
   abstract recordMetric(metric: any): void;
   abstract setTransactionAttribute(key: string, value: any): void;
   abstract setSpanAttribute(span: any, key: string, value: any): void;
-  abstract recordBusinessMetric(name: string, value: number, unit: string, tags?: Record<string, string>): void;
+  abstract recordBusinessMetric(
+    name: string,
+    value: number,
+    unit: string,
+    tags?: Record<string, string>
+  ): void;
   abstract setUser(userId: string, attributes?: Record<string, any>): void;
   abstract recordCustomEvent(eventType: string, attributes: Record<string, any>): void;
   abstract recordDatabaseQuery(query: string, duration: number, database: string): void;
-  abstract recordExternalCall(service: string, operation: string, duration: number, success: boolean): void;
-  abstract recordFeatureUsage(feature: string, userId: string, metadata?: Record<string, any>): void;
+  abstract recordExternalCall(
+    service: string,
+    operation: string,
+    duration: number,
+    success: boolean
+  ): void;
+  abstract recordFeatureUsage(
+    feature: string,
+    userId: string,
+    metadata?: Record<string, any>
+  ): void;
   abstract checkPerformanceBudget(metric: string, value: number, budget: number): void;
 
   getProviderName(): string {

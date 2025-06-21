@@ -27,14 +27,14 @@ interface QueryOptimization {
  */
 export class QueryOptimizer {
   private queryPatterns: Map<string, QueryPattern> = new Map();
-  
+
   /**
    * Optimize a Supabase select query
    */
   optimizeSelect<T>(query: PostgrestQueryBuilder<any, any, T>): PostgrestQueryBuilder<any, any, T> {
     // Note: Supabase query builder doesn't expose internal state easily,
     // so we'll provide optimization hints instead
-    
+
     // Add optimization hints as comments
     logger.info('Query optimization hints:', {
       tip1: 'Use select() with specific columns instead of *',
@@ -55,7 +55,7 @@ export class QueryOptimizer {
     orderBy?: string
   ): Promise<QueryOptimization> {
     const key = `${table}:${filters.join(',')}:${orderBy || ''}`;
-    
+
     // Track query pattern
     const pattern = this.queryPatterns.get(key) || {
       table,
@@ -104,13 +104,13 @@ export class QueryOptimizer {
    */
   async suggestIndexes(table: string, columns: string[]): Promise<string[]> {
     const suggestions: string[] = [];
-    
+
     // Check existing indexes
     const existingIndexes = await this.getExistingIndexes(table);
-    
+
     // Single column indexes
     for (const column of columns) {
-      if (!existingIndexes.some(idx => idx.includes(column))) {
+      if (!existingIndexes.some((idx) => idx.includes(column))) {
         suggestions.push(`CREATE INDEX idx_${table}_${column} ON ${table}(${column})`);
       }
     }
@@ -118,7 +118,7 @@ export class QueryOptimizer {
     // Composite indexes for frequently used combinations
     if (columns.length > 1) {
       const compositeKey = columns.sort().join('_');
-      if (!existingIndexes.some(idx => idx.includes(compositeKey))) {
+      if (!existingIndexes.some((idx) => idx.includes(compositeKey))) {
         suggestions.push(
           `CREATE INDEX idx_${table}_${compositeKey} ON ${table}(${columns.join(', ')})`
         );
@@ -133,10 +133,10 @@ export class QueryOptimizer {
    */
   suggestMaterializedViews(patterns: QueryPattern[]): MaterializedView[] {
     const views: MaterializedView[] = [];
-    
+
     // Find high-frequency patterns that would benefit from materialization
-    const highFrequencyPatterns = patterns.filter(p => p.frequency > 100);
-    
+    const highFrequencyPatterns = patterns.filter((p) => p.frequency > 100);
+
     for (const pattern of highFrequencyPatterns) {
       if (pattern.table === 'analytics_events' && pattern.filters.includes('user_id')) {
         views.push({
@@ -199,10 +199,7 @@ export class QueryOptimizer {
       return {
         plan: 'Seq Scan on table',
         cost: 1000,
-        suggestions: [
-          'Consider adding an index',
-          'Use more selective filters',
-        ],
+        suggestions: ['Consider adding an index', 'Use more selective filters'],
       };
     } catch (error) {
       logger.error('Error explaining query:', error);
@@ -261,12 +258,14 @@ export class QueryOptimizer {
   /**
    * Monitor slow queries
    */
-  async getSlowQueries(_thresholdMs: number = 1000): Promise<Array<{
-    query: string;
-    duration: number;
-    timestamp: Date;
-    suggestions: string[];
-  }>> {
+  async getSlowQueries(_thresholdMs: number = 1000): Promise<
+    Array<{
+      query: string;
+      duration: number;
+      timestamp: Date;
+      suggestions: string[];
+    }>
+  > {
     // This would integrate with query logs
     // For now, return mock data
     return [
@@ -274,10 +273,7 @@ export class QueryOptimizer {
         query: 'SELECT * FROM large_table WHERE status = ?',
         duration: 2500,
         timestamp: new Date(),
-        suggestions: [
-          'Add index on status column',
-          'Consider partitioning the table',
-        ],
+        suggestions: ['Add index on status column', 'Consider partitioning the table'],
       },
     ];
   }
@@ -291,21 +287,17 @@ export class QueryOptimizer {
     return [];
   }
 
-  private buildQueryString(
-    table: string,
-    filters: string[],
-    orderBy?: string
-  ): string {
+  private buildQueryString(table: string, filters: string[], orderBy?: string): string {
     let query = `SELECT * FROM ${table}`;
-    
+
     if (filters.length > 0) {
-      query += ` WHERE ${filters.map(f => `${f} = ?`).join(' AND ')}`;
+      query += ` WHERE ${filters.map((f) => `${f} = ?`).join(' AND ')}`;
     }
-    
+
     if (orderBy) {
       query += ` ORDER BY ${orderBy}`;
     }
-    
+
     return query;
   }
 
@@ -316,20 +308,20 @@ export class QueryOptimizer {
     _improvements: string[]
   ): string {
     let query = `SELECT /* optimized */ * FROM ${table}`;
-    
+
     if (filters.length > 0) {
-      query += ` WHERE ${filters.map(f => `${f} = ?`).join(' AND ')}`;
+      query += ` WHERE ${filters.map((f) => `${f} = ?`).join(' AND ')}`;
     }
-    
+
     if (orderBy) {
       query += ` ORDER BY ${orderBy}`;
     }
-    
+
     // Add limit if not present
     if (!query.includes('LIMIT')) {
       query += ' LIMIT 100';
     }
-    
+
     return query;
   }
 
@@ -346,7 +338,7 @@ export class QueryOptimizer {
       .slice(0, 10);
 
     const allIndexes = new Set<string>();
-    
+
     for (const pattern of topPatterns) {
       const indexes = await this.suggestIndexes(pattern.table, pattern.filters);
       indexes.forEach((idx: string) => allIndexes.add(idx));

@@ -58,15 +58,24 @@ export class AITestHelpers {
 
   private static generateFlashcards(persona?: any): Array<{ front: string; back: string }> {
     const baseCards = [
-      { front: 'What is machine learning?', back: 'A subset of AI that enables systems to learn from data without explicit programming.' },
-      { front: 'Define supervised learning', back: 'Learning from labeled training data to make predictions on new data.' },
-      { front: 'What is unsupervised learning?', back: 'Finding patterns and structures in data without labeled examples.' },
+      {
+        front: 'What is machine learning?',
+        back: 'A subset of AI that enables systems to learn from data without explicit programming.',
+      },
+      {
+        front: 'Define supervised learning',
+        back: 'Learning from labeled training data to make predictions on new data.',
+      },
+      {
+        front: 'What is unsupervised learning?',
+        back: 'Finding patterns and structures in data without labeled examples.',
+      },
     ];
 
     if (persona?.technical_level === 'advanced') {
       baseCards.push({
         front: 'Explain gradient descent optimization',
-        back: 'An iterative optimization algorithm used to minimize cost functions by updating parameters in the direction of steepest descent.'
+        back: 'An iterative optimization algorithm used to minimize cost functions by updating parameters in the direction of steepest descent.',
       });
     }
 
@@ -84,16 +93,23 @@ export class AITestHelpers {
         question: 'Which of the following is a type of machine learning?',
         options: ['Supervised', 'Unsupervised', 'Reinforcement', 'All of the above'],
         correct_answer: 3,
-        explanation: 'All three - supervised, unsupervised, and reinforcement learning - are main types of machine learning approaches.',
+        explanation:
+          'All three - supervised, unsupervised, and reinforcement learning - are main types of machine learning approaches.',
       },
     ];
 
     if (persona?.technical_level === 'advanced') {
       baseQuestions.push({
         question: 'What is the primary purpose of regularization in machine learning?',
-        options: ['Increase model complexity', 'Prevent overfitting', 'Speed up training', 'Reduce data size'],
+        options: [
+          'Increase model complexity',
+          'Prevent overfitting',
+          'Speed up training',
+          'Reduce data size',
+        ],
         correct_answer: 1,
-        explanation: 'Regularization techniques like L1/L2 regularization help prevent overfitting by adding penalties for model complexity.'
+        explanation:
+          'Regularization techniques like L1/L2 regularization help prevent overfitting by adding penalties for model complexity.',
       });
     }
 
@@ -110,15 +126,18 @@ export class AITestHelpers {
     let content = 'Based on your profile:\n\n';
 
     if (interests.includes('programming')) {
-      content += '🔧 **For Programming**: Think of machine learning like writing smart functions that improve themselves by analyzing data patterns.\n\n';
+      content +=
+        '🔧 **For Programming**: Think of machine learning like writing smart functions that improve themselves by analyzing data patterns.\n\n';
     }
 
     if (learningStyle === 'visual') {
-      content += '👁️ **Visual Learning**: Imagine machine learning as a pattern recognition system - like teaching a computer to recognize cats in photos by showing it thousands of cat pictures.\n\n';
+      content +=
+        '👁️ **Visual Learning**: Imagine machine learning as a pattern recognition system - like teaching a computer to recognize cats in photos by showing it thousands of cat pictures.\n\n';
     }
 
     if (careerFocus === 'data science') {
-      content += '📊 **Data Science Focus**: In your field, you\'ll primarily use supervised learning for predictive modeling, unsupervised learning for customer segmentation, and feature engineering for improved model performance.\n\n';
+      content +=
+        "📊 **Data Science Focus**: In your field, you'll primarily use supervised learning for predictive modeling, unsupervised learning for customer segmentation, and feature engineering for improved model performance.\n\n";
     }
 
     return content;
@@ -146,7 +165,7 @@ export class AITestHelpers {
 
   private static calculateRelevanceScore(content: string, keywords: string[]): number {
     const lowerContent = content.toLowerCase();
-    const foundKeywords = keywords.filter(keyword => 
+    const foundKeywords = keywords.filter((keyword) =>
       lowerContent.includes(keyword.toLowerCase())
     );
     return foundKeywords.length / keywords.length;
@@ -154,12 +173,15 @@ export class AITestHelpers {
 
   private static calculateClarityScore(content: string): number {
     // Simple heuristic: shorter sentences and common words indicate better clarity
-    const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const sentences = content.split(/[.!?]+/).filter((s) => s.trim().length > 0);
     const avgSentenceLength = sentences.reduce((sum, s) => sum + s.length, 0) / sentences.length;
-    
+
     // Normalize score (shorter sentences = higher clarity, up to a point)
     const optimalLength = 100;
-    const clarityScore = Math.max(0, 1 - Math.abs(avgSentenceLength - optimalLength) / optimalLength);
+    const clarityScore = Math.max(
+      0,
+      1 - Math.abs(avgSentenceLength - optimalLength) / optimalLength
+    );
     return Math.min(1, clarityScore);
   }
 
@@ -202,23 +224,31 @@ export class AITestHelpers {
   private static calculateAccuracyScore(content: string): number {
     // Simple heuristic for accuracy - check for common machine learning terms and concepts
     const accurateTerms = [
-      'supervised learning', 'unsupervised learning', 'reinforcement learning',
-      'training data', 'model', 'algorithm', 'prediction', 'pattern'
+      'supervised learning',
+      'unsupervised learning',
+      'reinforcement learning',
+      'training data',
+      'model',
+      'algorithm',
+      'prediction',
+      'pattern',
     ];
 
     const lowerContent = content.toLowerCase();
-    const foundTerms = accurateTerms.filter(term => lowerContent.includes(term));
-    
+    const foundTerms = accurateTerms.filter((term) => lowerContent.includes(term));
+
     return foundTerms.length / accurateTerms.length;
   }
 
   static createLargeTextContent(sizeInKB: number = 100): string {
-    const baseText = 'Machine learning is a powerful technology that enables computers to learn from data. ';
+    const baseText =
+      'Machine learning is a powerful technology that enables computers to learn from data. ';
     const targetSize = sizeInKB * 1024;
     let content = '';
 
     while (content.length < targetSize) {
-      content += baseText + `Section ${Math.floor(content.length / 1000) + 1}: ${baseText.repeat(10)}`;
+      content +=
+        baseText + `Section ${Math.floor(content.length / 1000) + 1}: ${baseText.repeat(10)}`;
     }
 
     return content.substring(0, targetSize);

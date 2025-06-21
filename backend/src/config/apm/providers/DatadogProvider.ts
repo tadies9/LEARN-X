@@ -5,13 +5,7 @@
 
 import { logger } from '../../../utils/logger';
 import { BaseAPMProvider } from './BaseAPMProvider';
-import type { 
-  APMTransaction, 
-  APMSpan, 
-  APMMetric, 
-  APMError,
-  APMProvider 
-} from '../types';
+import type { APMTransaction, APMSpan, APMMetric, APMError, APMProvider } from '../types';
 
 export class DatadogProvider extends BaseAPMProvider implements APMProvider {
   private tracer: any;
@@ -36,16 +30,13 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
         profiling: true,
         tags: {
           team: 'backend',
-          component: 'api'
-        }
+          component: 'api',
+        },
       });
 
       // Initialize DogStatsD for custom metrics
       const StatsD = require('node-dogstatsd').StatsD;
-      this.dogstatsd = new StatsD(
-        process.env.DD_AGENT_HOST || 'localhost',
-        8125
-      );
+      this.dogstatsd = new StatsD(process.env.DD_AGENT_HOST || 'localhost', 8125);
 
       this.initialized = true;
       logger.info('✅ Datadog APM provider initialized');
@@ -68,8 +59,8 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
       resource: name,
       tags: {
         'span.type': type,
-        'resource.name': name
-      }
+        'resource.name': name,
+      },
     });
 
     return {
@@ -77,13 +68,13 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
       name,
       type,
       startTime: Date.now(),
-      _span: span
+      _span: span,
     };
   }
 
   endTransaction(transaction: APMTransaction): void {
     if (!this.isEnabled() || !transaction._span) return;
-    
+
     try {
       transaction._span.finish();
     } catch (error) {
@@ -97,7 +88,7 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
 
     const options: any = {
       resource: name,
-      type: 'custom'
+      type: 'custom',
     };
 
     if (parentTransaction?._span) {
@@ -110,13 +101,13 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
       id: span.context().toSpanId(),
       name,
       startTime: Date.now(),
-      _span: span
+      _span: span,
     };
   }
 
   endSpan(span: APMSpan): void {
     if (!this.isEnabled() || !span._span) return;
-    
+
     try {
       span._span.finish();
       span.endTime = Date.now();
@@ -135,11 +126,11 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
       activeSpan.setTag('error.type', error.error.name);
       activeSpan.setTag('error.message', error.error.message);
       activeSpan.setTag('error.stack', error.error.stack);
-      
+
       if (error.userId) {
         activeSpan.setTag('user.id', error.userId);
       }
-      
+
       if (error.correlationId) {
         activeSpan.setTag('correlation.id', error.correlationId);
       }
@@ -157,9 +148,7 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
   recordMetric(metric: APMMetric): void {
     if (!this.isEnabled() || !this.dogstatsd) return;
 
-    const tags = metric.tags ? 
-      Object.entries(metric.tags).map(([k, v]) => `${k}:${v}`) : 
-      [];
+    const tags = metric.tags ? Object.entries(metric.tags).map(([k, v]) => `${k}:${v}`) : [];
 
     switch (metric.type) {
       case 'counter':
@@ -180,7 +169,7 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
   // Custom Attributes
   setTransactionAttribute(key: string, value: any): void {
     if (!this.isEnabled()) return;
-    
+
     const activeSpan = this.tracer.scope().active();
     if (activeSpan) {
       activeSpan.setTag(key, value);
@@ -193,7 +182,12 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
   }
 
   // Business Metrics
-  recordBusinessMetric(name: string, value: number, unit: string, tags?: Record<string, string>): void {
+  recordBusinessMetric(
+    name: string,
+    value: number,
+    unit: string,
+    tags?: Record<string, string>
+  ): void {
     if (!this.isEnabled() || !this.dogstatsd) return;
 
     const metricTags = ['unit:' + unit];
@@ -204,7 +198,7 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
     }
 
     this.dogstatsd.gauge(`business.${name}`, value, metricTags);
-    
+
     // Also record as a distribution for percentiles
     this.dogstatsd.distribution(`business.${name}.distribution`, value, metricTags);
   }
@@ -216,7 +210,7 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
     const activeSpan = this.tracer.scope().active();
     if (activeSpan) {
       activeSpan.setTag('user.id', userId);
-      
+
       if (attributes) {
         Object.entries(attributes).forEach(([key, value]) => {
           activeSpan.setTag(`user.${key}`, value);
@@ -234,7 +228,7 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
       alert_type: 'info',
       tags: Object.entries(attributes)
         .filter(([_, v]) => typeof v === 'string' || typeof v === 'number')
-        .map(([k, v]) => `${k}:${v}`)
+        .map(([k, v]) => `${k}:${v}`),
     });
 
     // Also track as a counter
@@ -254,10 +248,10 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
           'db.instance': database,
           'db.statement': query.substring(0, 1000),
           'span.type': 'db',
-          'resource.name': query.split(' ')[0] // First word (SELECT, INSERT, etc.)
-        }
+          'resource.name': query.split(' ')[0], // First word (SELECT, INSERT, etc.)
+        },
       });
-      
+
       querySpan.finish();
     }
 
@@ -273,15 +267,11 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
     if (!this.isEnabled()) return;
 
     if (this.dogstatsd) {
-      const tags = [
-        `service:${service}`,
-        `operation:${operation}`,
-        `success:${success}`
-      ];
+      const tags = [`service:${service}`, `operation:${operation}`, `success:${success}`];
 
       this.dogstatsd.histogram('external.call.duration', duration, tags);
       this.dogstatsd.increment('external.call.count', 1, tags);
-      
+
       if (!success) {
         this.dogstatsd.increment('external.call.error', 1, tags);
       }
@@ -293,7 +283,7 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
     if (!this.isEnabled() || !this.dogstatsd) return;
 
     const tags = [`feature:${feature}`, `user:${userId}`];
-    
+
     if (metadata) {
       Object.entries(metadata)
         .filter(([_, v]) => typeof v === 'string' || typeof v === 'number')
@@ -309,18 +299,19 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
 
     const exceeded = value > budget;
     const percentage = (value / budget) * 100;
-    
+
     this.dogstatsd.gauge(`performance.budget.${metric}`, percentage, [
       `exceeded:${exceeded}`,
-      `metric:${metric}`
+      `metric:${metric}`,
     ]);
 
     if (exceeded) {
-      this.dogstatsd.event('Performance Budget Exceeded', 
+      this.dogstatsd.event(
+        'Performance Budget Exceeded',
         `Metric ${metric} exceeded budget: ${value}ms (budget: ${budget}ms)`,
         {
           alert_type: 'warning',
-          tags: [`metric:${metric}`, `value:${value}`, `budget:${budget}`]
+          tags: [`metric:${metric}`, `value:${value}`, `budget:${budget}`],
         }
       );
     }
@@ -332,7 +323,7 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
       id: `dummy_${Date.now()}`,
       name,
       type: 'dummy',
-      startTime: Date.now()
+      startTime: Date.now(),
     };
   }
 
@@ -340,7 +331,7 @@ export class DatadogProvider extends BaseAPMProvider implements APMProvider {
     return {
       id: `dummy_span_${Date.now()}`,
       name,
-      startTime: Date.now()
+      startTime: Date.now(),
     };
   }
 }

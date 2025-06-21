@@ -19,10 +19,12 @@ router.get('/stream-test', (req: Request, res: Response) => {
   let count = 0;
   const interval = setInterval(() => {
     count++;
-    
+
     if (count <= 5) {
       res.write('event: message\n');
-      res.write(`data: {"type":"content","data":"This is chunk ${count} of the explanation. "}\n\n`);
+      res.write(
+        `data: {"type":"content","data":"This is chunk ${count} of the explanation. "}\n\n`
+      );
       console.log(`[Test Stream] Sent chunk ${count}`);
     } else {
       res.write('event: message\n');

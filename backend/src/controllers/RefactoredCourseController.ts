@@ -65,12 +65,12 @@ export class RefactoredCourseController extends BaseController {
 
   updateCourse = CrudHelpers.createUpdateHandler<Course, UpdateCourseData>(
     {
-      update: (id: string, data: UpdateCourseData, _userId: string) => 
+      update: (id: string, data: UpdateCourseData, _userId: string) =>
         this.courseService.updateCourse(id, {
           ...data,
           settings: data.settings as Record<string, unknown>,
         }),
-      checkOwnership: (id: string, userId: string) => 
+      checkOwnership: (id: string, userId: string) =>
         this.courseService.checkCourseOwnership(id, userId),
     },
     'Course'
@@ -81,7 +81,7 @@ export class RefactoredCourseController extends BaseController {
       delete: async (id: string, _userId: string) => {
         await this.courseService.deleteCourse(id);
       },
-      checkOwnership: (id: string, userId: string) => 
+      checkOwnership: (id: string, userId: string) =>
         this.courseService.checkCourseOwnership(id, userId),
     },
     'Course'

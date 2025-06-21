@@ -107,20 +107,22 @@ export class VectorSearchMetrics extends EventEmitter {
 
       // Get metrics within window
       const metricsData = await redisClient.zrangebyscore(key, cutoff, '+inf');
-      
+
       if (metricsData.length === 0) {
         return this.getEmptyStats();
       }
 
-      const metrics: VectorSearchMetric[] = metricsData.map(data => JSON.parse(data));
-      const latencies = metrics.map(m => m.latencyMs).sort((a, b) => a - b);
-      
-      const successCount = metrics.filter(m => m.success).length;
+      const metrics: VectorSearchMetric[] = metricsData.map((data) => JSON.parse(data));
+      const latencies = metrics.map((m) => m.latencyMs).sort((a, b) => a - b);
+
+      const successCount = metrics.filter((m) => m.success).length;
       const totalCount = metrics.length;
-      
+
       // Calculate time range for throughput
-      const timeRangeSeconds = (Math.max(...metrics.map(m => m.timestamp)) - 
-                                Math.min(...metrics.map(m => m.timestamp))) / 1000;
+      const timeRangeSeconds =
+        (Math.max(...metrics.map((m) => m.timestamp)) -
+          Math.min(...metrics.map((m) => m.timestamp))) /
+        1000;
 
       return {
         avgLatencyMs: latencies.reduce((sum, l) => sum + l, 0) / latencies.length,
@@ -138,7 +140,10 @@ export class VectorSearchMetrics extends EventEmitter {
     }
   }
 
-  async getAggregatedStats(provider: string, windowMinutes: number = 60): Promise<{
+  async getAggregatedStats(
+    provider: string,
+    windowMinutes: number = 60
+  ): Promise<{
     search: PerformanceStats;
     index: PerformanceStats;
     upsert: PerformanceStats;
@@ -153,34 +158,57 @@ export class VectorSearchMetrics extends EventEmitter {
     ]);
 
     // Calculate overall stats
-    const allOperations = search.totalOperations + index.totalOperations + 
-                         upsert.totalOperations + deleteStats.totalOperations;
-    
+    const allOperations =
+      search.totalOperations +
+      index.totalOperations +
+      upsert.totalOperations +
+      deleteStats.totalOperations;
+
     const overall: PerformanceStats = {
-      avgLatencyMs: allOperations > 0 ? 
-        (search.avgLatencyMs * search.totalOperations +
-         index.avgLatencyMs * index.totalOperations +
-         upsert.avgLatencyMs * upsert.totalOperations +
-         deleteStats.avgLatencyMs * deleteStats.totalOperations) / allOperations : 0,
-      p50LatencyMs: Math.max(search.p50LatencyMs, index.p50LatencyMs, 
-                            upsert.p50LatencyMs, deleteStats.p50LatencyMs),
-      p95LatencyMs: Math.max(search.p95LatencyMs, index.p95LatencyMs,
-                            upsert.p95LatencyMs, deleteStats.p95LatencyMs),
-      p99LatencyMs: Math.max(search.p99LatencyMs, index.p99LatencyMs,
-                            upsert.p99LatencyMs, deleteStats.p99LatencyMs),
+      avgLatencyMs:
+        allOperations > 0
+          ? (search.avgLatencyMs * search.totalOperations +
+              index.avgLatencyMs * index.totalOperations +
+              upsert.avgLatencyMs * upsert.totalOperations +
+              deleteStats.avgLatencyMs * deleteStats.totalOperations) /
+            allOperations
+          : 0,
+      p50LatencyMs: Math.max(
+        search.p50LatencyMs,
+        index.p50LatencyMs,
+        upsert.p50LatencyMs,
+        deleteStats.p50LatencyMs
+      ),
+      p95LatencyMs: Math.max(
+        search.p95LatencyMs,
+        index.p95LatencyMs,
+        upsert.p95LatencyMs,
+        deleteStats.p95LatencyMs
+      ),
+      p99LatencyMs: Math.max(
+        search.p99LatencyMs,
+        index.p99LatencyMs,
+        upsert.p99LatencyMs,
+        deleteStats.p99LatencyMs
+      ),
       totalOperations: allOperations,
-      successRate: allOperations > 0 ?
-        (search.successRate * search.totalOperations +
-         index.successRate * index.totalOperations +
-         upsert.successRate * upsert.totalOperations +
-         deleteStats.successRate * deleteStats.totalOperations) / allOperations : 100,
-      errorRate: allOperations > 0 ?
-        (search.errorRate * search.totalOperations +
-         index.errorRate * index.totalOperations +
-         upsert.errorRate * upsert.totalOperations +
-         deleteStats.errorRate * deleteStats.totalOperations) / allOperations : 0,
-      throughput: search.throughput + index.throughput + 
-                 upsert.throughput + deleteStats.throughput,
+      successRate:
+        allOperations > 0
+          ? (search.successRate * search.totalOperations +
+              index.successRate * index.totalOperations +
+              upsert.successRate * upsert.totalOperations +
+              deleteStats.successRate * deleteStats.totalOperations) /
+            allOperations
+          : 100,
+      errorRate:
+        allOperations > 0
+          ? (search.errorRate * search.totalOperations +
+              index.errorRate * index.totalOperations +
+              upsert.errorRate * upsert.totalOperations +
+              deleteStats.errorRate * deleteStats.totalOperations) /
+            allOperations
+          : 0,
+      throughput: search.throughput + index.throughput + upsert.throughput + deleteStats.throughput,
     };
 
     return { search, index, upsert, delete: deleteStats, overall };
@@ -191,24 +219,26 @@ export class VectorSearchMetrics extends EventEmitter {
     operation: string,
     intervalMinutes: number = 5,
     windowMinutes: number = 60
-  ): Promise<Array<{
-    timestamp: number;
-    avgLatencyMs: number;
-    operationCount: number;
-    errorRate: number;
-  }>> {
+  ): Promise<
+    Array<{
+      timestamp: number;
+      avgLatencyMs: number;
+      operationCount: number;
+      errorRate: number;
+    }>
+  > {
     try {
       const key = this.getMetricKey(provider, operation);
       const cutoff = Date.now() - windowMinutes * 60 * 1000;
       const intervalMs = intervalMinutes * 60 * 1000;
 
       const metricsData = await redisClient.zrangebyscore(key, cutoff, '+inf');
-      const metrics: VectorSearchMetric[] = metricsData.map(data => JSON.parse(data));
+      const metrics: VectorSearchMetric[] = metricsData.map((data) => JSON.parse(data));
 
       // Group by interval
       const intervals = new Map<number, VectorSearchMetric[]>();
-      
-      metrics.forEach(metric => {
+
+      metrics.forEach((metric) => {
         const intervalStart = Math.floor(metric.timestamp / intervalMs) * intervalMs;
         if (!intervals.has(intervalStart)) {
           intervals.set(intervalStart, []);
@@ -219,9 +249,9 @@ export class VectorSearchMetrics extends EventEmitter {
       // Calculate stats for each interval
       return Array.from(intervals.entries())
         .map(([timestamp, intervalMetrics]) => {
-          const latencies = intervalMetrics.map(m => m.latencyMs);
-          const errorCount = intervalMetrics.filter(m => !m.success).length;
-          
+          const latencies = intervalMetrics.map((m) => m.latencyMs);
+          const errorCount = intervalMetrics.filter((m) => !m.success).length;
+
           return {
             timestamp,
             avgLatencyMs: latencies.reduce((sum, l) => sum + l, 0) / latencies.length,
@@ -240,7 +270,7 @@ export class VectorSearchMetrics extends EventEmitter {
     try {
       const key = `${this.METRICS_PREFIX}index:${stats.provider}`;
       await redisClient.set(key, JSON.stringify(stats), 'EX', 86400); // 24 hour TTL
-      
+
       logger.info('[VectorMetrics] Recorded index stats', {
         provider: stats.provider,
         totalVectors: stats.totalVectors,
@@ -286,15 +316,13 @@ export class VectorSearchMetrics extends EventEmitter {
 
   async clearMetrics(provider?: string): Promise<void> {
     try {
-      const pattern = provider 
-        ? `${this.METRICS_PREFIX}${provider}:*`
-        : `${this.METRICS_PREFIX}*`;
-      
+      const pattern = provider ? `${this.METRICS_PREFIX}${provider}:*` : `${this.METRICS_PREFIX}*`;
+
       const keys = await redisClient.keys(pattern);
       if (keys.length > 0) {
         await redisClient.del(...keys);
       }
-      
+
       logger.info('[VectorMetrics] Cleared metrics', { provider, keysDeleted: keys.length });
     } catch (error) {
       logger.error('[VectorMetrics] Failed to clear metrics', error);

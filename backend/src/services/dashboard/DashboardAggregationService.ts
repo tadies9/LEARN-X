@@ -57,7 +57,7 @@ export class DashboardAggregationService {
     weekAgo.setDate(weekAgo.getDate() - 7);
 
     // Get unique days with activity
-    sortedSessions.forEach(session => {
+    sortedSessions.forEach((session) => {
       const sessionDate = startOfDay(new Date(session.created_at));
       const dateStr = format(sessionDate, 'yyyy-MM-dd');
       uniqueDays.add(dateStr);
@@ -70,7 +70,7 @@ export class DashboardAggregationService {
 
     // Convert to sorted array of dates
     const activeDays = Array.from(uniqueDays)
-      .map(dateStr => new Date(dateStr))
+      .map((dateStr) => new Date(dateStr))
       .sort((a, b) => b.getTime() - a.getTime());
 
     if (activeDays.length === 0) {
@@ -89,7 +89,7 @@ export class DashboardAggregationService {
     const todayCompleted = uniqueDays.has(todayStr);
 
     // Start from today or yesterday depending on today's completion
-    let checkDate = todayCompleted ? today : new Date(today);
+    const checkDate = todayCompleted ? today : new Date(today);
     if (!todayCompleted) {
       checkDate.setDate(checkDate.getDate() - 1);
     }
@@ -151,13 +151,13 @@ export class DashboardAggregationService {
     weeklyActualMinutes: number,
     masteredConceptsCount: number
   ): ProgressStats {
-    const overallCompletion = totalModules > 0 
-      ? Math.round((completedModules / totalModules) * 100) 
-      : 0;
+    const overallCompletion =
+      totalModules > 0 ? Math.round((completedModules / totalModules) * 100) : 0;
 
-    const weeklyGoalProgress = weeklyGoalMinutes > 0
-      ? Math.min(100, Math.round((weeklyActualMinutes / weeklyGoalMinutes) * 100))
-      : 0;
+    const weeklyGoalProgress =
+      weeklyGoalMinutes > 0
+        ? Math.min(100, Math.round((weeklyActualMinutes / weeklyGoalMinutes) * 100))
+        : 0;
 
     return {
       overallCompletion,
@@ -182,10 +182,10 @@ export class DashboardAggregationService {
 
     const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-    sessions.forEach(session => {
+    sessions.forEach((session) => {
       const date = new Date(session.created_at);
       const dayName = dayNames[date.getDay()];
-      
+
       if (patterns[dayName]) {
         patterns[dayName].totalMinutes += session.duration || 0;
         patterns[dayName].count += 1;
@@ -211,10 +211,10 @@ export class DashboardAggregationService {
     }
 
     const weeksAgo = new Date();
-    weeksAgo.setDate(weeksAgo.getDate() - (weeksToConsider * 7));
+    weeksAgo.setDate(weeksAgo.getDate() - weeksToConsider * 7);
 
     const recentConcepts = masteredConcepts.filter(
-      concept => new Date(concept.mastered_at) >= weeksAgo
+      (concept) => new Date(concept.mastered_at) >= weeksAgo
     );
 
     return recentConcepts.length / weeksToConsider;
@@ -223,10 +223,7 @@ export class DashboardAggregationService {
   /**
    * Calculate consistency score (0-100)
    */
-  calculateConsistencyScore(
-    sessions: StudySession[],
-    targetDaysPerWeek: number = 5
-  ): number {
+  calculateConsistencyScore(sessions: StudySession[], targetDaysPerWeek: number = 5): number {
     if (!sessions || sessions.length === 0) {
       return 0;
     }
@@ -235,23 +232,23 @@ export class DashboardAggregationService {
     const weeksToAnalyze = 4;
     const today = new Date();
     const startDate = new Date(today);
-    startDate.setDate(startDate.getDate() - (weeksToAnalyze * 7));
+    startDate.setDate(startDate.getDate() - weeksToAnalyze * 7);
 
     // Group sessions by week
     const weeklyActivity: Record<string, Set<string>> = {};
-    
+
     sessions
-      .filter(session => new Date(session.created_at) >= startDate)
-      .forEach(session => {
+      .filter((session) => new Date(session.created_at) >= startDate)
+      .forEach((session) => {
         const sessionDate = new Date(session.created_at);
         const weekStart = new Date(sessionDate);
         weekStart.setDate(sessionDate.getDate() - sessionDate.getDay());
         const weekKey = format(weekStart, 'yyyy-MM-dd');
-        
+
         if (!weeklyActivity[weekKey]) {
           weeklyActivity[weekKey] = new Set();
         }
-        
+
         weeklyActivity[weekKey].add(format(sessionDate, 'yyyy-MM-dd'));
       });
 
@@ -261,15 +258,12 @@ export class DashboardAggregationService {
       return 0;
     }
 
-    const totalDays = weekKeys.reduce(
-      (sum, week) => sum + weeklyActivity[week].size,
-      0
-    );
+    const totalDays = weekKeys.reduce((sum, week) => sum + weeklyActivity[week].size, 0);
     const avgDaysPerWeek = totalDays / weekKeys.length;
 
     // Calculate consistency score
     const consistency = Math.min(100, Math.round((avgDaysPerWeek / targetDaysPerWeek) * 100));
-    
+
     return consistency;
   }
 }

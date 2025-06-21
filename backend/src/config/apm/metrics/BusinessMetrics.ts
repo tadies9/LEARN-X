@@ -8,7 +8,7 @@ import { logger } from '../../../utils/logger';
 
 export class BusinessMetricsCollector {
   private static instance: BusinessMetricsCollector;
-  
+
   private constructor() {}
 
   static getInstance(): BusinessMetricsCollector {
@@ -24,28 +24,33 @@ export class BusinessMetricsCollector {
       // File processing count
       apmService.recordBusinessMetric('files.processed', 1, 'count', {
         file_type: fileType,
-        success: success.toString()
+        success: success.toString(),
       });
 
       // File size
       apmService.recordBusinessMetric('files.size', size, 'bytes', {
-        file_type: fileType
+        file_type: fileType,
       });
 
       // Processing duration
       apmService.recordBusinessMetric('files.processing_duration', duration, 'ms', {
         file_type: fileType,
-        success: success.toString()
+        success: success.toString(),
       });
 
       // Processing rate (files per minute)
-      apmService.recordBusinessMetric('files.processing_rate', 60000 / duration, 'files_per_minute', {
-        file_type: fileType
-      });
+      apmService.recordBusinessMetric(
+        'files.processing_rate',
+        60000 / duration,
+        'files_per_minute',
+        {
+          file_type: fileType,
+        }
+      );
 
       if (!success) {
         apmService.recordBusinessMetric('files.processing_errors', 1, 'count', {
-          file_type: fileType
+          file_type: fileType,
         });
       }
     } catch (error) {
@@ -70,39 +75,39 @@ export class BusinessMetricsCollector {
       apmService.recordBusinessMetric('ai.tokens.prompt', promptTokens, 'tokens', {
         operation,
         model,
-        user_id: userId
+        user_id: userId,
       });
 
       apmService.recordBusinessMetric('ai.tokens.completion', completionTokens, 'tokens', {
         operation,
         model,
-        user_id: userId
+        user_id: userId,
       });
 
       apmService.recordBusinessMetric('ai.tokens.total', totalTokens, 'tokens', {
         operation,
         model,
-        user_id: userId
+        user_id: userId,
       });
 
       // Cost tracking
       apmService.recordBusinessMetric('ai.cost', cost, 'usd', {
         operation,
         model,
-        user_id: userId
+        user_id: userId,
       });
 
       // Performance
       apmService.recordBusinessMetric('ai.request_duration', duration, 'ms', {
         operation,
-        model
+        model,
       });
 
       // Tokens per second
       const tokensPerSecond = totalTokens / (duration / 1000);
       apmService.recordBusinessMetric('ai.tokens_per_second', tokensPerSecond, 'tokens/s', {
         operation,
-        model
+        model,
       });
     } catch (error) {
       logger.error('Error recording AI usage metrics:', error);
@@ -115,7 +120,7 @@ export class BusinessMetricsCollector {
       apmService.recordBusinessMetric('user.activity', 1, 'count', {
         activity,
         user_id: userId,
-        ...metadata
+        ...metadata,
       });
 
       // Feature usage
@@ -137,20 +142,20 @@ export class BusinessMetricsCollector {
         activity,
         course_id: courseId,
         user_id: userId,
-        ...metadata
+        ...metadata,
       });
 
       // Track enrollment
       if (activity === 'enrolled') {
         apmService.recordBusinessMetric('course.enrollments', 1, 'count', {
-          course_id: courseId
+          course_id: courseId,
         });
       }
 
       // Track completion
       if (activity === 'completed') {
         apmService.recordBusinessMetric('course.completions', 1, 'count', {
-          course_id: courseId
+          course_id: courseId,
         });
       }
     } catch (error) {
@@ -174,23 +179,23 @@ export class BusinessMetricsCollector {
         course_id: courseId,
         module_id: moduleId,
         content_type: contentType,
-        completed: completed.toString()
+        completed: completed.toString(),
       });
 
       // Session count
       apmService.recordBusinessMetric('learning.sessions', 1, 'count', {
         content_type: contentType,
-        completed: completed.toString()
+        completed: completed.toString(),
       });
 
       // Engagement rate (sessions per user per day)
       apmService.recordBusinessMetric('learning.engagement', 1, 'sessions', {
-        user_id: userId
+        user_id: userId,
       });
 
       if (completed) {
         apmService.recordBusinessMetric('learning.completions', 1, 'count', {
-          content_type: contentType
+          content_type: contentType,
         });
       }
     } catch (error) {
@@ -209,27 +214,32 @@ export class BusinessMetricsCollector {
       // Queue depth
       if (action === 'enqueued') {
         apmService.recordQueueMetric(queueName, 'enqueue', 1, {
-          job_type: jobType
+          job_type: jobType,
         });
       }
 
       // Processing metrics
       if (action === 'processed' && processingTime) {
         apmService.recordQueueMetric(queueName, 'process', processingTime, {
-          job_type: jobType
+          job_type: jobType,
         });
-        
+
         // Processing rate
-        apmService.recordBusinessMetric('queue.processing_rate', 60000 / processingTime, 'jobs/minute', {
-          queue: queueName,
-          job_type: jobType
-        });
+        apmService.recordBusinessMetric(
+          'queue.processing_rate',
+          60000 / processingTime,
+          'jobs/minute',
+          {
+            queue: queueName,
+            job_type: jobType,
+          }
+        );
       }
 
       // Error metrics
       if (action === 'failed') {
         apmService.recordQueueMetric(queueName, 'error', 1, {
-          job_type: jobType
+          job_type: jobType,
         });
       }
 
@@ -237,7 +247,7 @@ export class BusinessMetricsCollector {
       apmService.recordBusinessMetric('queue.activity', 1, 'count', {
         queue: queueName,
         action,
-        job_type: jobType
+        job_type: jobType,
       });
     } catch (error) {
       logger.error('Error recording queue metrics:', error);
@@ -256,24 +266,24 @@ export class BusinessMetricsCollector {
       // Search count
       apmService.recordBusinessMetric('search.queries', 1, 'count', {
         search_type: searchType,
-        has_results: (resultCount > 0).toString()
+        has_results: (resultCount > 0).toString(),
       });
 
       // Result count
       apmService.recordBusinessMetric('search.results', resultCount, 'count', {
-        search_type: searchType
+        search_type: searchType,
       });
 
       // Search performance
       apmService.recordBusinessMetric('search.duration', duration, 'ms', {
         search_type: searchType,
-        result_count_bucket: this.getResultCountBucket(resultCount)
+        result_count_bucket: this.getResultCountBucket(resultCount),
       });
 
       // Search quality (click-through would be tracked separately)
       if (resultCount === 0) {
         apmService.recordBusinessMetric('search.no_results', 1, 'count', {
-          search_type: searchType
+          search_type: searchType,
         });
       }
     } catch (error) {
@@ -286,7 +296,7 @@ export class BusinessMetricsCollector {
     try {
       apmService.recordBusinessMetric('user.cost', amount, 'usd', {
         user_id: userId,
-        cost_type: costType
+        cost_type: costType,
       });
 
       // Monthly cost tracking
@@ -294,7 +304,7 @@ export class BusinessMetricsCollector {
       apmService.recordBusinessMetric('user.monthly_cost', amount, 'usd', {
         user_id: userId,
         cost_type: costType,
-        month: monthKey
+        month: monthKey,
       });
     } catch (error) {
       logger.error('Error recording user cost metrics:', error);
@@ -311,14 +321,14 @@ export class BusinessMetricsCollector {
         const isHealthy = value <= threshold;
         apmService.recordBusinessMetric('system.health_check', isHealthy ? 1 : 0, 'boolean', {
           metric,
-          threshold: threshold.toString()
+          threshold: threshold.toString(),
         });
 
         if (!isHealthy) {
           apmService.recordBusinessMetric('system.health_violations', 1, 'count', {
             metric,
             value: value.toString(),
-            threshold: threshold.toString()
+            threshold: threshold.toString(),
           });
         }
       }

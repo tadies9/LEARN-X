@@ -112,7 +112,7 @@ export class DashboardService {
       const endDate = new Date();
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - 30);
-      
+
       const sessions = await this.dataService.getStudySessions(userId, startDate, endDate);
       const weeklyPattern = this.aggregationService.calculateWeeklyPatterns(sessions);
 
@@ -136,12 +136,17 @@ export class DashboardService {
   /**
    * Get recent user activity
    */
-  async getRecentActivity(userId: string, limit: number = 10): Promise<Array<{
-    id: string;
-    type: string;
-    metadata: Record<string, any>;
-    timestamp: string;
-  }>> {
+  async getRecentActivity(
+    userId: string,
+    limit: number = 10
+  ): Promise<
+    Array<{
+      id: string;
+      type: string;
+      metadata: Record<string, any>;
+      timestamp: string;
+    }>
+  > {
     try {
       // Try cache first
       const cacheKey = `user:${userId}:recent_activity:${limit}`;
@@ -200,48 +205,50 @@ export class DashboardService {
   /**
    * Get personalized recommendations for user
    */
-  async getPersonalizedRecommendations(userId: string): Promise<Array<{
-    type: string;
-    title: string;
-    description: string;
-    actionUrl?: string;
-    priority: 'low' | 'medium' | 'high';
-  }>> {
+  async getPersonalizedRecommendations(userId: string): Promise<
+    Array<{
+      type: string;
+      title: string;
+      description: string;
+      actionUrl?: string;
+      priority: 'low' | 'medium' | 'high';
+    }>
+  > {
     try {
       // Simple implementation - can be enhanced later
       const stats = await this.getUserStats(userId);
       const recommendations = [];
-      
+
       // Based on completion rate
       if (stats.progress.overallCompletion < 30) {
         recommendations.push({
           type: 'completion',
           title: 'Focus on Course Completion',
           description: 'Complete your current courses to unlock more learning opportunities',
-          priority: 'high' as const
+          priority: 'high' as const,
         });
       }
-      
+
       // Based on streak
       if (stats.streak.current === 0) {
         recommendations.push({
           type: 'consistency',
           title: 'Build a Study Streak',
           description: 'Start a daily learning habit to improve retention',
-          priority: 'medium' as const
+          priority: 'medium' as const,
         });
       }
-      
+
       // Based on weekly goal
       if (stats.progress.weeklyGoalProgress < 50) {
         recommendations.push({
           type: 'time',
           title: 'Increase Study Time',
           description: 'Try shorter, more frequent study sessions',
-          priority: 'medium' as const
+          priority: 'medium' as const,
         });
       }
-      
+
       return recommendations;
     } catch (error) {
       logger.error('Error getting personalized recommendations:', error);
@@ -252,10 +259,13 @@ export class DashboardService {
   /**
    * Log user activity (alias for recordActivity)
    */
-  async logActivity(userId: string, activity: {
-    type: string;
-    metadata: Record<string, any>;
-  }): Promise<void> {
+  async logActivity(
+    userId: string,
+    activity: {
+      type: string;
+      metadata: Record<string, any>;
+    }
+  ): Promise<void> {
     return this.recordActivity(userId, activity);
   }
 
@@ -270,7 +280,7 @@ export class DashboardService {
     try {
       // Record today's activity if not already recorded
       const today = new Date().toISOString().split('T')[0];
-      
+
       // Check if user already has activity today
       const { data: todayActivity } = await supabase
         .from('user_activities')
@@ -278,15 +288,15 @@ export class DashboardService {
         .eq('user_id', userId)
         .gte('timestamp', `${today}T00:00:00.000Z`)
         .limit(1);
-      
+
       if (!todayActivity || todayActivity.length === 0) {
         // Record today's activity
         await this.recordActivity(userId, {
           type: 'study_session',
-          metadata: { autoRecorded: true }
+          metadata: { autoRecorded: true },
         });
       }
-      
+
       // Invalidate streak cache and recalculate
       await this.cacheService.invalidate(`user:${userId}:streak`);
       return this.getStreakInfo(userId);
@@ -299,20 +309,21 @@ export class DashboardService {
   /**
    * Update user activity and invalidate relevant caches
    */
-  async recordActivity(userId: string, activity: {
-    type: string;
-    metadata: Record<string, any>;
-  }): Promise<void> {
+  async recordActivity(
+    userId: string,
+    activity: {
+      type: string;
+      metadata: Record<string, any>;
+    }
+  ): Promise<void> {
     try {
       // Record the activity
-      const { error } = await supabase
-        .from('user_activities')
-        .insert({
-          user_id: userId,
-          type: activity.type,
-          metadata: activity.metadata,
-          timestamp: new Date().toISOString(),
-        });
+      const { error } = await supabase.from('user_activities').insert({
+        user_id: userId,
+        type: activity.type,
+        metadata: activity.metadata,
+        timestamp: new Date().toISOString(),
+      });
 
       if (error) {
         throw error;
@@ -438,15 +449,15 @@ export class DashboardService {
     if (consistencyScore < 50) {
       return 'Build a consistent study habit - aim for 5 days per week';
     }
-    
+
     if (stats.progress.overallCompletion < 30 && stats.courses.active > 3) {
       return 'Focus on completing one course before starting new ones';
     }
-    
+
     if (stats.progress.weeklyGoalProgress < 50) {
       return 'Try shorter, more frequent study sessions to reach your weekly goal';
     }
-    
+
     return null;
   }
 }

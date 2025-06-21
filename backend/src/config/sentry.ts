@@ -59,19 +59,21 @@ export function initializeSentry(app?: Application): void {
         delete event.request.headers.authorization;
         delete event.request.headers.cookie;
       }
-      
+
       // Add custom context
       if (event.exception?.values?.[0]?.value?.includes('Invalid authentication token')) {
         event.fingerprint = ['auth-error'];
       }
-      
+
       return event;
     },
     beforeSendTransaction: (transaction) => {
       // Filter out health check transactions
-      if (transaction.transaction_info?.source === 'route' && 
-          transaction.contexts?.trace?.op === 'http.server' &&
-          transaction.transaction?.includes('/health')) {
+      if (
+        transaction.transaction_info?.source === 'route' &&
+        transaction.contexts?.trace?.op === 'http.server' &&
+        transaction.transaction?.includes('/health')
+      ) {
         return null;
       }
       return transaction;

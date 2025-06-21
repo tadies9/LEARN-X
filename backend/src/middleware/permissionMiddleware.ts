@@ -57,8 +57,8 @@ export class PermissionMiddleware {
   // Course permissions
   static requireCourseOwnership = createOwnershipMiddleware(
     {
-      checkOwnership: (id: string, userId: string) => 
-        PermissionMiddleware.courseService.checkCourseOwnership(id, userId)
+      checkOwnership: (id: string, userId: string) =>
+        PermissionMiddleware.courseService.checkCourseOwnership(id, userId),
     },
     'id',
     'modify this course'
@@ -112,8 +112,8 @@ export class PermissionMiddleware {
   // Module permissions
   static requireModuleOwnership = createOwnershipMiddleware(
     {
-      checkOwnership: (id: string, userId: string) => 
-        PermissionMiddleware.moduleService.checkModuleOwnership(id, userId)
+      checkOwnership: (id: string, userId: string) =>
+        PermissionMiddleware.moduleService.checkModuleOwnership(id, userId),
     },
     'id',
     'modify this module'
@@ -166,8 +166,8 @@ export class PermissionMiddleware {
   // File permissions
   static requireFileOwnership = createOwnershipMiddleware(
     {
-      checkOwnership: (id: string, userId: string) => 
-        PermissionMiddleware.fileService.checkFileOwnership(id, userId)
+      checkOwnership: (id: string, userId: string) =>
+        PermissionMiddleware.fileService.checkFileOwnership(id, userId),
     },
     'id',
     'modify this file'

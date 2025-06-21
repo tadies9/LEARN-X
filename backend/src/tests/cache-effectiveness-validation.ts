@@ -18,19 +18,22 @@ class CacheEffectivenessValidator {
   private testContent = [
     {
       service: 'explain' as const,
-      content: 'JavaScript is a programming language that enables interactive web pages and is an essential part of web applications.',
-      expectedTokens: { prompt: 150, completion: 300 }
+      content:
+        'JavaScript is a programming language that enables interactive web pages and is an essential part of web applications.',
+      expectedTokens: { prompt: 150, completion: 300 },
     },
     {
       service: 'summary' as const,
-      content: 'Machine learning is a method of data analysis that automates analytical model building. It is a branch of artificial intelligence based on the idea that systems can learn from data.',
-      expectedTokens: { prompt: 120, completion: 200 }
+      content:
+        'Machine learning is a method of data analysis that automates analytical model building. It is a branch of artificial intelligence based on the idea that systems can learn from data.',
+      expectedTokens: { prompt: 120, completion: 200 },
     },
     {
       service: 'quiz' as const,
-      content: 'Python is a high-level, interpreted programming language with dynamic semantics. Its high-level built-in data structures make it attractive for Rapid Application Development.',
-      expectedTokens: { prompt: 100, completion: 250 }
-    }
+      content:
+        'Python is a high-level, interpreted programming language with dynamic semantics. Its high-level built-in data structures make it attractive for Rapid Application Development.',
+      expectedTokens: { prompt: 100, completion: 250 },
+    },
   ];
 
   constructor() {
@@ -43,7 +46,12 @@ class CacheEffectivenessValidator {
   private initializeTestData(): void {
     const roles = ['Software Developer', 'Data Scientist', 'Product Manager', 'Student'];
     const industries = ['Technology', 'Healthcare', 'Finance', 'Education'];
-    const learningStyles: Array<'visual' | 'auditory' | 'reading' | 'kinesthetic' | 'mixed'> = ['visual', 'auditory', 'kinesthetic', 'reading'];
+    const learningStyles: Array<'visual' | 'auditory' | 'reading' | 'kinesthetic' | 'mixed'> = [
+      'visual',
+      'auditory',
+      'kinesthetic',
+      'reading',
+    ];
 
     for (let i = 0; i < 20; i++) {
       this.testUsers.push({
@@ -60,7 +68,7 @@ class CacheEffectivenessValidator {
           communicationTone: i % 2 === 0 ? 'friendly' : 'professional',
           createdAt: new Date(),
           updatedAt: new Date(),
-        }
+        },
       });
     }
   }
@@ -98,22 +106,22 @@ class CacheEffectivenessValidator {
     try {
       // Phase 1: Test cache effectiveness
       const cacheEffectiveness = await this.testCacheEffectiveness();
-      
+
       // Phase 2: Validate cost tracking accuracy
       const costAccuracy = await this.validateCostTracking();
-      
+
       // Phase 3: Measure performance improvements
       const performanceMetrics = await this.measurePerformanceMetrics();
-      
+
       // Phase 4: Test personalization effectiveness
       const personalizationEffectiveness = await this.testPersonalizationEffectiveness();
-      
+
       // Phase 5: Calculate overall score and recommendations
       const { overallScore, recommendations } = this.calculateOverallScore({
         cacheEffectiveness,
         costAccuracy,
         performanceMetrics,
-        personalizationEffectiveness
+        personalizationEffectiveness,
       });
 
       const results = {
@@ -122,15 +130,19 @@ class CacheEffectivenessValidator {
         performanceMetrics,
         personalizationEffectiveness,
         overallScore,
-        recommendations
+        recommendations,
       };
 
       logger.info('=== Cache Effectiveness Validation Results ===');
       logger.info(`Overall Score: ${overallScore.toFixed(1)}/100`);
       logger.info(`Cache Hit Rate: ${(cacheEffectiveness.hitRate * 100).toFixed(1)}%`);
       logger.info(`Cost Tracking Accuracy: ${(costAccuracy.accuracy * 100).toFixed(1)}%`);
-      logger.info(`Response Time Improvement: ${performanceMetrics.responseTimeImprovement.toFixed(1)}%`);
-      logger.info(`Personalization Benefit: ${(personalizationEffectiveness.personalizationBenefit * 100).toFixed(1)}%`);
+      logger.info(
+        `Response Time Improvement: ${performanceMetrics.responseTimeImprovement.toFixed(1)}%`
+      );
+      logger.info(
+        `Personalization Benefit: ${(personalizationEffectiveness.personalizationBenefit * 100).toFixed(1)}%`
+      );
       logger.info('===============================================');
 
       return results;
@@ -161,7 +173,7 @@ class CacheEffectivenessValidator {
           totalRequests++;
 
           const contentHash = this.generateContentHash(content.content);
-          
+
           // Try to get from cache first
           const cached = await this.cache.get({
             service: content.service,
@@ -170,8 +182,8 @@ class CacheEffectivenessValidator {
             persona: user.persona,
             context: {
               difficulty: 'intermediate',
-              format: 'standard'
-            }
+              format: 'standard',
+            },
           });
 
           if (cached) {
@@ -186,24 +198,24 @@ class CacheEffectivenessValidator {
                 persona: user.persona,
                 context: {
                   difficulty: 'intermediate',
-                  format: 'standard'
-                }
+                  format: 'standard',
+                },
               },
               `Generated ${content.service} content for ${user.persona.currentRole}`,
               {
-              promptTokens: content.expectedTokens.prompt,
-              completionTokens: content.expectedTokens.completion
-            },
+                promptTokens: content.expectedTokens.prompt,
+                completionTokens: content.expectedTokens.completion,
+              },
               {
                 round,
                 contentType: content.service,
-                userRole: user.persona.currentRole
+                userRole: user.persona.currentRole,
               }
             );
           }
 
           // Small delay to simulate realistic usage
-          await new Promise(resolve => setTimeout(resolve, 10));
+          await new Promise((resolve) => setTimeout(resolve, 10));
         }
       }
     }
@@ -211,12 +223,14 @@ class CacheEffectivenessValidator {
     const hitRate = cacheHits / totalRequests;
     const passed = hitRate >= targetHitRate;
 
-    logger.info(`Cache effectiveness: ${(hitRate * 100).toFixed(1)}% hit rate (target: ${(targetHitRate * 100).toFixed(1)}%)`);
+    logger.info(
+      `Cache effectiveness: ${(hitRate * 100).toFixed(1)}% hit rate (target: ${(targetHitRate * 100).toFixed(1)}%)`
+    );
 
     return {
       hitRate,
       targetHitRate,
-      passed
+      passed,
     };
   }
 
@@ -239,7 +253,7 @@ class CacheEffectivenessValidator {
     for (const user of this.testUsers.slice(0, 5)) {
       for (const content of this.testContent) {
         const startTime = Date.now();
-        
+
         // Calculate expected cost (simplified)
         const expectedCost = this.calculateExpectedCost(
           content.expectedTokens.prompt,
@@ -256,7 +270,7 @@ class CacheEffectivenessValidator {
           promptTokens: content.expectedTokens.prompt,
           completionTokens: content.expectedTokens.completion,
           responseTimeMs: Date.now() - startTime,
-          cacheHit: Math.random() > 0.5 // Simulate random cache hits
+          cacheHit: Math.random() > 0.5, // Simulate random cache hits
         });
 
         actualCost += expectedCost; // In real scenario, this would come from tracking
@@ -273,13 +287,15 @@ class CacheEffectivenessValidator {
     const trackedCorrectly = accuracy > 0.8; // 80% accuracy threshold
 
     logger.info(`Cost tracking accuracy: ${(accuracy * 100).toFixed(1)}%`);
-    logger.info(`Estimated savings: $${estimatedSavings.toFixed(3)}, Actual: $${actualSavings.toFixed(3)}`);
+    logger.info(
+      `Estimated savings: $${estimatedSavings.toFixed(3)}, Actual: $${actualSavings.toFixed(3)}`
+    );
 
     return {
       trackedCorrectly,
       estimatedSavings,
       actualSavings,
-      accuracy
+      accuracy,
     };
   }
 
@@ -310,18 +326,17 @@ class CacheEffectivenessValidator {
       const unit = memoryUsageMatch[2].toLowerCase();
       memoryMB = unit === 'gb' ? value * 1024 : unit === 'kb' ? value / 1024 : value;
     }
-    
+
     const memoryEfficiency = memoryMB < 200; // Under 200MB considered efficient
 
     // Calculate scalability score based on key distribution and hit rates
     const keyDistribution = detailedMetrics.keyDistribution;
     const evenDistribution = Object.keys(keyDistribution).length > 3; // Multiple services
-    const scalabilityScore = (
-      (performanceSummary.hitRate * 40) + // Hit rate weight: 40%
-      (responseTimeImprovement * 0.3) + // Response time weight: 30%
+    const scalabilityScore =
+      performanceSummary.hitRate * 40 + // Hit rate weight: 40%
+      responseTimeImprovement * 0.3 + // Response time weight: 30%
       (evenDistribution ? 20 : 0) + // Distribution weight: 20%
-      (memoryEfficiency ? 10 : 0) // Memory weight: 10%
-    );
+      (memoryEfficiency ? 10 : 0); // Memory weight: 10%
 
     logger.info(`Response time improvement: ${responseTimeImprovement.toFixed(1)}%`);
     logger.info(`Memory efficiency: ${memoryEfficiency ? 'Good' : 'Needs optimization'}`);
@@ -330,7 +345,7 @@ class CacheEffectivenessValidator {
     return {
       responseTimeImprovement,
       memoryEfficiency,
-      scalabilityScore
+      scalabilityScore,
     };
   }
 
@@ -367,16 +382,16 @@ class CacheEffectivenessValidator {
     for (const user of this.testUsers.slice(0, 5)) {
       for (const content of this.testContent) {
         personalizedTotal++;
-        
+
         const contentHash = this.generateContentHash(content.content + 'personalized');
-        
+
         // First request - should be a miss
         let cached = await this.cache.get({
           service: content.service,
           userId: user.userId,
           contentHash,
           persona: user.persona,
-          context: { difficulty: 'intermediate', format: 'personalized' }
+          context: { difficulty: 'intermediate', format: 'personalized' },
         });
 
         if (!cached) {
@@ -386,12 +401,12 @@ class CacheEffectivenessValidator {
               userId: user.userId,
               contentHash,
               persona: user.persona,
-              context: { difficulty: 'intermediate', format: 'personalized' }
+              context: { difficulty: 'intermediate', format: 'personalized' },
             },
             `Personalized ${content.service} for ${user.persona.currentRole}`,
             {
               promptTokens: content.expectedTokens.prompt,
-              completionTokens: content.expectedTokens.completion
+              completionTokens: content.expectedTokens.completion,
             }
           );
         }
@@ -402,7 +417,7 @@ class CacheEffectivenessValidator {
           userId: user.userId,
           contentHash,
           persona: user.persona,
-          context: { difficulty: 'intermediate', format: 'personalized' }
+          context: { difficulty: 'intermediate', format: 'personalized' },
         });
 
         if (cached) personalizedHits++;
@@ -410,18 +425,19 @@ class CacheEffectivenessValidator {
     }
 
     // Test generic caching
-    for (let i = 0; i < 15; i++) { // Same number of requests as personalized
+    for (let i = 0; i < 15; i++) {
+      // Same number of requests as personalized
       const content = this.testContent[i % this.testContent.length];
       genericTotal++;
-      
+
       const contentHash = this.generateContentHash(content.content + 'generic');
-      
-      let cached = await this.cache.get({
+
+      const cached = await this.cache.get({
         service: content.service,
         userId: 'generic-user',
         contentHash,
         persona: genericPersona,
-        context: { difficulty: 'intermediate', format: 'generic' }
+        context: { difficulty: 'intermediate', format: 'generic' },
       });
 
       if (!cached) {
@@ -431,12 +447,12 @@ class CacheEffectivenessValidator {
             userId: 'generic-user',
             contentHash,
             persona: genericPersona,
-            context: { difficulty: 'intermediate', format: 'generic' }
+            context: { difficulty: 'intermediate', format: 'generic' },
           },
           `Generic ${content.service} content`,
           {
             promptTokens: content.expectedTokens.prompt,
-            completionTokens: content.expectedTokens.completion
+            completionTokens: content.expectedTokens.completion,
           }
         );
       } else {
@@ -455,7 +471,7 @@ class CacheEffectivenessValidator {
     return {
       personalizedHitRate,
       genericHitRate,
-      personalizationBenefit
+      personalizationBenefit,
     };
   }
 
@@ -474,13 +490,17 @@ class CacheEffectivenessValidator {
       score += 30;
     } else {
       score += metrics.cacheEffectiveness.hitRate * 30;
-      recommendations.push(`Improve cache hit rate from ${(metrics.cacheEffectiveness.hitRate * 100).toFixed(1)}% to ${(metrics.cacheEffectiveness.targetHitRate * 100).toFixed(1)}%`);
+      recommendations.push(
+        `Improve cache hit rate from ${(metrics.cacheEffectiveness.hitRate * 100).toFixed(1)}% to ${(metrics.cacheEffectiveness.targetHitRate * 100).toFixed(1)}%`
+      );
     }
 
     // Cost accuracy (25 points)
     score += metrics.costAccuracy.accuracy * 25;
     if (metrics.costAccuracy.accuracy < 0.9) {
-      recommendations.push(`Improve cost tracking accuracy (currently ${(metrics.costAccuracy.accuracy * 100).toFixed(1)}%)`);
+      recommendations.push(
+        `Improve cost tracking accuracy (currently ${(metrics.costAccuracy.accuracy * 100).toFixed(1)}%)`
+      );
     }
 
     // Performance metrics (25 points)
@@ -490,7 +510,10 @@ class CacheEffectivenessValidator {
     }
 
     // Personalization effectiveness (20 points)
-    const personalizationScore = Math.max(0, metrics.personalizationEffectiveness.personalizationBenefit * 100);
+    const personalizationScore = Math.max(
+      0,
+      metrics.personalizationEffectiveness.personalizationBenefit * 100
+    );
     score += Math.min(personalizationScore, 20);
     if (metrics.personalizationEffectiveness.personalizationBenefit < 0.1) {
       recommendations.push('Enhance personalization effectiveness for better cache utilization');
@@ -503,7 +526,9 @@ class CacheEffectivenessValidator {
     }
 
     if (score >= 90) {
-      recommendations.push('Excellent cache performance! Consider advanced optimizations like predictive caching');
+      recommendations.push(
+        'Excellent cache performance! Consider advanced optimizations like predictive caching'
+      );
     }
 
     return { overallScore: score, recommendations };
@@ -516,7 +541,11 @@ class CacheEffectivenessValidator {
     return require('crypto').createHash('sha256').update(content).digest('hex').substring(0, 16);
   }
 
-  private calculateExpectedCost(promptTokens: number, completionTokens: number, _model: string): number {
+  private calculateExpectedCost(
+    promptTokens: number,
+    completionTokens: number,
+    _model: string
+  ): number {
     // Simplified cost calculation (GPT-4o pricing)
     const promptCost = promptTokens * 0.00001; // $0.01 per 1K tokens
     const completionCost = completionTokens * 0.00003; // $0.03 per 1K tokens
@@ -564,12 +593,12 @@ class CacheEffectivenessValidator {
 - Success Rate: ${(warmingStats.successRate * 100).toFixed(1)}%
 
 ## Recommendations
-${results.recommendations.map(rec => `- ${rec}`).join('\n')}
+${results.recommendations.map((rec) => `- ${rec}`).join('\n')}
 
 ## Service Distribution
-${Object.entries(detailedMetrics.keyDistribution).map(([service, count]) => 
-  `- ${service}: ${count} keys`
-).join('\n')}
+${Object.entries(detailedMetrics.keyDistribution)
+  .map(([service, count]) => `- ${service}: ${count} keys`)
+  .join('\n')}
 
 ---
 Generated: ${new Date().toISOString()}
@@ -582,10 +611,10 @@ Generated: ${new Date().toISOString()}
  */
 async function runCacheEffectivenessValidation(): Promise<void> {
   const validator = new CacheEffectivenessValidator();
-  
+
   try {
     const results = await validator.runValidation();
-    
+
     if (results.overallScore >= 80) {
       logger.info('✅ Cache system passes effectiveness validation!');
     } else if (results.overallScore >= 60) {

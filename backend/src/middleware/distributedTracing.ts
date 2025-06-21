@@ -20,7 +20,11 @@ declare global {
 /**
  * Middleware to extract and propagate trace context
  */
-export function distributedTracingMiddleware(req: Request, res: Response, next: NextFunction): void {
+export function distributedTracingMiddleware(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
   try {
     // Extract trace context from incoming request
     let traceContext = distributedTracing.extractTraceContext(req);
@@ -64,17 +68,19 @@ export function createTracedHttpClient(baseClient: any) {
   return function tracedRequest(this: any, options: any, ...args: any[]) {
     // Get current trace context
     const context = distributedTracing.getCurrentContext();
-    
+
     if (context) {
       // Ensure headers object exists
       options.headers = options.headers || {};
-      
+
       // Inject trace context
       options.headers = distributedTracing.injectTraceContext(options.headers, context);
     }
 
     // Start span for external call
-    const span = apmService.startSpan(`http.${options.method || 'GET'} ${options.hostname || options.host}${options.path || '/'}`);
+    const span = apmService.startSpan(
+      `http.${options.method || 'GET'} ${options.hostname || options.host}${options.path || '/'}`
+    );
     const startTime = Date.now();
 
     // Wrap callback
@@ -82,7 +88,7 @@ export function createTracedHttpClient(baseClient: any) {
     if (typeof originalCallback === 'function') {
       args[args.length - 1] = function (err: any, ...callbackArgs: any[]) {
         const duration = Date.now() - startTime;
-        
+
         // Record external call metrics
         apmService.recordExternalCall(
           options.hostname || options.host || 'unknown',
@@ -116,10 +122,10 @@ export function traceQueueJob(jobType: string) {
     descriptor.value = async function (jobData: any, ...args: any[]) {
       // Extract trace context from job
       const context = distributedTracing.extractFromQueueJob(jobData);
-      
+
       // Start transaction for job
       const transaction = apmService.startTransaction(`queue.${jobType}`, 'queue');
-      
+
       if (transaction && context) {
         // Set trace context
         const provider = (apmService as any).provider;
@@ -131,10 +137,10 @@ export function traceQueueJob(jobType: string) {
 
       try {
         const result = await originalMethod.call(this as any, jobData, ...args);
-        
+
         // Record success
         apmService.recordQueueMetric(jobType, 'process', 1, {
-          success: 'true'
+          success: 'true',
         });
 
         return result;
@@ -143,7 +149,7 @@ export function traceQueueJob(jobType: string) {
         apmService.recordQueueMetric(jobType, 'error', 1);
         apmService.captureError(error as Error, {
           jobType,
-          jobData
+          jobData,
         });
 
         throw error;
@@ -166,14 +172,14 @@ export function createTracedAxios(axios: any): any {
   axios.interceptors.request.use(
     (config: any) => {
       const context = distributedTracing.getCurrentContext();
-      
+
       if (context) {
         config.headers = distributedTracing.injectTraceContext(config.headers || {}, context);
       }
 
       // Start timing
       config.metadata = { startTime: Date.now() };
-      
+
       // Start span
       const span = apmService.startSpan(`axios.${config.method} ${config.url}`);
       config.metadata.span = span;
@@ -190,7 +196,7 @@ export function createTracedAxios(axios: any): any {
     (response: any) => {
       if (response.config.metadata) {
         const duration = Date.now() - response.config.metadata.startTime;
-        
+
         // Record metrics
         apmService.recordExternalCall(
           new URL(response.config.url).hostname,
@@ -211,7 +217,7 @@ export function createTracedAxios(axios: any): any {
     (error: any) => {
       if (error.config?.metadata) {
         const duration = Date.now() - error.config.metadata.startTime;
-        
+
         // Record metrics
         apmService.recordExternalCall(
           error.config.url ? new URL(error.config.url).hostname : 'unknown',

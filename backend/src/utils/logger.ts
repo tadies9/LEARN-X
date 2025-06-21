@@ -32,19 +32,17 @@ export const logger = winston.createLogger({
     winston.format.splat(),
     correlationFormat
   ),
-  defaultMeta: { 
+  defaultMeta: {
     service: 'learn-x-api',
     environment: process.env.NODE_ENV || 'development',
     version: process.env.npm_package_version || '1.0.0',
   },
   transports: [
     new winston.transports.Console({
-      format: process.env.NODE_ENV === 'production' 
-        ? winston.format.json()
-        : winston.format.combine(
-            winston.format.colorize(),
-            winston.format.simple()
-          ),
+      format:
+        process.env.NODE_ENV === 'production'
+          ? winston.format.json()
+          : winston.format.combine(winston.format.colorize(), winston.format.simple()),
     }),
   ],
 });
@@ -53,7 +51,7 @@ export const logger = winston.createLogger({
 const originalError = logger.error.bind(logger);
 (logger as any).error = (message: any, ...meta: any[]) => {
   originalError(message, ...meta);
-  
+
   // If it's an Error object, send to Sentry
   if (message instanceof Error) {
     captureError(message, { meta });

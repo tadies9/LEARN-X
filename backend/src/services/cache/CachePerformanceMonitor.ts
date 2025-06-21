@@ -69,16 +69,16 @@ interface ServiceBenchmark {
  */
 export class CachePerformanceMonitor {
   private cache = getEnhancedAICache(redisClient, new CostTracker());
-  
+
   // Performance benchmarks for different services
   private benchmarks: ServiceBenchmark[] = [
     { service: 'explain', targetHitRate: 0.75, maxResponseTime: 500, maxCostPerRequest: 0.05 },
-    { service: 'summary', targetHitRate: 0.80, maxResponseTime: 300, maxCostPerRequest: 0.03 },
-    { service: 'quiz', targetHitRate: 0.70, maxResponseTime: 400, maxCostPerRequest: 0.04 },
+    { service: 'summary', targetHitRate: 0.8, maxResponseTime: 300, maxCostPerRequest: 0.03 },
+    { service: 'quiz', targetHitRate: 0.7, maxResponseTime: 400, maxCostPerRequest: 0.04 },
     { service: 'flashcard', targetHitRate: 0.85, maxResponseTime: 200, maxCostPerRequest: 0.02 },
-    { service: 'practice', targetHitRate: 0.60, maxResponseTime: 600, maxCostPerRequest: 0.06 },
-    { service: 'introduction', targetHitRate: 0.90, maxResponseTime: 300, maxCostPerRequest: 0.03 },
-    { service: 'chat', targetHitRate: 0.50, maxResponseTime: 800, maxCostPerRequest: 0.08 },
+    { service: 'practice', targetHitRate: 0.6, maxResponseTime: 600, maxCostPerRequest: 0.06 },
+    { service: 'introduction', targetHitRate: 0.9, maxResponseTime: 300, maxCostPerRequest: 0.03 },
+    { service: 'chat', targetHitRate: 0.5, maxResponseTime: 800, maxCostPerRequest: 0.08 },
     { service: 'embedding', targetHitRate: 0.95, maxResponseTime: 100, maxCostPerRequest: 0.01 },
   ];
 
@@ -92,24 +92,30 @@ export class CachePerformanceMonitor {
    */
   private startMonitoring(): void {
     // Monitor every 5 minutes
-    setInterval(async () => {
-      try {
-        await this.collectMetrics();
-        await this.checkAlerts();
-      } catch (error) {
-        logger.error('Error in cache performance monitoring:', error);
-      }
-    }, 5 * 60 * 1000);
+    setInterval(
+      async () => {
+        try {
+          await this.collectMetrics();
+          await this.checkAlerts();
+        } catch (error) {
+          logger.error('Error in cache performance monitoring:', error);
+        }
+      },
+      5 * 60 * 1000
+    );
 
     // Log detailed report every hour
-    setInterval(async () => {
-      try {
-        const metrics = await this.getComprehensiveMetrics();
-        logger.info('Cache Performance Report', metrics);
-      } catch (error) {
-        logger.error('Error generating performance report:', error);
-      }
-    }, 60 * 60 * 1000);
+    setInterval(
+      async () => {
+        try {
+          const metrics = await this.getComprehensiveMetrics();
+          logger.info('Cache Performance Report', metrics);
+        } catch (error) {
+          logger.error('Error generating performance report:', error);
+        }
+      },
+      60 * 60 * 1000
+    );
 
     logger.info('Cache performance monitoring started');
   }
@@ -126,7 +132,7 @@ export class CachePerformanceMonitor {
         costSavings,
         responseTimes,
         trends,
-        alerts
+        alerts,
       ] = await Promise.all([
         this.cache.getStats(),
         this.cache.getDetailedMetrics(),
@@ -134,7 +140,7 @@ export class CachePerformanceMonitor {
         this.calculateCostSavings(),
         this.getResponseTimes(),
         this.getTrends(),
-        this.checkAlerts()
+        this.checkAlerts(),
       ]);
 
       // Calculate overall hit rate
@@ -154,7 +160,7 @@ export class CachePerformanceMonitor {
         hitRate: {
           overall: overallHitRate,
           byService,
-          byTimeWindow: hitRateByTimeWindow
+          byTimeWindow: hitRateByTimeWindow,
         },
         costSavings,
         responseTimes,
@@ -162,10 +168,10 @@ export class CachePerformanceMonitor {
           totalKeys: detailedMetrics.totalKeys,
           memoryUsage: detailedMetrics.memoryUsage,
           keyDistribution: detailedMetrics.keyDistribution,
-          hotKeys: await this.getHotKeys()
+          hotKeys: await this.getHotKeys(),
         },
         trends,
-        alerts
+        alerts,
       };
     } catch (error) {
       logger.error('Error getting comprehensive metrics:', error);
@@ -191,13 +197,13 @@ export class CachePerformanceMonitor {
       const [hourData, dayData, weekData] = await Promise.all([
         this.getRequestsInTimeWindow(hourAgo, now),
         this.getRequestsInTimeWindow(dayAgo, now),
-        this.getRequestsInTimeWindow(weekAgo, now)
+        this.getRequestsInTimeWindow(weekAgo, now),
       ]);
 
       return {
         lastHour: this.calculateHitRateFromRequests(hourData),
         last24Hours: this.calculateHitRateFromRequests(dayData),
-        last7Days: this.calculateHitRateFromRequests(weekData)
+        last7Days: this.calculateHitRateFromRequests(weekData),
       };
     } catch (error) {
       logger.error('Error calculating hit rate by time window:', error);
@@ -227,8 +233,8 @@ export class CachePerformanceMonitor {
    */
   private calculateHitRateFromRequests(requests: any[]): number {
     if (requests.length === 0) return 0;
-    
-    const hits = requests.filter(req => req.cache_hit).length;
+
+    const hits = requests.filter((req) => req.cache_hit).length;
     return hits / requests.length;
   }
 
@@ -252,14 +258,14 @@ export class CachePerformanceMonitor {
         this.getRequestsInTimeWindow(hourAgo, now),
         this.getRequestsInTimeWindow(dayAgo, now),
         this.getRequestsInTimeWindow(weekAgo, now),
-        this.getRequestsInTimeWindow(monthAgo, now)
+        this.getRequestsInTimeWindow(monthAgo, now),
       ]);
 
       return {
         hourly: this.calculateSavingsFromRequests(hourData),
         daily: this.calculateSavingsFromRequests(dayData),
         weekly: this.calculateSavingsFromRequests(weekData),
-        monthly: this.calculateSavingsFromRequests(monthData)
+        monthly: this.calculateSavingsFromRequests(monthData),
       };
     } catch (error) {
       logger.error('Error calculating cost savings:', error);
@@ -271,7 +277,7 @@ export class CachePerformanceMonitor {
    * Calculate savings from request data
    */
   private calculateSavingsFromRequests(requests: any[]): number {
-    const cacheHits = requests.filter(req => req.cache_hit);
+    const cacheHits = requests.filter((req) => req.cache_hit);
     return cacheHits.reduce((total, req) => total + (req.cost || 0), 0);
   }
 
@@ -288,23 +294,25 @@ export class CachePerformanceMonitor {
       const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       const requests = await this.getRequestsInTimeWindow(dayAgo, now);
 
-      const hits = requests.filter(req => req.cache_hit);
-      const misses = requests.filter(req => !req.cache_hit);
+      const hits = requests.filter((req) => req.cache_hit);
+      const misses = requests.filter((req) => !req.cache_hit);
 
-      const avgHitTime = hits.length > 0 
-        ? hits.reduce((sum, req) => sum + (req.response_time_ms || 0), 0) / hits.length 
-        : 0;
+      const avgHitTime =
+        hits.length > 0
+          ? hits.reduce((sum, req) => sum + (req.response_time_ms || 0), 0) / hits.length
+          : 0;
 
-      const avgMissTime = misses.length > 0 
-        ? misses.reduce((sum, req) => sum + (req.response_time_ms || 0), 0) / misses.length 
-        : 0;
+      const avgMissTime =
+        misses.length > 0
+          ? misses.reduce((sum, req) => sum + (req.response_time_ms || 0), 0) / misses.length
+          : 0;
 
       const improvement = avgMissTime > 0 ? ((avgMissTime - avgHitTime) / avgMissTime) * 100 : 0;
 
       return {
         cacheHit: avgHitTime,
         cacheMiss: avgMissTime,
-        improvement
+        improvement,
       };
     } catch (error) {
       logger.error('Error calculating response times:', error);
@@ -315,18 +323,20 @@ export class CachePerformanceMonitor {
   /**
    * Get hot keys (most frequently accessed cache entries)
    */
-  private async getHotKeys(): Promise<Array<{
-    key: string;
-    hitCount: number;
-    lastAccessed: Date;
-  }>> {
+  private async getHotKeys(): Promise<
+    Array<{
+      key: string;
+      hitCount: number;
+      lastAccessed: Date;
+    }>
+  > {
     try {
       // This would require tracking in Redis or separate analytics
       // For now, return mock data
       return [
         { key: 'ai_cache:v2:explain:user1:abc123', hitCount: 150, lastAccessed: new Date() },
         { key: 'ai_cache:v2:summary:user2:def456', hitCount: 120, lastAccessed: new Date() },
-        { key: 'ai_cache:v2:quiz:user3:ghi789', hitCount: 98, lastAccessed: new Date() }
+        { key: 'ai_cache:v2:quiz:user3:ghi789', hitCount: 98, lastAccessed: new Date() },
       ];
     } catch (error) {
       logger.error('Error getting hot keys:', error);
@@ -345,35 +355,35 @@ export class CachePerformanceMonitor {
       // Generate trend data for the last 24 hours (hourly intervals)
       const trends = [];
       const now = new Date();
-      
+
       for (let i = 23; i >= 0; i--) {
         const timestamp = new Date(now.getTime() - i * 60 * 60 * 1000);
         const endTime = new Date(timestamp.getTime() + 60 * 60 * 1000);
-        
+
         const requests = await this.getRequestsInTimeWindow(timestamp, endTime);
         const hitRate = this.calculateHitRateFromRequests(requests);
         const savings = this.calculateSavingsFromRequests(requests);
-        
+
         trends.push({
           timestamp,
           hitRate,
           totalRequests: requests.length,
           savings,
-          requestsServed: requests.filter(r => r.cache_hit).length
+          requestsServed: requests.filter((r) => r.cache_hit).length,
         });
       }
 
       return {
-        hitRateTrend: trends.map(t => ({
+        hitRateTrend: trends.map((t) => ({
           timestamp: t.timestamp,
           hitRate: t.hitRate,
-          totalRequests: t.totalRequests
+          totalRequests: t.totalRequests,
         })),
-        costSavingsTrend: trends.map(t => ({
+        costSavingsTrend: trends.map((t) => ({
           timestamp: t.timestamp,
           savings: t.savings,
-          requestsServed: t.requestsServed
-        }))
+          requestsServed: t.requestsServed,
+        })),
       };
     } catch (error) {
       logger.error('Error calculating trends:', error);
@@ -384,13 +394,15 @@ export class CachePerformanceMonitor {
   /**
    * Check for performance alerts
    */
-  private async checkAlerts(): Promise<Array<{
-    type: 'low_hit_rate' | 'high_memory' | 'cost_spike' | 'performance_degradation';
-    severity: 'low' | 'medium' | 'high';
-    message: string;
-    timestamp: Date;
-    actionRequired: boolean;
-  }>> {
+  private async checkAlerts(): Promise<
+    Array<{
+      type: 'low_hit_rate' | 'high_memory' | 'cost_spike' | 'performance_degradation';
+      severity: 'low' | 'medium' | 'high';
+      message: string;
+      timestamp: Date;
+      actionRequired: boolean;
+    }>
+  > {
     const alerts: Array<{
       type: 'low_hit_rate' | 'high_memory' | 'cost_spike' | 'performance_degradation';
       severity: 'low' | 'medium' | 'high';
@@ -405,18 +417,22 @@ export class CachePerformanceMonitor {
       const stats = await this.cache.getStats();
       Object.entries(stats).forEach(([service, serviceStats]) => {
         const hitRate = serviceStats.hits / (serviceStats.hits + serviceStats.misses) || 0;
-        const benchmark = this.benchmarks.find(b => b.service === service);
-        
+        const benchmark = this.benchmarks.find((b) => b.service === service);
+
         if (benchmark && hitRate < benchmark.targetHitRate) {
-          const severity = hitRate < benchmark.targetHitRate * 0.5 ? 'high' : 
-                          hitRate < benchmark.targetHitRate * 0.75 ? 'medium' : 'low';
-          
+          const severity =
+            hitRate < benchmark.targetHitRate * 0.5
+              ? 'high'
+              : hitRate < benchmark.targetHitRate * 0.75
+                ? 'medium'
+                : 'low';
+
           alerts.push({
             type: 'low_hit_rate',
             severity,
             message: `${service} hit rate (${(hitRate * 100).toFixed(1)}%) below target (${(benchmark.targetHitRate * 100).toFixed(1)}%)`,
             timestamp: now,
-            actionRequired: severity === 'high'
+            actionRequired: severity === 'high',
           });
         }
       });
@@ -427,35 +443,36 @@ export class CachePerformanceMonitor {
       if (memoryUsageMatch) {
         const value = parseFloat(memoryUsageMatch[1]);
         const unit = memoryUsageMatch[2];
-        
+
         // Convert to MB for comparison
         let memoryMB = value;
         if (unit.toLowerCase() === 'gb') memoryMB *= 1024;
         if (unit.toLowerCase() === 'kb') memoryMB /= 1024;
-        
-        if (memoryMB > 500) { // Alert if cache using more than 500MB
+
+        if (memoryMB > 500) {
+          // Alert if cache using more than 500MB
           alerts.push({
             type: 'high_memory',
             severity: memoryMB > 1000 ? 'high' : 'medium',
             message: `Cache memory usage is high: ${detailedMetrics.memoryUsage}`,
             timestamp: now,
-            actionRequired: memoryMB > 1000
+            actionRequired: memoryMB > 1000,
           });
         }
       }
 
       // Check for cost spikes
       const hourlyCosts = await this.calculateCostSavings();
-      if (hourlyCosts.hourly > 10) { // Alert if hourly costs exceed $10
+      if (hourlyCosts.hourly > 10) {
+        // Alert if hourly costs exceed $10
         alerts.push({
           type: 'cost_spike',
           severity: hourlyCosts.hourly > 50 ? 'high' : 'medium',
           message: `High AI costs detected: $${hourlyCosts.hourly.toFixed(2)} in the last hour`,
           timestamp: now,
-          actionRequired: hourlyCosts.hourly > 50
+          actionRequired: hourlyCosts.hourly > 50,
         });
       }
-
     } catch (error) {
       logger.error('Error checking alerts:', error);
     }
@@ -469,7 +486,7 @@ export class CachePerformanceMonitor {
   private async collectMetrics(): Promise<void> {
     try {
       const metrics = await this.getComprehensiveMetrics();
-      
+
       // Store metrics in database for historical analysis
       await supabase.from('cache_performance_metrics').insert({
         timestamp: new Date().toISOString(),
@@ -479,9 +496,8 @@ export class CachePerformanceMonitor {
         total_keys: metrics.capacity.totalKeys,
         memory_usage: metrics.capacity.memoryUsage,
         alerts_count: metrics.alerts.length,
-        high_severity_alerts: metrics.alerts.filter(a => a.severity === 'high').length
+        high_severity_alerts: metrics.alerts.filter((a) => a.severity === 'high').length,
       });
-
     } catch (error) {
       // Don't throw error if metrics table doesn't exist
       if ((error as any)?.code !== '42P01') {
@@ -493,13 +509,15 @@ export class CachePerformanceMonitor {
   /**
    * Get optimization recommendations
    */
-  async getOptimizationRecommendations(): Promise<Array<{
-    category: 'ttl' | 'memory' | 'hit_rate' | 'cost';
-    priority: 'high' | 'medium' | 'low';
-    recommendation: string;
-    expectedImpact: string;
-    actionRequired: string;
-  }>> {
+  async getOptimizationRecommendations(): Promise<
+    Array<{
+      category: 'ttl' | 'memory' | 'hit_rate' | 'cost';
+      priority: 'high' | 'medium' | 'low';
+      recommendation: string;
+      expectedImpact: string;
+      actionRequired: string;
+    }>
+  > {
     const recommendations: Array<{
       category: 'ttl' | 'memory' | 'hit_rate' | 'cost';
       priority: 'high' | 'medium' | 'low';
@@ -507,20 +525,20 @@ export class CachePerformanceMonitor {
       expectedImpact: string;
       actionRequired: string;
     }> = [];
-    
+
     try {
       const metrics = await this.getComprehensiveMetrics();
-      
+
       // Analyze hit rates by service
       Object.entries(metrics.hitRate.byService).forEach(([service, hitRate]) => {
-        const benchmark = this.benchmarks.find(b => b.service === service);
+        const benchmark = this.benchmarks.find((b) => b.service === service);
         if (benchmark && hitRate < benchmark.targetHitRate) {
           recommendations.push({
             category: 'hit_rate',
             priority: hitRate < benchmark.targetHitRate * 0.5 ? 'high' : 'medium',
             recommendation: `Improve cache hit rate for ${service} service`,
             expectedImpact: `Increase hit rate from ${(hitRate * 100).toFixed(1)}% to ${(benchmark.targetHitRate * 100).toFixed(1)}%`,
-            actionRequired: `Consider increasing TTL or improving cache key generation for ${service}`
+            actionRequired: `Consider increasing TTL or improving cache key generation for ${service}`,
           });
         }
       });
@@ -532,7 +550,7 @@ export class CachePerformanceMonitor {
           priority: 'medium',
           recommendation: 'Consider cache cleanup or TTL optimization',
           expectedImpact: 'Reduce memory usage and improve performance',
-          actionRequired: 'Implement automated cleanup of old cache entries'
+          actionRequired: 'Implement automated cleanup of old cache entries',
         });
       }
 
@@ -543,10 +561,9 @@ export class CachePerformanceMonitor {
           priority: 'high',
           recommendation: 'Improve cache utilization to increase cost savings',
           expectedImpact: 'Potential savings of $100+ per month',
-          actionRequired: 'Review cache warming strategy and TTL configurations'
+          actionRequired: 'Review cache warming strategy and TTL configurations',
         });
       }
-
     } catch (error) {
       logger.error('Error generating optimization recommendations:', error);
     }
@@ -566,13 +583,13 @@ export class CachePerformanceMonitor {
   }> {
     try {
       const metrics = await this.getComprehensiveMetrics();
-      
+
       const hitRate = metrics.hitRate.overall;
       const alertsCount = metrics.alerts.length;
-      const hasHighSeverityAlerts = metrics.alerts.some(a => a.severity === 'high');
-      
+      const hasHighSeverityAlerts = metrics.alerts.some((a) => a.severity === 'high');
+
       let status: 'excellent' | 'good' | 'needs_attention' | 'critical' = 'good';
-      
+
       if (hasHighSeverityAlerts || hitRate < 0.5) {
         status = 'critical';
       } else if (alertsCount > 3 || hitRate < 0.7) {
@@ -586,7 +603,7 @@ export class CachePerformanceMonitor {
         costSavings24h: metrics.costSavings.daily,
         responseTimeImprovement: metrics.responseTimes.improvement,
         alertsCount,
-        status
+        status,
       };
     } catch (error) {
       logger.error('Error getting performance summary:', error);
@@ -595,7 +612,7 @@ export class CachePerformanceMonitor {
         costSavings24h: 0,
         responseTimeImprovement: 0,
         alertsCount: 0,
-        status: 'critical'
+        status: 'critical',
       };
     }
   }

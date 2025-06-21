@@ -8,22 +8,23 @@ describe('AI Content Generation Integration Tests', () => {
   let testCourse: any;
   let testModule: any;
   let testFile: any;
-  let createdIds: string[] = [];
+  const createdIds: string[] = [];
 
   beforeAll(async () => {
     DatabaseHelpers.initialize();
-    
+
     testUser = await DatabaseHelpers.createTestUser();
     testCourse = await DatabaseHelpers.createTestCourse(testUser.id);
     testModule = await DatabaseHelpers.createTestModule(testCourse.id);
-    
+
     // Create a test file for AI content generation
     testFile = await DatabaseHelpers.createTestFile(testModule.id, {
       filename: 'machine-learning-basics.txt',
-      content: 'Machine learning is a subset of artificial intelligence that focuses on algorithms and statistical models...',
-      processing_status: 'completed'
+      content:
+        'Machine learning is a subset of artificial intelligence that focuses on algorithms and statistical models...',
+      processing_status: 'completed',
     });
-    
+
     createdIds.push(testUser.id, testCourse.id, testModule.id, testFile.id);
   });
 
@@ -42,22 +43,22 @@ describe('AI Content Generation Integration Tests', () => {
       const beginnerPersona = await AITestHelpers.createTestPersona({
         experience_level: 'beginner',
         learning_style: 'visual',
-        goals: ['understanding_fundamentals']
+        goals: ['understanding_fundamentals'],
       });
-      
+
       createdIds.push(beginnerPersona.id);
 
       const response = await AITestHelpers.generateAIContent({
         fileId: testFile.id,
         persona: beginnerPersona,
         contentType: 'explanation',
-        userId: testUser.id
+        userId: testUser.id,
       });
 
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
       expect(response.content).toBeDefined();
-      
+
       const content = response.content;
       expect(content.explanation).toBeDefined();
       expect(content.explanation.length).toBeGreaterThan(100);
@@ -70,22 +71,22 @@ describe('AI Content Generation Integration Tests', () => {
       const advancedPersona = await AITestHelpers.createTestPersona({
         experience_level: 'advanced',
         learning_style: 'analytical',
-        goals: ['deep_understanding', 'practical_application']
+        goals: ['deep_understanding', 'practical_application'],
       });
-      
+
       createdIds.push(advancedPersona.id);
 
       const response = await AITestHelpers.generateAIContent({
         fileId: testFile.id,
         persona: advancedPersona,
         contentType: 'explanation',
-        userId: testUser.id
+        userId: testUser.id,
       });
 
       expect(response).toBeDefined();
       expect(response.success).toBe(true);
       expect(response.content).toBeDefined();
-      
+
       const content = response.content;
       expect(content.explanation).toBeDefined();
       expect(content.difficulty_level).toBe('advanced');
@@ -98,21 +99,21 @@ describe('AI Content Generation Integration Tests', () => {
   describe('Different Content Types', () => {
     test('should generate summary content', async () => {
       const persona = await AITestHelpers.createTestPersona({
-        experience_level: 'intermediate'
+        experience_level: 'intermediate',
       });
-      
+
       createdIds.push(persona.id);
 
       const response = await AITestHelpers.generateAIContent({
         fileId: testFile.id,
         persona: persona,
         contentType: 'summary',
-        userId: testUser.id
+        userId: testUser.id,
       });
 
       expect(response.success).toBe(true);
       const content = response.content;
-      
+
       expect(content.summary).toBeDefined();
       expect(content.key_points).toBeDefined();
       expect(Array.isArray(content.key_points)).toBe(true);
@@ -123,9 +124,9 @@ describe('AI Content Generation Integration Tests', () => {
     test('should generate quiz content', async () => {
       const persona = await AITestHelpers.createTestPersona({
         experience_level: 'intermediate',
-        preferred_assessment: 'multiple_choice'
+        preferred_assessment: 'multiple_choice',
       });
-      
+
       createdIds.push(persona.id);
 
       const response = await AITestHelpers.generateAIContent({
@@ -133,16 +134,16 @@ describe('AI Content Generation Integration Tests', () => {
         persona: persona,
         contentType: 'quiz',
         userId: testUser.id,
-        options: { questionCount: 3 }
+        options: { questionCount: 3 },
       });
 
       expect(response.success).toBe(true);
       const content = response.content;
-      
+
       expect(content.questions).toBeDefined();
       expect(Array.isArray(content.questions)).toBe(true);
       expect(content.questions.length).toBe(3);
-      
+
       content.questions.forEach((question: any) => {
         expect(question.question).toBeDefined();
         expect(question.options).toBeDefined();
@@ -156,9 +157,9 @@ describe('AI Content Generation Integration Tests', () => {
     test('should generate flashcard content', async () => {
       const persona = await AITestHelpers.createTestPersona({
         experience_level: 'beginner',
-        learning_style: 'visual'
+        learning_style: 'visual',
       });
-      
+
       createdIds.push(persona.id);
 
       const response = await AITestHelpers.generateAIContent({
@@ -166,16 +167,16 @@ describe('AI Content Generation Integration Tests', () => {
         persona: persona,
         contentType: 'flashcards',
         userId: testUser.id,
-        options: { cardCount: 5 }
+        options: { cardCount: 5 },
       });
 
       expect(response.success).toBe(true);
       const content = response.content;
-      
+
       expect(content.flashcards).toBeDefined();
       expect(Array.isArray(content.flashcards)).toBe(true);
       expect(content.flashcards.length).toBe(5);
-      
+
       content.flashcards.forEach((card: any) => {
         expect(card.front).toBeDefined();
         expect(card.back).toBeDefined();
@@ -187,21 +188,21 @@ describe('AI Content Generation Integration Tests', () => {
     test('should generate outline content', async () => {
       const persona = await AITestHelpers.createTestPersona({
         experience_level: 'intermediate',
-        learning_style: 'structured'
+        learning_style: 'structured',
       });
-      
+
       createdIds.push(persona.id);
 
       const response = await AITestHelpers.generateAIContent({
         fileId: testFile.id,
         persona: persona,
         contentType: 'outline',
-        userId: testUser.id
+        userId: testUser.id,
       });
 
       expect(response.success).toBe(true);
       const content = response.content;
-      
+
       expect(content.content).toBeDefined();
       expect(content.content).toContain('I.');
       expect(content.content).toContain('II.');
@@ -218,7 +219,7 @@ describe('AI Content Generation Integration Tests', () => {
         fileId: 'non-existent-file-id',
         persona: persona,
         contentType: 'summary',
-        userId: testUser.id
+        userId: testUser.id,
       });
 
       expect(response.success).toBe(false);
@@ -232,7 +233,7 @@ describe('AI Content Generation Integration Tests', () => {
       const emptyFileResponse = await DatabaseHelpers.createTestFile(testModule.id, {
         filename: 'empty.txt',
         content: '',
-        processing_status: 'completed'
+        processing_status: 'completed',
       });
       const emptyFileId = emptyFileResponse.id;
       createdIds.push(emptyFileId);
@@ -244,7 +245,7 @@ describe('AI Content Generation Integration Tests', () => {
         fileId: emptyFileId,
         persona: persona,
         contentType: 'summary',
-        userId: testUser.id
+        userId: testUser.id,
       });
 
       expect(response.success).toBe(false);
@@ -257,7 +258,7 @@ describe('AI Content Generation Integration Tests', () => {
   describe('Performance and Caching', () => {
     test('should cache AI responses for identical requests', async () => {
       const persona = await AITestHelpers.createTestPersona({
-        experience_level: 'intermediate'
+        experience_level: 'intermediate',
       });
       createdIds.push(persona.id);
 
@@ -265,7 +266,7 @@ describe('AI Content Generation Integration Tests', () => {
         fileId: testFile.id,
         persona: persona,
         contentType: 'summary' as const,
-        userId: testUser.id
+        userId: testUser.id,
       };
 
       // First request
@@ -289,25 +290,25 @@ describe('AI Content Generation Integration Tests', () => {
       const persona = await AITestHelpers.createTestPersona({});
       createdIds.push(persona.id);
 
-      const requests = Array.from({ length: 5 }, (_, i) => 
+      const requests = Array.from({ length: 5 }, (_, i) =>
         AITestHelpers.generateAIContent({
           fileId: testFile.id,
           persona: persona,
           contentType: 'summary',
           userId: testUser.id,
-          options: { requestId: `concurrent-${i}` }
+          options: { requestId: `concurrent-${i}` },
         })
       );
 
       const responses = await Promise.all(requests);
 
-      responses.forEach(response => {
+      responses.forEach((response) => {
         expect(response.success).toBe(true);
         expect(response.content).toBeDefined();
       });
 
       // All successful responses should have similar content structure
-      const successfulResponses = responses.filter(r => r.success);
+      const successfulResponses = responses.filter((r) => r.success);
       expect(successfulResponses.length).toBe(5);
     });
   });

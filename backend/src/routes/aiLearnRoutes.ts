@@ -14,12 +14,12 @@ router.use('/', aiLearnModules);
 
 // Test endpoint for backward compatibility
 router.get('/test', (_req: Request, res: Response) => {
-  res.json({ 
-    success: true, 
+  res.json({
+    success: true,
     message: 'AI Learn routes are working!',
     version: '2.0',
     pythonService: true,
-    modules: ['outline', 'explain', 'feedback']
+    modules: ['outline', 'explain', 'feedback'],
   });
 });
 
@@ -50,7 +50,7 @@ router.get('/test-sse', (_req: Request, res: Response) => {
 // Legacy route: /explain/stream is now handled by ai-learn/explain module
 // All streaming functionality migrated to Python AI service
 
-// Legacy routes: All feedback, batch, and stats functionality 
+// Legacy routes: All feedback, batch, and stats functionality
 // is now handled by the ai-learn/feedback module with Python AI integration
 
 // Migration info endpoint
@@ -64,16 +64,16 @@ router.get('/migration-info', (_req: Request, res: Response) => {
       feedback: '/feedback',
       batch: '/batch',
       stats: '/stats/costs',
-      health: '/health'
+      health: '/health',
     },
     features: [
       'Python AI service integration',
       'Enhanced caching with personalization',
       'Comprehensive cost tracking',
       'Modular route architecture',
-      'Improved streaming responses'
+      'Improved streaming responses',
     ],
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 

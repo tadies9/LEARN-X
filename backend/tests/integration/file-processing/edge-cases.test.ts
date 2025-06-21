@@ -8,7 +8,7 @@ describe('File Processing Edge Cases', () => {
   let testUser: any;
   let testCourse: any;
   let testModule: any;
-  let createdIds: string[] = [];
+  const createdIds: string[] = [];
 
   beforeAll(async () => {
     DatabaseHelpers.initialize();
@@ -33,14 +33,14 @@ describe('File Processing Edge Cases', () => {
       const testFile = await DatabaseHelpers.createTestFile(testModule.id, {
         filename: 'empty.txt',
         file_size: 0,
-        processing_status: 'pending'
+        processing_status: 'pending',
       });
-      
+
       createdIds.push(testFile.id);
 
       // Process empty file
       const result = await processFileWithErrorHandling(testFile.id, emptyFile);
-      
+
       expect(result.status).toBe('failed_empty_content');
       expect(result.error_message).toContain('empty');
     });
@@ -51,13 +51,13 @@ describe('File Processing Edge Cases', () => {
       const testFile = await DatabaseHelpers.createTestFile(testModule.id, {
         filename: 'whitespace.txt',
         file_size: whitespaceContent.length,
-        processing_status: 'pending'
+        processing_status: 'pending',
       });
-      
+
       createdIds.push(testFile.id);
 
       const result = await processFileWithErrorHandling(testFile.id, whitespaceFile);
-      
+
       expect(result.status).toBe('failed_empty_content');
       expect(result.error_message).toContain('whitespace');
     });
@@ -68,13 +68,13 @@ describe('File Processing Edge Cases', () => {
       const testFile = await DatabaseHelpers.createTestFile(testModule.id, {
         filename: 'minimal.txt',
         file_size: minimalContent.length,
-        processing_status: 'pending'
+        processing_status: 'pending',
       });
-      
+
       createdIds.push(testFile.id);
 
       const result = await processFileWithErrorHandling(testFile.id, minimalFile);
-      
+
       expect(result.status).toBe('failed_insufficient_content');
       expect(result.error_message).toContain('insufficient');
     });
@@ -84,7 +84,7 @@ describe('File Processing Edge Cases', () => {
     test('should handle memory-intensive large files', async () => {
       const largeContentSize = 1024 * 1024; // 1MB
       const largeContent = 'A'.repeat(largeContentSize);
-      
+
       const performanceTest = await PerformanceHelpers.measureAsync(
         'large_file_processing',
         async () => {
@@ -92,9 +92,9 @@ describe('File Processing Edge Cases', () => {
           const testFile = await DatabaseHelpers.createTestFile(testModule.id, {
             filename: 'large.txt',
             file_size: largeContent.length,
-            processing_status: 'pending'
+            processing_status: 'pending',
           });
-          
+
           createdIds.push(testFile.id);
 
           return await processFileWithErrorHandling(testFile.id, largeFile);
@@ -108,7 +108,7 @@ describe('File Processing Edge Cases', () => {
     test('should handle extremely large files without memory exhaustion', async () => {
       const memoryTest = await PerformanceHelpers.measureMemoryUsage(async () => {
         const results = [];
-        
+
         // Process multiple large files in sequence
         for (let i = 0; i < 5; i++) {
           const content = 'Large file content '.repeat(50000); // ~1MB each
@@ -116,20 +116,20 @@ describe('File Processing Edge Cases', () => {
           const testFile = await DatabaseHelpers.createTestFile(testModule.id, {
             filename: `memory_test_${i}.txt`,
             file_size: content.length,
-            processing_status: 'pending'
+            processing_status: 'pending',
           });
-          
+
           createdIds.push(testFile.id);
-          
+
           const result = await processFileWithErrorHandling(testFile.id, mockFile);
           results.push(result);
-          
+
           // Force garbage collection between files
           if (global.gc) {
             global.gc();
           }
         }
-        
+
         return results;
       });
 
@@ -142,38 +142,42 @@ describe('File Processing Edge Cases', () => {
   describe('Corrupted and Invalid Files', () => {
     test('should handle corrupted PDF files', async () => {
       const corruptedPdfContent = '%PDF-1.4\n1 0 obj\n<<CORRUPTED>>';
-      const corruptedFile = TestFiles.createMockFile(corruptedPdfContent, 'corrupted.pdf', 'application/pdf');
-      
+      const corruptedFile = TestFiles.createMockFile(
+        corruptedPdfContent,
+        'corrupted.pdf',
+        'application/pdf'
+      );
+
       const testFile = await DatabaseHelpers.createTestFile(testModule.id, {
         filename: 'corrupted.pdf',
         file_size: corruptedPdfContent.length,
         processing_status: 'pending',
-        mime_type: 'application/pdf'
+        mime_type: 'application/pdf',
       });
-      
+
       createdIds.push(testFile.id);
 
       const result = await processFileWithErrorHandling(testFile.id, corruptedFile);
-      
+
       expect(result.status).toBe('failed_parsing_error');
       expect(result.error_message).toContain('PDF parsing');
     });
 
     test('should handle files with invalid encoding', async () => {
       // Create buffer with invalid UTF-8 sequences
-      const invalidBuffer = Buffer.from([0xFF, 0xFE, 0xFD, 0xFC, 0xFB]);
+      const invalidBuffer = Buffer.from([0xff, 0xfe, 0xfd, 0xfc, 0xfb]);
       const invalidFile = TestFiles.createMockFileFromBuffer(invalidBuffer, 'invalid_encoding.txt');
-      
+
       const testFile = await DatabaseHelpers.createTestFile(testModule.id, {
         filename: 'invalid_encoding.txt',
         file_size: invalidBuffer.length,
-        processing_status: 'pending'
+        processing_status: 'pending',
       });
-      
+
       createdIds.push(testFile.id);
 
       const result = await processFileWithErrorHandling(testFile.id, invalidFile);
-      
+
       expect(result.status).toMatch(/failed_encoding|completed/);
       // Should either fail gracefully or successfully decode with replacement characters
     });
@@ -183,17 +187,17 @@ describe('File Processing Edge Cases', () => {
     test('should handle files with extreme repetition', async () => {
       const repetitiveContent = 'Repeat this sentence. '.repeat(10000);
       const repetitiveFile = TestFiles.createMockFile(repetitiveContent, 'repetitive.txt');
-      
+
       const testFile = await DatabaseHelpers.createTestFile(testModule.id, {
         filename: 'repetitive.txt',
         file_size: repetitiveContent.length,
-        processing_status: 'pending'
+        processing_status: 'pending',
       });
-      
+
       createdIds.push(testFile.id);
 
       const result = await processFileWithErrorHandling(testFile.id, repetitiveFile);
-      
+
       expect(result.status).toBe('completed');
       // Should handle repetitive content by deduplication or chunking strategies
       if (result.chunks) {
@@ -205,17 +209,17 @@ describe('File Processing Edge Cases', () => {
     test('should handle files with complex Unicode characters', async () => {
       const unicodeContent = '🌟 测试内容 🚀 العربية ελληνικά 한국어 日本語 עברית';
       const unicodeFile = TestFiles.createMockFile(unicodeContent, 'unicode.txt');
-      
+
       const testFile = await DatabaseHelpers.createTestFile(testModule.id, {
         filename: 'unicode.txt',
         file_size: Buffer.byteLength(unicodeContent, 'utf8'),
-        processing_status: 'pending'
+        processing_status: 'pending',
       });
-      
+
       createdIds.push(testFile.id);
 
       const result = await processFileWithErrorHandling(testFile.id, unicodeFile);
-      
+
       expect(result.status).toBe('completed');
       if (result.content) {
         expect(result.content).toContain('🌟');
@@ -243,44 +247,44 @@ async function processFileWithErrorHandling(
       content: 'Processed file content',
       chunks: [
         { id: '1', content: 'Chunk 1' },
-        { id: '2', content: 'Chunk 2' }
-      ]
+        { id: '2', content: 'Chunk 2' },
+      ],
     };
-    
+
     // Simulate different processing outcomes based on fileId patterns
     if (fileId.includes('empty')) {
       return {
         status: 'failed_empty_content',
-        error_message: 'File is empty or contains no readable content'
+        error_message: 'File is empty or contains no readable content',
       };
     }
-    
+
     if (fileId.includes('whitespace')) {
       return {
         status: 'failed_empty_content',
-        error_message: 'File contains only whitespace characters'
+        error_message: 'File contains only whitespace characters',
       };
     }
-    
+
     if (fileId.includes('minimal')) {
       return {
         status: 'failed_insufficient_content',
-        error_message: 'File has insufficient content for processing'
+        error_message: 'File has insufficient content for processing',
       };
     }
-    
+
     if (fileId.includes('corrupted')) {
       return {
         status: 'failed_parsing_error',
-        error_message: 'PDF parsing failed - file may be corrupted'
+        error_message: 'PDF parsing failed - file may be corrupted',
       };
     }
-    
+
     return mockProcessingResult;
   } catch (error) {
     return {
       status: 'failed_processing_error',
-      error_message: error instanceof Error ? error.message : 'Unknown processing error'
+      error_message: error instanceof Error ? error.message : 'Unknown processing error',
     };
   }
 }
