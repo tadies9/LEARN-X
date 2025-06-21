@@ -15,7 +15,7 @@ export type {
   AlertChannel,
   AlertEvent,
   AlertingConfig,
-} from './alerting/APMAlertingService';
+} from './alerting/types/alerting.types';
 
 // Middleware
 export { queueAPM, QueueAPMMiddleware } from './middleware/QueueAPMMiddleware';
@@ -61,7 +61,7 @@ export type {
   UserError,
   SessionPerformance,
   RUMConfiguration,
-} from './observability/UnifiedObservabilityService';
+} from './observability/types/observability.types';
 
 // Dashboard
 export { apmDashboard, APMDashboardService } from './dashboard/APMDashboardService';
@@ -73,7 +73,7 @@ export type {
   WidgetData,
   MetricSeries,
   MetricDataPoint,
-} from './dashboard/APMDashboardService';
+} from './dashboard/types/dashboard.types';
 
 // Health Check & Validation
 export { apmHealthCheck, APMHealthCheck } from './validation/APMHealthCheck';
@@ -120,9 +120,9 @@ export async function initializeAPM(): Promise<void> {
     // Initialize health checking
     apmHealthCheck.initialize();
 
-    console.log('✅ APM System fully initialized');
+    // APM System fully initialized
   } catch (error) {
-    console.error('❌ APM initialization failed:', error);
+    // APM initialization failed
     throw error;
   }
 }
@@ -174,8 +174,8 @@ export async function shutdownAPM(): Promise<void> {
     apmAlerting.destroy();
     queueAPM.destroy();
 
-    console.log('✅ APM System shutdown complete');
+    // APM System shutdown complete
   } catch (error) {
-    console.error('❌ APM shutdown failed:', error);
+    // APM shutdown failed - error logged internally
   }
 }

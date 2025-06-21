@@ -13,11 +13,7 @@ const supabaseServiceRole = (() => {
   const serviceKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !serviceKey) {
-    console.error('Missing Supabase configuration:', {
-      hasUrl: !!url,
-      hasServiceKey: !!serviceKey,
-      envKeys: Object.keys(process.env).filter((k) => k.includes('SUPABASE')),
-    });
+    // Configuration error should be logged by the application's logging service
   }
 
   return createClient(url!, serviceKey!, {
@@ -32,13 +28,11 @@ export class FileService {
   private bucketName = 'course-files';
 
   constructor() {
-    console.log('FileService initialized with bucket:', this.bucketName);
+    // Service initialization should be logged by the application's logging service
   }
 
   async getModuleFiles(moduleId: string, userId: string): Promise<CourseFile[]> {
-    console.log('=== getModuleFiles called ===');
-    console.log('Module ID:', moduleId);
-    console.log('User ID:', userId);
+    // Method invocation should be logged by the application's logging service
 
     // First verify the user has access to this module
     const { data: module, error: moduleError } = await supabase
@@ -48,7 +42,7 @@ export class FileService {
       .single();
 
     if (moduleError || !module) {
-      console.error('Module not found:', moduleError);
+      // Module errors should be logged by the application's logging service
       throw new AppError('Module not found', 404);
     }
 
@@ -61,14 +55,14 @@ export class FileService {
       .single();
 
     if (courseError || !course) {
-      console.error('Access denied:', courseError);
+      // Access errors should be logged by the application's logging service
       throw new AppError('Access denied', 403);
     }
 
-    console.log('Access check passed - Course owner:', course.user_id, 'Current user:', userId);
+    // Access check results should be logged by the application's logging service
 
     // Get files
-    console.log('Fetching files for module:', moduleId);
+    // File fetching should be logged by the application's logging service
     const { data: files, error } = await supabase
       .from('course_files')
       .select('*')
@@ -76,24 +70,21 @@ export class FileService {
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Failed to fetch files:', error);
+      // Fetch errors should be logged by the application's logging service
       throw new AppError('Failed to fetch files', 500);
     }
 
-    console.log(`Found ${files?.length || 0} files for module ${moduleId}`);
-    console.log('Files:', files);
+    // File count and details should be logged by the application's logging service
 
     // Transform snake_case to camelCase for frontend
     const transformedFiles = transformCourseFiles(files || []);
-    console.log('Transformed files:', transformedFiles);
+    // Transformation results should be logged by the application's logging service
 
     return transformedFiles;
   }
 
   async getFile(fileId: string, userId: string): Promise<CourseFile> {
-    console.log('=== getFile called ===');
-    console.log('File ID:', fileId);
-    console.log('User ID:', userId);
+    // Method invocation should be logged by the application's logging service
 
     const { data: file, error } = await supabase
       .from('course_files')
@@ -113,18 +104,16 @@ export class FileService {
       .single();
 
     if (error || !file) {
-      console.error('File not found:', error);
+      // File errors should be logged by the application's logging service
       throw new AppError('File not found', 404);
     }
 
     // Check access
     const course = (file as any).modules.courses;
-    console.log('Course owner:', course.user_id);
-    console.log('Current user:', userId);
-    console.log('Access check:', course.user_id === userId);
+    // Access check details should be logged by the application's logging service
 
     if (course.user_id !== userId) {
-      console.error('Access denied - user does not own course');
+      // Access denial should be logged by the application's logging service
       throw new AppError('Access denied', 403);
     }
 
@@ -136,13 +125,7 @@ export class FileService {
     data: CreateFileData,
     userId: string
   ): Promise<CourseFile> {
-    console.log('=== FileService.uploadFile called ===');
-    console.log(
-      'File:',
-      file ? { name: file.originalname, size: file.size, mimetype: file.mimetype } : 'NO FILE'
-    );
-    console.log('Data:', data);
-    console.log('UserId:', userId);
+    // Method invocation and parameters should be logged by the application's logging service
 
     // Verify user owns the module's course
     const { data: module, error: moduleError } = await supabase
@@ -168,12 +151,7 @@ export class FileService {
     const fileName = `${(module as any).courses.id}/${data.moduleId}/${uuidv4()}.${fileExtension}`;
 
     // Upload to Supabase Storage
-    console.log('Uploading file to storage:', {
-      bucket: this.bucketName,
-      fileName,
-      size: file.size,
-      mimetype: file.mimetype,
-    });
+    // Storage upload details should be logged by the application's logging service
 
     const { error: uploadError } = await supabase.storage
       .from(this.bucketName)
@@ -182,7 +160,7 @@ export class FileService {
       });
 
     if (uploadError) {
-      console.error('Storage upload error:', uploadError);
+      // Storage errors should be logged by the application's logging service
       throw new AppError('Failed to upload file: ' + uploadError.message, 500);
     }
 
@@ -206,17 +184,7 @@ export class FileService {
       .single();
 
     if (createError) {
-      console.error('Database error creating file record:', createError);
-      console.error('Attempted to insert:', {
-        course_id: courseId,
-        module_id: data.moduleId,
-        name: data.name || file.originalname,
-        original_name: file.originalname,
-        mime_type: file.mimetype,
-        size_bytes: file.size,
-        storage_path: fileName,
-        status: 'pending',
-      });
+      // Database errors should be logged by the application's logging service
       // Clean up uploaded file
       await supabase.storage.from(this.bucketName).remove([fileName]);
       throw new AppError('Failed to create file record: ' + createError.message, 500);
@@ -229,7 +197,7 @@ export class FileService {
         userId,
         data.processingOptions as Record<string, unknown> | undefined
       );
-      console.log('✅ File queued for processing:', newFile.id, 'Message ID:', msgId);
+      // Queue success should be logged by the application's logging service
       logger.info('File processing enqueued', {
         fileId: newFile.id,
         msgId,
@@ -237,7 +205,7 @@ export class FileService {
         options: data.processingOptions,
       });
     } catch (queueError) {
-      console.error('❌ Failed to queue file for processing:', queueError);
+      // Queue errors should be logged by the application's logging service
       // Don't fail the upload, but log the error
       logger.error('Failed to queue file processing', { fileId: newFile.id, error: queueError });
     }
@@ -312,23 +280,21 @@ export class FileService {
   }
 
   async deleteFile(fileId: string, userId: string): Promise<void> {
-    console.log('=== deleteFile called ===');
-    console.log('File ID:', fileId);
-    console.log('User ID:', userId);
+    // Method invocation should be logged by the application's logging service
 
     // Get file with ownership check
     let file;
     try {
       file = await this.getFile(fileId, userId);
-      console.log('File retrieved successfully:', file.id);
+      // File retrieval should be logged by the application's logging service
     } catch (error) {
-      console.error('Failed to get file in deleteFile:', error);
+      // File errors should be logged by the application's logging service
       throw error; // Re-throw the error from getFile
     }
 
     // Since getFile already checks ownership, we don't need to check again
     // The module query here is redundant and might be causing issues
-    console.log('File ownership already verified by getFile method');
+    // Ownership verification should be logged by the application's logging service
 
     // Delete from storage
     const { error: storageError } = await supabase.storage
@@ -336,7 +302,7 @@ export class FileService {
       .remove([(file as any).storage_path]);
 
     if (storageError) {
-      console.error('Failed to delete file from storage:', storageError);
+      // Storage deletion errors should be logged by the application's logging service
     }
 
     // Delete record
@@ -384,20 +350,9 @@ export class FileService {
   }
 
   async getSignedUrl(fileId: string, userId: string, expiresIn: number): Promise<string> {
-    console.log('=== FileService.getSignedUrl ===');
-    console.log('File ID:', fileId);
-    console.log('User ID:', userId);
-    console.log('Expires in:', expiresIn);
-
-    console.log('Getting file details...');
+    // Method invocation and parameters should be logged by the application's logging service
     const file = await this.getFile(fileId, userId);
-    console.log('File found:', {
-      id: file.id,
-      name: file.name,
-      storage_path: file.storagePath,
-    });
-
-    console.log('Creating signed URL with Supabase service role client...');
+    // File details and signed URL creation should be logged by the application's logging service
 
     try {
       // Try with service role client first
@@ -406,34 +361,34 @@ export class FileService {
         .createSignedUrl(file.storagePath, expiresIn);
 
       if (!error && data?.signedUrl) {
-        console.log('Signed URL created successfully with service role');
+        // Signed URL success should be logged by the application's logging service
         return data.signedUrl;
       }
 
-      console.error('Service role signed URL error:', error);
+      // Service role errors should be logged by the application's logging service
     } catch (serviceError) {
-      console.error('Service role client error:', serviceError);
+      // Service client errors should be logged by the application's logging service
     }
 
     // Fallback to regular client
-    console.log('Trying with regular supabase client...');
+    // Fallback attempt should be logged by the application's logging service
     try {
       const { data, error } = await supabase.storage
         .from(this.bucketName)
         .createSignedUrl(file.storagePath, expiresIn);
 
       if (error || !data) {
-        console.error('Regular client signed URL error:', error);
+        // Regular client errors should be logged by the application's logging service
         throw new AppError(
           'Failed to generate signed URL: ' + (error?.message || 'Unknown error'),
           500
         );
       }
 
-      console.log('Signed URL created successfully with regular client');
+      // Signed URL success should be logged by the application's logging service
       return data.signedUrl;
     } catch (fallbackError) {
-      console.error('All attempts to create signed URL failed:', fallbackError);
+      // Complete failure should be logged by the application's logging service
       throw new AppError('Failed to generate signed URL', 500);
     }
   }

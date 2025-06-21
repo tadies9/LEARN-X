@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../config/supabase';
 import { FileProcessingQueue } from './queue/FileProcessingQueue';
 import { logger } from '../utils/logger';
+import type { GenerationResult, GenerationResultData } from '../types/database.types';
 
 interface GenerationJobData {
   userId: string;
@@ -15,14 +16,14 @@ interface GenerationJobData {
   outputTypes: string[];
   courseId: string;
   personaId?: string;
-  options: Record<string, any>;
+  options: Record<string, unknown>;
 }
 
 interface GenerationJob {
   id: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
   progress: number;
-  results?: any;
+  results?: GenerationResultData;
   error?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -157,29 +158,26 @@ export class GenerateService {
   /**
    * Format results for API response
    */
-  private formatResults(tasks: any[]): Record<string, any> {
-    const results: Record<string, any> = {
+  private formatResults(tasks: GenerationResult[]): GenerationResultData {
+    const results: GenerationResultData = {
       flashcards: [],
-      summaries: [],
-      quizzes: [],
-      outlines: [],
+      summary: undefined,
+      questions: [],
+      outline: [],
     };
 
     for (const task of tasks) {
       if (task.output_type === 'flashcards' && task.result?.flashcards) {
-        results.flashcards.push(...task.result.flashcards);
+        results.flashcards = [...(results.flashcards || []), ...task.result.flashcards];
       } else if (task.output_type === 'summary' && task.result?.summary) {
-        results.summaries.push({
-          fileId: task.file_id,
-          summary: task.result.summary,
-        });
+        // For multiple summaries, concatenate them
+        results.summary = results.summary 
+          ? `${results.summary}\n\n${task.result.summary}` 
+          : task.result.summary;
       } else if (task.output_type === 'quiz' && task.result?.questions) {
-        results.quizzes.push(...task.result.questions);
+        results.questions = [...(results.questions || []), ...task.result.questions];
       } else if (task.output_type === 'outline' && task.result?.outline) {
-        results.outlines.push({
-          fileId: task.file_id,
-          outline: task.result.outline,
-        });
+        results.outline = [...(results.outline || []), ...task.result.outline];
       }
     }
 
@@ -189,7 +187,7 @@ export class GenerateService {
   /**
    * Get user's generation history
    */
-  async getUserHistory(userId: string, limit: number, offset: number): Promise<any[]> {
+  async getUserHistory(userId: string, limit: number, offset: number): Promise<GenerationJob[]> {
     try {
       const { data, error } = await supabase
         .from('generation_jobs')

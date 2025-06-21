@@ -2,6 +2,8 @@ import { Router } from 'express';
 import { pythonAIClient } from '../services/ai/PythonAIClient';
 import { supabase } from '../config/supabase';
 import { logger } from '../utils/logger';
+import type { Persona } from '../types/persona.types';
+import type { FileChunk } from '../types/database.types';
 
 const router = Router();
 
@@ -46,7 +48,7 @@ router.post('/test-explain', async (req, res) => {
     const chunks =
       file.chunks
         ?.slice(0, 5)
-        .map((c: any) => c.content)
+        .map((c: FileChunk) => c.content)
         .join('\n\n') || '';
     const content = chunks.substring(0, 4000);
 
@@ -59,7 +61,7 @@ router.post('/test-explain', async (req, res) => {
     );
 
     // Test persona with all 5 dimensions for PersonaPromptBuilder
-    const testPersona: any = {
+    const testPersona: Persona = {
       id: 'test',
       user_id: 'test-user',
       professional_context: {
@@ -189,14 +191,14 @@ router.post('/test-explain/regenerate', async (req, res) => {
     const chunks =
       file.chunks
         ?.slice(0, 5)
-        .map((c: any) => c.content)
+        .map((c: FileChunk) => c.content)
         .join('\n\n') || '';
     const contentWithFeedback = `${chunks.substring(0, 4000)}\n\nUser Feedback for Improvement: ${feedback}`;
 
     logger.info('[Test Regenerate] Content length with feedback:', contentWithFeedback.length);
 
     // Test persona with all 5 dimensions
-    const testPersona: any = {
+    const testPersona: Persona = {
       id: 'test',
       user_id: 'test-user',
       professional_context: {

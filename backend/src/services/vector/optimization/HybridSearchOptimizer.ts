@@ -485,10 +485,14 @@ export class HybridSearchOptimizer {
 
         // Boost recent content
         if (result.metadata?.timestamp) {
-          const age = Date.now() - new Date(result.metadata.timestamp).getTime();
-          const daysSinceCreation = age / (1000 * 60 * 60 * 24);
-          if (daysSinceCreation < 30) {
-            rerankingBoost *= 1.02;
+          const timestamp = result.metadata.timestamp;
+          const date = timestamp instanceof Date ? timestamp : new Date(String(timestamp));
+          if (!isNaN(date.getTime())) {
+            const age = Date.now() - date.getTime();
+            const daysSinceCreation = age / (1000 * 60 * 60 * 24);
+            if (daysSinceCreation < 30) {
+              rerankingBoost *= 1.02;
+            }
           }
         }
       }

@@ -3,17 +3,19 @@
  * Provides a unified interface for different vector database backends
  */
 
+import type { VectorStoreConfig } from '../types';
+
 export interface VectorDocument {
   id: string;
   vector: number[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   content?: string;
 }
 
 export interface VectorSearchOptions {
   topK?: number;
   threshold?: number;
-  filter?: Record<string, any>;
+  filter?: Record<string, unknown>;
   includeMetadata?: boolean;
   includeVector?: boolean;
 }
@@ -22,7 +24,7 @@ export interface VectorSearchResult {
   id: string;
   score: number;
   vector?: number[];
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   content?: string;
 }
 
@@ -30,7 +32,7 @@ export interface IndexConfig {
   dimensions: number;
   metric: 'cosine' | 'euclidean' | 'dotproduct';
   indexType?: string;
-  indexParams?: Record<string, any>;
+  indexParams?: Record<string, unknown>;
 }
 
 export interface VectorStoreStats {
@@ -101,7 +103,7 @@ export interface IVectorStore {
   /**
    * Delete vectors matching a filter
    */
-  deleteByFilter(filter: Record<string, any>): Promise<number>;
+  deleteByFilter(filter: Record<string, unknown>): Promise<number>;
 
   /**
    * Get vectors by ID
@@ -111,7 +113,7 @@ export interface IVectorStore {
   /**
    * Update metadata for existing vectors
    */
-  updateMetadata(id: string, metadata: Record<string, any>): Promise<void>;
+  updateMetadata(id: string, metadata: Record<string, unknown>): Promise<void>;
 
   /**
    * Get statistics about the vector store
@@ -173,7 +175,7 @@ export interface IAdvancedVectorStore extends IVectorStore {
   /**
    * Export vectors for backup or migration
    */
-  export(filter?: Record<string, any>): AsyncIterable<VectorDocument>;
+  export(filter?: Record<string, unknown>): AsyncIterable<VectorDocument>;
 
   /**
    * Import vectors from backup or migration
@@ -185,7 +187,7 @@ export interface IAdvancedVectorStore extends IVectorStore {
  * Factory interface for creating vector store instances
  */
 export interface IVectorStoreFactory {
-  create(provider: string, config: any): IVectorStore;
+  create(provider: string, config: VectorStoreConfig): IVectorStore;
   isSupported(provider: string): boolean;
   getProviders(): string[];
 }
