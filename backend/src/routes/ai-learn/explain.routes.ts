@@ -133,6 +133,9 @@ router.post(
 
       // Write a comment to establish the connection
       res.write(':ok\n\n');
+      
+      // Send initial message to confirm connection
+      sendSSE(res, 'message', { type: 'connected', data: 'SSE connection established' });
 
       // Check cache first with personalized key
       const cacheOptions = generateCacheOptions(
