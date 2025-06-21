@@ -19,8 +19,6 @@ import adminRoutes from './admin';
 import { requireAdmin } from '../middleware/adminAuth';
 import testRoutes from './test';
 import generateRoutes from './generate.routes';
-import testSSERoutes from './test-sse';
-import testPythonRoutes from './test-python-connection';
 
 const router = Router();
 
@@ -82,30 +80,12 @@ router.use('/', fileRoutes); // File routes are mixed between /files and /module
 // Test routes - only in development
 if (process.env.NODE_ENV !== 'production') {
   router.use('/test', testRoutes);
-<<<<<<< Updated upstream
-
-  // Test streaming endpoint
-  import('./test-stream')
-    .then((module) => {
-      router.use('/test-stream', module.default);
-    })
-    .catch((err) => console.error('Failed to load test-stream routes:', err));
-
-=======
-  router.use('/', testSSERoutes); // Mount SSE test routes
-  router.use('/', testPythonRoutes); // Mount Python test routes
   
   // Test streaming endpoint
   import('./test-stream').then(module => {
     router.use('/test-stream', module.default);
   }).catch(err => console.error('Failed to load test-stream routes:', err));
   
-  // Test SSE debug endpoint
-  import('./test-sse-debug').then(module => {
-    router.use('/test-sse', module.default);
-  }).catch(err => console.error('Failed to load test-sse-debug routes:', err));
-  
->>>>>>> Stashed changes
   // Test explain endpoint
   import('./test-explain')
     .then((module) => {

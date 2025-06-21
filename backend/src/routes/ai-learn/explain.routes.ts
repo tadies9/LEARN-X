@@ -257,23 +257,15 @@ router.post(
               formattedContent = `<div style="margin-bottom: 24px;">${chunk.content}</div>`;
             }
           }
-<<<<<<< Updated upstream
-
-=======
           
           logger.info(`[AI Learn Explain] Sending chunk ${chunkCount}: ${chunk.content.substring(0, 50)}...`);
->>>>>>> Stashed changes
           sendSSE(res, 'message', { type: 'content', data: formattedContent });
 
           // Force flush to send immediately
-<<<<<<< Updated upstream
-          if ((res as any).flush) (res as any).flush();
-=======
           if ((res as any).flush) {
             (res as any).flush();
             logger.info('[AI Learn Explain] Flushed');
           }
->>>>>>> Stashed changes
         }
 
         if (chunk.done) {
