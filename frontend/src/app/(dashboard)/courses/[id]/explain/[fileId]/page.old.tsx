@@ -12,7 +12,7 @@ import { createClient } from '@/lib/supabase/client';
 /**
  * Full Takeover Explain Page
  * Clean, focused interface for AI-powered explanations
- * Reuses existing learn-v2 streaming logic
+ * Uses modern streaming logic for AI explanations
  */
 export default function ExplainPage() {
   const params = useParams();

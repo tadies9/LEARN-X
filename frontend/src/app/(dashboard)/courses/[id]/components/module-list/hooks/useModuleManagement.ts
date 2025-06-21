@@ -159,9 +159,9 @@ export function useModuleManagement(onUpdate: () => void) {
       // Navigate to workspace with file pre-selected
       router.push(`/courses/${courseId}/workspace?selectedFile=${file.id}`);
     } else {
-      // Navigate to the old learn page with file context
+      // Navigate to the explain page with file context
       router.push(
-        `/courses/${courseId}/learn-v2?fileId=${file.id}&fileName=${encodeURIComponent(file.name)}`
+        `/courses/${courseId}/explain/${file.id}?fileName=${encodeURIComponent(file.name)}`
       );
     }
   };
