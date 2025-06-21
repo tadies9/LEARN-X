@@ -6,8 +6,8 @@ import { ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { CourseWorkspace } from '@/components/course/CourseWorkspace';
-import { courseApi } from '@/lib/api/course';
-import { moduleApi } from '@/lib/api/module';
+import { courseApi } from '@/lib/api/CourseApiService';
+import { moduleApi } from '@/lib/api/ModuleApiService';
 import type { Course, Module } from '@/lib/types/course';
 
 /**

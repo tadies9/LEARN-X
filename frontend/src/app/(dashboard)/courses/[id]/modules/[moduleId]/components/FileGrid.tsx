@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { useToast } from '@/components/ui/useToast';
-import { fileApi } from '@/lib/api/file';
+import { fileApi } from '@/lib/api/FileApiService';
 import type { CourseFile } from '@/lib/types/course';
 import {
   Download,

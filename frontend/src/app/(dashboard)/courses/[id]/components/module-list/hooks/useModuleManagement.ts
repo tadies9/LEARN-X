@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useToast } from '@/components/ui/useToast';
 import { useRouter } from 'next/navigation';
-import { moduleApi } from '@/lib/api/module';
-import { fileApi } from '@/lib/api/file';
+import { moduleApi } from '@/lib/api/ModuleApiService';
+import { fileApi } from '@/lib/api/FileApiService';
 import type { Module, CourseFile } from '@/lib/types/course';
 
 export function useModuleManagement(onUpdate: () => void) {

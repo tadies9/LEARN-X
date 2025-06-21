@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { ButtonLoader } from '@/components/ui/ButtonLoader';
 import { FileUpload } from '@/components/ui/FileUpload';
 import { useToast } from '@/components/ui/useToast';
-import { fileApi } from '@/lib/api/file';
+import { fileApi } from '@/lib/api/FileApiService';
 import { Upload } from 'lucide-react';
 
 interface FileUploadDialogProps {

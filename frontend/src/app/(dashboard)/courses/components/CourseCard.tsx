@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { useToast } from '@/components/ui/useToast';
-import { courseApi } from '@/lib/api/course';
+import { courseApi } from '@/lib/api/CourseApiService';
 import type { Course } from '@/lib/types/course';
 import {
   Archive,

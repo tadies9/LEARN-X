@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/Label';
 import { Textarea } from '@/components/ui/Textarea';
 import { Progress } from '@/components/ui/Progress';
 import { useToast } from '@/components/ui/useToast';
-import { fileApi } from '@/lib/api/file';
+import { fileApi } from '@/lib/api/FileApiService';
 import { Upload, X, FileText, AlertCircle } from 'lucide-react';
 
 interface UploadFileDialogProps {

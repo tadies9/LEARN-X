@@ -7,7 +7,6 @@ import { HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { SavedContentApiService } from '@/lib/api/saved';
-import { StreamingDebug } from '@/components/debug/StreamingDebug';
 import { useRouter } from 'next/navigation';
 
 // Import modular components and hooks
@@ -136,14 +135,6 @@ export default function LearnPage({ params: _params }: { params: { id: string } 
         </div>
       </div>
 
-      {/* Debug Component */}
-      <StreamingDebug
-        isStreaming={isStreaming}
-        streamingContent={content}
-        error={error}
-        activeMode={activeMode}
-        fileId={fileId}
-      />
     </div>
   );
 }

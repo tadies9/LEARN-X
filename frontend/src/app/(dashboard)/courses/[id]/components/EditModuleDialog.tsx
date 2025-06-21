@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/Label';
 import { ButtonLoader } from '@/components/ui/ButtonLoader';
 import { useToast } from '@/components/ui/useToast';
 import { updateModuleSchema, type UpdateModuleData } from '@/lib/validations/course';
-import { moduleApi } from '@/lib/api/module';
+import { moduleApi } from '@/lib/api/ModuleApiService';
 import type { Module } from '@/lib/types/course';
 
 interface EditModuleDialogProps {

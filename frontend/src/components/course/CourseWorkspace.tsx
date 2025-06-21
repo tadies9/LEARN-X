@@ -31,7 +31,7 @@ import { AddModuleDialog } from './AddModuleDialog';
 import { EditModuleDialog } from './EditModuleDialog';
 import { ModuleMenu } from './ModuleMenu';
 import type { Module, CourseFile } from '@/lib/types/course';
-import { fileApi } from '@/lib/api/file';
+import { fileApi } from '@/lib/api/FileApiService';
 import { usePersona } from '@/hooks/usePersona';
 import {
   DropdownMenu,

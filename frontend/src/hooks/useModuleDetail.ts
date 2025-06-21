@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { useToast } from '@/components/ui/useToast';
-import { courseApi } from '@/lib/api/course';
-import { moduleApi } from '@/lib/api/module';
-import { fileApi } from '@/lib/api/file';
+import { courseApi } from '@/lib/api/CourseApiService';
+import { moduleApi } from '@/lib/api/ModuleApiService';
+import { fileApi } from '@/lib/api/FileApiService';
 
 import type { Course, Module, CourseFile } from '@/lib/types/course';
 

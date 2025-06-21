@@ -5,7 +5,7 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useToast } from '@/components/ui/useToast';
-import { fileApi } from '@/lib/api/file';
+import { fileApi } from '@/lib/api/FileApiService';
 import { api } from '@/lib/api/client';
 import { createClient } from '@/lib/supabase/client';
 

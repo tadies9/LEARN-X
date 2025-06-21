@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/Label';
 import { Switch } from '@/components/ui/Switch';
 import { ButtonLoader } from '@/components/ui/ButtonLoader';
 import { useToast } from '@/components/ui/useToast';
-import { courseApi } from '@/lib/api/course';
+import { courseApi } from '@/lib/api/CourseApiService';
 import { updateCourseSchema, type UpdateCourseData } from '@/lib/validations/course';
 
 import type { Course } from '@/lib/types/course';

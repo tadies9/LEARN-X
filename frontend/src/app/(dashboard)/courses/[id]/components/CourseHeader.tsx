@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { Card, CardContent } from '@/components/ui/Card';
 import { useToast } from '@/components/ui/useToast';
-import { courseApi } from '@/lib/api/course';
+import { courseApi } from '@/lib/api/CourseApiService';
 
 import type { Course } from '@/lib/types/course';
 

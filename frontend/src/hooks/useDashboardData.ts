@@ -6,7 +6,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { courseApi } from '@/lib/api/course';
+import { courseApi } from '@/lib/api/CourseApiService';
 import { dashboardApi } from '@/lib/api/DashboardApiService';
 import type { Course } from '@/lib/types/course';
 import type { DashboardStats } from '@/lib/types/dashboard';

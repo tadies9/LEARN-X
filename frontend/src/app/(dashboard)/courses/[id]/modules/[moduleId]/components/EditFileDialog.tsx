@@ -18,7 +18,7 @@ import { Label } from '@/components/ui/Label';
 import { ButtonLoader } from '@/components/ui/ButtonLoader';
 import { useToast } from '@/components/ui/useToast';
 import { updateFileSchema, type UpdateFileData } from '@/lib/validations/course';
-import { fileApi } from '@/lib/api/file';
+import { fileApi } from '@/lib/api/FileApiService';
 import type { CourseFile } from '@/lib/types/course';
 
 interface EditFileDialogProps {

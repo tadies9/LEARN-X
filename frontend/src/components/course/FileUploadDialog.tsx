@@ -16,7 +16,7 @@ import { Label } from '@/components/ui/Label';
 import { Input } from '@/components/ui/Input';
 import { Textarea } from '@/components/ui/Textarea';
 import { useToast } from '@/components/ui/useToast';
-import FileApiService from '@/lib/api/FileApiService';
+import { fileApi } from '@/lib/api/FileApiService';
 import { cn } from '@/lib/utils';
 
 interface FileUploadDialogProps {
@@ -86,12 +86,11 @@ export function FileUploadDialog({
         setUploadProgress((prev) => Math.min(prev + 10, 90));
       }, 200);
 
-      await FileApiService.uploadFile(
-        selectedFile, 
-        courseId, 
+      await fileApi.uploadFile(selectedFile, { 
         moduleId,
-        (progress) => setUploadProgress(progress)
-      );
+        name: selectedFile.name.split('.')[0],
+        description: description || undefined
+      });
 
       clearInterval(progressInterval);
       setUploadProgress(100);

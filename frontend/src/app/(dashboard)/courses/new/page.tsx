@@ -16,7 +16,7 @@ import { Switch } from '@/components/ui/Switch';
 import { ButtonLoader } from '@/components/ui/ButtonLoader';
 import { useToast } from '@/components/ui/useToast';
 import { createCourseSchema, type CreateCourseData } from '@/lib/validations/course';
-import { courseApi } from '@/lib/api/course';
+import { courseApi } from '@/lib/api/CourseApiService';
 
 export default function NewCoursePage() {
   const router = useRouter();

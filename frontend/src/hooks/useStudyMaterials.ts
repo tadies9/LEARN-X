@@ -6,8 +6,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { courseApi } from '@/lib/api/course';
-import { moduleApi } from '@/lib/api/module';
+import { courseApi } from '@/lib/api/CourseApiService';
+import { moduleApi } from '@/lib/api/ModuleApiService';
 import type { CourseFile } from '@/lib/types/course';
 
 interface StudyMaterial {

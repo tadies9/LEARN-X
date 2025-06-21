@@ -8,7 +8,7 @@ import { Plus, Search } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PageLoader } from '@/components/ui/PageLoader';
-import { courseApi } from '@/lib/api/course';
+import { courseApi } from '@/lib/api/CourseApiService';
 import { useDebounce } from '@/hooks/useDebounce';
 
 import { CourseCard } from './components/CourseCard';

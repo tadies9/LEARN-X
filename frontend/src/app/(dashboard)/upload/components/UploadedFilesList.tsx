@@ -5,7 +5,6 @@ import { CheckCircle, AlertCircle, RefreshCw, Trash2, Clock, Loader2 } from 'luc
 
 import { getFileIcon, formatFileSize } from '../utils/fileHelpers';
 import type { UploadedFile } from '@/lib/api/files';
-import { FileProcessingDebug } from '@/components/debug/FileProcessingDebug';
 
 interface UploadedFilesListProps {
   files: UploadedFile[];
@@ -115,14 +114,6 @@ export function UploadedFilesList({
                     )}
                   </div>
                 </div>
-                {/* Debug component for error files */}
-                {(file.status === 'error' || file.status === 'processing') && (
-                  <FileProcessingDebug
-                    fileId={file.id}
-                    fileName={file.name}
-                    currentStatus={file.status}
-                  />
-                )}
               </div>
             );
           })}

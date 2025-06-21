@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
 import { useToast } from '@/components/ui/useToast';
-import { moduleApi } from '@/lib/api/module';
+import { moduleApi } from '@/lib/api/ModuleApiService';
 import type { Module } from '@/lib/types/course';
 import {
   Clock,
