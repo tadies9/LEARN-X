@@ -7,7 +7,7 @@ import {
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '@/components/ui/Card';
 
 interface AuthCardProps {
   /** The main title of the auth card */

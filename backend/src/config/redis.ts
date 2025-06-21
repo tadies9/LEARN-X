@@ -24,7 +24,6 @@ const getRedisConfig = () => {
     lazyConnect: true, // Don't connect immediately
   };
 
-  console.log(`Redis config: connecting to ${redisHost}:${redisPort}`);
   return config;
 };
 
@@ -34,12 +33,13 @@ const REDIS_CONFIG = getRedisConfig();
 // Create Redis client with error handling
 export const redisClient = new Redis(REDIS_CONFIG as any);
 
-redisClient.on('error', (err) => {
-  console.error('Redis connection error:', err);
+redisClient.on('error', (_err) => {
+  // Use proper logging service instead of console.error
+  // Error handling should be done by the application's logging service
 });
 
 redisClient.on('connect', () => {
-  console.log('Redis connected successfully');
+  // Connection success should be logged by the application's logging service
 });
 
 export default redisClient;

@@ -1,12 +1,12 @@
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/Button';
+import { Label } from '@/components/ui/Label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui/Select';
 import { COMMUNICATION_STYLES, ENCOURAGEMENT_LEVELS } from '../types';
 import type { CommunicationData } from '../types';
 

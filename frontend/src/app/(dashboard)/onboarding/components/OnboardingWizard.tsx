@@ -1,7 +1,7 @@
 'use client';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
-import { Progress } from '@/components/ui/progress';
+import { Progress } from '@/components/ui/Progress';
 
 import { WelcomeStep } from './steps/WelcomeStep';
 import { ProfessionalStep } from './steps/ProfessionalStep';

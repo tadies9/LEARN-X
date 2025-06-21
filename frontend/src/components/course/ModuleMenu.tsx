@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+} from '@/components/ui/DropdownMenu';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -18,9 +18,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/AlertDialog';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { MoreHorizontal, Edit, Trash2, MoveUp, MoveDown } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/useToast';
 import { moduleApi } from '@/lib/api/ModuleApiService';
 import type { Module } from '@/lib/types/course';
 

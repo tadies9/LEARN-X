@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/Button';
+import { useToast } from '@/components/ui/useToast';
 import { fileApi } from '@/lib/api/file';
 import { api } from '@/lib/api/client';
 import { createClient } from '@/lib/supabase/client';

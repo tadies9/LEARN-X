@@ -1,16 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup';
+import { Label } from '@/components/ui/Label';
+import { Progress } from '@/components/ui/Progress';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, XCircle, ChevronRight, Trophy, RefreshCw, Brain } from 'lucide-react';
 import confetti from 'canvas-confetti';
-
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 
 interface Question {
   id: string;

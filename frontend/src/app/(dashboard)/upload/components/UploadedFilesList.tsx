@@ -1,6 +1,6 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { CheckCircle, AlertCircle, RefreshCw, Trash2, Clock, Loader2 } from 'lucide-react';
 
 import { getFileIcon, formatFileSize } from '../utils/fileHelpers';

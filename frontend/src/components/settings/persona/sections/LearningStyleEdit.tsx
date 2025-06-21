@@ -1,11 +1,11 @@
-import { Label } from '@/components/ui/label';
+import { Label } from '@/components/ui/Label';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '@/components/ui/Select';
 import { LEARNING_STYLES } from '../types';
 import type { LearningStyleData } from '../types';
 

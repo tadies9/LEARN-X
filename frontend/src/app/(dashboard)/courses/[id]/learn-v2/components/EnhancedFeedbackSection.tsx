@@ -1,6 +1,6 @@
 import React from 'react';
 import { ThumbsUp, ThumbsDown, Meh } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { AIApiService } from '@/lib/api/ai';
 
 interface EnhancedFeedbackSectionProps {

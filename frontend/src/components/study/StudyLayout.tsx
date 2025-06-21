@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { ContentViewer } from './ContentViewer';
 import { PersonalizedPanel } from './PersonalizedPanel';
 import { StudyChat } from './StudyChat';

@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Button } from '@/components/ui/button';
-import { AnimatedCounter } from '@/components/animations/animated-counter';
-import { FadeIn } from '@/components/animations/fade-in';
+import { Button } from '@/components/ui/Button';
+import { AnimatedCounter } from '@/components/animations/AnimatedCounter';
+import { FadeIn } from '@/components/animations/FadeIn';
 import { ArrowRight, Sparkles, Shield, Clock, School, BrainCircuit } from 'lucide-react';
 
 const trustBadges = [

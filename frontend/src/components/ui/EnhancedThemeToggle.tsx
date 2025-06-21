@@ -5,7 +5,7 @@
 
 'use client';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { useTheme } from '@/components/providers/EnhancedThemeProvider';
 import { Monitor, Moon, Sun, Clock, Check, Palette } from 'lucide-react';
 import {
@@ -16,7 +16,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/DropdownMenu';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
 import { getThemeDisplayName, getThemeDescription } from '@/lib/utils/theme';
 

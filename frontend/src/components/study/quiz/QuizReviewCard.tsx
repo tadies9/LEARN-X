@@ -1,8 +1,8 @@
 'use client';
 
 import { CheckCircle, XCircle } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
 import { QuizQuestion } from './types';
 import { getDifficultyColor } from './utils';
 

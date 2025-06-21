@@ -5,12 +5,12 @@
 
 'use client';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Label } from '@/components/ui/Label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/Switch';
+import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { useTheme, useThemeColors } from '@/components/providers/EnhancedThemeProvider';
 import { Monitor, Sun, Moon, Clock, Palette, Eye, Contrast, Zap, Download } from 'lucide-react';
 import { getThemeDisplayName, getThemeDescription } from '@/lib/utils/theme';

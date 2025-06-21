@@ -7,11 +7,11 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
+} from '@/components/ui/Dialog';
+import { Button } from '@/components/ui/Button';
 import { ButtonLoader } from '@/components/ui/ButtonLoader';
 import { FileUpload } from '@/components/ui/FileUpload';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/useToast';
 import { fileApi } from '@/lib/api/file';
 import { Upload } from 'lucide-react';
 

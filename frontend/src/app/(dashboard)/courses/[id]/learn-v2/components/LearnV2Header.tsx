@@ -1,6 +1,6 @@
 import React from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { useRouter } from 'next/navigation';
 import { ContentActions } from './ContentActions';
 import { ActiveMode } from '../types/streaming';

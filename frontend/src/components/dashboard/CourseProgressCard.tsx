@@ -1,8 +1,8 @@
 'use client';
 
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Progress } from '@/components/ui/Progress';
 import { motion } from 'framer-motion';
 import { Clock, Users, PlayCircle, MoreVertical } from 'lucide-react';
 import {

@@ -4,8 +4,8 @@ import * as React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { Logo } from '@/components/ui/logo';
+import { Button } from '@/components/ui/Button';
+import { Logo } from '@/components/ui/Logo';
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -13,8 +13,8 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   NavigationMenuTrigger,
-} from '@/components/ui/navigation-menu';
-import { ThemeToggle } from '@/components/navigation/theme-toggle';
+} from '@/components/ui/NavigationMenu';
+import { ThemeToggle } from '@/components/navigation/ThemeToggle';
 import {
   BookOpen,
   Brain,

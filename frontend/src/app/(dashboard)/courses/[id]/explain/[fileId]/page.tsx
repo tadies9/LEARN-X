@@ -3,8 +3,8 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Loader2, RefreshCw, MessageSquare } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/Button';
+import { useToast } from '@/components/ui/useToast';
 import { fileApi } from '@/lib/api/file';
 import { createClient } from '@/lib/supabase/client';
 import { flushSync } from 'react-dom';
@@ -15,10 +15,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/Dialog';
+import { Textarea } from '@/components/ui/Textarea';
+import { Label } from '@/components/ui/Label';
 import { parseSSEStream } from '@/lib/utils/sse-parser';
+import type { SSEExplainMessage } from '@/types/sse.types';
 
 /**
  * Full Takeover Explain Page
@@ -147,8 +148,9 @@ export default function ExplainPage() {
                 'Current accumulated content length:',
                 accumulatedContentRef.current.length
               );
-              if (data.type === 'content') {
-                accumulatedContentRef.current += data.data;
+              const message = data as unknown as SSEExplainMessage;
+              if (message.type === 'content') {
+                accumulatedContentRef.current += message.data;
                 console.log(
                   'New accumulated content length:',
                   accumulatedContentRef.current.length
@@ -158,14 +160,14 @@ export default function ExplainPage() {
                 flushSync(() => {
                   setStreamingContent(accumulatedContentRef.current);
                 });
-              } else if (data.type === 'connected') {
-                console.log('SSE connected:', data.data);
-              } else if (data.type === 'complete') {
+              } else if (message.type === 'connected') {
+                console.log('SSE connected:', message.data);
+              } else if (message.type === 'complete') {
                 console.log('SSE complete, final content:', accumulatedContentRef.current);
                 setIsStreaming(false);
-              } else if (data.type === 'error') {
-                console.error('SSE error received:', data);
-                setError(data.data?.message || 'Failed to generate explanation');
+              } else if (message.type === 'error') {
+                console.error('SSE error received:', message);
+                setError(message.data?.message || 'Failed to generate explanation');
                 setIsStreaming(false);
               }
             },
@@ -238,17 +240,18 @@ export default function ExplainPage() {
       await parseSSEStream(
         response,
         (data) => {
-          if (data.type === 'content') {
-            accumulatedContent += data.data;
+          const message = data as unknown as SSEExplainMessage;
+          if (message.type === 'content') {
+            accumulatedContent += message.data;
             setStreamingContent(accumulatedContent);
-          } else if (data.type === 'complete') {
+          } else if (message.type === 'complete') {
             setIsRegenerating(false);
             toast({
               title: 'Content regenerated',
               description: 'The explanation has been updated based on your feedback.',
             });
-          } else if (data.type === 'error') {
-            setError(data.data?.message || 'Failed to regenerate');
+          } else if (message.type === 'error') {
+            setError(message.data?.message || 'Failed to regenerate');
             setIsRegenerating(false);
           }
         },

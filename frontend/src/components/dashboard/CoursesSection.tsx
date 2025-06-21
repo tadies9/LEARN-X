@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { CourseProgressCard } from '@/components/dashboard/CourseProgressCard';
 import { FadeIn } from '@/components/animations/FadeIn';
 

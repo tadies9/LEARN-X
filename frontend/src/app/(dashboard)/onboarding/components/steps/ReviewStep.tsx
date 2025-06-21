@@ -5,13 +5,13 @@ import { useState } from 'react';
 import { ChevronLeft, Edit2, Sparkles } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
-import { Button } from '@/components/ui/button';
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/Button';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { OnboardingCard } from '../OnboardingCard';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/Badge';
 import { ButtonLoader } from '@/components/ui/ButtonLoader';
-import { Confetti } from '@/components/ui/confetti';
-import { useToast } from '@/components/ui/use-toast';
+import { Confetti } from '@/components/ui/Confetti';
+import { useToast } from '@/components/ui/useToast';
 import { cn } from '@/lib/utils';
 
 import type { OnboardingStep } from '@/lib/types/persona';

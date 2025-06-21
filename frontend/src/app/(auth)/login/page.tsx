@@ -9,15 +9,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { CheckCircle2 } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 import { AuthCard } from '@/components/layouts/AuthCard';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { Alert, AlertDescription } from '@/components/ui/Alert';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
 import { SocialAuthDivider } from '@/components/auth/SocialAuthDivider';
-import { FormField } from '@/components/ui/form-field';
 import { loginSchema, type LoginFormData } from '@/lib/validations/auth';
 
 // Force dynamic rendering
@@ -99,7 +98,7 @@ export default function LoginPage() {
         </Alert>
       )}
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <FormField>
+        <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
             id="email"
@@ -109,8 +108,8 @@ export default function LoginPage() {
             disabled={loading}
           />
           {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
-        </FormField>
-        <FormField>
+        </div>
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
             <Link href="/forgot-password" className="text-sm text-primary hover:underline">
@@ -119,7 +118,7 @@ export default function LoginPage() {
           </div>
           <Input id="password" type="password" {...register('password')} disabled={loading} />
           {errors.password && <p className="text-sm text-destructive">{errors.password.message}</p>}
-        </FormField>
+        </div>
         <div className="flex items-center space-x-2">
           <Checkbox
             id="remember"

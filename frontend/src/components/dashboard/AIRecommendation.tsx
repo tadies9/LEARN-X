@@ -2,10 +2,10 @@ import { Brain, Target, Sparkles, TrendingUp, BookOpen } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { FadeIn } from '@/components/animations/FadeIn';
 import { dashboardApi } from '@/lib/api/DashboardApiService';
 import { cn } from '@/lib/utils';

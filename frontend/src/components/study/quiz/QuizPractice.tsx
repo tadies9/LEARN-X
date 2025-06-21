@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { QuizResults, QuizPracticeProps } from './types';
 import { checkAnswer } from './utils';
 import { QuizStartScreen } from './QuizStartScreen';

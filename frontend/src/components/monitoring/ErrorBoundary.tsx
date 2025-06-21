@@ -2,7 +2,7 @@
 
 import React, { Component, ReactNode } from 'react';
 import * as Sentry from '@sentry/nextjs';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { AlertCircle } from 'lucide-react';
 
 interface Props {

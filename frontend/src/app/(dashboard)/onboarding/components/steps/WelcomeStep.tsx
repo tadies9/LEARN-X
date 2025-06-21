@@ -3,8 +3,8 @@
 import { Sparkles, Clock, Brain, Target } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
-import { Button } from '@/components/ui/button';
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/Button';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { OnboardingCard } from '../OnboardingCard';
 
 export function WelcomeStep() {

@@ -5,11 +5,11 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
-import { Button } from '@/components/ui/button';
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/Button';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { OnboardingCard } from '../OnboardingCard';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup';
-import { Label } from '@/components/ui/label';
+import { Label } from '@/components/ui/Label';
 import { cn } from '@/lib/utils';
 
 import type { ContentPreferences } from '@/lib/types/persona';

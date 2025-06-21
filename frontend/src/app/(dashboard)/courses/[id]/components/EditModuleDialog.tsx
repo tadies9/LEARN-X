@@ -10,13 +10,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/Dialog';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { Label } from '@/components/ui/Label';
 import { ButtonLoader } from '@/components/ui/ButtonLoader';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/useToast';
 import { updateModuleSchema, type UpdateModuleData } from '@/lib/validations/course';
 import { moduleApi } from '@/lib/api/module';
 import type { Module } from '@/lib/types/course';

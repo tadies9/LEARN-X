@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 
 import { GradesHeader } from './components/GradesHeader';
 import { CourseGradesTab } from './components/CourseGradesTab';

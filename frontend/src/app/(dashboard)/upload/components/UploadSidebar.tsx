@@ -1,4 +1,4 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { FileText, Brain, Sparkles, Upload, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 
 interface UploadSidebarProps {

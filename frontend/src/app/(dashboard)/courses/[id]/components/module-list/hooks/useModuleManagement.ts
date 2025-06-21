@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/useToast';
 import { useRouter } from 'next/navigation';
 import { moduleApi } from '@/lib/api/module';
 import { fileApi } from '@/lib/api/file';

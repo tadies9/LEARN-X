@@ -1,102 +1,43 @@
 'use client';
 
+import { Card } from '@/components/ui/Card';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/Avatar';
 import { motion } from 'framer-motion';
-import {
-  BookOpen,
-  Trophy,
-  Upload,
-  Clock,
-  CheckCircle,
-  HelpCircle,
-  Layers,
-  Activity as ActivityIcon,
-} from 'lucide-react';
+import { BookOpen, Trophy, Target, MessageSquare, FileText, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 
-import { Card } from '@/components/ui/card';
-import type { UserActivity } from '@/lib/api/DashboardApiService';
-
 const iconMap = {
-  course_created: BookOpen,
-  module_completed: CheckCircle,
-  file_uploaded: Upload,
-  study_session: Clock,
-  achievement_earned: Trophy,
-  quiz_completed: HelpCircle,
-  flashcard_practiced: Layers,
-  default: ActivityIcon,
+  course: BookOpen,
+  achievement: Trophy,
+  goal: Target,
+  comment: MessageSquare,
+  assignment: FileText,
+  complete: CheckCircle,
 };
 
-const colorMap = {
-  course_created: 'bg-blue-100 text-blue-600 dark:bg-blue-900/20',
-  module_completed: 'bg-green-100 text-green-600 dark:bg-green-900/20',
-  file_uploaded: 'bg-purple-100 text-purple-600 dark:bg-purple-900/20',
-  study_session: 'bg-orange-100 text-orange-600 dark:bg-orange-900/20',
-  achievement_earned: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/20',
-  quiz_completed: 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/20',
-  flashcard_practiced: 'bg-pink-100 text-pink-600 dark:bg-pink-900/20',
-  default: 'bg-gray-100 text-gray-600 dark:bg-gray-900/20',
-};
-
-interface ActivityTimelineProps {
-  activities: UserActivity[];
+interface Activity {
+  id: string;
+  type: keyof typeof iconMap;
+  title: string;
+  description: string;
+  time: Date;
+  user?: {
+    name: string;
+    avatar?: string;
+  };
 }
 
-const getActivityDetails = (activity: UserActivity) => {
-  const typeLabels = {
-    course_created: 'Created course',
-    module_completed: 'Completed module',
-    file_uploaded: 'Uploaded file',
-    study_session: 'Study session',
-    achievement_earned: 'Earned achievement',
-    quiz_completed: 'Completed quiz',
-    flashcard_practiced: 'Practiced flashcards',
-  };
-
-  const title = typeLabels[activity.type as keyof typeof typeLabels] || activity.type;
-
-  // Build description from metadata
-  let description = '';
-  if (activity.metadata) {
-    if (activity.metadata.courseName) {
-      description = String(activity.metadata.courseName);
-    } else if (activity.metadata.fileName) {
-      description = String(activity.metadata.fileName);
-    } else if (activity.metadata.duration) {
-      description = `${Math.round(Number(activity.metadata.duration) / 60)} minutes`;
-    } else if (activity.metadata.score) {
-      description = `Score: ${activity.metadata.score}%`;
-    }
-  }
-
-  return { title, description };
-};
+interface ActivityTimelineProps {
+  activities: Activity[];
+}
 
 export function ActivityTimeline({ activities }: ActivityTimelineProps) {
-  if (activities.length === 0) {
-    return (
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
-        <div className="text-center py-8">
-          <ActivityIcon className="h-12 w-12 mx-auto text-muted-foreground/20 mb-3" />
-          <p className="text-sm text-muted-foreground">No recent activity yet</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Start learning to see your progress here!
-          </p>
-        </div>
-      </Card>
-    );
-  }
-
   return (
     <Card className="p-6">
       <h3 className="text-lg font-semibold mb-4">Recent Activity</h3>
       <div className="space-y-4">
         {activities.map((activity, index) => {
-          const Icon = iconMap[activity.type as keyof typeof iconMap] || iconMap.default;
-          const colorClass = colorMap[activity.type as keyof typeof colorMap] || colorMap.default;
-          const { title, description } = getActivityDetails(activity);
-
+          const Icon = iconMap[activity.type];
           return (
             <motion.div
               key={activity.id}
@@ -106,7 +47,15 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
               className="flex gap-4"
             >
               <div className="relative">
-                <div className={`rounded-full p-2 ${colorClass}`}>
+                <div
+                  className={`rounded-full p-2 ${
+                    activity.type === 'achievement'
+                      ? 'bg-warning/10 text-warning'
+                      : activity.type === 'complete'
+                        ? 'bg-success/10 text-success'
+                        : 'bg-primary/10 text-primary'
+                  }`}
+                >
                   <Icon className="h-4 w-4" />
                 </div>
                 {index < activities.length - 1 && (
@@ -116,12 +65,24 @@ export function ActivityTimeline({ activities }: ActivityTimelineProps) {
               <div className="flex-1 space-y-1">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="font-medium text-sm">{title}</p>
-                    {description && <p className="text-xs text-muted-foreground">{description}</p>}
+                    <p className="font-medium text-sm">{activity.title}</p>
+                    <p className="text-xs text-muted-foreground">{activity.description}</p>
                   </div>
+                  {activity.user && (
+                    <Avatar className="h-6 w-6">
+                      <AvatarImage src={activity.user.avatar} />
+                      <AvatarFallback>
+                        {activity.user.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .join('')
+                          .toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {format(new Date(activity.timestamp), 'MMM d, h:mm a')}
+                  {format(activity.time, 'MMM d, h:mm a')}
                 </p>
               </div>
             </motion.div>

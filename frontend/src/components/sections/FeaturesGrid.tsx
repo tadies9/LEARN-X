@@ -1,6 +1,6 @@
 import { Book, BarChart3, Shield, Users, Zap, Database } from 'lucide-react';
 
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/Card';
 
 export function FeaturesGrid() {
   return (

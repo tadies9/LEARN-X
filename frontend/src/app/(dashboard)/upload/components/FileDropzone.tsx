@@ -1,7 +1,7 @@
 import { useDropzone } from 'react-dropzone';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { Upload, Sparkles } from 'lucide-react';
 
 interface FileDropzoneProps {

@@ -5,7 +5,7 @@ import { ReactNode } from 'react';
 import { LucideIcon } from 'lucide-react';
 
 // 3. Internal imports - absolute paths (@/)
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { StatsCard } from '@/components/dashboard/StatsCard';
 import { FadeIn } from '@/components/animations/FadeIn';
 

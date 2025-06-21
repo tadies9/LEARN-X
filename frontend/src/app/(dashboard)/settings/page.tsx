@@ -5,8 +5,8 @@ import { useForm } from 'react-hook-form';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/Button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { accountSettingsSchema, type AccountSettingsFormData } from '@/lib/validations/profile';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { ButtonLoader } from '@/components/ui/ButtonLoader';

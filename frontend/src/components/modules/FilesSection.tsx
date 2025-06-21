@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import { FileText, Grid, List } from 'lucide-react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/ToggleGroup';
 
 import { FileList } from '@/app/(dashboard)/courses/[id]/modules/[moduleId]/components/FileList';
 import { FileGrid } from '@/app/(dashboard)/courses/[id]/modules/[moduleId]/components/FileGrid';

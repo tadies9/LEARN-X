@@ -5,12 +5,12 @@ import { useRouter } from 'next/navigation';
 
 import { FileJson, FileText, RefreshCw } from 'lucide-react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { personaApi } from '@/lib/api/persona';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/useToast';
 import { EditablePersonaDisplay } from '@/components/settings/EditablePersonaDisplay';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 
 export function PersonaSettings() {
   const [exporting, setExporting] = useState(false);

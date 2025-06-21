@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import * as Sentry from '@sentry/nextjs';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 
 export function TestSentry() {
   const [message, setMessage] = useState<string>('');

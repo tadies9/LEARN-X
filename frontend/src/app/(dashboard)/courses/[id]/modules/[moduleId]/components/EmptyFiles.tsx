@@ -2,7 +2,7 @@
 
 import { FileText, BookOpen, Upload } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 
 interface EmptyFilesProps {
   onUpload: () => void;

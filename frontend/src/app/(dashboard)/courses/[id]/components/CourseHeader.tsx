@@ -7,10 +7,10 @@ import { useRouter } from 'next/navigation';
 import { Archive, BookOpen, Clock, Edit, Globe, Lock, Search, Settings, Trash } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { useToast } from '@/components/ui/use-toast';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
+import { Card, CardContent } from '@/components/ui/Card';
+import { useToast } from '@/components/ui/useToast';
 import { courseApi } from '@/lib/api/course';
 
 import type { Course } from '@/lib/types/course';

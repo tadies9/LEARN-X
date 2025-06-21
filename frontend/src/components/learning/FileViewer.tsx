@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { PDFViewer } from './PdfViewer';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { FileText, Download, ExternalLink, AlertCircle } from 'lucide-react';
 
 interface FileViewerProps {

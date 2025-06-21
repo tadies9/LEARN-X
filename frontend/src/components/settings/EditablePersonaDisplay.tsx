@@ -1,8 +1,8 @@
 'use client';
 
 import { GraduationCap, Heart, MessageSquare, FileText, Brain } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Skeleton } from '@/components/ui/Skeleton';
 import { PersonaSection } from './persona/PersonaSection';
 import { usePersonaForm } from './persona/usePersonaForm';
 import {

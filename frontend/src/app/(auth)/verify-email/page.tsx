@@ -6,8 +6,8 @@ import Link from 'next/link';
 
 import { Mail, CheckCircle } from 'lucide-react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { createClient } from '@/lib/supabase/client';
 
 // Force dynamic rendering

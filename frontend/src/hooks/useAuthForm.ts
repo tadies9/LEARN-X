@@ -1,17 +1,18 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useForm, type FieldValues, type DefaultValues } from 'react-hook-form';
+import { useForm, type FieldValues, type DefaultValues, type Resolver } from 'react-hook-form';
 import { createClient } from '@/lib/supabase/client';
 import { useFormSubmit } from './useFormSubmit';
 import { getErrorMessage } from '@/utils/errorHandling';
 import { getBaseUrl } from '@/lib/utils/url';
+import type { User } from '@supabase/supabase-js';
 
 interface UseAuthFormOptions<T extends FieldValues> {
-  schema: any;
+  schema: Resolver<T>;
   defaultValues?: DefaultValues<T>;
   redirectTo?: string;
-  onSuccess?: (user?: any) => void;
+  onSuccess?: (user?: User) => void;
 }
 
 export function useAuthForm<T extends FieldValues>(
@@ -29,9 +30,10 @@ export function useAuthForm<T extends FieldValues>(
   const handleAuth = async (data: T) => {
     switch (type) {
       case 'login':
+        const loginData = data as unknown as { email: string; password: string };
         const { error: loginError } = await supabase.auth.signInWithPassword({
-          email: (data as any).email,
-          password: (data as any).password,
+          email: loginData.email,
+          password: loginData.password,
         });
 
         if (loginError) {
@@ -43,12 +45,13 @@ export function useAuthForm<T extends FieldValues>(
         break;
 
       case 'register':
+        const registerData = data as unknown as { email: string; password: string; name: string };
         const { data: authData, error: registerError } = await supabase.auth.signUp({
-          email: (data as any).email,
-          password: (data as any).password,
+          email: registerData.email,
+          password: registerData.password,
           options: {
             data: {
-              full_name: (data as any).name,
+              full_name: registerData.name,
             },
             emailRedirectTo: `${getBaseUrl()}/auth/callback?next=${options.redirectTo || '/onboarding'}`,
           },
@@ -63,20 +66,21 @@ export function useAuthForm<T extends FieldValues>(
           const { error: profileError } = await supabase.from('users').insert({
             id: authData.user.id,
             email: authData.user.email,
-            full_name: (data as any).name,
+            full_name: registerData.name,
           });
 
           if (profileError) {
             console.error('Profile creation error:', profileError);
           }
 
-          router.push('/verify-email?email=' + encodeURIComponent((data as any).email));
+          router.push('/verify-email?email=' + encodeURIComponent(registerData.email));
         }
         break;
 
       case 'forgotPassword':
+        const forgotData = data as unknown as { email: string };
         const { error: forgotError } = await supabase.auth.resetPasswordForEmail(
-          (data as any).email,
+          forgotData.email,
           {
             redirectTo: `${getBaseUrl()}/reset-password`,
           }
@@ -86,12 +90,13 @@ export function useAuthForm<T extends FieldValues>(
           throw new Error(getErrorMessage(forgotError));
         }
 
-        router.push('/check-email?email=' + encodeURIComponent((data as any).email));
+        router.push('/check-email?email=' + encodeURIComponent(forgotData.email));
         break;
 
       case 'resetPassword':
+        const resetData = data as unknown as { password: string };
         const { error: resetError } = await supabase.auth.updateUser({
-          password: (data as any).password,
+          password: resetData.password,
         });
 
         if (resetError) {

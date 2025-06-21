@@ -1,10 +1,10 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Badge } from '@/components/ui/Badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/RadioGroup';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/Label';
+import { Input } from '@/components/ui/Input';
 import { QuizQuestion } from './types';
 import { getDifficultyColor } from './utils';
 

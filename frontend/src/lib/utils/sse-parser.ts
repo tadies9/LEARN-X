@@ -3,9 +3,12 @@
  * Handles parsing of SSE streams with proper buffering and error handling
  */
 
+// Type for parsed SSE data - can be JSON object or plain string
+export type SSEData = Record<string, unknown> | string | number | boolean | null;
+
 export interface SSEMessage {
   event?: string;
-  data?: any;
+  data?: SSEData;
   id?: string;
   retry?: number;
 }
@@ -103,7 +106,7 @@ export class SSEParser {
  */
 export async function parseSSEStream(
   response: Response,
-  onMessage: (data: any) => void,
+  onMessage: (data: SSEData) => void,
   onError?: (error: Error) => void,
   onComplete?: () => void
 ): Promise<void> {

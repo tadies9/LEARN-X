@@ -1,8 +1,8 @@
-import { NavTeslaStyle } from '@/components/navigation/nav-tesla-style';
-import { FooterTeslaStyle } from '@/components/navigation/footer-tesla-style';
-import { HeroTeslaStyle } from '@/components/sections/hero-tesla-style';
-import { BenefitsDualFacing } from '@/components/sections/benefits-dual-facing';
-import { CTAMinimal } from '@/components/sections/cta-minimal';
+import { NavTeslaStyle } from '@/components/navigation/NavTeslaStyle';
+import { FooterTeslaStyle } from '@/components/navigation/FooterTeslaStyle';
+import { HeroTeslaStyle } from '@/components/sections/HeroTeslaStyle';
+import { BenefitsDualFacing } from '@/components/sections/BenefitsDualFacing';
+import { CTAMinimal } from '@/components/sections/CtaMinimal';
 
 export default function TeslaStylePage() {
   return (

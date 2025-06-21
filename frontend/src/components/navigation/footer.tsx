@@ -1,6 +1,6 @@
 import Link from 'next/link';
-import { Logo } from '@/components/ui/logo';
-import { NewsletterForm } from '@/components/forms/newsletter-form';
+import { Logo } from '@/components/ui/Logo';
+import { NewsletterForm } from '@/components/forms/NewsletterForm';
 import {
   Twitter,
   Linkedin,

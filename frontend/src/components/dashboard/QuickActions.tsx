@@ -3,8 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { Plus, Upload, BookOpen, Brain, Target, BarChart3 } from 'lucide-react';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 
 interface QuickAction {

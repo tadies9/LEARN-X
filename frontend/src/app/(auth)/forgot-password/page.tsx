@@ -8,10 +8,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, CheckCircle } from 'lucide-react';
 
 import { createClient } from '@/lib/supabase/client';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { AuthCard } from '@/components/layouts/AuthCard';
 import { getBaseUrl } from '@/lib/utils/url';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/lib/validations/auth';

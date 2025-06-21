@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { BookOpen, Plus, Search } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 
 import type { CourseFilters } from '@/lib/types/course';
 

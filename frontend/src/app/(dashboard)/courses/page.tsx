@@ -5,8 +5,8 @@ import Link from 'next/link';
 
 import { Plus, Search } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 import { PageLoader } from '@/components/ui/PageLoader';
 import { courseApi } from '@/lib/api/course';
 import { useDebounce } from '@/hooks/useDebounce';

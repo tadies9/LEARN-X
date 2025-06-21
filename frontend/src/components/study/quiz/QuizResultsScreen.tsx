@@ -1,9 +1,9 @@
 'use client';
 
 import { RotateCcw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
+import { Button } from '@/components/ui/Button';
+import { Card, CardContent } from '@/components/ui/Card';
+import { Progress } from '@/components/ui/Progress';
 import { QuizResults } from './types';
 import { formatTime } from './utils';
 

@@ -1,12 +1,11 @@
 'use client';
 
+import { Card } from '@/components/ui/Card';
+import { Progress } from '@/components/ui/Progress';
+import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import { CheckCircle, Circle, PlayCircle, Trophy, Clock, Target } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-import { Card } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 
 interface Module {
   id: string;

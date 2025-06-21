@@ -19,8 +19,18 @@ import { useDashboardStats } from '@/hooks/useDashboardStats';
 import { usePersonalizedGreeting } from '@/hooks/usePersona';
 import { useQuery } from '@tanstack/react-query';
 import { dashboardApi } from '@/lib/api/DashboardApiService';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/Alert';
 import { Lock } from 'lucide-react';
+
+// Type for ActivityTimeline iconMap
+const iconMap = {
+  course: 'BookOpen',
+  achievement: 'Trophy',
+  goal: 'Target',
+  comment: 'MessageSquare',
+  assignment: 'FileText',
+  complete: 'CheckCircle',
+} as const;
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -35,10 +45,36 @@ export default function DashboardPage() {
   const personalizedGreeting = usePersonalizedGreeting(userName);
 
   // Fetch real activity data
-  const { data: activities } = useQuery({
+  const { data: userActivities } = useQuery({
     queryKey: ['user-activities'],
     queryFn: () => dashboardApi.getActivity(10),
     enabled: !!user,
+  });
+
+  // Transform UserActivity to Activity format
+  const activities = userActivities?.map((activity) => {
+    const activityInfo = dashboardApi.getActivityTypeInfo(activity.type);
+    const typeMap: Record<string, keyof typeof iconMap> = {
+      course_created: 'course',
+      module_completed: 'complete',
+      file_uploaded: 'assignment',
+      study_session: 'course',
+      achievement_earned: 'achievement',
+      quiz_completed: 'complete',
+      flashcard_practiced: 'course',
+    };
+    
+    return {
+      id: activity.id,
+      type: typeMap[activity.type] || 'course',
+      title: activityInfo.label,
+      description: activity.metadata?.description as string || '',
+      time: new Date(activity.timestamp),
+      user: user ? {
+        name: user.email?.split('@')[0] || 'User',
+        avatar: user.user_metadata?.avatar_url,
+      } : undefined,
+    };
   });
 
   useEffect(() => {

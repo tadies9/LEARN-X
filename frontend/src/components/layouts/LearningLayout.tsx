@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Button } from '@/components/ui/Button';
 import { FileViewer } from '@/components/learning/FileViewer';
 import { AIChat } from '@/components/learning/AiChat';
 import { ProgressTracker } from '@/components/learning/ProgressTracker';

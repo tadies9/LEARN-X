@@ -1,8 +1,8 @@
 import type { UseFormSetValue, UseFormWatch } from 'react-hook-form';
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Label } from '@/components/ui/Label';
+import { Switch } from '@/components/ui/Switch';
 
 import type { AccountSettingsFormData } from '@/lib/validations/profile';
 

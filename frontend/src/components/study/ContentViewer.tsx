@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Document, Page } from 'react-pdf';
 import { DynamicPdfViewer } from '@/components/optimized/DynamicPdfViewer';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Slider } from '@/components/ui/Slider';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import {
   ZoomIn,

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { fileApi } from '@/lib/api/FileApiService';
 import { moduleApi } from '@/lib/api/ModuleApiService';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 
 export default function ModuleDebugPage({ params }: { params: { id: string; moduleId: string } }) {
   const [debugInfo, setDebugInfo] = useState<any>({});

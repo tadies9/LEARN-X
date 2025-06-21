@@ -1,6 +1,6 @@
 import { Book, Shield } from 'lucide-react';
 
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/Card';
 
 export function ForEducators() {
   return (

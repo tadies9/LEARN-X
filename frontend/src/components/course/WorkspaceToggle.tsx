@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/Switch';
+import { Label } from '@/components/ui/Label';
 import { Sparkles } from 'lucide-react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/useToast';
 
 export function WorkspaceToggle() {
   const { toast } = useToast();

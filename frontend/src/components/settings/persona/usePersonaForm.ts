@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/useToast';
 import { usePersona } from '@/hooks/usePersona';
 import type { PersonaSection, EditData } from './types';
 

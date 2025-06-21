@@ -4,7 +4,7 @@ import '@/styles/ai-content.css';
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { HelpCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { SavedContentApiService } from '@/lib/api/saved';
 import { StreamingDebug } from '@/components/debug/StreamingDebug';

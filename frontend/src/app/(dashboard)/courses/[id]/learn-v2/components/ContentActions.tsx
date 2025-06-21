@@ -8,8 +8,8 @@ import {
   RefreshCw,
   Save,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/Button';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { ActiveMode } from '../types/streaming';
 
 interface ContentActionsProps {

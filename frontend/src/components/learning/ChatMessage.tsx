@@ -2,8 +2,8 @@ import { Copy, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/Button';
+import { Avatar, AvatarFallback } from '@/components/ui/Avatar';
 import { cn } from '@/lib/utils';
 
 import type { Message } from '@/hooks/useAIChat';

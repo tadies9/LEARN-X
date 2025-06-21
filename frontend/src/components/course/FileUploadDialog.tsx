@@ -9,13 +9,13 @@ import {
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/components/ui/use-toast';
+} from '@/components/ui/Dialog';
+import { Button } from '@/components/ui/Button';
+import { Progress } from '@/components/ui/Progress';
+import { Label } from '@/components/ui/Label';
+import { Input } from '@/components/ui/Input';
+import { Textarea } from '@/components/ui/Textarea';
+import { useToast } from '@/components/ui/useToast';
 import { fileApi } from '@/lib/api/file';
 import { cn } from '@/lib/utils';
 

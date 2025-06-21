@@ -11,7 +11,7 @@ import {
   RefreshCw,
   Settings,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { Topic, ReactionType } from '../types/study';
 

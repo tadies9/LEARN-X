@@ -3,7 +3,7 @@
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { HelpCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { useProgressivePreload } from '@/lib/hooks/useProgressivePreload';
 
 // Import components

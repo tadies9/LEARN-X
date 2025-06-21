@@ -4,7 +4,7 @@ import { Sparkles, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 import { ScrollArea } from '@/components/ui/ScrollArea';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/Avatar';
 
 import { ChatMessage } from './ChatMessage';
 

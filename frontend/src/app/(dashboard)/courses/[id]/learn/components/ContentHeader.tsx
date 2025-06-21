@@ -1,7 +1,7 @@
 'use client';
 
 import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/components/ui/Button';
 import { StudyModeSelector } from './StudyModeSelector';
 import { StudyMode } from '../types/study';
 

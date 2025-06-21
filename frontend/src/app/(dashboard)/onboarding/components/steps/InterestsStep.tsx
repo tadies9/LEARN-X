@@ -5,15 +5,15 @@ import { useState } from 'react';
 import { ChevronLeft, ChevronRight, Heart, BookOpen, Info, Plus, X } from 'lucide-react';
 
 import { useOnboarding } from '@/contexts/onboarding-context';
-import { Button } from '@/components/ui/button';
-import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/Button';
+import { CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card';
 import { OnboardingCard } from '../OnboardingCard';
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/components/ui/Badge';
 import { INTEREST_CATEGORIES, LEARNING_TOPICS } from '@/lib/types/persona';
 import { cn } from '@/lib/utils';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
+import { Input } from '@/components/ui/Input';
+import { Separator } from '@/components/ui/Separator';
 
 export function InterestsStep() {
   const { nextStep, previousStep, updateFormData, formData } = useOnboarding();

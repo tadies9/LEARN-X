@@ -1,5 +1,5 @@
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/Badge';
+import { Label } from '@/components/ui/Label';
 import { INTEREST_CATEGORIES, LEARNING_TOPICS } from '@/lib/types/persona';
 import type { InterestsData } from '../types';
 

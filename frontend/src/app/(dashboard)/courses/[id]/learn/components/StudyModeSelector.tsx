@@ -1,7 +1,7 @@
 'use client';
 
 import { BookOpen, FileText, Brain, HelpCircle, MessageSquare } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/Tabs';
 import { StudyMode } from '../types/study';
 
 interface StudyModeSelectorProps {

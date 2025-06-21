@@ -2,9 +2,9 @@
 
 import { useState, useCallback } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Slider } from '@/components/ui/slider';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Slider } from '@/components/ui/Slider';
 import {
   ChevronLeft,
   ChevronRight,
@@ -20,13 +20,7 @@ import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
 
 // Set up PDF.js worker
-// Try local worker first, fallback to CDN if needed
-if (typeof window !== 'undefined') {
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url
-  ).toString();
-}
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
 
 interface PDFViewerProps {
   url: string;
@@ -38,19 +32,11 @@ export function PDFViewer({ url, title, onPageChange }: PDFViewerProps) {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [scale, setScale] = useState(1.0);
-  const [, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [_isLoading, _setIsLoading] = useState(true);
 
   const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
-    setIsLoading(false);
-    setError(null);
-  };
-
-  const onDocumentLoadError = (error: Error) => {
-    console.error('PDF load error:', error);
-    setIsLoading(false);
-    setError(error.message || 'Failed to load PDF');
+    _setIsLoading(false);
   };
 
   const changePage = useCallback(
@@ -105,7 +91,6 @@ export function PDFViewer({ url, title, onPageChange }: PDFViewerProps) {
           <Document
             file={url}
             onLoadSuccess={onDocumentLoadSuccess}
-            onLoadError={onDocumentLoadError}
             loading={
               <div className="flex items-center justify-center h-96">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -114,10 +99,7 @@ export function PDFViewer({ url, title, onPageChange }: PDFViewerProps) {
             error={
               <div className="flex flex-col items-center justify-center h-96 text-destructive">
                 <FileText className="h-12 w-12 mb-2" />
-                <p className="text-lg font-medium mb-2">Failed to load PDF</p>
-                <p className="text-sm text-muted-foreground">
-                  {error || 'Please check the file format'}
-                </p>
+                <p>Failed to load PDF</p>
               </div>
             }
           >

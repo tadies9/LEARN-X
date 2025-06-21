@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-import { useToast } from '@/components/ui/use-toast';
+import { useToast } from '@/components/ui/useToast';
 import { courseApi } from '@/lib/api/course';
 import { moduleApi } from '@/lib/api/module';
 import { fileApi } from '@/lib/api/file';

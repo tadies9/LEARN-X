@@ -1,7 +1,7 @@
-import { NavUltraMinimal } from '@/components/navigation/nav-ultra-minimal';
-import { FooterUltraMinimal } from '@/components/navigation/footer-ultra-minimal';
-import { HeroCinematic } from '@/components/sections/hero-cinematic';
-import { SixtySecondSection } from '@/components/sections/sixty-second-section';
+import { NavUltraMinimal } from '@/components/navigation/NavUltraMinimal';
+import { FooterUltraMinimal } from '@/components/navigation/FooterUltraMinimal';
+import { HeroCinematic } from '@/components/sections/HeroCinematic';
+import { SixtySecondSection } from '@/components/sections/SixtySecondSection';
 
 export default function HomePage() {
   return (

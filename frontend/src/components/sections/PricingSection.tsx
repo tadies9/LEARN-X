@@ -6,10 +6,10 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Check, X, Sparkles, Building2, Users } from 'lucide-react';
 
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Slider } from '@/components/ui/slider';
+import { Card } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
+import { Switch } from '@/components/ui/Switch';
+import { Slider } from '@/components/ui/Slider';
 import { FadeIn } from '@/components/animations/FadeIn';
 
 const plans = [

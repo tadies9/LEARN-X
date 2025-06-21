@@ -1,14 +1,9 @@
 'use client';
 
-// 1. React/Next imports
-import { ReactNode } from 'react';
-
-// 2. Third-party libraries
+import { Card } from '@/components/ui/Card';
 import { motion } from 'framer-motion';
 import { LucideIcon } from 'lucide-react';
-
-// 3. Internal imports - absolute paths (@/)
-import { Card } from '@/components/ui/card';
+import { ReactNode } from 'react';
 
 interface StatsCardProps {
   title: string;
