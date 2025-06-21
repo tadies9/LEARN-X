@@ -127,6 +127,8 @@ class ContentGenerationRequest(BaseModel):
     max_tokens: Optional[int] = Field(default=2000, gt=0, le=4096)
     stream: bool = True
     user_id: Optional[str] = None
+    # Dynamic content scaling parameters
+    content_metadata: Optional[Dict[str, Any]] = None
 
 
 class EmbeddingRequest(BaseModel):
@@ -305,9 +307,16 @@ async def generate_content(
         messages = _build_content_messages(request)
         
         model = AIModel(request.model) if request.model else None
+        
+        # Use dynamic max_tokens if provided in metadata
+        max_tokens = request.max_tokens
+        if request.content_metadata and 'max_tokens' in request.content_metadata:
+            max_tokens = request.content_metadata['max_tokens']
+            logger.info(f"Using dynamic max_tokens: {max_tokens}")
+        
         options = CompletionOptions(
             temperature=request.temperature,
-            max_tokens=request.max_tokens
+            max_tokens=max_tokens
         )
         
         if request.stream:
@@ -1026,8 +1035,8 @@ async def invalidate_cache(
 
 def _build_content_messages(request: ContentGenerationRequest) -> List[Message]:
     """Build messages for content generation based on type"""
-    # Use PersonaPromptBuilder for personalized content generation
-    from services.ai.persona_prompt_builder import PersonaPromptBuilder
+    # Use enhanced PersonaPromptBuilder for subject-aware personalization
+    from services.ai.enhanced_persona_prompt_builder import EnhancedPersonaPromptBuilder
     
     logger.info(f"Building content messages with persona: {bool(request.persona)}")
     if request.persona:
@@ -1036,9 +1045,9 @@ def _build_content_messages(request: ContentGenerationRequest) -> List[Message]:
     # Convert content to chunks format
     chunks = [request.content]
     
-    # Use PersonaPromptBuilder if persona is provided
+    # Use EnhancedPersonaPromptBuilder if persona is provided
     if request.persona:
-        prompt_builder = PersonaPromptBuilder()
+        prompt_builder = EnhancedPersonaPromptBuilder()
         
         # Convert persona to the format expected by PersonaPromptBuilder
         persona_data = {
@@ -1061,11 +1070,12 @@ def _build_content_messages(request: ContentGenerationRequest) -> List[Message]:
         }
         output_type = output_type_map.get(request.content_type, 'explain')
         
-        # Build the personalized prompt
-        user_prompt = prompt_builder.build_prompt(
+        # Build the enhanced personalized prompt with subject awareness
+        user_prompt = prompt_builder.build_enhanced_prompt(
             chunks=chunks,
             output_type=output_type,
             persona_data=persona_data,
+            subject_area=request.topic,  # Use topic as subject area
             additional_context={'topic': request.topic, 'difficulty': request.difficulty}
         )
         

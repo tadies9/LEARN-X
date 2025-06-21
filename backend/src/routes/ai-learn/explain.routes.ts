@@ -203,13 +203,28 @@ router.post(
         primaryInterests: persona.personal_interests?.primary,
       });
 
-      // Prepare content from chunks
-      const chunks =
-        file.chunks
-          ?.slice(0, 10)
-          .map((c: FileChunk) => c.content)
-          .join('\n\n') || '';
-      const content = chunks.substring(0, 8000); // Limit for context window
+      // Import dynamic content scaler
+      const { DynamicContentScaler } = await import(
+        '../../services/ai/content/DynamicContentScaler'
+      );
+      const { SmartChunkSelector } = await import('../../services/ai/content/SmartChunkSelector');
+
+      const scaler = new DynamicContentScaler();
+      const selector = new SmartChunkSelector();
+
+      // Analyze content
+      const analysis = scaler.analyzeContent(file.chunks || []);
+      const dynamicParams = scaler.calculateDynamicParams(analysis, mode);
+
+      // Select chunks intelligently
+      const selection = selector.selectChunks(
+        file.chunks || [],
+        dynamicParams.chunkLimit,
+        dynamicParams.chunkSelectionStrategy
+      );
+
+      // Prepare content from selected chunks
+      const content = selection.selectedChunks.map((c) => c.content).join('\n\n');
 
       // Determine content type and difficulty based on mode
       const contentTypeMap: Record<string, string> = {
@@ -237,7 +252,7 @@ router.post(
         `[AI Learn Explain] Generating ${contentType} content using Python AI service...`
       );
 
-      // Use Python AI service to generate content
+      // Use Python AI service to generate content with dynamic parameters
       const generator = pythonAIClient.generateContent({
         content,
         content_type: contentType as any,
@@ -248,6 +263,13 @@ router.post(
         temperature: 0.7,
         stream: true,
         user_id: userId,
+        // Pass dynamic content metadata
+        content_metadata: {
+          max_tokens: dynamicParams.maxTokens,
+          input_length: analysis.totalChars,
+          complexity: analysis.complexityScore,
+          estimated_output: dynamicParams.estimatedOutputWords,
+        },
       });
 
       let accumulatedContent = '';
@@ -401,15 +423,31 @@ router.post(
         return;
       }
 
-      // Prepare content with feedback incorporated
-      const chunks =
-        file.chunks
-          ?.slice(0, 10)
-          .map((c: FileChunk) => c.content)
-          .join('\n\n') || '';
-      const contentWithFeedback = `${chunks.substring(0, 7000)}\n\nUser Feedback: ${feedback}`;
+      // Import dynamic content scaler for regeneration
+      const { DynamicContentScaler } = await import(
+        '../../services/ai/content/DynamicContentScaler'
+      );
+      const { SmartChunkSelector } = await import('../../services/ai/content/SmartChunkSelector');
 
-      // Generate improved content
+      const scaler = new DynamicContentScaler();
+      const selector = new SmartChunkSelector();
+
+      // Analyze content for regeneration
+      const analysis = scaler.analyzeContent(file.chunks || []);
+      const dynamicParams = scaler.calculateDynamicParams(analysis, mode);
+
+      // Select chunks intelligently
+      const selection = selector.selectChunks(
+        file.chunks || [],
+        dynamicParams.chunkLimit,
+        dynamicParams.chunkSelectionStrategy
+      );
+
+      // Prepare content with feedback incorporated
+      const chunks = selection.selectedChunks.map((c) => c.content).join('\n\n');
+      const contentWithFeedback = `${chunks}\n\nUser Feedback: ${feedback}`;
+
+      // Generate improved content with dynamic parameters
       const generator = pythonAIClient.generateContent({
         content: contentWithFeedback,
         content_type:
@@ -421,6 +459,13 @@ router.post(
         temperature: 0.8, // Slightly higher for variation
         stream: true,
         user_id: userId,
+        // Pass dynamic content metadata for regeneration
+        content_metadata: {
+          max_tokens: dynamicParams.maxTokens,
+          input_length: analysis.totalChars,
+          complexity: analysis.complexityScore,
+          estimated_output: dynamicParams.estimatedOutputWords,
+        },
       });
 
       let newContent = '';

@@ -30,6 +30,12 @@ export interface ContentGenerationRequest {
   model?: string;
   temperature?: number;
   max_tokens?: number;
+  content_metadata?: {
+    max_tokens?: number;
+    input_length?: number;
+    complexity?: number;
+    estimated_output?: number;
+  };
   stream: boolean;
   user_id?: string;
 }
