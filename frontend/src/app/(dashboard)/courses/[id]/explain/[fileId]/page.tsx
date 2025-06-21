@@ -122,13 +122,18 @@ export default function ExplainPage() {
 
           let accumulatedContent = '';
           
+          console.log('Starting SSE stream parsing...');
           await parseSSEStream(
             response,
             (data) => {
+              console.log('SSE data received:', data);
               if (data.type === 'content') {
                 accumulatedContent += data.data;
                 setStreamingContent(accumulatedContent);
+              } else if (data.type === 'connected') {
+                console.log('SSE connected:', data.data);
               } else if (data.type === 'complete') {
+                console.log('SSE complete');
                 setIsStreaming(false);
               } else if (data.type === 'error') {
                 setError(data.data?.message || 'Failed to generate explanation');

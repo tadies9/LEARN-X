@@ -114,13 +114,17 @@ export async function parseSSEStream(
   const reader = response.body.getReader();
   const parser = new SSEParser();
 
+  console.log('[SSE Parser] Starting to read stream...');
+
   try {
     let done = false;
+    let chunkCount = 0;
     while (!done) {
       const result = await reader.read();
       done = result.done;
 
       if (done) {
+        console.log('[SSE Parser] Stream complete');
         if (onComplete) onComplete();
         break;
       }
@@ -128,9 +132,13 @@ export async function parseSSEStream(
       const value = result.value;
       if (!value) continue;
 
+      chunkCount++;
+      console.log(`[SSE Parser] Processing chunk ${chunkCount}, size: ${value.length}`);
+
       parser.processChunk(
         value,
         (message) => {
+          console.log('[SSE Parser] Parsed message:', message);
           // Default to processing the data field
           if (message.data) {
             onMessage(message.data);
@@ -140,6 +148,7 @@ export async function parseSSEStream(
       );
     }
   } catch (error) {
+    console.error('[SSE Parser] Error:', error);
     if (onError) {
       onError(error as Error);
     } else {
