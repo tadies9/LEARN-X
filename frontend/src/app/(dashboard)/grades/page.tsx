@@ -8,7 +8,7 @@ import { GradesHeader } from './components/GradesHeader';
 import { CourseGradesTab } from './components/CourseGradesTab';
 import { SubmissionsTab } from './components/SubmissionsTab';
 import { PerformanceTab } from './components/PerformanceTab';
-import { overallGrades, courseGrades, recentSubmissions, performanceData } from './data/mockData';
+import { overallGrades, courseGrades, recentSubmissions, performanceData } from '@/components/__tests__/data/mockData';
 
 // Disable static generation for this page
 export const dynamic = 'force-dynamic';

@@ -1,4 +1,5 @@
 import Redis from 'ioredis';
+import crypto from 'crypto';
 import { logger } from '../../utils/logger';
 import { CachedResponse } from '../../types/ai';
 import { UserPersona } from '../../types/persona';
@@ -39,10 +40,130 @@ interface CacheStats {
 export class EnhancedAICache {
   private redis: Redis;
   private stats: Map<string, CacheStats> = new Map();
+  private defaultTTL: number = 3600; // Default TTL for legacy methods
 
   constructor(redis: Redis, _costTracker: CostTracker) {
     this.redis = redis;
     this.initializeStats();
+  }
+
+  /**
+   * Legacy method for backward compatibility - generates basic cache key
+   */
+  private generateLegacyKey(prefix: string, params: Record<string, any>): string {
+    // Create a deterministic hash of the parameters (from old AICache)
+    const paramString = JSON.stringify(params, Object.keys(params).sort());
+    const hash = crypto.createHash('md5').update(paramString).digest('hex');
+    return `ai_cache:${prefix}:${hash}`;
+  }
+
+  /**
+   * Legacy get method for backward compatibility
+   */
+  async getLegacy(key: string): Promise<CachedResponse | null> {
+    try {
+      const cached = await this.redis.get(key);
+      if (!cached) return null;
+
+      const parsed = JSON.parse(cached) as CachedResponse;
+
+      // Check if cache is still valid (within TTL)
+      const age = Date.now() - parsed.timestamp;
+      if (age > this.defaultTTL * 1000) {
+        await this.redis.del(key);
+        return null;
+      }
+
+      logger.info(`Cache hit for legacy key: ${key}`);
+      return parsed;
+    } catch (error) {
+      logger.error('Cache get error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Legacy set method for backward compatibility
+   */
+  async setLegacy(
+    key: string,
+    content: string,
+    usage: { promptTokens: number; completionTokens: number },
+    ttl?: number
+  ): Promise<void> {
+    try {
+      const cacheData: CachedResponse = {
+        content,
+        timestamp: Date.now(),
+        usage,
+      };
+
+      const ttlSeconds = ttl || this.defaultTTL;
+      await this.redis.setex(key, ttlSeconds, JSON.stringify(cacheData));
+
+      logger.info(`Cached response with legacy key: ${key}, TTL: ${ttlSeconds}s`);
+    } catch (error) {
+      logger.error('Cache set error:', error);
+    }
+  }
+
+  /**
+   * Legacy method - cached explanation
+   */
+  async getCachedExplanation(
+    fileId: string,
+    topicId: string,
+    userId: string
+  ): Promise<CachedResponse | null> {
+    const key = this.generateLegacyKey('explain', { fileId, topicId, userId });
+    return this.getLegacy(key);
+  }
+
+  /**
+   * Legacy method - set cached explanation
+   */
+  async setCachedExplanation(
+    fileId: string,
+    topicId: string,
+    userId: string,
+    content: string,
+    usage: { promptTokens: number; completionTokens: number }
+  ): Promise<void> {
+    const key = this.generateLegacyKey('explain', { fileId, topicId, userId });
+    await this.setLegacy(key, content, usage);
+  }
+
+  /**
+   * Legacy method - cached summary
+   */
+  async getCachedSummary(
+    fileId: string,
+    format: string,
+    userId: string
+  ): Promise<CachedResponse | null> {
+    const key = this.generateLegacyKey('summary', { fileId, format, userId });
+    return this.getLegacy(key);
+  }
+
+  /**
+   * Legacy method - set cached summary
+   */
+  async setCachedSummary(
+    fileId: string,
+    format: string,
+    userId: string,
+    content: string,
+    usage: { promptTokens: number; completionTokens: number }
+  ): Promise<void> {
+    const key = this.generateLegacyKey('summary', { fileId, format, userId });
+    await this.setLegacy(key, content, usage);
+  }
+
+  /**
+   * Legacy user cache invalidation
+   */
+  async invalidateUserCache(userId: string): Promise<void> {
+    await this.invalidate({ userId });
   }
 
   /**

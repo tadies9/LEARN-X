@@ -17,7 +17,6 @@ import { healthRoutes } from './healthRoutes';
 import dashboardRoutes from './dashboard';
 import adminRoutes from './admin';
 import { requireAdmin } from '../middleware/adminAuth';
-import testRoutes from './test';
 import generateRoutes from './generate.routes';
 
 const router = Router();
@@ -27,36 +26,6 @@ router.get('/learn-test', (_req, res) => {
   res.json({ success: true, message: 'Learn test route working!' });
 });
 
-// Development-only test endpoint - SECURITY: Must never be accessible in production
-// This endpoint bypasses authentication and uses hardcoded user ID for testing
-if (process.env.NODE_ENV === 'development') {
-  router.get('/test-module-files/:moduleId', async (req, res) => {
-    try {
-      // Direct test endpoint - getting files for module - development testing only
-      const { FileService } = await import('../services/fileService');
-      const fileService = new FileService();
-
-      // Use a hardcoded user ID for testing - development only
-      const userId = 'b2ce911b-ae6a-46b5-9eaa-53cc3696a14a';
-      const files = await fileService.getModuleFiles(req.params.moduleId, userId);
-
-      res.json({
-        success: true,
-        data: files,
-        debug: {
-          moduleId: req.params.moduleId,
-          userId,
-          fileCount: files.length,
-        },
-      });
-    } catch (error) {
-      res.status(500).json({
-        error: error instanceof Error ? error.message : 'Unknown error',
-        debug: { moduleId: req.params.moduleId },
-      });
-    }
-  });
-}
 
 // Mount route modules
 router.use('/auth', authRoutes);
@@ -77,31 +46,6 @@ router.use('/admin', requireAdmin, adminRoutes); // Admin routes with authentica
 router.use('/', healthRoutes); // Health and monitoring routes
 router.use('/', fileRoutes); // File routes are mixed between /files and /modules - mount last
 
-// Test routes - only in development
-if (process.env.NODE_ENV !== 'production') {
-  router.use('/test', testRoutes);
-
-  // Test streaming endpoint
-  import('./test-stream')
-    .then((module) => {
-      router.use('/test-stream', module.default);
-    })
-    .catch((err) => console.error('Failed to load test-stream routes:', err));
-
-  // Test explain endpoint
-  import('./test-explain')
-    .then((module) => {
-      router.use('/', module.default);
-    })
-    .catch((err) => console.error('Failed to load test-explain routes:', err));
-
-  // Simple SSE test
-  import('./test-simple-sse')
-    .then((module) => {
-      router.use('/test-sse', module.default);
-    })
-    .catch((err) => console.error('Failed to load test-simple-sse routes:', err));
-}
 
 // API info
 router.get('/', (_, res) => {

@@ -91,7 +91,9 @@ export function StudyLayout({
   // Initialize synchronized scrolling
   const { contentRef, personalizedRef, scrollToSection, scrollToPage } = useSyncedScrolling({
     onPageChange: handlePageChange,
-    onSectionHighlight: (sectionId) => console.log('Section highlighted:', sectionId),
+    onSectionHighlight: (sectionId) => {
+      // Section highlighting handled by scrolling hook
+    },
   });
 
   // Handle fullscreen toggle
@@ -150,12 +152,10 @@ export function StudyLayout({
         generatePracticeContent();
         break;
       case 'stats':
-        // TODO: Show statistics modal
-        console.log('Show statistics');
+        // Statistics functionality to be implemented
         break;
       case 'export':
-        // TODO: Show export modal
-        console.log('Export content');
+        // Export functionality to be implemented
         break;
     }
   };
@@ -190,7 +190,8 @@ export function StudyLayout({
         });
       }
     } catch (error) {
-      console.error('Failed to generate practice content:', error);
+      // Handle practice content generation error silently
+      // Error handling to be enhanced with proper user feedback
     }
   };
 
@@ -307,7 +308,6 @@ export function StudyLayout({
                           fileId={fileId}
                           flashcards={practiceData.flashcards}
                           onComplete={(results) => {
-                            console.log('Flashcard session completed:', results);
                             setActivePanel('content');
                           }}
                         />
@@ -316,7 +316,6 @@ export function StudyLayout({
                           fileId={fileId}
                           questions={practiceData.quizQuestions}
                           onComplete={(results) => {
-                            console.log('Quiz completed:', results);
                             setActivePanel('content');
                           }}
                         />
@@ -328,7 +327,6 @@ export function StudyLayout({
                     <div className="h-full flex items-center justify-center p-6">
                       <StudyTimer
                         onSessionComplete={(duration, type) => {
-                          console.log(`${type} session completed:`, duration);
                           saveProgress({
                             progress: {
                               ...session?.progress,

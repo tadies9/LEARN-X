@@ -1,32 +1,14 @@
 import { IVectorStore, IVectorStoreFactory } from './interfaces/IVectorStore';
 import { PgVectorStore } from './stores/PgVectorStore';
-import { PineconeStore } from './stores/PineconeStore';
-import { WeaviateStore } from './stores/WeaviateStore';
-import { QdrantStore } from './stores/QdrantStore';
 import { logger } from '../../utils/logger';
 
-export type VectorStoreProvider = 'pgvector' | 'pinecone' | 'weaviate' | 'qdrant';
+export type VectorStoreProvider = 'pgvector';
 
 export interface VectorStoreConfig {
   provider: VectorStoreProvider;
   // Provider-specific configurations
   pgvector?: {
     tableName?: string;
-  };
-  pinecone?: {
-    apiKey: string;
-    environment: string;
-    indexName?: string;
-  };
-  weaviate?: {
-    url: string;
-    apiKey?: string;
-    className?: string;
-  };
-  qdrant?: {
-    url: string;
-    apiKey?: string;
-    collectionName?: string;
   };
 }
 
@@ -57,27 +39,6 @@ export class VectorStoreFactory implements IVectorStoreFactory {
         store = new PgVectorStore();
         break;
 
-      case 'pinecone':
-        if (!config?.pinecone?.apiKey) {
-          throw new Error('Pinecone API key is required');
-        }
-        store = new PineconeStore();
-        break;
-
-      case 'weaviate':
-        if (!config?.weaviate?.url) {
-          throw new Error('Weaviate URL is required');
-        }
-        store = new WeaviateStore();
-        break;
-
-      case 'qdrant':
-        if (!config?.qdrant?.url) {
-          throw new Error('Qdrant URL is required');
-        }
-        store = new QdrantStore();
-        break;
-
       default:
         throw new Error(`Unsupported vector store provider: ${provider}`);
     }
@@ -89,11 +50,11 @@ export class VectorStoreFactory implements IVectorStoreFactory {
   }
 
   isSupported(provider: string): boolean {
-    return ['pgvector', 'pinecone', 'weaviate', 'qdrant'].includes(provider);
+    return ['pgvector'].includes(provider);
   }
 
   getProviders(): string[] {
-    return ['pgvector', 'pinecone', 'weaviate', 'qdrant'];
+    return ['pgvector'];
   }
 
   /**

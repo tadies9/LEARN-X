@@ -1,27 +1,26 @@
 import { Request, Response } from 'express';
 import { FileService } from '../services/fileService';
 import { AppError } from '../utils/errors';
+import { logger } from '../utils/logger';
 
 export class FileController {
   private fileService = new FileService();
 
   getModuleFiles = async (req: Request, res: Response) => {
     try {
-      console.log('=== FileController.getModuleFiles called ===');
       const { moduleId } = req.params;
       const userId = req.user!.id;
-      console.log('Module ID:', moduleId);
-      console.log('User ID:', userId);
+      
+      logger.info('Getting module files', { moduleId, userId });
 
       const files = await this.fileService.getModuleFiles(moduleId, userId);
-      console.log('Files returned from service:', files);
 
       res.json({
         success: true,
         data: files,
       });
     } catch (error) {
-      console.error('Error in getModuleFiles:', error);
+      logger.error('Error in getModuleFiles', { moduleId: req.params.moduleId, userId: req.user?.id, error });
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -51,15 +50,6 @@ export class FileController {
 
   uploadFile = async (req: Request, res: Response) => {
     try {
-      console.log('=== FileController.uploadFile ===');
-      console.log('Headers:', req.headers);
-      console.log('Upload request received:', {
-        hasFile: !!req.file,
-        body: req.body,
-        bodyKeys: Object.keys(req.body),
-        userId: req.user?.id,
-      });
-
       if (!req.file) {
         throw new AppError('No file provided', 400);
       }
@@ -67,14 +57,12 @@ export class FileController {
       const userId = req.user!.id;
       const { moduleId, description, processingOptions } = req.body;
 
-      console.log('Processing file upload:', {
+      logger.info('Processing file upload', {
         filename: req.file.originalname,
         size: req.file.size,
         mimetype: req.file.mimetype,
         moduleId,
-        moduleIdType: typeof moduleId,
-        description,
-        processingOptions,
+        userId,
       });
 
       if (!moduleId) {
@@ -95,7 +83,7 @@ export class FileController {
         data: file,
       });
     } catch (error) {
-      console.error('Upload error in controller:', error);
+      logger.error('Upload error in controller', { error, userId: req.user?.id, moduleId: req.body?.moduleId });
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -126,20 +114,15 @@ export class FileController {
 
   deleteFile = async (req: Request, res: Response) => {
     try {
-      console.log('=== FileController.deleteFile ===');
-      console.log('Request params:', req.params);
-      console.log('Request user:', req.user);
-
       const { id } = req.params;
       const userId = req.user!.id;
 
-      console.log('File ID to delete:', id);
-      console.log('User ID making request:', userId);
+      logger.info('Deleting file', { fileId: id, userId });
 
       await this.fileService.deleteFile(id, userId);
       res.status(204).send();
     } catch (error) {
-      console.error('Delete file error:', error);
+      logger.error('Delete file error', { fileId: req.params.id, userId: req.user?.id, error });
       if (error instanceof AppError) {
         res.status(error.statusCode).json({ error: error.message });
       } else {
@@ -174,31 +157,23 @@ export class FileController {
 
   getSignedUrl = async (req: Request, res: Response) => {
     try {
-      console.log('=== getSignedUrl called ===');
-      console.log('File ID:', req.params.id);
-      console.log('User:', req.user ? { id: req.user.id, email: req.user.email } : 'NO USER');
-      console.log('Query params:', req.query);
-
       const { id } = req.params;
       const { expiresIn = 3600 } = req.query;
       const userId = req.user!.id;
 
-      console.log('Calling fileService.getSignedUrl...');
+      logger.info('Generating signed URL', { fileId: id, userId, expiresIn });
+
       const url = await this.fileService.getSignedUrl(id, userId, Number(expiresIn));
-      console.log('Signed URL generated successfully');
 
       res.json({
         success: true,
         data: { url },
       });
     } catch (error) {
-      console.error('=== getSignedUrl error ===');
-      console.error('Error details:', error);
+      logger.error('Error generating signed URL', { fileId: req.params.id, userId: req.user?.id, error });
       if (error instanceof AppError) {
-        console.error('AppError:', error.message, 'Status:', error.statusCode);
         res.status(error.statusCode).json({ error: error.message });
       } else {
-        console.error('Unknown error:', error);
         res.status(500).json({ error: 'Failed to generate signed URL' });
       }
     }

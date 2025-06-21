@@ -110,36 +110,6 @@ if (process.env.NODE_ENV === 'development') {
     }
   });
 
-  // Debug storage endpoint - development testing only
-  app.get('/debug/storage/:fileId', async (req, res) => {
-    try {
-      const { fileId } = req.params;
-      logger.debug('Debug request for file:', fileId);
-
-      const { debugFileStorage } = await import('./utils/storageDebug');
-      await debugFileStorage(fileId);
-
-      return res.json({ message: 'Debug information logged to console', fileId });
-    } catch (error) {
-      logger.error('Debug error:', error);
-      return res.status(500).json({ error: 'Debug failed' });
-    }
-  });
-
-  // Debug storage list endpoint - development testing only
-  app.get('/debug/storage-list', async (_req, res) => {
-    try {
-      const { listAllFilesInBucket } = await import('./utils/storageDebug');
-
-      logger.debug('Listing all files in bucket...');
-      await listAllFilesInBucket();
-
-      return res.json({ message: 'Bucket contents logged to console' });
-    } catch (error) {
-      logger.error('Storage list endpoint error:', error);
-      return res.status(500).json({ error: 'Storage list failed' });
-    }
-  });
 
   // Debug search endpoint - bypasses authentication for development testing only
   app.post('/debug/search', async (req, res) => {
