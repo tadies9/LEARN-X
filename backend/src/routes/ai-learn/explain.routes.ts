@@ -41,10 +41,15 @@ const router = Router();
 const costTracker = new CostTracker();
 const enhancedAICache = new EnhancedAICache(redisClient, costTracker);
 
-// SSE helper to send events
+// SSE helper to send events with explicit flushing
 const sendSSE = (res: Response, event: string, data: SSEData) => {
-  res.write(`event: ${event}\n`);
-  res.write(`data: ${JSON.stringify(data)}\n\n`);
+  const message = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+  res.write(message);
+
+  // Force flush if available
+  if ((res as any).flush) {
+    (res as any).flush();
+  }
 };
 
 /**
@@ -117,14 +122,17 @@ router.post(
     }
 
     try {
-      // Set up SSE
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache');
-      res.setHeader('Connection', 'keep-alive');
-      res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
+      // Set up SSE with writeHead for immediate header sending
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no', // Disable Nginx buffering
+        'Access-Control-Allow-Origin': '*',
+      });
 
-      // Flush headers immediately
-      res.flushHeaders();
+      // Write a comment to establish the connection
+      res.write(':ok\n\n');
 
       // Check cache first with personalized key
       const cacheOptions = generateCacheOptions(
@@ -257,15 +265,11 @@ router.post(
               formattedContent = `<div style="margin-bottom: 24px;">${chunk.content}</div>`;
             }
           }
-          
-          logger.info(`[AI Learn Explain] Sending chunk ${chunkCount}: ${chunk.content.substring(0, 50)}...`);
-          sendSSE(res, 'message', { type: 'content', data: formattedContent });
 
-          // Force flush to send immediately
-          if ((res as any).flush) {
-            (res as any).flush();
-            logger.info('[AI Learn Explain] Flushed');
-          }
+          logger.info(
+            `[AI Learn Explain] Sending chunk ${chunkCount}: ${chunk.content.substring(0, 50)}...`
+          );
+          sendSSE(res, 'message', { type: 'content', data: formattedContent });
         }
 
         if (chunk.done) {
@@ -414,9 +418,6 @@ router.post(
         if (chunk.content) {
           newContent += chunk.content;
           sendSSE(res, 'message', { type: 'content', data: chunk.content });
-
-          // Force flush to send immediately
-          if ((res as any).flush) (res as any).flush();
         }
 
         if (chunk.done) {

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SSE Test</title>
+</head>
+<body>
+    <h1>SSE Streaming Test</h1>
+    <button onclick="testSimpleSSE()">Test Simple SSE</button>
+    <button onclick="testExplainSSE()">Test Explain SSE</button>
+    <div id="output" style="border: 1px solid #ccc; padding: 10px; margin-top: 20px; height: 400px; overflow-y: auto;">
+        <pre id="log"></pre>
+    </div>
+
+    <script>
+        const log = document.getElementById('log');
+        
+        function addLog(message) {
+            log.textContent += message + '\n';
+            log.scrollTop = log.scrollHeight;
+        }
+
+        async function testSimpleSSE() {
+            log.textContent = '';
+            addLog('Testing Simple SSE endpoint...');
+            
+            try {
+                const response = await fetch('http://localhost:8080/api/v1/test-sse/simple-sse');
+                
+                if (!response.ok) {
+                    addLog(`Error: ${response.status} ${response.statusText}`);
+                    return;
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    
+                    if (done) {
+                        addLog('Stream complete');
+                        break;
+                    }
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data) {
+                                try {
+                                    const parsed = JSON.parse(data);
+                                    addLog(`Received: ${JSON.stringify(parsed)}`);
+                                } catch (e) {
+                                    addLog(`Raw data: ${data}`);
+                                }
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                addLog(`Error: ${error.message}`);
+            }
+        }
+
+        async function testExplainSSE() {
+            log.textContent = '';
+            addLog('Testing Explain SSE endpoint...');
+            
+            // First need to login
+            addLog('Getting auth token...');
+            
+            try {
+                // You'll need to update these credentials
+                const loginResponse = await fetch('http://localhost:8080/api/v1/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: 'tadies@gmail.com', // Update with your test user
+                        password: 'Test123456!' // Update with your test password
+                    }),
+                });
+                
+                if (!loginResponse.ok) {
+                    addLog(`Login failed: ${loginResponse.status}`);
+                    return;
+                }
+                
+                const loginData = await loginResponse.json();
+                const token = loginData.access_token;
+                addLog('Got auth token');
+                
+                // Now test the explain endpoint
+                const response = await fetch('http://localhost:8080/api/v1/learn/explain/stream', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        fileId: 'a0b9c8d7-6e5f-4a3b-2c1d-9e8f7a6b5c4d', // Update with a valid file ID
+                        topicId: 'JavaScript Basics',
+                        mode: 'explain'
+                    }),
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    addLog(`Error: ${response.status} - ${errorText}`);
+                    return;
+                }
+                
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let buffer = '';
+                let chunkCount = 0;
+                
+                while (true) {
+                    const { done, value } = await reader.read();
+                    
+                    if (done) {
+                        addLog('Stream complete');
+                        break;
+                    }
+                    
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split('\n');
+                    buffer = lines.pop() || '';
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('event: ')) {
+                            const event = line.slice(7);
+                            addLog(`Event: ${event}`);
+                        } else if (line.startsWith('data: ')) {
+                            chunkCount++;
+                            const data = line.slice(6);
+                            if (data) {
+                                try {
+                                    const parsed = JSON.parse(data);
+                                    if (parsed.type === 'content') {
+                                        addLog(`Chunk ${chunkCount}: ${parsed.data.substring(0, 50)}...`);
+                                    } else {
+                                        addLog(`Chunk ${chunkCount}: ${JSON.stringify(parsed)}`);
+                                    }
+                                } catch (e) {
+                                    addLog(`Raw data: ${data}`);
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                addLog(`Total chunks received: ${chunkCount}`);
+            } catch (error) {
+                addLog(`Error: ${error.message}`);
+            }
+        }
+    </script>
+</body>
+</html>
