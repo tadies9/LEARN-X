@@ -78,15 +78,21 @@ async function getUserPersona(userId: string) {
 /**
  * Generate cache key for personalized content
  */
-function generateCacheOptions(fileId: string, topicId: string, subtopic: string, mode: string, userId: string) {
+function generateCacheOptions(
+  fileId: string,
+  topicId: string,
+  subtopic: string,
+  mode: string,
+  userId: string
+) {
   return {
     service: 'explain' as const,
     userId,
     contentHash: `${fileId}:${topicId}:${subtopic}:${mode}`,
     context: {
       moduleId: fileId,
-      difficulty: mode
-    }
+      difficulty: mode,
+    },
   };
 }
 
@@ -104,8 +110,8 @@ router.post(
     logger.info('[AI Learn Explain] Stream request:', { fileId, topicId, subtopic, mode, userId });
 
     if (!fileId || !topicId) {
-      res.status(400).json({ 
-        error: 'Missing required parameters: fileId and topicId are required' 
+      res.status(400).json({
+        error: 'Missing required parameters: fileId and topicId are required',
       });
       return;
     }
@@ -116,14 +122,20 @@ router.post(
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
-      
+
       // Flush headers immediately
       res.flushHeaders();
 
       // Check cache first with personalized key
-      const cacheOptions = generateCacheOptions(fileId, topicId, subtopic || '', mode || 'explain', userId);
+      const cacheOptions = generateCacheOptions(
+        fileId,
+        topicId,
+        subtopic || '',
+        mode || 'explain',
+        userId
+      );
       const cachedContent = await enhancedAICache.get(cacheOptions);
-      
+
       if (cachedContent) {
         logger.info('[AI Learn Explain] Using cached content');
         sendSSE(res, 'message', { type: 'content', data: cachedContent.content });
@@ -167,32 +179,38 @@ router.post(
       });
 
       // Prepare content from chunks
-      const chunks = file.chunks?.slice(0, 10).map((c: FileChunk) => c.content).join('\n\n') || '';
+      const chunks =
+        file.chunks
+          ?.slice(0, 10)
+          .map((c: FileChunk) => c.content)
+          .join('\n\n') || '';
       const content = chunks.substring(0, 8000); // Limit for context window
 
       // Determine content type and difficulty based on mode
       const contentTypeMap: Record<string, string> = {
-        'explain': 'explanation',
-        'summary': 'summary',
-        'flashcards': 'flashcards',
-        'quiz': 'quiz',
-        'examples': 'examples',
-        'practice': 'practice',
+        explain: 'explanation',
+        summary: 'summary',
+        flashcards: 'flashcards',
+        quiz: 'quiz',
+        examples: 'examples',
+        practice: 'practice',
       };
 
       const difficultyMap: Record<string, string> = {
-        'summary': 'beginner',
-        'explain': 'intermediate',
-        'examples': 'intermediate',
-        'practice': 'advanced',
-        'quiz': 'advanced',
-        'flashcards': 'intermediate',
+        summary: 'beginner',
+        explain: 'intermediate',
+        examples: 'intermediate',
+        practice: 'advanced',
+        quiz: 'advanced',
+        flashcards: 'intermediate',
       };
 
       const contentType = contentTypeMap[mode || 'explain'] || 'explanation';
       const difficulty = difficultyMap[mode || 'explain'] || 'intermediate';
 
-      logger.info(`[AI Learn Explain] Generating ${contentType} content using Python AI service...`);
+      logger.info(
+        `[AI Learn Explain] Generating ${contentType} content using Python AI service...`
+      );
 
       // Use Python AI service to generate content
       const generator = pythonAIClient.generateContent({
@@ -222,10 +240,10 @@ router.post(
         if (chunk.content) {
           accumulatedContent += chunk.content;
           tokenCount += chunk.content.split(' ').length; // Rough token estimation
-          
+
           // Format content based on mode
           let formattedContent = chunk.content;
-          
+
           if (mode === 'flashcards') {
             // Wrap in flashcard formatting if it looks like a complete card
             if (chunk.content.includes('Q:') || chunk.content.includes('A:')) {
@@ -237,11 +255,10 @@ router.post(
               formattedContent = `<div style="margin-bottom: 24px;">${chunk.content}</div>`;
             }
           }
-          
+
           sendSSE(res, 'message', { type: 'content', data: formattedContent });
-          
+
           // Force flush to send immediately
-          // @ts-expect-error - flush might not be in types
           if ((res as any).flush) (res as any).flush();
         }
 
@@ -258,7 +275,7 @@ router.post(
         promptTokens: Math.ceil(tokenCount / 4),
         completionTokens: Math.ceil(accumulatedContent.length / 20),
         responseTimeMs: 1000, // Simplified timing
-        cacheHit: false
+        cacheHit: false,
       });
 
       // Cache the complete result with personalization
@@ -266,9 +283,9 @@ router.post(
         await enhancedAICache.set(
           cacheOptions,
           accumulatedContent,
-          { 
-            promptTokens: Math.ceil(tokenCount / 4), 
-            completionTokens: Math.ceil(accumulatedContent.length / 20) 
+          {
+            promptTokens: Math.ceil(tokenCount / 4),
+            completionTokens: Math.ceil(accumulatedContent.length / 20),
           },
           { cost: tokenCount * 0.000005 }
         );
@@ -312,8 +329,14 @@ router.post(
 
     try {
       // Invalidate existing cache
-      const cacheOptions = generateCacheOptions(fileId, topicId, subtopic || '', mode || 'explain', userId);
-      // Note: EnhancedAICache doesn't support selective invalidation, 
+      const cacheOptions = generateCacheOptions(
+        fileId,
+        topicId,
+        subtopic || '',
+        mode || 'explain',
+        userId
+      );
+      // Note: EnhancedAICache doesn't support selective invalidation,
       // so we'll let the cache expire naturally or clear user cache manually
 
       // Set up SSE for regeneration
@@ -321,13 +344,13 @@ router.post(
       res.setHeader('Cache-Control', 'no-cache');
       res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no'); // Disable Nginx buffering
-      
+
       // Flush headers immediately
       res.flushHeaders();
 
-      sendSSE(res, 'message', { 
-        type: 'regeneration-start', 
-        data: { message: 'Regenerating content with feedback...' }
+      sendSSE(res, 'message', {
+        type: 'regeneration-start',
+        data: { message: 'Regenerating content with feedback...' },
       });
 
       // Get file and persona (similar to stream endpoint)
@@ -351,13 +374,18 @@ router.post(
       }
 
       // Prepare content with feedback incorporated
-      const chunks = file.chunks?.slice(0, 10).map((c: FileChunk) => c.content).join('\n\n') || '';
+      const chunks =
+        file.chunks
+          ?.slice(0, 10)
+          .map((c: FileChunk) => c.content)
+          .join('\n\n') || '';
       const contentWithFeedback = `${chunks.substring(0, 7000)}\n\nUser Feedback: ${feedback}`;
 
       // Generate improved content
       const generator = pythonAIClient.generateContent({
         content: contentWithFeedback,
-        content_type: mode === 'quiz' ? 'quiz' : mode === 'flashcards' ? 'flashcards' : 'explanation',
+        content_type:
+          mode === 'quiz' ? 'quiz' : mode === 'flashcards' ? 'flashcards' : 'explanation',
         topic: `${topicId} (Improved)`,
         difficulty: 'intermediate',
         persona,
@@ -379,9 +407,8 @@ router.post(
         if (chunk.content) {
           newContent += chunk.content;
           sendSSE(res, 'message', { type: 'content', data: chunk.content });
-          
+
           // Force flush to send immediately
-          // @ts-expect-error - flush might not be in types
           if ((res as any).flush) (res as any).flush();
         }
 
@@ -402,7 +429,6 @@ router.post(
 
       sendSSE(res, 'message', { type: 'complete', data: { regenerated: true } });
       res.end();
-
     } catch (error) {
       logger.error('[AI Learn Explain] Error regenerating content:', error);
       sendSSE(res, 'message', { type: 'error', data: { message: 'Failed to regenerate content' } });

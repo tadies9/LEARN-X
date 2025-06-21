@@ -23,18 +23,14 @@ export class SSEParser {
    * @param onMessage - Callback for each parsed message
    * @param onError - Optional error callback
    */
-  processChunk(
-    chunk: Uint8Array,
-    onMessage: SSECallback,
-    onError?: SSEErrorCallback
-  ): void {
+  processChunk(chunk: Uint8Array, onMessage: SSECallback, onError?: SSEErrorCallback): void {
     // Decode the chunk and add to buffer
     const text = this.decoder.decode(chunk, { stream: true });
     this.buffer += text;
 
     // Split by double newline (SSE message separator)
     const messages = this.buffer.split('\n\n');
-    
+
     // Keep the last incomplete message in the buffer
     this.buffer = messages.pop() || '';
 
@@ -123,13 +119,14 @@ export async function parseSSEStream(
     while (!done) {
       const result = await reader.read();
       done = result.done;
-      
+
       if (done) {
         if (onComplete) onComplete();
         break;
       }
-      
+
       const value = result.value;
+      if (!value) continue;
 
       parser.processChunk(
         value,

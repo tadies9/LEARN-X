@@ -80,16 +80,20 @@ router.use('/', fileRoutes); // File routes are mixed between /files and /module
 // Test routes - only in development
 if (process.env.NODE_ENV !== 'production') {
   router.use('/test', testRoutes);
-  
+
   // Test streaming endpoint
-  import('./test-stream').then(module => {
-    router.use('/test-stream', module.default);
-  }).catch(err => console.error('Failed to load test-stream routes:', err));
-  
+  import('./test-stream')
+    .then((module) => {
+      router.use('/test-stream', module.default);
+    })
+    .catch((err) => console.error('Failed to load test-stream routes:', err));
+
   // Test explain endpoint
-  import('./test-explain').then(module => {
-    router.use('/', module.default);
-  }).catch(err => console.error('Failed to load test-explain routes:', err));
+  import('./test-explain')
+    .then((module) => {
+      router.use('/', module.default);
+    })
+    .catch((err) => console.error('Failed to load test-explain routes:', err));
 }
 
 // API info
