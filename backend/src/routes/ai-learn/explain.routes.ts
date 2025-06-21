@@ -133,7 +133,7 @@ router.post(
 
       // Write a comment to establish the connection
       res.write(':ok\n\n');
-      
+
       // Send initial message to confirm connection
       sendSSE(res, 'message', { type: 'connected', data: 'SSE connection established' });
 
@@ -149,7 +149,21 @@ router.post(
 
       if (cachedContent) {
         logger.info('[AI Learn Explain] Using cached content');
-        sendSSE(res, 'message', { type: 'content', data: cachedContent.content });
+
+        // Stream cached content in chunks to simulate real-time generation
+        const content = cachedContent.content;
+        const words = content.split(' ');
+        const chunkSize = 10; // Words per chunk
+
+        for (let i = 0; i < words.length; i += chunkSize) {
+          const chunk =
+            words.slice(i, i + chunkSize).join(' ') + (i + chunkSize < words.length ? ' ' : '');
+          sendSSE(res, 'message', { type: 'content', data: chunk });
+
+          // Small delay to simulate streaming
+          await new Promise((resolve) => setTimeout(resolve, 20));
+        }
+
         sendSSE(res, 'message', { type: 'complete', data: { cached: true } });
         res.end();
         return;

@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Loader2, RefreshCw, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { fileApi } from '@/lib/api/file';
 import { createClient } from '@/lib/supabase/client';
+import { flushSync } from 'react-dom';
 import {
   Dialog,
   DialogContent,
@@ -43,13 +44,16 @@ export default function ExplainPage() {
   const [feedback, setFeedback] = useState('');
   const [isRegenerating, setIsRegenerating] = useState(false);
 
+  // Use ref to track accumulated content for immediate updates
+  const accumulatedContentRef = useRef('');
+
   // Load file content - only once
   useEffect(() => {
     let cancelled = false;
-    
+
     const loadFile = async () => {
       if (fileLoaded) return; // Prevent multiple loads
-      
+
       try {
         const file = await fileApi.getFile(fileId);
         if (!cancelled) {
@@ -72,9 +76,9 @@ export default function ExplainPage() {
         }
       }
     };
-    
+
     loadFile();
-    
+
     return () => {
       cancelled = true;
     };
@@ -82,60 +86,85 @@ export default function ExplainPage() {
 
   // Start explanation when file loads
   useEffect(() => {
+    console.log('Explain useEffect check:', {
+      fileId: !!fileId,
+      hasStreamingContent: !!streamingContent,
+      isStreaming,
+      loading,
+      fileLoaded,
+    });
+
     if (fileId && !streamingContent && !isStreaming && !loading && fileLoaded) {
+      console.log('Starting explanation generation...');
       // Trigger AI explanation
       setIsStreaming(true);
-      
+
       const generateExplanation = async () => {
         try {
           // Get auth token
           const supabase = createClient();
-          const { data: { session } } = await supabase.auth.getSession();
-          
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+
           if (!session?.access_token) {
             throw new Error('Not authenticated');
           }
 
           const url = '/api/v1/learn/explain/stream';
           console.log('Making explain request to:', url);
-          
+
           const response = await fetch(url, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session.access_token}`,
+              Authorization: `Bearer ${session.access_token}`,
             },
             body: JSON.stringify({
               fileId,
               topicId: fileName,
-              mode: 'explain'
+              mode: 'explain',
             }),
           });
 
           console.log('Response status:', response.status);
-          
+
           if (!response.ok) {
             const errorText = await response.text();
             console.error('Error response:', errorText);
             throw new Error(`Failed to generate explanation: ${response.status}`);
           }
 
-          let accumulatedContent = '';
-          
+          // Reset accumulated content
+          accumulatedContentRef.current = '';
+
           console.log('Starting SSE stream parsing...');
           await parseSSEStream(
             response,
             (data) => {
               console.log('SSE data received:', data);
+              console.log(
+                'Current accumulated content length:',
+                accumulatedContentRef.current.length
+              );
               if (data.type === 'content') {
-                accumulatedContent += data.data;
-                setStreamingContent(accumulatedContent);
+                accumulatedContentRef.current += data.data;
+                console.log(
+                  'New accumulated content length:',
+                  accumulatedContentRef.current.length
+                );
+
+                // Use flushSync to force immediate DOM update for streaming effect
+                flushSync(() => {
+                  setStreamingContent(accumulatedContentRef.current);
+                });
               } else if (data.type === 'connected') {
                 console.log('SSE connected:', data.data);
               } else if (data.type === 'complete') {
-                console.log('SSE complete');
+                console.log('SSE complete, final content:', accumulatedContentRef.current);
                 setIsStreaming(false);
               } else if (data.type === 'error') {
+                console.error('SSE error received:', data);
                 setError(data.data?.message || 'Failed to generate explanation');
                 setIsStreaming(false);
               }
@@ -162,7 +191,7 @@ export default function ExplainPage() {
     if (!feedback.trim()) {
       toast({
         title: 'Feedback required',
-        description: 'Please provide feedback on what you\'d like to improve.',
+        description: "Please provide feedback on what you'd like to improve.",
         variant: 'destructive',
       });
       return;
@@ -174,25 +203,27 @@ export default function ExplainPage() {
 
     try {
       const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (!session?.access_token) {
         throw new Error('Not authenticated');
       }
 
       const url = '/api/v1/learn/explain/regenerate';
-      
+
       const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({
           fileId,
           topicId: fileName,
           mode: 'explain',
-          feedback: feedback.trim()
+          feedback: feedback.trim(),
         }),
       });
 
@@ -203,7 +234,7 @@ export default function ExplainPage() {
       // Clear existing content for fresh regeneration
       setStreamingContent('');
       let accumulatedContent = '';
-      
+
       await parseSSEStream(
         response,
         (data) => {
@@ -292,13 +323,17 @@ export default function ExplainPage() {
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 <span className="text-muted-foreground">
-                  {isRegenerating ? 'Regenerating with your feedback...' : 'Generating explanation...'}
+                  {isRegenerating
+                    ? 'Regenerating with your feedback...'
+                    : 'Generating explanation...'}
                 </span>
               </div>
             ) : (
               <div className="whitespace-pre-wrap">
                 {streamingContent ? (
-                  <div dangerouslySetInnerHTML={{ __html: streamingContent.replace(/\n/g, '<br />') }} />
+                  <div
+                    dangerouslySetInnerHTML={{ __html: streamingContent.replace(/\n/g, '<br />') }}
+                  />
                 ) : (
                   <p className="text-muted-foreground">Loading content...</p>
                 )}
@@ -342,10 +377,7 @@ export default function ExplainPage() {
             >
               Cancel
             </Button>
-            <Button
-              onClick={handleRegenerate}
-              disabled={!feedback.trim()}
-            >
+            <Button onClick={handleRegenerate} disabled={!feedback.trim()}>
               Regenerate with feedback
             </Button>
           </DialogFooter>
