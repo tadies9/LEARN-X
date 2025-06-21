@@ -55,8 +55,8 @@ export default function NewCoursePage() {
         description: 'Your course has been created successfully.',
       });
 
-      // Redirect to course page
-      router.push(`/courses/${course.id}`);
+      // Redirect to course workspace
+      router.push(`/courses/${course.id}/workspace`);
     } catch (error) {
       toast({
         title: 'Error',

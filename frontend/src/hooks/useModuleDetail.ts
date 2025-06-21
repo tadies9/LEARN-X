@@ -48,7 +48,7 @@ export function useModuleDetail({ courseId, moduleId }: UseModuleDetailProps) {
         description: 'Failed to load module data.',
         variant: 'destructive',
       });
-      router.push(`/courses/${courseId}`);
+      router.push(`/courses/${courseId}/workspace`);
     } finally {
       setLoading(false);
     }

@@ -75,7 +75,7 @@ export default function EditCoursePage({ params }: { params: { id: string } }) {
         title: 'Course updated',
         description: 'Your changes have been saved successfully.',
       });
-      router.push(`/courses/${params.id}`);
+      router.push(`/courses/${params.id}/workspace`);
     } catch (error) {
       toast({
         title: 'Error',
